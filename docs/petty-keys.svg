@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1730" viewBox="0 0 1720 1730" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
+<rect width="1720" height="1730" fill="#ffffff"/>
+<rect x="40" y="100" width="680" height="44" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="100" width="440" height="44" rx="8" fill="#fde9d9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="100" width="360" height="44" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="215" width="300" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="215" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="305" width="300" height="70" rx="8" fill="#fff3c4" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="305" width="170" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="550" y="305" width="170" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="305" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="400" width="300" height="130" rx="8" fill="#fff3c4" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="430" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="560" width="170" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="550" y="560" width="170" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="560" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="730" width="300" height="90" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="730" width="360" height="90" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="730" width="440" height="90" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="890" width="300" height="70" rx="8" fill="#fff3c4" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="890" width="360" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="890" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="980" width="300" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="980" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="1070" width="360" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="1070" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="1160" width="680" height="80" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="1320" width="680" height="80" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="1320" width="440" height="80" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="1320" width="360" height="80" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="1430" width="360" height="90" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="1600" width="330" height="90" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="410" y="1600" width="310" height="90" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="1600" width="440" height="90" rx="8" fill="#fbe4e0" stroke="#1e1e1e" stroke-width="1.2"/>
+<line x1="340.0" y1="250.0" x2="820.0" y2="250.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="340.0" x2="360.0" y2="340.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="530.0" y1="340.0" x2="550.0" y2="340.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="720.0" y1="340.0" x2="820.0" y2="340.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="465.0" x2="820.0" y2="465.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="465.0" x2="360.0" y2="595.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="530.0" y1="595.0" x2="550.0" y2="595.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="720.0" y1="595.0" x2="820.0" y2="595.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="775.0" x2="360.0" y2="775.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="720.0" y1="775.0" x2="820.0" y2="775.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="925.0" x2="360.0" y2="925.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="720.0" y1="925.0" x2="820.0" y2="925.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="1015.0" x2="820.0" y2="1015.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="720.0" y1="1105.0" x2="820.0" y2="1105.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="820.0" y1="1105.0" x2="720.0" y2="1200.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6,5"/>
+<line x1="720.0" y1="1360.0" x2="820.0" y2="1360.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1260.0" y1="1360.0" x2="1320.0" y2="1360.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1500.0" y1="1400.0" x2="1500.0" y2="1430.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6,5"/>
+<text x="40" y="44.0" font-size="24" fill="#1e1e1e">PETTY — where the keys come from, where they live, how they are used</text>
+<text x="40" y="73.0" font-size="13" fill="#555555">Green = your device, memory only (never on disk).  Yellow = a secret made on your device.  Grey = server database (locked blobs + metadata only).  Blue = a member&#x27;s device.</text>
+<text x="380.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">YOUR DEVICE (browser)</text>
+<text x="1040.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">SERVER DATABASE (Postgres)</text>
+<text x="1500.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">MEMBER&#x27;S DEVICE</text>
+<text x="40" y="198.0" font-size="18" fill="#1e1e1e">1  SIGN-UP (join link)</text>
+<text x="190.0" y="240.6" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">You type:</text>
+<text x="190.0" y="259.4" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">email + login password</text>
+<text x="1040.0" y="241.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">users: email + Argon2id HASH of the login password</text>
+<text x="1040.0" y="258.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(proves who you are — touches no data)</text>
+<rect x="560.7" y="238.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="580.0" y="246.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="190.0" y="330.6" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">You type: VAULT PASSPHRASE</text>
+<text x="190.0" y="349.4" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(never leaves the device)</text>
+<text x="445.0" y="331.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Argon2id(passphrase)</text>
+<text x="445.0" y="348.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">= wrap key A</text>
+<text x="635.0" y="323.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">VAULT = private keys</text>
+<text x="635.0" y="340.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">locked with A</text>
+<text x="635.0" y="356.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(AES-256-GCM)</text>
+<text x="1040.0" y="331.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">users.vault  (locked blob)</text>
+<text x="1040.0" y="348.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">the server cannot open it</text>
+<rect x="750.7" y="328.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="336.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="190.0" y="421.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Device generates (random):</text>
+<text x="190.0" y="438.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">• ECDH P-256 keypair</text>
+<text x="190.0" y="456.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">   → receives drawer keys</text>
+<text x="190.0" y="473.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">• ECDSA P-256 keypair → signs entries</text>
+<text x="190.0" y="491.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">• RECOVERY CODE (30 letters,</text>
+<text x="190.0" y="508.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">   shown once)</text>
+<text x="1040.0" y="456.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">user_keys: ecdh_pub, ecdsa_pub, sig_key_id</text>
+<text x="1040.0" y="473.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(public; kept forever so old entries still verify)</text>
+<rect x="510.6" y="453.0" width="138.7" height="16.2" fill="#ffffff"/>
+<text x="580.0" y="461.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">public halves only</text>
+<text x="445.0" y="586.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">HKDF(recovery code)</text>
+<text x="445.0" y="603.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">= wrap key B</text>
+<text x="635.0" y="578.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">RECOVERY VAULT =</text>
+<text x="635.0" y="595.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">same private keys</text>
+<text x="635.0" y="611.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">locked with B</text>
+<text x="1040.0" y="595.0" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">users.recovery_vault  (locked blob)</text>
+<rect x="750.7" y="583.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="591.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="40" y="663.0" font-size="13" fill="#8a6d1f">Private keys exist in the clear only inside your device. A database thief holds two locked blobs and can only guess passphrases, about 1 second per guess.</text>
+<text x="40" y="713.0" font-size="18" fill="#1e1e1e">2  UNLOCK / SESSION (every device, every 24 h)</text>
+<text x="190.0" y="750.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Passphrase → Argon2id → open VAULT</text>
+<text x="190.0" y="766.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ private keys as NON-EXPORTABLE</text>
+<text x="190.0" y="783.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">CryptoKey handles (bytes unreachable</text>
+<text x="190.0" y="799.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">even from JavaScript)</text>
+<text x="540.0" y="758.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">IndexedDB keeps: key handles (24 h expiry),</text>
+<text x="540.0" y="775.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">the vault blob, bootstrap ciphertext (offline).</text>
+<text x="540.0" y="791.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Never a passphrase, a key, or decrypted data.</text>
+<text x="1040.0" y="766.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sessions: a login cookie hash</text>
+<text x="1040.0" y="783.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(who you are — not what you can read)</text>
+<rect x="729.2" y="763.0" width="81.5" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="771.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">login only</text>
+<text x="40" y="873.0" font-size="18" fill="#1e1e1e">3  A DRAWER: create, write, read</text>
+<text x="190.0" y="916.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Random DRAWER KEY</text>
+<text x="190.0" y="933.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(AES-256-GCM, one per drawer)</text>
+<text x="540.0" y="916.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Wrap the drawer key for MY public key</text>
+<text x="540.0" y="933.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(ECDH → HKDF → AES-KW)</text>
+<text x="1040.0" y="916.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">drawer_keys: my wrap</text>
+<text x="1040.0" y="933.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(sender = me, key version)</text>
+<rect x="750.7" y="913.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="921.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="190.0" y="998.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Drawer document (name, lines,</text>
+<text x="190.0" y="1015.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">verifications) encrypted</text>
+<text x="190.0" y="1031.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">with the drawer key</text>
+<text x="1040.0" y="1006.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">drawer_documents: ciphertext + version (optimistic lock)</text>
+<text x="1040.0" y="1023.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">AAD binds it to this drawer</text>
+<rect x="560.7" y="1003.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="580.0" y="1011.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="540.0" y="1096.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Entry: signed with my ECDSA key,</text>
+<text x="540.0" y="1113.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">then encrypted with the drawer key</text>
+<text x="1040.0" y="1096.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">entries: ciphertext + line id, seq, author, is_checkpoint</text>
+<text x="1040.0" y="1113.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(never the amount, comment or line name)</text>
+<rect x="725.7" y="1093.0" width="88.7" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="1101.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">append only</text>
+<text x="380.0" y="1182.5" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">READ: fetch my wrap → unwrap the drawer key with my private key</text>
+<text x="380.0" y="1200.0" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ decrypt document + entries → verify every signature and the hash links</text>
+<text x="380.0" y="1217.5" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ fold the balance. All of it in memory.</text>
+<rect x="711.4" y="1140.5" width="117.3" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="1148.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ciphertext back</text>
+<text x="40" y="1303.0" font-size="18" fill="#1e1e1e">4  SHARING</text>
+<text x="380.0" y="1342.5" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Invite: look up the member → compare their SAFETY NUMBER</text>
+<text x="380.0" y="1360.0" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(a fingerprint of their public keys) out of band → pin it</text>
+<text x="380.0" y="1377.5" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ unwrap the drawer key → re-wrap it for THEIR public key</text>
+<text x="1040.0" y="1343.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">the invitation carries the wrap; on accept →</text>
+<text x="1040.0" y="1360.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">drawer_keys: their wrap (sender = me);</text>
+<text x="1040.0" y="1376.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">their device checks the sender against its PINNED key</text>
+<rect x="750.7" y="1348.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="770.0" y="1356.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="1500.0" y="1350.6" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Unwrap with THEIR private key</text>
+<text x="1500.0" y="1369.4" font-size="15" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ same reads and writes as in 3</text>
+<rect x="1252.8" y="1348.0" width="74.4" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="1356.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">on accept</text>
+<text x="1500.0" y="1450.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Member removed → any writer makes</text>
+<text x="1500.0" y="1466.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">a NEW drawer key, wraps it for everyone left,</text>
+<text x="1500.0" y="1483.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">and re-encrypts the old rows. The old key</text>
+<text x="1500.0" y="1499.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">opens nothing written afterwards.</text>
+<rect x="1470.0" y="1403.0" width="60.1" height="16.2" fill="#ffffff"/>
+<text x="1500.0" y="1411.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">removal</text>
+<text x="40" y="1583.0" font-size="18" fill="#1e1e1e">5  NEW DEVICE / LOST PASSPHRASE — keys are never regenerated</text>
+<text x="205.0" y="1620.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">New device: login → the VAULT arrives</text>
+<text x="205.0" y="1636.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">from users.vault → passphrase → Argon2id</text>
+<text x="205.0" y="1653.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">→ the SAME private keys (same safety</text>
+<text x="205.0" y="1669.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">number, same wraps work)</text>
+<text x="565.0" y="1620.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Lost passphrase: the RECOVERY CODE</text>
+<text x="565.0" y="1636.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">opens users.recovery_vault → choose a</text>
+<text x="565.0" y="1653.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">new passphrase → new VAULT uploaded;</text>
+<text x="565.0" y="1669.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">keys unchanged</text>
+<text x="1040.0" y="1628.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Lost passphrase AND recovery code, drawer shared with</text>
+<text x="1040.0" y="1645.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">nobody: unrecoverable, by design. Members of a shared</text>
+<text x="1040.0" y="1661.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">drawer can re-wrap its key for your new keypair.</text>
+</svg>

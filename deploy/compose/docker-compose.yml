@@ -1,0 +1,62 @@
+# Petty in production with Docker Compose (PETTY-160).
+#
+#   cp deploy/compose/.env.example deploy/compose/.env    # then fill in every value
+#   docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d
+#
+# The app listens on 127.0.0.1:3000 over plain HTTP. Put a TLS reverse proxy (Caddy, Traefik,
+# nginx) in front of it: Petty needs HTTPS for passkeys, cookies and the service worker.
+name: petty
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: petty
+      POSTGRES_PASSWORD: ${OWNER_DB_PASSWORD:?set OWNER_DB_PASSWORD}
+      POSTGRES_DB: petty
+      PETTY_API_PASSWORD: ${API_DB_PASSWORD:?set API_DB_PASSWORD}
+      PETTY_MAINT_PASSWORD: ${MAINT_DB_PASSWORD:?set MAINT_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petty -d petty"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  app:
+    image: ghcr.io/wawrepo/petty:${PETTY_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: postgres://petty:${OWNER_DB_PASSWORD}@db:5432/petty
+      API_DATABASE_URL: postgres://petty_api:${API_DB_PASSWORD}@db:5432/petty
+      MAINT_DATABASE_URL: postgres://petty_maint:${MAINT_DB_PASSWORD}@db:5432/petty
+      APP_URL: ${APP_URL:?set APP_URL}
+      SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      # The image sets SECURE_COOKIES=true and TRUST_PROXY=true: keep the reverse proxy.
+      METRICS_PORT: "0"
+      LOG_LEVEL: info
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
+      CLERK_FRONTEND_API: ${CLERK_FRONTEND_API:-}
+      CLERK_JWT_KEY: ${CLERK_JWT_KEY:-}
+    command: ["sh", "-c", "pnpm migrate && pnpm start"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

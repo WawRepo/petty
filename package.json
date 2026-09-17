@@ -1,0 +1,28 @@
+{
+  "name": "petty",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.2.2",
+  "scripts": {
+    "dev": "pnpm --filter @petty/api --filter @petty/web --parallel run dev",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "eslint .",
+    "test": "pnpm -r run test",
+    "migrate": "pnpm --filter @petty/api run migrate",
+    "seed": "pnpm --filter @petty/api run seed",
+    "i18n:check": "pnpm --filter @petty/web i18n:check",
+    "e2e": "pnpm --filter @petty/web e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "eslint": "^9.34.0",
+    "lighthouse": "^13.4.1",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0",
+    "vitest": "^3.2.4"
+  }
+}

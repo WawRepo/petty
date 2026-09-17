@@ -1,0 +1,40 @@
+name: ci
+on: [push, pull_request]
+# Runs on a self-hosted Actions Runner Controller scale set.
+# That runner is in Kubernetes container mode: a job that declares `services:` MUST also
+# declare `container:` (otherwise "Job Container is required"), and the container hook puts
+# the service containers in the SAME pod as the job container, so they are reached on
+# localhost, exactly like the docker-compose setup in the Makefile.
+jobs:
+  test:
+    runs-on: arc-k8s-petty
+    container:
+      image: node:22-bookworm
+    services:
+      # No `ports:` mappings: in Kubernetes mode the services share the job pod's network namespace and are
+      # reached on localhost anyway, while a mapping becomes a hostPort — two concurrent runs on one node
+      # then fail with "node(s) didn't have free ports" (seen 2026-09-10).
+      db:
+        image: postgres:16
+        env: { POSTGRES_USER: petty, POSTGRES_PASSWORD: petty, POSTGRES_DB: petty }
+        options: >-
+          --health-cmd "pg_isready -U petty" --health-interval 2s --health-timeout 3s --health-retries 30
+      mailpit:
+        image: axllent/mailpit
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # The node image has no psql; the init script creates the petty_api / petty_maint roles.
+      - run: apt-get update -qq && apt-get install -y -qq postgresql-client >/dev/null
+      - run: psql postgres://petty:petty@localhost:5432/petty -f docker/postgres/init.sql
+      - run: pnpm migrate
+      - run: pnpm audit --audit-level high
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm i18n:check
+      - run: pnpm --filter @petty/web exec playwright install --with-deps chromium
+      - run: pnpm e2e

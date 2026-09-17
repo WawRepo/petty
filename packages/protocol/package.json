@@ -1,0 +1,28 @@
+{
+  "name": "@petty/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "corpus:generate": "tsx scripts/generate-export-fixture.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@petty/crypto": "workspace:*",
+    "@types/node": "^22.17.2",
+    "tsx": "^4.20.5"
+  }
+}

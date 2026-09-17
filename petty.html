@@ -1,0 +1,1135 @@
+<title>Petty</title>
+<style>
+:root{
+  --bg:#f5f3ef; --card:#ffffff; --text:#1c1a17; --muted:#7a7469;
+  --border:#e5e0d8; --accent:#2f6f4f; --accent-text:#ffffff;
+  --danger:#b3432b; --add:#2f6f4f; --withdraw:#b3432b; --adjust:#8a6d1f;
+  --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --radius: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151412; --card:#201e1b; --text:#f0ece4; --muted:#9a9388;
+    --border:#332f2a; --accent:#4c9c72; --accent-text:#0b1210;
+    --danger:#e0725a; --add:#4c9c72; --withdraw:#e0725a; --adjust:#d4ac3f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151412; --card:#201e1b; --text:#f0ece4; --muted:#9a9388;
+  --border:#332f2a; --accent:#4c9c72; --accent-text:#0b1210;
+  --danger:#e0725a; --add:#4c9c72; --withdraw:#e0725a; --adjust:#d4ac3f;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--text); margin:0; -webkit-tap-highlight-color:transparent;}
+#app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; padding-bottom:24px;}
+header.topbar{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  display:flex; align-items:center; gap:10px; padding:16px 16px 8px;
+  border-bottom:1px solid transparent;
+}
+header.topbar .back{
+  background:none; border:none; color:var(--text); font-size:22px; padding:8px; margin:-8px;
+  cursor:pointer; border-radius:10px; line-height:1;
+}
+header.topbar h1{font-size:20px; margin:0; flex:1; font-weight:700; letter-spacing:-0.01em;}
+header.topbar .icon-btn{
+  background:none; border:none; color:var(--muted); font-size:20px; padding:8px; margin:-8px;
+  cursor:pointer; border-radius:10px;
+}
+main{flex:1; padding:8px 16px 16px;}
+.list{display:flex; flex-direction:column; gap:10px; margin-top:8px;}
+.row{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; display:flex; align-items:center; justify-content:space-between;
+  box-shadow:var(--shadow); cursor:pointer; min-height:56px; gap:12px;
+}
+.row:active{transform:scale(0.98);}
+.row .rowmain{display:flex; flex-direction:column; gap:2px; min-width:0;}
+.row .rowtitle{font-size:17px; font-weight:600;}
+.row .rowsub{font-size:13px; color:var(--muted);}
+.row .rowbalance{font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+.row .del{
+  background:none; border:none; color:var(--muted); font-size:18px; padding:8px; cursor:pointer;
+  border-radius:8px; flex-shrink:0;
+}
+.addbtn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:var(--card); border:1px dashed var(--border); border-radius:var(--radius);
+  padding:16px; font-size:16px; font-weight:600; color:var(--accent); cursor:pointer; margin-top:6px;
+}
+.empty{color:var(--muted); text-align:center; padding:40px 16px; font-size:15px;}
+.balance-hero{
+  text-align:center; padding:24px 0 8px;
+}
+.balance-hero .amt{font-size:42px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.02em;}
+.balance-hero .code{font-size:16px; color:var(--muted); font-weight:600; margin-top:4px;}
+.actions-row{display:flex; gap:10px; margin:16px 0 8px;}
+.actions-row button{
+  flex:1; border:none; border-radius:14px; padding:16px 8px; font-size:15px; font-weight:700;
+  color:#fff; cursor:pointer; box-shadow:var(--shadow);
+}
+.actions-row button.add{background:var(--add);}
+.actions-row button.withdraw{background:var(--withdraw);}
+.actions-row button.adjust{background:var(--adjust); color:#1c1a17;}
+h2.section{font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin:20px 0 8px; font-weight:700;}
+.entry{
+  background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+}
+.entry .left{display:flex; flex-direction:column; gap:2px; min-width:0;}
+.entry .op{font-size:14px; font-weight:700;}
+.entry .op.Add{color:var(--add);}
+.entry .op.Withdraw{color:var(--withdraw);}
+.entry .op.Adjust{color:var(--adjust);}
+.entry .meta{font-size:12px; color:var(--muted);}
+.entry .right{text-align:right; flex-shrink:0;}
+.entry .delta{font-weight:700; font-variant-numeric:tabular-nums;}
+.entry .bal{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
+/* modal */
+.overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:flex-end;
+  justify-content:center; z-index:20;
+}
+.sheet{
+  background:var(--bg); width:100%; max-width:480px; border-radius:20px 20px 0 0;
+  padding:20px 20px 28px; max-height:92vh; overflow-y:auto;
+}
+.sheet h2{margin:0 0 16px; font-size:19px;}
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;}
+.field input, .field select, .field textarea{
+  width:100%; padding:14px; border-radius:12px; border:1px solid var(--border);
+  background:var(--card); color:var(--text); font-size:16px; font-family:inherit;
+}
+.field textarea{min-height:90px; font-family:monospace; font-size:13px;}
+.amount-display{
+  text-align:center; font-size:40px; font-weight:800; padding:16px 0; font-variant-numeric:tabular-nums;
+  color:var(--text); word-break:break-all;
+}
+.amount-display .cur{font-size:16px; color:var(--muted); font-weight:600; display:block; margin-bottom:4px;}
+.keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0;}
+.keypad button{
+  padding:18px 0; font-size:22px; font-weight:600; border:none; border-radius:12px;
+  background:var(--card); color:var(--text); cursor:pointer; border:1px solid var(--border);
+}
+.keypad button:active{background:var(--border);}
+.sheet-actions{display:flex; gap:10px; margin-top:16px;}
+.sheet-actions button{
+  flex:1; padding:16px; border-radius:14px; border:none; font-size:16px; font-weight:700; cursor:pointer;
+}
+.btn-primary{background:var(--accent); color:var(--accent-text);}
+.btn-secondary{background:var(--card); color:var(--text); border:1px solid var(--border) !important;}
+.btn-danger{background:var(--danger); color:#fff;}
+.hint{font-size:12px; color:var(--muted); margin-top:-6px; margin-bottom:14px; line-height:1.5;}
+.confirm-summary{
+  background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;
+}
+.confirm-summary .cline{display:flex; justify-content:space-between; padding:6px 0; font-size:15px;}
+.confirm-summary .cline .k{color:var(--muted);}
+.confirm-summary .cline.total{border-top:1px solid var(--border); margin-top:4px; padding-top:10px; font-weight:700; font-size:17px;}
+.share-note{
+  background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; font-size:13px;
+  color:var(--muted); line-height:1.6; margin-bottom:16px;
+}
+.toast{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg);
+  padding:12px 20px; border-radius:12px; font-size:14px; font-weight:600; z-index:30; box-shadow:var(--shadow);
+}
+.drawer-block{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); margin-bottom:10px; overflow:hidden;
+}
+.drawer-block .row{box-shadow:none; border:none; border-radius:0; background:transparent;}
+.chevron{font-size:13px; color:var(--muted); transition:transform 0.15s; flex-shrink:0;}
+.chevron.open{transform:rotate(90deg);}
+.drawer-body{border-top:1px solid var(--border); padding:12px; background:var(--bg);}
+.line-block{
+  background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden;
+}
+.line-block .row{box-shadow:none; border:none; border-radius:0;}
+.line-body{border-top:1px solid var(--border); padding:14px;}
+.note-block{
+  background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden;
+}
+.note-block .row{box-shadow:none; border:none; border-radius:0;}
+.note-body{border-top:1px solid var(--border); padding:14px;}
+.note-body textarea{min-height:120px; font-family:inherit; font-size:15px; line-height:1.5;}
+.note-preview{white-space:pre-wrap; word-break:break-word;}
+.section-label{font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); font-weight:700; margin:18px 0 8px;}
+.verify-badge{
+  display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; margin-top:2px;
+}
+.verify-badge.ok{color:var(--add);}
+.verify-badge.stale{color:var(--adjust);}
+.verify-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:12px;
+}
+.verify-bar .vtext{font-size:13px; color:var(--muted); line-height:1.4;}
+.verify-bar .vbtn-group{display:flex; gap:6px; flex-shrink:0;}
+.verify-bar button{
+  border:none; border-radius:10px; padding:10px 14px; font-size:13px; font-weight:700; cursor:pointer;
+  background:var(--accent); color:var(--accent-text); flex-shrink:0; white-space:nowrap;
+}
+.verify-bar button.btn-ghost-sm{background:var(--bg); color:var(--muted); border:1px solid var(--border);}
+.row-thumb{
+  width:44px; height:44px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid var(--border);
+}
+.photo-section{margin-bottom:14px;}
+.photo-section img{
+  width:100%; max-height:220px; object-fit:cover; border-radius:14px; display:block; margin-bottom:8px;
+  border:1px solid var(--border);
+}
+.photo-actions{display:flex; gap:8px;}
+.photo-actions button, .photo-actions label{
+  flex:1; text-align:center; padding:10px; border-radius:10px; border:1px solid var(--border);
+  background:var(--card); color:var(--text); font-size:13px; font-weight:600; cursor:pointer;
+}
+.photo-actions .danger{color:var(--danger); border-color:var(--danger);}
+.kind-select{display:flex; gap:6px;}
+.kind-select button{
+  flex:1; padding:12px 4px; border-radius:10px; border:1px solid var(--border); background:var(--card);
+  color:var(--muted); font-size:13px; font-weight:700; cursor:pointer;
+}
+.kind-select button.active{background:var(--accent); color:var(--accent-text); border-color:var(--accent);}
+.lines-list{display:flex; flex-direction:column;}
+.drag-handle{
+  cursor:grab; touch-action:none; padding:8px 6px; margin:-8px 0 -8px -8px; color:var(--muted);
+  font-size:16px; flex-shrink:0; line-height:1; user-select:none;
+}
+.line-block.dragging-block, .note-block.dragging-block{
+  opacity:0.6; box-shadow:0 8px 20px rgba(0,0,0,0.25); cursor:grabbing;
+}
+</style>
+
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script>
+(function(){
+  "use strict";
+  var STORE_KEY = "petty_data_v1";
+  var CURRENCIES = ["USD","EUR","GBP","PLN","JPY","CHF","CAD","AUD","CZK","SEK","NOK","DKK","CNY","INR","MXN","BRL"];
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  // Resize + compress an image file to a small JPEG data URL, so photos don't blow past
+  // this browser's local storage quota.
+  function readImageResized(file, maxDim, cb){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+        else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        try{
+          cb(canvas.toDataURL("image/jpeg", 0.75));
+        }catch(err){ cb(null); }
+      };
+      img.onerror = function(){ cb(null); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){ cb(null); };
+    reader.readAsDataURL(file);
+  }
+
+  function loadData(){
+    var data = { drawers: [] };
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) data = JSON.parse(raw);
+    }catch(e){}
+    if(!data.drawers) data.drawers = [];
+    data.drawers.forEach(migrateDrawer);
+    return data;
+  }
+
+  function migrateDrawer(d){
+    if(!d.lines) d.lines = [];
+    if(!d.verifications) d.verifications = [];
+    // old lines had no "kind" — they were always money lines
+    d.lines.forEach(function(l){
+      if(!l.kind) l.kind = "money";
+      if(!l.entries) l.entries = [];
+    });
+    // fold the old separate "notes" list into lines as single-item lines
+    if(d.notes && d.notes.length){
+      d.notes.forEach(function(n){
+        d.lines.push({ id: n.id, kind: "single", name: n.name, text: n.text || "" });
+      });
+    }
+    delete d.notes;
+    // migrate old single-verification fields into the log
+    if(d.verifiedAt){
+      d.verifications.push({
+        id: uid(), ts: d.verifiedAt, comment: d.verifiedComment || "",
+        lines: snapshotLines(d)
+      });
+    }
+    delete d.verifiedAt; delete d.verifiedComment;
+    if(d.lastModifiedAt===undefined) d.lastModifiedAt = null;
+    if(d.photo===undefined) d.photo = null;
+  }
+
+  function snapshotLines(d){
+    return d.lines.filter(function(l){ return l.kind!=="single"; }).map(function(l){
+      return { name: l.name, kind: l.kind, currency: l.currency, unit: l.unit, balance: l.balance };
+    });
+  }
+  function saveData(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state.data)); }catch(e){}
+  }
+
+  var state = {
+    data: loadData(),
+    expandedDrawer: null,
+    expandedLine: null,
+    expandedVerify: null
+  };
+
+  function findDrawer(id){ return state.data.drawers.find(function(d){return d.id===id;}); }
+  function findLine(drawer, id){ return drawer.lines.find(function(l){return l.id===id;}); }
+
+  function fmt(n){
+    var v = Math.round(n*100)/100;
+    return (v<0? "-":"") + Math.abs(v).toFixed(2);
+  }
+
+  // Counts don't need cents: "56" reads better than "56.00" for 56 glass balls.
+  function fmtCount(n){
+    var v = Math.round(n*100)/100;
+    if(Number.isInteger(v)) return (v<0? "-":"") + Math.abs(v).toString();
+    return fmt(n);
+  }
+
+  function unitLabel(l){ return (l.unit && l.unit.trim()) || "items"; }
+
+  function qtyLabel(l){
+    if(l.kind==="countable") return fmtCount(l.balance) + " " + unitLabel(l);
+    if(l.kind==="money") return fmt(l.balance) + " " + l.currency;
+    return "";
+  }
+
+  function timeAgo(ts){
+    var diff = Math.max(0, Date.now() - ts);
+    var mins = Math.floor(diff/60000);
+    if(mins < 1) return "just now";
+    if(mins < 60) return mins + " min ago";
+    var hrs = Math.floor(mins/60);
+    if(hrs < 24) return hrs + " hr" + (hrs===1?"":"s") + " ago";
+    var days = Math.floor(hrs/24);
+    if(days < 30) return days + " day" + (days===1?"":"s") + " ago";
+    return new Date(ts).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  }
+
+  function toggleDrawer(id){
+    if(state.expandedDrawer === id){ state.expandedDrawer = null; }
+    else { state.expandedDrawer = id; }
+    state.expandedLine = null;
+    state.expandedVerify = null;
+    render();
+  }
+  function toggleLine(id){
+    state.expandedLine = (state.expandedLine === id) ? null : id;
+    render();
+  }
+  function toggleVerifyHistory(id){
+    state.expandedVerify = (state.expandedVerify === id) ? null : id;
+    render();
+  }
+
+  // Drag-to-reorder for lines within a drawer. Touch + mouse, via Pointer Events —
+  // no library, since artifacts can't load one.
+  function attachDragHandle(handleEl, drawer, blockEl){
+    handleEl.addEventListener("click", function(e){ e.stopPropagation(); });
+    handleEl.addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      var container = blockEl.parentElement;
+      try{ handleEl.setPointerCapture(e.pointerId); }catch(err){}
+      blockEl.classList.add("dragging-block");
+
+      function onMove(ev){
+        var y = ev.clientY;
+        var siblings = Array.prototype.slice.call(container.children);
+        var blockIndex = siblings.indexOf(blockEl);
+        for(var i=0;i<siblings.length;i++){
+          var sib = siblings[i];
+          if(sib===blockEl) continue;
+          var r = sib.getBoundingClientRect();
+          var mid = r.top + r.height/2;
+          var sibIndex = siblings.indexOf(sib);
+          if(y < mid && blockIndex > sibIndex){
+            container.insertBefore(blockEl, sib);
+            break;
+          } else if(y > mid && blockIndex < sibIndex){
+            container.insertBefore(blockEl, sib.nextSibling);
+            break;
+          }
+        }
+      }
+      function onUp(ev){
+        try{ handleEl.releasePointerCapture(e.pointerId); }catch(err){}
+        handleEl.removeEventListener("pointermove", onMove);
+        handleEl.removeEventListener("pointerup", onUp);
+        handleEl.removeEventListener("pointercancel", onUp);
+        blockEl.classList.remove("dragging-block");
+        var ids = Array.prototype.slice.call(container.children).map(function(c){ return c.dataset.lineId; });
+        drawer.lines.sort(function(a,b){ return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        drawer.lastModifiedAt = Date.now();
+        saveData();
+        render();
+      }
+      handleEl.addEventListener("pointermove", onMove);
+      handleEl.addEventListener("pointerup", onUp);
+      handleEl.addEventListener("pointercancel", onUp);
+    });
+  }
+
+  // ---------- rendering ----------
+  function render(){
+    var app = document.getElementById("app");
+    app.innerHTML = "";
+    app.appendChild(renderHome());
+  }
+
+  function el(tag, cls, html){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(html!==undefined) e.innerHTML = html;
+    return e;
+  }
+
+  function renderHome(){
+    var frag = document.createDocumentFragment();
+    var top = el("header","topbar");
+    top.appendChild(el("h1",null,"Petty"));
+    var exportBtn = el("button","icon-btn","⇅");
+    exportBtn.title = "Export / Import";
+    exportBtn.onclick = openExportImport;
+    top.appendChild(exportBtn);
+    frag.appendChild(top);
+
+    var main = el("main");
+    if(state.data.drawers.length===0){
+      main.appendChild(el("div","empty","No drawers yet.<br>Add one to start tracking cash."));
+    } else {
+      state.data.drawers.forEach(function(d){
+        main.appendChild(renderDrawerBlock(d));
+      });
+    }
+    var add = el("button","addbtn","+ Add drawer");
+    add.onclick = openAddDrawer;
+    main.appendChild(add);
+    frag.appendChild(main);
+    return frag;
+  }
+
+  function renderDrawerBlock(d){
+    var block = el("div","drawer-block");
+    var isOpen = state.expandedDrawer === d.id;
+
+    var total = {};
+    d.lines.forEach(function(l){ if(l.kind==="money") total[l.currency] = (total[l.currency]||0) + l.balance; });
+    var subParts = Object.keys(total).map(function(c){ return fmt(total[c])+" "+c; });
+
+    var row = el("div","row");
+    var chev = el("span","chevron"+(isOpen?" open":""),"▶");
+    row.appendChild(chev);
+    if(d.photo){
+      var thumb = document.createElement("img");
+      thumb.className = "row-thumb";
+      thumb.src = d.photo;
+      row.appendChild(thumb);
+    }
+    var main2 = el("div","rowmain");
+    main2.appendChild(el("div","rowtitle", escapeHtml(d.name)));
+    main2.appendChild(el("div","rowsub", d.lines.length + " line" + (d.lines.length===1?"":"s") + (subParts.length? " · " + subParts.join(", ") : "")));
+    var lastVerify = d.verifications.length ? d.verifications[d.verifications.length-1] : null;
+    var isStale = lastVerify && d.lastModifiedAt && d.lastModifiedAt > lastVerify.ts;
+    var badge;
+    if(!lastVerify){
+      badge = el("div","verify-badge stale","● Not yet verified");
+    } else if(isStale){
+      badge = el("div","verify-badge stale","● Changed since verify (" + timeAgo(lastVerify.ts) + ")");
+    } else {
+      badge = el("div","verify-badge ok","✓ Verified " + timeAgo(lastVerify.ts));
+    }
+    main2.appendChild(badge);
+    row.appendChild(main2);
+    var del = el("button","del","✕");
+    del.onclick = function(ev){ ev.stopPropagation(); confirmDeleteDrawer(d.id); };
+    row.appendChild(del);
+    row.onclick = function(){ toggleDrawer(d.id); };
+    block.appendChild(row);
+
+    if(isOpen){
+      var body = el("div","drawer-body");
+
+      var photoSection = el("div","photo-section");
+      if(d.photo){
+        var bigImg = document.createElement("img");
+        bigImg.src = d.photo;
+        photoSection.appendChild(bigImg);
+        var pActions = el("div","photo-actions");
+        var changeLabel = document.createElement("label");
+        changeLabel.textContent = "Change photo";
+        var changeInput = document.createElement("input");
+        changeInput.type = "file"; changeInput.accept = "image/*"; changeInput.style.display = "none";
+        changeInput.onchange = function(){ handlePhotoInput(d, changeInput); };
+        changeLabel.appendChild(changeInput);
+        var removeBtn = document.createElement("button");
+        removeBtn.className = "danger"; removeBtn.textContent = "Remove photo";
+        removeBtn.onclick = function(){ d.photo = null; saveData(); render(); };
+        pActions.appendChild(changeLabel); pActions.appendChild(removeBtn);
+        photoSection.appendChild(pActions);
+      } else {
+        var addWrap = el("div","photo-actions");
+        var addLabel = document.createElement("label");
+        addLabel.textContent = "+ Add photo";
+        var addInput = document.createElement("input");
+        addInput.type = "file"; addInput.accept = "image/*"; addInput.style.display = "none";
+        addInput.onchange = function(){ handlePhotoInput(d, addInput); };
+        addLabel.appendChild(addInput);
+        addWrap.appendChild(addLabel);
+        photoSection.appendChild(addWrap);
+      }
+      body.appendChild(photoSection);
+
+      var share = el("div","share-note",
+        "Sharing is not live in this version. Use ⇅ Export/Import from the home screen to move your whole dataset between devices manually."
+      );
+      body.appendChild(share);
+
+      var vbar = el("div","verify-bar");
+      var vtextStr;
+      if(!lastVerify){
+        vtextStr = "This drawer has never been confirmed as counted.";
+      } else if(isStale){
+        vtextStr = "Verified " + escapeHtml(timeAgo(lastVerify.ts)) + (lastVerify.comment? " — " + escapeHtml(lastVerify.comment) : "") + ", but something changed since.";
+      } else {
+        vtextStr = "Verified " + escapeHtml(timeAgo(lastVerify.ts)) + (lastVerify.comment? " — " + escapeHtml(lastVerify.comment) : "");
+      }
+      var vtext = el("div","vtext", vtextStr);
+      vbar.appendChild(vtext);
+      var vbtnGroup = el("div","vbtn-group");
+      var vbtn = document.createElement("button");
+      vbtn.textContent = "Confirm state";
+      vbtn.onclick = function(){ openConfirmDrawerState(d.id); };
+      vbtnGroup.appendChild(vbtn);
+      if(d.verifications.length){
+        var histBtn = document.createElement("button");
+        histBtn.className = "btn-ghost-sm";
+        histBtn.textContent = (state.expandedVerify===d.id ? "Hide" : "History") + " (" + d.verifications.length + ")";
+        histBtn.onclick = function(){ toggleVerifyHistory(d.id); };
+        vbtnGroup.appendChild(histBtn);
+      }
+      vbar.appendChild(vbtnGroup);
+      body.appendChild(vbar);
+
+      if(state.expandedVerify === d.id){
+        var vhist = d.verifications.slice().reverse();
+        vhist.forEach(function(v){
+          var erow = el("div","entry");
+          var left = el("div","left");
+          left.appendChild(el("div","op Adjust","Verified"));
+          var d2 = new Date(v.ts);
+          var dateStr = d2.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) + " · " + d2.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+          left.appendChild(el("div","meta", dateStr + (v.comment? " · "+escapeHtml(v.comment) : "")));
+          var linesSummary = (v.lines||[]).map(function(ln){ return escapeHtml(ln.name)+": "+qtyLabel(ln); }).join(" · ");
+          if(linesSummary) left.appendChild(el("div","meta", linesSummary));
+          erow.appendChild(left);
+          body.appendChild(erow);
+        });
+      }
+
+      if(d.lines.length===0){
+        body.appendChild(el("div","empty","No lines in this drawer yet."));
+      } else {
+        var linesList = el("div","lines-list");
+        d.lines.forEach(function(l){
+          linesList.appendChild(renderLineBlock(d, l));
+        });
+        body.appendChild(linesList);
+      }
+      var add = el("button","addbtn","+ Add line");
+      add.onclick = function(){ openAddLine(d.id); };
+      body.appendChild(add);
+
+      block.appendChild(body);
+    }
+    return block;
+  }
+
+  function renderLineBlock(d, l){
+    if(l.kind==="single") return renderSingleLineBlock(d, l);
+
+    var block = el("div","line-block");
+    block.dataset.lineId = l.id;
+    var isOpen = state.expandedLine === l.id;
+    var suffix = l.kind==="countable" ? unitLabel(l) : l.currency;
+
+    var row = el("div","row");
+    var handle = el("span","drag-handle","⠿");
+    row.appendChild(handle);
+    var chev = el("span","chevron"+(isOpen?" open":""),"▶");
+    row.appendChild(chev);
+    var main2 = el("div","rowmain");
+    main2.appendChild(el("div","rowtitle", escapeHtml(l.name)));
+    main2.appendChild(el("div","rowsub", l.kind==="countable" ? "Countable" : l.currency));
+    row.appendChild(main2);
+    row.appendChild(el("div","rowbalance", qtyLabel(l)));
+    var del = el("button","del","✕");
+    del.onclick = function(ev){ ev.stopPropagation(); confirmDeleteLine(d.id, l.id); };
+    row.appendChild(del);
+    row.onclick = function(){ toggleLine(l.id); };
+    block.appendChild(row);
+    attachDragHandle(handle, d, block);
+
+    if(isOpen){
+      var body = el("div","line-body");
+
+      var hero = el("div","balance-hero");
+      hero.appendChild(el("div","amt", l.kind==="countable" ? fmtCount(l.balance) : fmt(l.balance)));
+      hero.appendChild(el("div","code", suffix));
+      body.appendChild(hero);
+
+      var actions = el("div","actions-row");
+      var addBtn = el("button","add","Add");
+      addBtn.onclick = function(){ openEntry(d.id, l.id, "Add"); };
+      var wBtn = el("button","withdraw","Withdraw");
+      wBtn.onclick = function(){ openEntry(d.id, l.id, "Withdraw"); };
+      var aBtn = el("button","adjust","Adjust");
+      aBtn.onclick = function(){ openEntry(d.id, l.id, "Adjust"); };
+      actions.appendChild(addBtn); actions.appendChild(wBtn); actions.appendChild(aBtn);
+      body.appendChild(actions);
+
+      body.appendChild(el("h2","section","History"));
+      if(l.entries.length===0){
+        body.appendChild(el("div","empty","No entries yet."));
+      } else {
+        var entries = l.entries.slice().reverse();
+        entries.forEach(function(e){
+          var erow = el("div","entry");
+          var left = el("div","left");
+          left.appendChild(el("div","op "+e.type, e.type));
+          var d2 = new Date(e.ts);
+          var dateStr = d2.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) + " · " + d2.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+          left.appendChild(el("div","meta", dateStr + (e.comment? " · "+escapeHtml(e.comment) : "")));
+          erow.appendChild(left);
+          var right = el("div","right");
+          var sign = e.delta>=0? "+":"-";
+          var efmt = l.kind==="countable" ? fmtCount : fmt;
+          right.appendChild(el("div","delta", sign+efmt(Math.abs(e.delta))+" "+suffix));
+          right.appendChild(el("div","bal","bal "+efmt(e.balance)));
+          erow.appendChild(right);
+          body.appendChild(erow);
+        });
+      }
+      block.appendChild(body);
+    }
+    return block;
+  }
+
+  function renderSingleLineBlock(d, n){
+    var block = el("div","note-block");
+    block.dataset.lineId = n.id;
+    var isOpen = state.expandedLine === n.id;
+
+    var row = el("div","row");
+    var handle = el("span","drag-handle","⠿");
+    row.appendChild(handle);
+    var chev = el("span","chevron"+(isOpen?" open":""),"▶");
+    row.appendChild(chev);
+    var main2 = el("div","rowmain");
+    main2.appendChild(el("div","rowtitle", escapeHtml(n.name)));
+    var preview = (n.text||"").split("\n")[0].slice(0,40);
+    main2.appendChild(el("div","rowsub", preview || "Single item"));
+    row.appendChild(main2);
+    var del = el("button","del","✕");
+    del.onclick = function(ev){ ev.stopPropagation(); confirmDeleteLine(d.id, n.id); };
+    row.appendChild(del);
+    row.onclick = function(){ toggleLine(n.id); };
+    block.appendChild(row);
+    attachDragHandle(handle, d, block);
+
+    if(isOpen){
+      var body = el("div","note-body");
+
+      var f1 = el("div","field");
+      f1.appendChild(el("label",null,"Name"));
+      var nameInput = document.createElement("input");
+      nameInput.value = n.name;
+      f1.appendChild(nameInput);
+      body.appendChild(f1);
+
+      var f2 = el("div","field");
+      f2.appendChild(el("label",null,"Text"));
+      var textArea = document.createElement("textarea");
+      textArea.value = n.text || "";
+      f2.appendChild(textArea);
+      body.appendChild(f2);
+
+      var actions = el("div","sheet-actions");
+      var save = el("button","btn-primary","Save");
+      save.onclick = function(){
+        var name = nameInput.value.trim();
+        if(!name) return;
+        n.name = name;
+        n.text = textArea.value;
+        saveData(); render();
+        showToast("Saved");
+      };
+      actions.appendChild(save);
+      body.appendChild(actions);
+
+      block.appendChild(body);
+    }
+    return block;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- modals ----------
+  function closeModal(){
+    var root = document.getElementById("modal-root");
+    root.innerHTML = "";
+  }
+  function openModal(contentEl){
+    var root = document.getElementById("modal-root");
+    root.innerHTML = "";
+    var overlay = el("div","overlay");
+    overlay.onclick = function(e){ if(e.target===overlay) closeModal(); };
+    var sheet = el("div","sheet");
+    sheet.onclick = function(e){ e.stopPropagation(); };
+    sheet.appendChild(contentEl);
+    overlay.appendChild(sheet);
+    root.appendChild(overlay);
+  }
+
+  function handlePhotoInput(d, inputEl){
+    var file = inputEl.files && inputEl.files[0];
+    if(!file) return;
+    readImageResized(file, 900, function(dataUrl){
+      if(!dataUrl){ alert("Couldn't read that image. Try a different photo."); return; }
+      d.photo = dataUrl;
+      saveData(); render();
+    });
+  }
+
+  function openAddDrawer(){
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Add drawer"));
+    var field = el("div","field");
+    field.appendChild(el("label",null,"Name"));
+    var input = document.createElement("input");
+    input.placeholder = "e.g. Kitchen";
+    input.autocapitalize = "words";
+    field.appendChild(input);
+    wrap.appendChild(field);
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var save = el("button","btn-primary","Add");
+    save.onclick = function(){
+      var name = input.value.trim();
+      if(!name) return;
+      var drawer = { id: uid(), name: name, lines: [] };
+      migrateDrawer(drawer); // fills in verifications/photo/lastModifiedAt defaults
+      state.data.drawers.push(drawer);
+      saveData(); closeModal(); render();
+    };
+    actions.appendChild(cancel); actions.appendChild(save);
+    wrap.appendChild(actions);
+    openModal(wrap);
+    setTimeout(function(){ input.focus(); }, 50);
+  }
+
+  function confirmDeleteDrawer(id){
+    var d = findDrawer(id);
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Delete drawer?"));
+    wrap.appendChild(el("div","hint","This deletes \""+escapeHtml(d.name)+"\" and all its lines and history. This cannot be undone."));
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var del = el("button","btn-danger","Delete");
+    del.onclick = function(){
+      state.data.drawers = state.data.drawers.filter(function(d2){return d2.id!==id;});
+      if(state.expandedDrawer === id){ state.expandedDrawer = null; state.expandedLine = null; }
+      saveData(); closeModal(); render();
+    };
+    actions.appendChild(cancel); actions.appendChild(del);
+    wrap.appendChild(actions);
+    openModal(wrap);
+  }
+
+  function openConfirmDrawerState(drawerId){
+    var d = findDrawer(drawerId);
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Confirm drawer state"));
+    wrap.appendChild(el("div","hint","Confirming means you've physically checked this drawer and every line's balance below matches the real cash. This does not change any balance — if a line is off, close this and use Adjust on that line first."));
+
+    var countable = d.lines.filter(function(l){ return l.kind!=="single"; });
+    var summary = el("div","confirm-summary");
+    if(countable.length===0){
+      var c0 = el("div","cline"); c0.innerHTML = "<span class='k'>Lines</span><span>none</span>"; summary.appendChild(c0);
+    } else {
+      countable.forEach(function(l){
+        var c = el("div","cline");
+        c.innerHTML = "<span class='k'>"+escapeHtml(l.name)+"</span><span>"+qtyLabel(l)+"</span>";
+        summary.appendChild(c);
+      });
+    }
+    wrap.appendChild(summary);
+
+    var f = el("div","field");
+    f.appendChild(el("label",null,"Comment (optional)"));
+    var cInput = document.createElement("input");
+    cInput.placeholder = "e.g. counted with Alex";
+    f.appendChild(cInput);
+    wrap.appendChild(f);
+
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var confirm = el("button","btn-primary","Confirm");
+    confirm.onclick = function(){
+      d.verifications.push({
+        id: uid(), ts: Date.now(), comment: cInput.value.trim(),
+        lines: snapshotLines(d)
+      });
+      saveData(); closeModal(); render();
+      showToast("Drawer confirmed");
+    };
+    actions.appendChild(cancel); actions.appendChild(confirm);
+    wrap.appendChild(actions);
+    openModal(wrap);
+  }
+
+  function openAddLine(drawerId){
+    var kind = "money";
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Add line"));
+
+    // kind selector — segmented control, keeps the rest of the form to just what's relevant
+    var kindField = el("div","field");
+    kindField.appendChild(el("label",null,"Type"));
+    var kindRow = el("div","kind-select");
+    var kindBtns = {};
+    [["money","Money"],["countable","Countable"],["single","Single item"]].forEach(function(pair){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = pair[1];
+      if(pair[0]==="money") b.className = "active";
+      b.onclick = function(){
+        kind = pair[0];
+        Object.keys(kindBtns).forEach(function(k){ kindBtns[k].className = (k===kind) ? "active" : ""; });
+        updateVisibility();
+      };
+      kindBtns[pair[0]] = b;
+      kindRow.appendChild(b);
+    });
+    kindField.appendChild(kindRow);
+    wrap.appendChild(kindField);
+
+    var f1 = el("div","field");
+    f1.appendChild(el("label",null,"Name"));
+    var nameInput = document.createElement("input");
+    nameInput.placeholder = "e.g. USD kitchen";
+    f1.appendChild(nameInput);
+    wrap.appendChild(f1);
+
+    // money fields
+    var moneyWrap = el("div");
+    var f2 = el("div","field");
+    f2.appendChild(el("label",null,"Currency"));
+    var sel = document.createElement("select");
+    CURRENCIES.forEach(function(c){
+      var o = document.createElement("option"); o.value=c; o.textContent=c; sel.appendChild(o);
+    });
+    var otherOpt = document.createElement("option"); otherOpt.value="__other"; otherOpt.textContent="Other…";
+    sel.appendChild(otherOpt);
+    f2.appendChild(sel);
+    moneyWrap.appendChild(f2);
+
+    var f3 = el("div","field"); f3.style.display="none";
+    f3.appendChild(el("label",null,"Currency code"));
+    var otherInput = document.createElement("input");
+    otherInput.placeholder = "e.g. THB"; otherInput.maxLength = 6;
+    f3.appendChild(otherInput);
+    moneyWrap.appendChild(f3);
+    sel.onchange = function(){ f3.style.display = sel.value==="__other" ? "block":"none"; };
+
+    var f4 = el("div","field");
+    f4.appendChild(el("label",null,"Starting balance"));
+    var balInput = document.createElement("input");
+    balInput.type = "text"; balInput.inputMode = "decimal"; balInput.value = "0";
+    f4.appendChild(balInput);
+    moneyWrap.appendChild(f4);
+    wrap.appendChild(moneyWrap);
+
+    // countable fields
+    var countWrap = el("div");
+    var f5 = el("div","field");
+    f5.appendChild(el("label",null,"Unit (optional)"));
+    var unitInput = document.createElement("input");
+    unitInput.placeholder = "e.g. glass balls";
+    f5.appendChild(unitInput);
+    countWrap.appendChild(f5);
+
+    var f6 = el("div","field");
+    f6.appendChild(el("label",null,"Starting count"));
+    var countInput = document.createElement("input");
+    countInput.type = "text"; countInput.inputMode = "decimal"; countInput.value = "0";
+    f6.appendChild(countInput);
+    countWrap.appendChild(f6);
+    countWrap.style.display = "none";
+    wrap.appendChild(countWrap);
+
+    // single-item fields
+    var singleWrap = el("div");
+    var f7 = el("div","field");
+    f7.appendChild(el("label",null,"Text (optional)"));
+    var textArea = document.createElement("textarea");
+    textArea.placeholder = "e.g. number, expiry, location…";
+    f7.appendChild(textArea);
+    singleWrap.appendChild(f7);
+    singleWrap.style.display = "none";
+    wrap.appendChild(singleWrap);
+
+    function updateVisibility(){
+      moneyWrap.style.display = kind==="money" ? "" : "none";
+      countWrap.style.display = kind==="countable" ? "" : "none";
+      singleWrap.style.display = kind==="single" ? "" : "none";
+      nameInput.placeholder = kind==="money" ? "e.g. USD kitchen" : kind==="countable" ? "e.g. Glass balls" : "e.g. Passport";
+    }
+
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var save = el("button","btn-primary","Add");
+    save.onclick = function(){
+      var name = nameInput.value.trim();
+      if(!name) return;
+      var d = findDrawer(drawerId);
+      var line;
+
+      if(kind==="money"){
+        var currency = sel.value==="__other" ? otherInput.value.trim().toUpperCase() : sel.value;
+        if(!currency) return;
+        var startBal = parseFloat(balInput.value.replace(",","."))||0;
+        line = { id: uid(), kind:"money", name: name, currency: currency, balance: startBal, entries: [] };
+        if(startBal !== 0){
+          line.entries.push({ id: uid(), ts: Date.now(), type:"Add", delta: startBal, comment:"Starting balance", balance: startBal });
+        }
+      } else if(kind==="countable"){
+        var startCount = parseFloat(countInput.value.replace(",","."))||0;
+        line = { id: uid(), kind:"countable", name: name, unit: unitInput.value.trim(), balance: startCount, entries: [] };
+        if(startCount !== 0){
+          line.entries.push({ id: uid(), ts: Date.now(), type:"Add", delta: startCount, comment:"Starting count", balance: startCount });
+        }
+      } else {
+        line = { id: uid(), kind:"single", name: name, text: textArea.value };
+      }
+
+      d.lines.push(line);
+      d.lastModifiedAt = Date.now();
+      saveData(); closeModal(); render();
+    };
+    actions.appendChild(cancel); actions.appendChild(save);
+    wrap.appendChild(actions);
+    openModal(wrap);
+    setTimeout(function(){ nameInput.focus(); }, 50);
+  }
+
+  function confirmDeleteLine(drawerId, lineId){
+    var d = findDrawer(drawerId);
+    var l = findLine(d, lineId);
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Delete line?"));
+    wrap.appendChild(el("div","hint","This deletes \""+escapeHtml(l.name)+"\"" + (l.kind==="single" ? "" : " and its entire history") + ". This cannot be undone."));
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var del = el("button","btn-danger","Delete");
+    del.onclick = function(){
+      d.lines = d.lines.filter(function(l2){return l2.id!==lineId;});
+      if(state.expandedLine === lineId){ state.expandedLine = null; }
+      d.lastModifiedAt = Date.now();
+      saveData(); closeModal(); render();
+    };
+    actions.appendChild(cancel); actions.appendChild(del);
+    wrap.appendChild(actions);
+    openModal(wrap);
+  }
+
+  // ---------- entry flow: keypad -> confirm ----------
+  function openEntry(drawerId, lineId, type){
+    var d = findDrawer(drawerId);
+    var l = findLine(d, lineId);
+    var suffix = l.kind==="countable" ? unitLabel(l) : l.currency;
+    var noun = l.kind==="countable" ? "count" : "balance";
+    var amountStr = "0";
+    var comment = "";
+
+    var wrap = el("div");
+    var title = type==="Adjust" ? "Adjust — enter counted " + noun : type;
+    wrap.appendChild(el("h2",null,title));
+
+    var display = el("div","amount-display");
+    var curLabel = el("span","cur", type==="Adjust" ? "Real "+noun+" ("+suffix+")" : "Amount ("+suffix+")");
+    display.appendChild(curLabel);
+    var amtSpan = document.createElement("div");
+    amtSpan.textContent = amountStr;
+    display.appendChild(amtSpan);
+    wrap.appendChild(display);
+
+    var keys = ["1","2","3","4","5","6","7","8","9",".","0","⌫"];
+    var pad = el("div","keypad");
+    keys.forEach(function(k){
+      var b = document.createElement("button");
+      b.textContent = k;
+      b.onclick = function(){
+        if(k==="⌫"){
+          amountStr = amountStr.length>1 ? amountStr.slice(0,-1) : "0";
+        } else if(k==="."){
+          if(amountStr.indexOf(".")===-1) amountStr += ".";
+        } else {
+          amountStr = (amountStr==="0") ? k : amountStr + k;
+          if(amountStr.length>12) amountStr = amountStr.slice(0,12);
+        }
+        amtSpan.textContent = amountStr;
+      };
+      pad.appendChild(b);
+    });
+    wrap.appendChild(pad);
+
+    var cField = el("div","field");
+    cField.appendChild(el("label",null,"Comment (optional)"));
+    var cInput = document.createElement("input");
+    cInput.placeholder = "e.g. birthday gift";
+    cInput.oninput = function(){ comment = cInput.value; };
+    cField.appendChild(cInput);
+    wrap.appendChild(cField);
+
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Cancel"); cancel.onclick = closeModal;
+    var next = el("button","btn-primary","Review");
+    next.onclick = function(){
+      var val = parseFloat(amountStr)||0;
+      if(val===0 && type!=="Adjust"){ return; }
+      openConfirm(drawerId, lineId, type, val, comment);
+    };
+    actions.appendChild(cancel); actions.appendChild(next);
+    wrap.appendChild(actions);
+
+    openModal(wrap);
+  }
+
+  function openConfirm(drawerId, lineId, type, val, comment){
+    var d = findDrawer(drawerId);
+    var l = findLine(d, lineId);
+    var suffix = l.kind==="countable" ? unitLabel(l) : l.currency;
+    var noun = l.kind==="countable" ? "count" : "balance";
+    var nfmt = l.kind==="countable" ? fmtCount : fmt;
+    var delta, newBalance;
+    if(type==="Add"){ delta = val; newBalance = l.balance + val; }
+    else if(type==="Withdraw"){ delta = -val; newBalance = l.balance - val; }
+    else { newBalance = val; delta = val - l.balance; }
+
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Confirm"));
+    var summary = el("div","confirm-summary");
+    var c1 = el("div","cline"); c1.innerHTML = "<span class='k'>Operation</span><span>"+type+"</span>"; summary.appendChild(c1);
+    var c2 = el("div","cline"); c2.innerHTML = "<span class='k'>Current "+noun+"</span><span>"+nfmt(l.balance)+" "+suffix+"</span>"; summary.appendChild(c2);
+    var c3 = el("div","cline"); c3.innerHTML = "<span class='k'>Change</span><span>"+(delta>=0?"+":"-")+nfmt(Math.abs(delta))+" "+suffix+"</span>"; summary.appendChild(c3);
+    if(comment){
+      var c4 = el("div","cline"); c4.innerHTML = "<span class='k'>Comment</span><span>"+escapeHtml(comment)+"</span>"; summary.appendChild(c4);
+    }
+    var c5 = el("div","cline total"); c5.innerHTML = "<span>New "+noun+"</span><span>"+nfmt(newBalance)+" "+suffix+"</span>"; summary.appendChild(c5);
+    wrap.appendChild(summary);
+
+    var actions = el("div","sheet-actions");
+    var back = el("button","btn-secondary","Back");
+    back.onclick = function(){ openEntry(drawerId, lineId, type); };
+    var confirm = el("button","btn-primary","Confirm");
+    confirm.onclick = function(){
+      l.entries.push({ id: uid(), ts: Date.now(), type: type, delta: delta, comment: comment||"", balance: newBalance });
+      l.balance = newBalance;
+      d.lastModifiedAt = Date.now();
+      saveData(); closeModal(); render();
+      showToast("Saved");
+    };
+    actions.appendChild(back); actions.appendChild(confirm);
+    wrap.appendChild(actions);
+    openModal(wrap);
+  }
+
+  function showToast(msg){
+    var t = el("div","toast", escapeHtml(msg));
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 1600);
+  }
+
+  // ---------- export / import ----------
+  function openExportImport(){
+    var wrap = el("div");
+    wrap.appendChild(el("h2",null,"Export / Import"));
+    wrap.appendChild(el("div","hint","This app stores data only in this browser. To move your data to another device: copy the text below, then paste it into Petty on the other device and tap Import."));
+
+    var f1 = el("div","field");
+    f1.appendChild(el("label",null,"Your data (select all & copy)"));
+    var exportArea = document.createElement("textarea");
+    exportArea.readOnly = true;
+    exportArea.value = JSON.stringify(state.data, null, 2);
+    exportArea.onclick = function(){ exportArea.select(); };
+    f1.appendChild(exportArea);
+    wrap.appendChild(f1);
+
+    var copyBtn = el("button","btn-secondary","Select all");
+    copyBtn.style.marginBottom = "16px";
+    copyBtn.style.width = "100%";
+    copyBtn.onclick = function(){ exportArea.select(); exportArea.setSelectionRange(0, 999999); };
+    wrap.appendChild(copyBtn);
+
+    var f2 = el("div","field");
+    f2.appendChild(el("label",null,"Paste data here to import"));
+    var importArea = document.createElement("textarea");
+    importArea.placeholder = "Paste exported JSON here…";
+    f2.appendChild(importArea);
+    wrap.appendChild(f2);
+    wrap.appendChild(el("div","hint","Importing replaces everything currently in this browser. This cannot be undone."));
+
+    var actions = el("div","sheet-actions");
+    var cancel = el("button","btn-secondary","Close"); cancel.onclick = closeModal;
+    var doImport = el("button","btn-danger","Import & replace");
+    doImport.onclick = function(){
+      var txt = importArea.value.trim();
+      if(!txt) return;
+      try{
+        var parsed = JSON.parse(txt);
+        if(!parsed || !Array.isArray(parsed.drawers)) throw new Error("bad shape");
+        parsed.drawers.forEach(migrateDrawer);
+        state.data = parsed;
+        state.expandedDrawer = null; state.expandedLine = null; state.expandedVerify = null;
+        saveData(); closeModal(); render();
+        showToast("Imported");
+      }catch(e){
+        alert("That doesn't look like valid Petty data. Nothing was changed.");
+      }
+    };
+    actions.appendChild(cancel); actions.appendChild(doImport);
+    wrap.appendChild(actions);
+    openModal(wrap);
+  }
+
+  render();
+})();
+</script>

@@ -1,0 +1,86 @@
+# a fixed project name keeps the same containers and volumes wherever this folder lives (PETTY-156)
+name: petty
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: petty
+      POSTGRES_PASSWORD: petty
+      POSTGRES_DB: petty
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petty -d petty"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"   # web UI
+      - "1025:1025"   # SMTP
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
+  # `make demo`: the production image on http://localhost:3300 with a seeded household (profile "demo").
+  # Port 3300, not 3000: the e2e suite starts the dev API on 3000 and would otherwise reuse this container.
+  # Cookies are not marked Secure and the proxy is not trusted, because this is plain http on localhost.
+  # The image is PULLED from GHCR (the one the cluster runs), never built here: a local build of the whole
+  # workspace takes ~10 minutes on a laptop. PETTY_TAG picks a version; "latest" follows the last deploy.
+  # `make demo-local` builds the image from the working tree instead (arm64 native on Apple silicon, ~10 min cold, fast after).
+  app:
+    profiles: ["demo"]
+    image: ghcr.io/wawrepo/petty:${PETTY_TAG:-latest}
+    build: { context: ., dockerfile: Dockerfile }
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3300:3000"
+    environment: &app-env
+      API_HOST: 0.0.0.0
+      API_PORT: "3000"
+      DATABASE_URL: postgres://petty:petty@db:5432/petty
+      API_DATABASE_URL: postgres://petty_api:petty_api@db:5432/petty
+      MAINT_DATABASE_URL: postgres://petty_maint:petty_maint@db:5432/petty
+      APP_URL: http://localhost:3300
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      MAIL_FROM: "Petty <petty@petty.local>"
+      SECURE_COOKIES: "false"
+      TRUST_PROXY: "false"
+      METRICS_PORT: "0"
+      LOG_LEVEL: info
+      # Identity provider (PETTY-88): taken from the root .env when set; local otherwise.
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      CLERK_FRONTEND_API: ${CLERK_FRONTEND_API:-}
+      CLERK_JWT_KEY: ${CLERK_JWT_KEY:-}
+    command: ["sh", "-c", "pnpm migrate && pnpm start"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health/live"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  seed:
+    profiles: ["demo"]
+    image: ghcr.io/wawrepo/petty:${PETTY_TAG:-latest}
+    depends_on:
+      app: { condition: service_healthy }
+    # The seed drives an in-process copy of the API (no HTTP), whose routes must not carry the /api prefix the image sets.
+    environment:
+      <<: *app-env
+      API_PREFIX: ""
+      WEB_DIST: ""
+    command: ["pnpm", "seed-demo"]
+    restart: "no"
+
+volumes:
+  pgdata:
