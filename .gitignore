@@ -9,3 +9,6 @@ test-results/
 apps/web/dev-dist/
 notes.sh
 .playwright-mcp/
+
+# private, per checkout
+CLAUDE.local.md
