@@ -26,3 +26,4 @@ export * from "./entry.js";
 export * from "./records.js";
 export * from "./archive.js";
 export * from "./custody.js";
+export * from "./pat.js";

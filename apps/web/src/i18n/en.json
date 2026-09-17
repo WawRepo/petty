@@ -6,6 +6,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
+    "done": "Done",
     "continue": "Continue",
     "retry": "Try again",
     "copy": "Copy",
@@ -896,5 +897,28 @@
     "body": "The link may be old, mistyped, or for a drawer you no longer have access to.",
     "home": "Go to the home page",
     "drawers": "Go to my drawers"
+  },
+  "tokens": {
+    "title": "Access tokens",
+    "hint": "For your own tools, like a Claude Desktop server. A token carries a copy of your drawer keys; the server only ever sees its name half and cannot open it.",
+    "new": "New token",
+    "name": "Name",
+    "defaultName": "My assistant",
+    "mayWriteSwitch": "May add entries",
+    "mayWriteHint": "Off: the token can only read. On: it can add entries, and they are yours.",
+    "expiry": "Expires",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "never": "Never",
+    "create": "Create token",
+    "madeTitle": "Copy your token now",
+    "madeBody": "This is shown once. Paste it into your tool. Revoking it stops future use, but it does not un-read what was already read.",
+    "mayWrite": "May add entries",
+    "mayRead": "Read only",
+    "used": "used {when}",
+    "neverUsed": "never used",
+    "revoke": "Revoke",
+    "revokeNamed": "Revoke token {name}",
+    "revokeBody": "Revoke “{name}”? The tool stops working at once. Data it already read stays read.",
+    "passphraseOrPasskey": "Leave empty to use your passkey instead."
   }
 }

@@ -6,6 +6,7 @@ import { randomToken, sha256 } from "./bytes.js";
 import { forbidden, unauthorized } from "./errors.js";
 
 import { clerkProfile, verifyClerkToken, type ClerkIdentity } from "./clerk.js";
+import { assertTokenMay, authenticateToken, PAT_PREFIX } from "./tokens.js";
 
 export interface SessionUser { id: string; email: string; display_name: string; locale: string; is_admin: boolean }
 declare module "fastify" {
@@ -72,7 +73,17 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest("user", null);
   app.decorateRequest("sessionId", null);
   app.decorateRequest("clerk", null);
+  app.decorateRequest("token", null);
   app.addHook("onRequest", async (req) => {
+    // Access tokens (PETTY-164) work in both modes and are checked first: they carry their own prefix.
+    const auth = req.headers.authorization ?? "";
+    if (auth.startsWith(`Bearer ${PAT_PREFIX}`)) {
+      const found = await authenticateToken(auth.slice(7).trim());
+      if (!found) return;
+      req.user = found.user;
+      req.token = found.token;
+      return;
+    }
     if (config.authProvider === "clerk") {
       // Clerk mode (PETTY-88): the session is Clerk's; the API verifies the bearer token and maps it to a users row.
       const h = req.headers.authorization ?? "";
@@ -103,6 +114,10 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
     if (r.stale) apiPool.query("update sessions set last_seen_at = now() where id = $1", [r.sid]).catch(() => undefined);
   });
   // Cross-site request forgery guard: mutations must be JSON, which browsers cannot send cross-origin without CORS.
+  // A token may only do what tokens.ts allows, and only inside its scope.
+  app.addHook("preHandler", async (req) => {
+    if (req.token) assertTokenMay(req, req.token);
+  });
   app.addHook("preHandler", async (req) => {
     if (req.method !== "GET" && req.method !== "HEAD" && req.user) {
       const ct = req.headers["content-type"] ?? "";

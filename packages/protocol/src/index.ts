@@ -87,6 +87,41 @@ export const ProvisionBody = SignupBody.omit({ join_token: true, email: true, pa
 // contact_email (PETTY-160): where "Get an invite" writes to; set by the operator, absent in older answers and caches.
 export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional() });
 export type AuthConfig = z.infer<typeof AuthConfig>;
+/**
+ * Access tokens (PETTY-164). The client makes the whole token: `petty_pat_<id>.<secret>`.
+ * It sends the id (the server stores only its hash) and the sealed bundle; the secret stays
+ * with the tool, and the server can never open the bundle.
+ */
+export const SealedBundle = z.object({ nonce: b64, ciphertext: b64 });
+export const AccessTokenCreate = z.object({
+  token_id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
+  name: z.string().trim().min(1).max(80),
+  role: z.enum(["read", "write"]),
+  /** null = every drawer this user is a member of */
+  scope: z.array(uuid).max(200).nullable(),
+  expires_at: z.string().datetime().nullable(),
+  bundle: SealedBundle,
+});
+export const AccessToken = z.object({
+  id: uuid,
+  name: z.string(),
+  role: z.enum(["read", "write"]),
+  scope: z.array(uuid).nullable(),
+  created_at: z.string(),
+  last_used_at: z.string().nullable(),
+  expires_at: z.string().nullable(),
+});
+export type AccessToken = z.infer<typeof AccessToken>;
+/** What a tool fetches with its own token: the sealed bundle plus who it belongs to. */
+export const AccessTokenSelf = z.object({
+  user_id: uuid,
+  name: z.string(),
+  role: z.enum(["read", "write"]),
+  scope: z.array(uuid).nullable(),
+  bundle: SealedBundle,
+});
+export type AccessTokenSelf = z.infer<typeof AccessTokenSelf>;
+
 export const UserKeys = z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string(), created_at: z.string(), retired_at: z.string().nullable() });
 export const Me = z.object({
   id: uuid,

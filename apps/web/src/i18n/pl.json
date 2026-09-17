@@ -6,6 +6,7 @@
     "cancel": "Anuluj",
     "save": "Zapisz",
     "close": "Zamknij",
+    "done": "Gotowe",
     "continue": "Dalej",
     "retry": "Spróbuj ponownie",
     "copy": "Kopiuj",
@@ -896,5 +897,28 @@
     "body": "Link może być stary, z literówką albo prowadzić do szuflady, do której nie masz już dostępu.",
     "home": "Przejdź na stronę główną",
     "drawers": "Przejdź do moich szuflad"
+  },
+  "tokens": {
+    "title": "Tokeny dostępu",
+    "hint": "Dla Twoich własnych narzędzi, na przykład serwera w Claude Desktop. Token nosi kopię kluczy Twoich szuflad; serwer widzi tylko jego nazwową połowę i nie potrafi go otworzyć.",
+    "new": "Nowy token",
+    "name": "Nazwa",
+    "defaultName": "Mój asystent",
+    "mayWriteSwitch": "Może dodawać wpisy",
+    "mayWriteHint": "Wyłączone: token tylko czyta. Włączone: może dodawać wpisy, a wpisy są Twoje.",
+    "expiry": "Wygasa",
+    "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "never": "Nigdy",
+    "create": "Utwórz token",
+    "madeTitle": "Skopiuj token teraz",
+    "madeBody": "Pokazujemy go tylko raz. Wklej go do swojego narzędzia. Cofnięcie zatrzyma dalsze użycie, ale nie cofnie tego, co już zostało odczytane.",
+    "mayWrite": "Może dodawać wpisy",
+    "mayRead": "Tylko odczyt",
+    "used": "użyty {when}",
+    "neverUsed": "nieużywany",
+    "revoke": "Cofnij",
+    "revokeNamed": "Cofnij token {name}",
+    "revokeBody": "Cofnąć „{name}”? Narzędzie od razu przestanie działać. To, co już odczytało, zostaje odczytane.",
+    "passphraseOrPasskey": "Zostaw puste, aby użyć klucza dostępu."
   }
 }

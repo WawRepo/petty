@@ -10,6 +10,7 @@ import { LOCALES, setLocale, type Locale } from "../i18n/index.js";
 import { lockNow, mySafetyNumber, signOut, useAuth } from "../lib/session.js";
 import { api } from "../lib/api.js";
 import { BackupSection } from "../components/BackupSection.js";
+import { AccessTokens } from "../components/AccessTokens.js";
 import { Sheet } from "../components/Sheet.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
@@ -154,6 +155,7 @@ export function SettingsScreen() {
           <Button variant="secondary" onClick={() => setTagsOpen(true)} data-testid="settings-manage-tags">{t("drawer.tagsManage")}</Button>
           <TagManager open={tagsOpen} onClose={() => setTagsOpen(false)} />
         </section>
+        {me && auth.status === "unlocked" ? <AccessTokens me={me} /> : null}
         <BackupSection />
         <section className="card" data-testid="install-section">
           <h2 className="h-card">{t("install.title")}</h2>
