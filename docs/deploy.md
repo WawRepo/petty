@@ -31,6 +31,8 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | optional OTLP/HTTP traces |
 | `METRICS_PORT` | optional Prometheus metrics port (`0` = off) |
 
+Metrics, logs and traces are described in `monitoring.md`.
+
 ## Backups
 
 `deploy/backup/Dockerfile` builds a small image that runs `pg_dump` and encrypts the dump

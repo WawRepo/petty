@@ -3,12 +3,66 @@
   <img src="docs/brand/petty-logo.svg" alt="Petty" width="250">
 </picture>
 
-# Petty — development setup
+# Petty
 
-Petty is a household cash ledger with end-to-end encryption. See `petty-app-spec.md`
-and `SPEC-ISSUES.md`. This README covers running it locally; `docs/deploy.md` covers
-production. Petty is licensed under the AGPL-3.0 (`LICENSE`). Nothing here
-needs a cloud account or network access after `pnpm install`.
+**A private ledger for the cash and valuables in your home.** Petty keeps track of what is in
+each drawer, tin and envelope, in any currency, and shares a drawer only with the people you
+choose. Everything is encrypted on your device before it is sent.
+
+<p>
+  <img src="apps/web/public/landing/home-en-light.webp" alt="Home screen: drawers grouped by room, with a total" width="260">
+  <img src="apps/web/public/landing/drawer-en-light.webp" alt="A drawer: totals, tags and items with icons" width="260">
+  <img src="apps/web/public/landing/entry-en-light.webp" alt="Adding an entry with the keypad" width="260">
+</p>
+
+## What it does
+
+- **Drawers in places.** A drawer lives in a place, for example Kitchen › shelf › tin. Moving a
+  room moves its drawers.
+- **Currencies and things.** Zloty, euro and dollars side by side, plus countable things like
+  keys or documents. Tag items and filter by tag.
+- **Shared, with roles.** Writers add entries; readers only look. The server enforces this.
+- **Count, confirm, never erase.** Confirm a drawer after a real count. Mistakes are reversed,
+  not deleted.
+- **Passkey first, works offline.** Face ID, Touch ID or Windows Hello opens your vault. It
+  installs like an app and keeps working without a network.
+- **English and Polish.**
+
+## Security in five lines
+
+1. Drawer content is encrypted in the browser (AES-256-GCM). The server stores ciphertext only.
+2. Each drawer has its own key, wrapped for each member with ECDH P-256. Your private keys never
+   leave your device unencrypted.
+3. Your keys sit in a vault opened by a passkey or a passphrase (Argon2id), with a recovery code.
+4. Every ciphertext is bound to its row, drawer, line and author, and entries form a signed hash
+   chain, so a server cannot move, re-attribute or silently drop them.
+5. Permissions and append-only history are enforced by the server and the database, not by the UI.
+
+The full design is in `petty-app-spec.md`. The latest security review is
+`docs/security-review-2026-09.md`. Report problems privately as described in `SECURITY.md`.
+
+## Run your own
+
+```
+cp deploy/compose/.env.example deploy/compose/.env    # fill in the values
+docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d
+```
+
+Then put an HTTPS reverse proxy in front of `127.0.0.1:3000`. `docs/deploy.md` has the details,
+and `docs/monitoring.md` covers metrics, logs and traces.
+
+## License
+
+Petty is free software under the GNU Affero General Public License v3.0 (`LICENSE`). If you run a
+changed version for other people, you must offer them its source. Contributions are welcome; see
+`CONTRIBUTING.md`.
+
+---
+
+# Development setup
+
+This part covers running Petty locally. Nothing here needs a cloud account or network access
+after `pnpm install`.
 
 ## Try it with a seeded household (Docker only)
 
