@@ -33,6 +33,8 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 
 Metrics, logs and traces are described in `monitoring.md`.
 
+An agent setup (Claude Desktop) is described in `agent.md`.
+
 ## Backups
 
 `deploy/backup/Dockerfile` builds a small image that runs `pg_dump` and encrypts the dump

@@ -1,0 +1,27 @@
+{
+  "name": "@petty/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "petty-mcp": "./src/bin.ts"
+  },
+  "scripts": {
+    "start": "tsx src/bin.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "AUTH_PROVIDER=local vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "@petty/agent": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.2",
+    "tsx": "^4.20.5",
+    "@petty/crypto": "workspace:*",
+    "@petty/ledger": "workspace:*",
+    "@petty/protocol": "workspace:*",
+    "@petty/api": "workspace:*"
+  }
+}
