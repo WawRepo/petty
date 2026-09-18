@@ -32,8 +32,8 @@ Claude Desktop starts local MCP servers from its config. Add:
 {
   "mcpServers": {
     "petty": {
-      "command": "npx",
-      "args": ["-y", "tsx", "<path to petty>/apps/mcp/src/bin.ts"],
+      "command": "/usr/local/bin/node",
+      "args": ["<path to petty>/apps/mcp/node_modules/tsx/dist/cli.mjs", "<path to petty>/apps/mcp/src/bin.ts"],
       "env": {
         "PETTY_TOKEN": "petty_pat_…",
         "PETTY_API_URL": "https://petty.example.com/api"
@@ -44,6 +44,10 @@ Claude Desktop starts local MCP servers from its config. Add:
 ```
 
 Instead of `PETTY_TOKEN`, the program also reads `~/.petty/token` (keep it mode 600).
+
+Use a signed Node, such as the installer from nodejs.org (`/usr/local/bin/node`). On macOS, a
+Homebrew Node is only ad-hoc signed, and macOS may silently refuse it access to a server on your
+home network (see Troubleshooting). Run `pnpm install` in the repository first, so that `tsx` exists.
 
 ## 3. Ask
 
@@ -84,9 +88,15 @@ drawers without you making a new token. Open Petty once after adding a drawer.
 ## Troubleshooting
 
 **"cannot reach …: fetch failed (EHOSTUNREACH)" in Claude Desktop, while the site opens in a
-browser.** Your Petty is on a home-network address, and macOS only lets an app reach those with
-the "Local Network" permission. Open System Settings → Privacy & Security → Local Network, turn
-Claude on, and restart Claude Desktop. The program Claude starts inherits that permission.
+browser.** Your Petty is on a home-network address, and macOS guards those with the "Local
+Network" permission. Two things to check:
+
+- Claude must be allowed: System Settings → Privacy & Security → Local Network → Claude on.
+- The Node that runs the server must be a signed build. A Homebrew Node (`/opt/homebrew/bin/node`)
+  is only ad-hoc signed, and macOS may block it even when Claude is allowed. Point `command` at a
+  signed Node, such as `/usr/local/bin/node` from the nodejs.org installer, as in the config above.
+
+Restart Claude Desktop after either change.
 
 **"… (ENOTFOUND)"**: the name does not resolve from this machine; check `PETTY_API_URL`.
 
