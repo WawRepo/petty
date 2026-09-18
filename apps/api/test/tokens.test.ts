@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
+import { fromB64, openDocument, openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import { buildApp } from "../src/app.js";
 import { apiPool, maintPool } from "../src/db.js";
@@ -101,6 +101,42 @@ describe("access tokens (PETTY-164)", () => {
     expect((await tool(read.token)("PUT", `/drawers/${d.id}/document`, body)).statusCode).toBe(403);
     expect((await tool(write.token)("PUT", `/drawers/${d.id}/document`, body)).statusCode).toBe(200);
     expect((await tool(write.token)("PUT", `/drawers/${other.id}/document`, body)).statusCode).toBe(403);
+  });
+
+  it("a junk document from a token can be undone by the owner, and a token cannot mark a count (PETTY-183)", async () => {
+    const d = await drawer(A, "Undo me");
+    const write = tool((await makeToken(A, { role: "write", scope: [d.id] })).token);
+    const open = async () => {
+      const got = (await A.call("GET", `/drawers/${d.id}`)).json();
+      const doc = got.document;
+      const identity = { record_type: "document" as const, record_id: d.id, drawer_id: d.id, line_id: null, author_id: doc.author_id, key_version: doc.key_version, schema_version: doc.schema_version };
+      return { version: got.drawer.version as number, doc: await openDocument(d.key, identity, { nonce: fromB64(doc.nonce), ciphertext: fromB64(doc.ciphertext) }).catch(() => null) };
+    };
+    const before = await open();
+    expect((before.doc as { name: string }).name).toBe("Undo me");
+
+    const junk = { base_version: before.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(40))) };
+    expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: true })).statusCode).toBe(403);
+    expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: false })).statusCode).toBe(200);
+    const broken = await open();
+    expect(broken.doc).toBeNull();
+
+    // the token cannot see or use history; only the owner can
+    expect((await write("GET", `/drawers/${d.id}/document/history`)).statusCode).toBe(403);
+    const hist = await A.call("GET", `/drawers/${d.id}/document/history`);
+    expect(hist.statusCode).toBe(200);
+    const [last] = hist.json().history as { id: string; version: number; by_token: boolean }[];
+    expect(last!.by_token).toBe(true);
+    expect(last!.version).toBe(before.version);
+    expect([403, 404]).toContain((await B.call("GET", `/drawers/${d.id}/document/history`)).statusCode);
+    expect((await write("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(403);
+
+    const restored = await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version });
+    expect(restored.statusCode).toBe(200);
+    const after = await open();
+    expect(after.doc).toEqual(before.doc);
+    // the junk is itself kept, so a wrong restore can be undone too
+    expect((await A.call("GET", `/drawers/${d.id}/document/history`)).json().history).toHaveLength(2);
   });
 
   it("a scoped token cannot touch a drawer outside its scope", async () => {

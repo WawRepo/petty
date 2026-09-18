@@ -250,6 +250,20 @@ export const PutDocumentResponse = z.object({ version: z.number().int(), last_wr
 export const DeleteLineBody = z.object({ document: PutDocumentBody });
 export const PutPhotoBody = SealedBody;
 
+/** PETTY-183 (review NR-3): documents replaced in the last 30 days, still sealed. Owner only. */
+export const DocumentHistoryItem = z.object({
+  id: z.string(),
+  version: z.number().int(),
+  written_at: z.string(),
+  replaced_at: z.string(),
+  replaced_by: uuid.nullable(),
+  by_token: z.boolean(),
+  document: SealedRow,
+});
+export const DocumentHistory = z.object({ history: z.array(DocumentHistoryItem) });
+export type DocumentHistory = z.infer<typeof DocumentHistory>;
+export const RestoreDocumentBody = z.object({ history_id: z.string().regex(/^\d+$/), base_version: z.number().int().min(1) });
+
 export const PostEntryBody = z.object({
   id: uuid,
   line_id: uuid,
