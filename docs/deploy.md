@@ -24,6 +24,7 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 | `API_DATABASE_URL` | request role (entries are insert-only for it) |
 | `MAINT_DATABASE_URL` | maintenance role (key rotation, deletions) |
 | `APP_URL` | public HTTPS address, used in emailed links |
+| `CLERK_AUTHORIZED_PARTIES` | clerk mode: comma-separated origins whose Clerk session tokens are accepted; default is the origin of `APP_URL` (PETTY-189) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail |
 | `CONTACT_EMAIL` | where "Get an invite" writes to; empty hides the link |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |

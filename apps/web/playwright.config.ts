@@ -28,8 +28,8 @@ export default defineConfig({
   webServer: [
     // Test-only: the login limiter is per process; a day of e2e runs against one dev API would trip it.
     // The suite runs the API in local mode whatever the root .env says; CLERK_E2E=1 runs it in clerk mode (needs the Clerk keys in .env).
-    { command: `AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com pnpm --filter @petty/api dev`, url: "http://127.0.0.1:3000/health", reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
+    { command: `AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:${WEB_PORT} LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com pnpm --filter @petty/api dev`, url: "http://127.0.0.1:3000/health", reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
     { command: `pnpm --filter @petty/web dev --port ${WEB_PORT}`, url: `http://localhost:${WEB_PORT}`, reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
-    { command: "pnpm --filter @petty/web build && LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com pnpm --filter @petty/web preview:prod", url: "http://localhost:3100/api/health", reuseExistingServer: true, timeout: 180_000, cwd: "../.." },
+    { command: "pnpm --filter @petty/web build && CLERK_AUTHORIZED_PARTIES=http://localhost:3100 LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com pnpm --filter @petty/web preview:prod", url: "http://localhost:3100/api/health", reuseExistingServer: true, timeout: 180_000, cwd: "../.." },
   ],
 });

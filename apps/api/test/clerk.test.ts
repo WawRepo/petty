@@ -40,7 +40,7 @@ const app = buildApp();
 const run = Math.random().toString(36).slice(2, 8);
 const owner = new pg.Pool({ connectionString: config.ownerDatabaseUrl, max: 2 });
 const token = (sub: string, over: Record<string, unknown> = {}) =>
-  new SignJWT({ sid: `sess_${sub}`, ...over }).setProtectedHeader({ alg: "RS256" }).setSubject(sub).setIssuer("https://clerk.petty.test").setIssuedAt().setExpirationTime("5m").sign(pair.privateKey);
+  new SignJWT({ sid: `sess_${sub}`, azp: new URL(config.appUrl).origin, ...over }).setProtectedHeader({ alg: "RS256" }).setSubject(sub).setIssuer("https://clerk.petty.test").setIssuedAt().setExpirationTime("5m").sign(pair.privateKey);
 
 beforeAll(async () => { await app.ready(); }, 60_000);
 afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); await owner.end(); });
@@ -130,6 +130,14 @@ describe("clerk mode", () => {
     U.bearer = await token(third);
     expect((await U.call("GET", "/me")).json().code).toBe("NoVault");
     expect((await apiPool.query("select clerk_user_id from users where id = $1", [created.json().id])).rows[0].clerk_user_id).toBe(second);
+  });
+
+  it("PETTY-189 (NR-9): a token made for another site, or naming none, is refused", async () => {
+    const sub = `user_${run}AZP`;
+    const call = async (t: string) => (await app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${t}` } })).json().code as string;
+    expect(await call(await token(sub))).toBe("NoVault"); // the right site: authenticated, just no vault yet
+    expect(await call(await token(sub, { azp: "https://evil.example" }))).toBe("Unauthorized");
+    expect(await call(await token(sub, { azp: undefined }))).toBe("Unauthorized");
   });
 
   it("an expired token is refused", async () => {

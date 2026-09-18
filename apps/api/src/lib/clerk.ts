@@ -9,16 +9,23 @@ import { config } from "../config.js";
  */
 export interface ClerkIdentity { readonly sub: string; readonly sid: string | null }
 
+/** PETTY-189 (NR-9): the origins a session token must have been made for. */
+const authorizedParties = (): string[] => (config.clerkAuthorizedParties.length ? config.clerkAuthorizedParties : [new URL(config.appUrl).origin]);
+
 export async function verifyClerkToken(token: string): Promise<ClerkIdentity | null> {
   try {
-    // Resolves to the payload; any signature, expiry or format problem throws.
+    const parties = authorizedParties();
+    // Resolves to the payload; any signature, expiry, format or authorized-party problem throws.
     const p = (await verifyToken(token, {
       ...(config.clerkJwtKey ? { jwtKey: config.clerkJwtKey } : {}),
       ...(config.clerkSecretKey ? { secretKey: config.clerkSecretKey } : {}),
+      authorizedParties: parties,
       clockSkewInMs: 30_000,
-    })) as unknown as { sub?: string; sid?: string } | { data?: { sub?: string; sid?: string }; errors?: unknown[] };
-    const payload = "errors" in p || "data" in p ? ((p as { errors?: unknown[] }).errors ? undefined : (p as { data?: { sub?: string; sid?: string } }).data) : (p as { sub?: string; sid?: string });
+    })) as unknown as { sub?: string; sid?: string; azp?: string } | { data?: { sub?: string; sid?: string; azp?: string }; errors?: unknown[] };
+    const payload = "errors" in p || "data" in p ? ((p as { errors?: unknown[] }).errors ? undefined : (p as { data?: { sub?: string; sid?: string; azp?: string } }).data) : (p as { sub?: string; sid?: string; azp?: string });
     if (!payload?.sub) return null;
+    // Clerk skips the check when a token has no azp; a browser session token always has one, so require it.
+    if (!payload.azp || !parties.includes(payload.azp)) return null;
     return { sub: payload.sub, sid: payload.sid ?? null };
   } catch {
     return null;

@@ -56,4 +56,9 @@ export const config = {
   clerkJwtKey: env("CLERK_JWT_KEY", ""),
   /** Clerk frontend API origin (https://….clerk.accounts.dev or https://clerk.<domain>): CSP connect-src in clerk mode. */
   clerkFrontendApi: env("CLERK_FRONTEND_API", ""),
+  /**
+   * PETTY-189 (review NR-9): origins whose Clerk session tokens we accept (the token's `azp`).
+   * Comma separated; defaults to the origin of APP_URL.
+   */
+  clerkAuthorizedParties: env("CLERK_AUTHORIZED_PARTIES", "").split(",").map((s) => s.trim()).filter(Boolean),
 } as const;
