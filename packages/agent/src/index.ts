@@ -170,7 +170,11 @@ export class AgentClient {
       throw new TokenError("Offline", `cannot reach ${this.api}: ${(e as Error).message} (${why})`);
     }
     if (res.status === 401) throw new TokenError("TokenRevoked", "this token is unknown, revoked or expired");
-    if (res.status === 403) throw new TokenError("Refused", "this token may not do that");
+    if (res.status === 403) {
+      const body = (await res.json().catch(() => ({}))) as { code?: string };
+      if (body.code === "TokenNeedsRenewal") throw new TokenError("Refused", "this token is from before tokens got their own signing key; make a new token in Petty Settings and revoke this one");
+      throw new TokenError("Refused", "this token may not do that");
+    }
     if (res.status === 404) throw new TokenError("NotFound", "not found");
     if (res.status === 409) {
       const body = (await res.json().catch(() => ({}))) as { code?: string };
@@ -494,6 +498,9 @@ export class AgentClient {
   private sigKeyIdCache: string | null = null;
   private async sigKeyId(): Promise<string> {
     if (this.sigKeyIdCache) return this.sigKeyIdCache;
+    // PETTY-184 (NR-4): the token signs with its own key, named in its bundle. An older bundle has
+    // the account key instead; the server refuses its writes, so fall back only to report that well.
+    if (this.bundle?.sig_key_id) return (this.sigKeyIdCache = this.bundle.sig_key_id);
     const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
     this.sigKeyIdCache = boot.sig_key_id;
     return this.sigKeyIdCache;

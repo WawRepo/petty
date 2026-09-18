@@ -36,7 +36,8 @@ async function drawer(client: Client, name: string) {
 async function makeToken(client: Client, opts: { role: "read" | "write"; scope?: string[] | null; drawers?: { drawer_id: string; key_version: number; key: string }[]; expires_at?: string | null } = { role: "read" }) {
   const secret = patSecret();
   const id = tokenId();
-  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: client.id, drawers: opts.drawers ?? [] });
+  const signing = opts.role === "write" ? await client.tokenSigning(opts.expires_at ?? null) : null;
+  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: client.id, drawers: opts.drawers ?? [], ...(signing ? signing.bundle : {}) });
   const res = await client.call("POST", "/me/tokens", {
     token_id: id,
     name: "Assistant",
@@ -45,8 +46,9 @@ async function makeToken(client: Client, opts: { role: "read" | "write"; scope?:
     expires_at: opts.expires_at ?? null,
     bundle,
     proof: await client.proof(),
+    ...(signing ? { signing: signing.body } : {}),
   });
-  return { res, token: patToken(id, secret), secret, id };
+  return { res, token: patToken(id, secret), secret, id, signing };
 }
 
 /** A tool: it holds the token string and sends only the id half. */
@@ -164,6 +166,47 @@ describe("access tokens (PETTY-164)", () => {
     const all = (await tool((await makeToken(A, { role: "read" })).token)("GET", "/me/token/bootstrap")).json();
     expect(all.drawers.length).toBeGreaterThan(1);
     expect(JSON.stringify(all)).not.toMatch(/vault|passkey|wraps|recovery/);
+  });
+
+  it("a writing token signs with its own key, vouched for by the account key (PETTY-184)", async () => {
+    const d = await drawer(A, "Delegated");
+    const entry = { id: crypto.randomUUID(), line_id: d.line, key_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", sig: "AAAA", hash: "AAAA", prev_hash: null };
+    const base = async () => {
+      const secret = patSecret();
+      const id = tokenId();
+      return { token_id: id, name: "w", role: "write", scope: null, expires_at: null, bundle: await sealPatBundle(secret, id, { v: 1, user_id: A.id, drawers: [] }), proof: await A.proof() };
+    };
+    // no signing key, or a delegation the account key did not sign, is refused
+    expect((await A.call("POST", "/me/tokens", await base())).json().code).toBe("SigningKeyRequired");
+    const forged = await B.tokenSigning();
+    expect((await A.call("POST", "/me/tokens", { ...(await base()), signing: forged.body })).statusCode).toBe(400);
+    const mine = await A.tokenSigning();
+    expect((await A.call("POST", "/me/tokens", { ...(await base()), signing: { ...mine.body, ecdsa_pub: forged.body.ecdsa_pub } })).json().code).toBe("DelegationMismatch");
+    expect((await A.call("POST", "/me/tokens", { ...(await base()), expires_at: "2099-01-01T00:00:00.000Z", signing: mine.body })).json().code).toBe("DelegationMismatch");
+
+    // a good one: the delegation is published for readers, revocation is visible
+    const made = await makeToken(A, { role: "write" });
+    expect(made.res.statusCode).toBe(201);
+    const list = async () => (await A.call("GET", `/users/${A.id}/delegations`)).json().delegations as { delegation: { token_sig_key_id: string }; revoked_at: string | null }[];
+    const pub = (await list()).find((x) => x.delegation.token_sig_key_id === made.signing!.bundle.sig_key_id);
+    expect(pub?.revoked_at).toBeNull();
+    expect((await B.call("GET", `/users/${A.id}/delegations`)).statusCode).toBe(200);
+    expect((await tool(made.token)("GET", `/users/${A.id}/delegations`)).statusCode).toBe(403);
+
+    // the token key is not the account key: a custody proof signed with it fails
+    const byToken = await A.proof(made.signing!.pair.privateKey);
+    expect((await A.call("POST", "/me/tokens", { ...(await base()), proof: byToken, signing: (await A.tokenSigning()).body })).statusCode).toBe(403);
+
+    // a writing token from before PETTY-184 (no own key) may still read but no longer write
+    const old = await makeToken(A, { role: "write" });
+    await apiPool.query("update access_tokens set sig_key_id = null, ecdsa_pub = null, delegation = null where id = $1", [old.res.json().id]);
+    expect((await tool(old.token)("GET", `/drawers/${d.id}`)).statusCode).toBe(200);
+    const refused = await tool(old.token)("POST", `/drawers/${d.id}/entries`, entry);
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().code).toBe("TokenNeedsRenewal");
+
+    expect((await A.call("DELETE", `/me/tokens/${made.res.json().id}`)).statusCode).toBe(204);
+    expect((await list()).find((x) => x.delegation.token_sig_key_id === made.signing!.bundle.sig_key_id)?.revoked_at).toBeTruthy();
   });
 
   it("a scope must be drawers the owner is a member of", async () => {

@@ -33,8 +33,14 @@ export interface PatBundleV1 {
   readonly user_id: string;
   /** The drawer keys copied in at creation. Later drawers arrive as wraps for `ecdh` (PETTY-169). */
   readonly drawers: readonly PatDrawerKey[];
-  /** base64 PKCS#8 ECDSA P-256 private key; present only for a token that may write as the owner. */
+  /**
+   * base64 PKCS#8 ECDSA P-256 private key; present only for a token that may write. Since PETTY-184
+   * this is the token's OWN key (see delegation.ts), named by `sig_key_id`. Older bundles carried the
+   * account key and no `sig_key_id`; the server no longer accepts writes from those tokens.
+   */
   readonly ecdsa?: string;
+  /** signingKeyId of the token's own signing key (PETTY-184). */
+  readonly sig_key_id?: string;
   /** base64 PKCS#8 ECDH P-256 private key: this token's own half, which later drawer keys are wrapped to. */
   readonly ecdh?: string;
 }
@@ -98,6 +104,7 @@ export async function openPatBundle(secret: Bytes, tokenId: string, userId: stri
   }
   if (b.ecdsa !== undefined && typeof b.ecdsa !== "string") throw new InvalidPayload("pat.bundle.ecdsa");
   if (b.ecdh !== undefined && typeof b.ecdh !== "string") throw new InvalidPayload("pat.bundle.ecdh");
+  if (b.sig_key_id !== undefined && typeof b.sig_key_id !== "string") throw new InvalidPayload("pat.bundle.sig_key_id");
   return b;
 }
 

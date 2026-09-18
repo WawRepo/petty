@@ -34,13 +34,14 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
   const key = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+  const signing = role === "write" ? await owner.tokenSigning() : null;
   const bundle = await sealPatBundle(secret, id, {
     v: 1,
     user_id: owner.id,
     drawers: [{ drawer_id: drawerId, key_version: 1, key: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", key))) }],
-    ...(role === "write" ? { ecdsa: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", owner.user.keys.ecdsa.privateKey))) } : {}),
+    ...(signing ? signing.bundle : {}),
   });
-  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof() })).statusCode).toBe(201);
+  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) })).statusCode).toBe(201);
   return patToken(id, secret);
 }
 

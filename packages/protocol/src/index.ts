@@ -93,6 +93,21 @@ export type AuthConfig = z.infer<typeof AuthConfig>;
  * with the tool, and the server can never open the bundle.
  */
 export const SealedBundle = z.object({ nonce: b64, ciphertext: b64 });
+/** PETTY-184 (review NR-4): the account key vouches for a writing token's own signing key. */
+export const SignedDelegation = z.object({
+  v: z.literal(1),
+  user_id: uuid,
+  account_sig_key_id: z.string(),
+  token_ecdsa_pub: b64,
+  token_sig_key_id: z.string().regex(/^[0-9a-f]{32}$/),
+  created_at: z.string().datetime(),
+  expires_at: z.string().datetime().nullable(),
+  sig: b64,
+}).strict();
+export type SignedDelegation = z.infer<typeof SignedDelegation>;
+/** Every delegation a user ever made, so entries signed by a token key can be checked (and revoked ones flagged). */
+export const UserDelegations = z.object({ delegations: z.array(z.object({ delegation: SignedDelegation, revoked_at: z.string().nullable() })) });
+export type UserDelegations = z.infer<typeof UserDelegations>;
 export const AccessTokenCreate = z.object({
   token_id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
   /** The token's own ECDH public key (PETTY-169), so later drawers can be wrapped for it. */
@@ -105,6 +120,8 @@ export const AccessTokenCreate = z.object({
   bundle: SealedBundle,
   /** PETTY-181: making a token needs the account's signing key, not only a session. */
   proof: z.object({ challenge: b64, signature: b64 }),
+  /** PETTY-184: a writing token's own signing key and the account's delegation for it. Required for role "write". */
+  signing: z.object({ ecdsa_pub: b64, delegation: SignedDelegation }).optional(),
 });
 export const AccessToken = z.object({
   id: uuid,

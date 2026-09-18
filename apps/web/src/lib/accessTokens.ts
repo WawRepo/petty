@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AccessToken, type AccessToken as AccessTokenT } from "@petty/protocol";
-import { patSecret, patToken, sealPatBundle, sha256, toB64, toHex, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
+import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
 import { custodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
@@ -58,13 +58,27 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
   const openable = await openableKeys(opts.scope);
   const drawers: PatDrawerKey[] = [];
   for (const d of openable) drawers.push({ drawer_id: d.drawerId, key_version: d.keyVersion, key: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", d.key))) });
-  const ecdsa = opts.unlocked ? toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", opts.unlocked.ecdsaPrivate))) : undefined;
+  // PETTY-184 (review NR-4): a writing token gets its OWN signing key, never the account key. The
+  // account key signs a delegation for it, which readers check before they trust an entry it signed.
+  let signing: { ecdsa: string; sig_key_id: string; body: { ecdsa_pub: string; delegation: SignedDelegationV1 } } | undefined;
+  if (opts.role === "write") {
+    const sig = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+    const ecdsaPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", sig.publicKey)));
+    const delegation = await signDelegation(me.keys.ecdsaPrivate, {
+      user_id: me.me.id,
+      account_sig_key_id: me.me.keys.sig_key_id,
+      token_ecdsa_pub: ecdsaPub,
+      created_at: new Date().toISOString(),
+      expires_at: opts.expiresAt,
+    });
+    signing = { ecdsa: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", sig.privateKey))), sig_key_id: delegation.token_sig_key_id, body: { ecdsa_pub: ecdsaPub, delegation } };
+  }
   // PETTY-169: the token's own ECDH pair. The public half goes to the server, so a drawer made later
   // can be wrapped for this token the way it is wrapped for a person.
   const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
   const ecdh = toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey)));
   const ecdhPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
-  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: me.me.id, drawers, ecdh, ...(ecdsa ? { ecdsa } : {}) });
+  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: me.me.id, drawers, ecdh, ...(signing ? { ecdsa: signing.ecdsa, sig_key_id: signing.sig_key_id } : {}) });
   const row = AccessToken.parse(
     await api<unknown>("POST", "/me/tokens", {
       token_id: id,
@@ -75,6 +89,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
       expires_at: opts.expiresAt,
       bundle,
       proof: await custodyProof(me.keys.ecdsaPrivate),
+      ...(signing ? { signing: signing.body } : {}),
     }),
   );
   // PETTY-181: record the token in the sealed user document BEFORE any key is wrapped to it. Only

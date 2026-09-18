@@ -38,7 +38,7 @@ async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: 
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
   const extractable = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
   const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", extractable)));
-  const ecdsa = toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", owner.user.keys.ecdsa.privateKey)));
+  const signing = role === "write" ? await owner.tokenSigning() : null;
   const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
   const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
   const bundle = await sealPatBundle(secret, id, {
@@ -46,9 +46,9 @@ async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: 
     user_id: owner.id,
     drawers: [{ drawer_id: drawerId, key_version: 1, key: raw }],
     ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))),
-    ...(role === "write" ? { ecdsa } : {}),
+    ...(signing ? signing.bundle : {}),
   });
-  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof() });
+  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
   expect(res.statusCode).toBe(201);
   return { token: patToken(id, secret), id: res.json().id as string, pair, pub };
 }

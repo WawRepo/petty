@@ -132,3 +132,49 @@ test("NR-1 (PETTY-181): a token the owner did not make, or one whose key was swa
   const swappedWraps = await sql("select 1 from access_token_keys where token_id = $1 and drawer_id = $2", [real!.id, later]);
   expect(swappedWraps).toHaveLength(0);
 });
+
+test("NR-4 (PETTY-184): an entry a token signs with its own key shows clean in the app, before and after revoke", async ({ page }) => {
+  const { connect } = await import("../../../packages/agent/src/index.js");
+  const user = await signupViaApi("patnr4");
+  await loginAndUnlock(page, user);
+  await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
+  const drawerId = await addDrawerWithLine(page, "Kitchen");
+
+  await page.goto("/");
+  await openSettings(page);
+  await page.getByTestId("token-new").click();
+  await page.getByTestId("token-name").fill("Writer");
+  await page.getByTestId("token-passphrase").fill(user.passphrase);
+  await page.getByTestId("token-create").click();
+  const token = (await page.getByTestId("token-value").innerText()).trim();
+  await page.getByTestId("token-done").click();
+
+  // the token holds its own key, not the account key: its bundle names a key id the account does not have
+  const userId = (await sql<{ id: string }>("select id from users where email = $1", [user.email]))[0]!.id;
+  const [acct] = await sql<{ sig_key_id: string }>("select sig_key_id from user_keys where user_id = $1", [userId]);
+  const [tok] = await sql<{ sig_key_id: string | null }>("select sig_key_id from access_tokens where user_id = $1", [userId]);
+  expect(tok!.sig_key_id).toMatch(/^[0-9a-f]{32}$/);
+  expect(tok!.sig_key_id).not.toBe(acct!.sig_key_id);
+
+  const agent = await connect({ token, apiUrl: API });
+  const [d] = (await agent.drawers()).filter((x) => x.id === drawerId);
+  await agent.add(drawerId, d!.lines[0]!.id, "5", "");
+
+  const check = async () => {
+    await page.goto(`/drawers/${drawerId}`);
+    await page.getByTestId("line-name").filter({ hasText: "Cash" }).click();
+    await expect(page.getByTestId("line-balance")).toContainText("15");
+    await expect(page.getByTestId("entry-row")).toHaveCount(2);
+    await expect(page.getByTestId("warn-problems")).toHaveCount(0);
+  };
+  await check();
+
+  // revoking stops the token, but what it wrote before stays trusted
+  await page.goto("/");
+  await openSettings(page);
+  await page.getByRole("button", { name: "Revoke token Writer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Revoke" }).click();
+  await expect(page.getByTestId("token-row")).toHaveCount(0);
+  await page.reload();
+  await check();
+});

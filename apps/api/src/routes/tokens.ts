@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, TokenBootstrap, type DrawerSummary } from "@petty/protocol";
+import { verifyDelegation } from "@petty/crypto";
+import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, TokenBootstrap, UserDelegations, type DrawerSummary } from "@petty/protocol";
 import type { DrawerRow } from "../lib/perm.js";
 import { drawerSummary, entryRow, sealedRow } from "../lib/rows.js";
 import { apiPool } from "../db.js";
@@ -55,6 +56,20 @@ export async function tokenRoutes(app: FastifyInstance) {
     await consumeCustodyProof(req, me.id, body.proof);
     if (body.scope && body.scope.length === 0) throw badRequest("EmptyScope");
     if (body.expires_at && new Date(body.expires_at).getTime() <= Date.now()) throw badRequest("ExpiresInThePast");
+    // PETTY-184 (NR-4): a writing token signs with its own key, vouched for by the account key.
+    if (body.role === "write" && !body.signing) throw badRequest("SigningKeyRequired");
+    if (body.role === "read" && body.signing) throw badRequest("ReadTokenCannotSign");
+    if (body.signing) {
+      const d = body.signing.delegation;
+      const acct = (await apiPool.query<{ sig_key_id: string; ecdsa_pub: string }>("select sig_key_id, ecdsa_pub from user_keys where user_id = $1 and retired_at is null", [me.id])).rows[0];
+      const sameExpiry = (d.expires_at === null) === (body.expires_at === null) && (d.expires_at === null || Date.parse(d.expires_at) === Date.parse(body.expires_at!));
+      if (!acct || d.token_ecdsa_pub !== body.signing.ecdsa_pub || !sameExpiry) throw badRequest("DelegationMismatch");
+      try {
+        await verifyDelegation(d, { user_id: me.id, sig_key_id: acct.sig_key_id, ecdsa_pub: acct.ecdsa_pub });
+      } catch {
+        throw badRequest("DelegationInvalid");
+      }
+    }
     if (body.scope) {
       // Every drawer in the scope must be one this user is a member of, so a token can never widen access.
       const { rows } = await apiPool.query<{ n: string }>(
@@ -66,13 +81,32 @@ export async function tokenRoutes(app: FastifyInstance) {
       if (Number(rows[0]?.n ?? 0) !== body.scope.length) throw badRequest("ScopeNotAMember");
     }
     const { rows } = await apiPool.query<Row>(
-      `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, expires_at, ecdh_pub)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, expires_at, ecdh_pub, ecdsa_pub, sig_key_id, delegation)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        returning id, name, role, scope, ecdh_pub, created_at, last_used_at, expires_at`,
-      [me.id, body.name, sha256(PAT_PREFIX + body.token_id), body.role, body.scope, body.bundle.nonce, body.bundle.ciphertext, body.expires_at, body.ecdh_pub ?? null],
+      [
+        me.id, body.name, sha256(PAT_PREFIX + body.token_id), body.role, body.scope, body.bundle.nonce, body.bundle.ciphertext, body.expires_at, body.ecdh_pub ?? null,
+        body.signing?.ecdsa_pub ?? null, body.signing?.delegation.token_sig_key_id ?? null, body.signing ? JSON.stringify(body.signing.delegation) : null,
+      ],
     );
     reply.code(201);
     return row(rows[0]!);
+  });
+
+  /**
+   * Every signing delegation a user made, revoked ones included (PETTY-184). A reader needs them to
+   * verify entries a token signed; each is checked on the reader's side against the account key, so
+   * this route cannot vouch for anything by itself. Session only.
+   */
+  app.get<{ Params: { id: string } }>("/users/:id/delegations", async (req) => {
+    requireUser(req);
+    if (req.token) throw unauthorized();
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw notFound("UserNotFound");
+    const { rows } = await apiPool.query<{ delegation: unknown; revoked_at: Date | null }>(
+      "select delegation, revoked_at from access_tokens where user_id = $1 and delegation is not null order by created_at",
+      [req.params.id],
+    );
+    return UserDelegations.parse({ delegations: rows.map((r) => ({ delegation: r.delegation, revoked_at: iso(r.revoked_at) })) });
   });
 
   app.delete<{ Params: { id: string } }>("/me/tokens/:id", async (req, reply) => {

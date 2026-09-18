@@ -7,11 +7,11 @@
  */
 import { useSyncExternalStore } from "react";
 import {
-  fromB64, importEcdsaPublic, openDocument, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
+  delegationCovers, fromB64, importEcdsaPublic, openDocument, verifyDelegation, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
   createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
 import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
-import type { Bootstrap, DrawerSummary, EntryRow, Invitation, Member, SealedRow, DrawerKeyWrap } from "@petty/protocol";
+import type { Bootstrap, DrawerSummary, EntryRow, Invitation, Member, SealedRow, DrawerKeyWrap, UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
@@ -174,18 +174,53 @@ async function decryptDocument(key: CryptoKey, d: DrawerSummary, row: SealedRow)
 const nameCache = new Map<string, string>();
 /** Signing keys by sig_key_id. Current keys come from the member list; retired ones from /users/:id/keys. */
 const keyCache = new Map<string, CryptoKey>();
-async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string): Promise<CryptoKey | null> {
+/** One fetch per author per minute, so a log full of token-signed entries does not fetch once per entry. */
+const FETCH_TTL_MS = 60_000;
+const fetched = new Map<string, { at: number; p: Promise<unknown> }>();
+function fetchOnce<T>(url: string): Promise<T> {
+  const hit = fetched.get(url);
+  if (hit && Date.now() - hit.at < FETCH_TTL_MS) return hit.p as Promise<T>;
+  const p = api<T>("GET", url);
+  p.catch(() => fetched.delete(url));
+  fetched.set(url, { at: Date.now(), p });
+  return p;
+}
+
+/** The author's ACCOUNT signing key with this id, as base64 SPKI: from the member list, else from every key they ever published. */
+async function accountSpki(members: readonly Member[], authorId: string, sigKeyId: string): Promise<string | null> {
+  const m = members.find((x) => x.user_id === authorId && x.keys?.sig_key_id === sigKeyId)?.keys?.ecdsa_pub;
+  if (m) return m;
+  try {
+    const r = await fetchOnce<{ display_name: string; keys: Array<{ sig_key_id: string; ecdsa_pub: string } | null> }>(`/users/${authorId}/keys`);
+    nameCache.set(authorId, r.display_name);
+    return r.keys.find((k) => k?.sig_key_id === sigKeyId)?.ecdsa_pub ?? null;
+  } catch { return null; }
+}
+
+/**
+ * A key an access token signed with (PETTY-184, review NR-4). It counts only when the author's
+ * account key signed a delegation for it, and only for entries the server received before the
+ * delegation expired or was revoked. The server hands out the delegations but cannot forge one.
+ */
+async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<CryptoKey | null> {
+  let list: UserDelegations["delegations"];
+  try { list = (await fetchOnce<UserDelegations>(`/users/${authorId}/delegations`)).delegations; } catch { return null; }
+  const hit = list.find((x) => x.delegation.token_sig_key_id === sigKeyId && x.delegation.user_id === authorId);
+  if (!hit) return null;
+  const spki = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
+  if (!spki) return null;
+  try {
+    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: spki });
+    if (!delegationCovers(d, receivedAt, hit.revoked_at)) return null;
+    return await importEcdsaPublic(d.token_ecdsa_pub);
+  } catch { return null; }
+}
+
+async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<CryptoKey | null> {
   const cached = keyCache.get(sigKeyId);
   if (cached) return cached;
-  let spki = members.find((m) => m.user_id === authorId && m.keys?.sig_key_id === sigKeyId)?.keys?.ecdsa_pub ?? null;
-  if (!spki) {
-    try {
-      const r = await api<{ display_name: string; keys: Array<{ sig_key_id: string; ecdsa_pub: string } | null> }>("GET", `/users/${authorId}/keys`);
-      nameCache.set(authorId, r.display_name);
-      spki = r.keys.find((k) => k?.sig_key_id === sigKeyId)?.ecdsa_pub ?? null;
-    } catch { spki = null; }
-  }
-  if (!spki) return null;
+  const spki = await accountSpki(members, authorId, sigKeyId);
+  if (!spki) return delegatedKey(members, authorId, sigKeyId, receivedAt);
   const k = await importEcdsaPublic(spki);
   keyCache.set(sigKeyId, k);
   return k;
@@ -203,7 +238,7 @@ async function decryptEntries(keyFor: (version: number) => Promise<CryptoKey>, r
     let entry: SignedEntryV1;
     try { entry = await openEntryUnverified(await keyFor(r.key_version), entryIdentity(r), sealedOf(r)); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "decrypt_failed" }); continue; }
-    const k = await authorKey(members, entry.author_id, entry.sig_key_id);
+    const k = await authorKey(members, entry.author_id, entry.sig_key_id, r.received_at);
     if (!k) { problems.push({ line_id: r.line_id, entry_id: r.id, code: "author_key_missing" }); continue; }
     try { await verifyEntry(entry, { author_id: entry.author_id, sig_key_id: entry.sig_key_id, ecdsaPublic: k }); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "signature_invalid" }); continue; }

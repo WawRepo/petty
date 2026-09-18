@@ -27,3 +27,4 @@ export * from "./records.js";
 export * from "./archive.js";
 export * from "./custody.js";
 export * from "./pat.js";
+export * from "./delegation.js";

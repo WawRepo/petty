@@ -6,7 +6,7 @@ import type { FastifyInstance, LightMyRequestResponse } from "fastify";
 import pg from "pg";
 import {
   createDrawerKey, createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys,
-  sealDocument, sealEntry, signCustodyChallenge, signEntry, signingKeyId, toB64, wrapDrawerKey, unwrapDrawerKey,
+  sealDocument, sealEntry, signCustodyChallenge, signDelegation, signEntry, signingKeyId, toB64, wrapDrawerKey, unwrapDrawerKey,
   type EntryPayloadV1, type RecordIdentity, type Sealed, type Sender, type UserKeyPairs,
 } from "@petty/crypto";
 import { newDocument, type DrawerDocument } from "@petty/ledger";
@@ -83,6 +83,20 @@ export class Client {
   async proof(key: CryptoKey = this.user.keys.ecdsa.privateKey) {
     const c = (await this.call("POST", "/me/custody-challenge")).json();
     return { challenge: c.challenge, signature: await signCustodyChallenge(key, c.challenge) };
+  }
+
+  /**
+   * A writing token's own signing key and the account's delegation for it (PETTY-184), made the way
+   * the web app makes them. `bundle` goes into the sealed bundle; `body` goes into POST /me/tokens.
+   */
+  async tokenSigning(expiresAt: string | null = null) {
+    const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+    const ecdsa_pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    const delegation = await signDelegation(this.user.keys.ecdsa.privateKey, {
+      user_id: this.id, account_sig_key_id: this.user.sig_key_id, token_ecdsa_pub: ecdsa_pub, created_at: new Date().toISOString(), expires_at: expiresAt,
+    });
+    const ecdsa = toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey)));
+    return { pair, bundle: { ecdsa, sig_key_id: delegation.token_sig_key_id }, body: { ecdsa_pub, delegation } };
   }
 
   get sender(): Sender {
