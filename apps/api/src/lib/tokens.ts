@@ -2,6 +2,7 @@ import type { FastifyRequest } from "fastify";
 import { apiPool } from "../db.js";
 import { sha256 } from "./bytes.js";
 import { forbidden } from "./errors.js";
+import type { Queryable } from "./tx.js";
 
 /**
  * Access tokens (PETTY-164). A tool of the owner's own presents `Authorization: Bearer
@@ -98,4 +99,17 @@ export function assertTokenMay(req: FastifyRequest, token: TokenAuth): void {
   if (write && !token.signs) throw forbidden("TokenNeedsRenewal");
   const params = req.params as { id?: string } | undefined;
   if (params?.id && token.scope && !token.scope.includes(params.id)) throw forbidden("TokenOutOfScope");
+}
+
+/**
+ * Ends every access token of a user (PETTY-188, review NR-8): on a login-password reset, an admin
+ * "sign out everywhere", and account deletion. With `erase` (deletion) the sealed bundles and the
+ * drawer-key wraps are wiped as well, because the spec says deletion erases private keys. The row
+ * itself stays, revoked, so the public signing delegation still verifies entries it wrote.
+ */
+export async function endAllTokens(db: Queryable, userId: string, opts: { erase: boolean }): Promise<void> {
+  await db.query("update access_tokens set revoked_at = coalesce(revoked_at, now()) where user_id = $1", [userId]);
+  if (!opts.erase) return;
+  await db.query("delete from access_token_keys where token_id in (select id from access_tokens where user_id = $1)", [userId]);
+  await db.query("update access_tokens set bundle_nonce = '', bundle_ciphertext = '', ecdh_pub = null, name = 'deleted' where user_id = $1", [userId]);
 }

@@ -430,6 +430,10 @@ describe("account deletion (SPEC-ISSUES A8)", () => {
     const line = crypto.randomUUID();
     const e1 = await D.postEntry(shared.id, shared.key, line, "add", 500);
     expect(e1.res.statusCode).toBe(201);
+    // PETTY-188 (NR-8): a token with a drawer-key wrap, which deletion must erase
+    const tok = await D.makeAccessToken("write");
+    expect(tok.res.statusCode).toBe(201);
+    await owner.query("insert into access_token_keys (token_id, drawer_id, key_version, wrap) values ($1, $2, 1, '{}')", [tok.rowId, shared.id]);
     // preview
     const pv = (await D.call("GET", "/me/delete")).json();
     expect(pv.shared.map((s: { drawer_id: string }) => s.drawer_id)).toEqual([shared.id]);
@@ -448,6 +452,14 @@ describe("account deletion (SPEC-ISSUES A8)", () => {
     expect((await D.call("POST", "/me/delete", { password: D.user.password, proof: await D.proof(), decisions: [{ drawer_id: shared.id, action: "transfer", to_user_id: E.id }] })).statusCode).toBe(204);
     expect((await D.call("GET", "/me")).statusCode).toBe(401);
     expect((await D.login()).statusCode).toBe(401);
+    // the token is dead, its sealed bundle and wraps are gone; the revoked row keeps only the public delegation
+    expect((await app.inject({ method: "GET", url: "/me/token", headers: { authorization: `Bearer ${tok.bearer}` } })).statusCode).toBe(401);
+    const trow = (await owner.query("select revoked_at, bundle_ciphertext, bundle_nonce, ecdh_pub, delegation from access_tokens where id = $1", [tok.rowId])).rows[0];
+    expect(trow.revoked_at).not.toBeNull();
+    expect([trow.bundle_ciphertext, trow.bundle_nonce, trow.ecdh_pub]).toEqual(["", "", null]);
+    expect(trow.delegation).not.toBeNull();
+    expect((await owner.query("select count(*)::int as n from access_token_keys where token_id = $1", [tok.rowId])).rows[0].n).toBe(0);
+    expect((await owner.query("select count(*)::int as n from access_tokens where user_id = $1 and (revoked_at is null or bundle_ciphertext <> '')", [D.id])).rows[0].n).toBe(0);
     const boot = (await E.call("GET", "/bootstrap")).json();
     const s = boot.drawers.find((d: { id: string }) => d.id === shared.id);
     expect(s.role).toBe("owner");
@@ -500,9 +512,16 @@ describe("admin and password reset (Phase 15a)", () => {
     expect((await V.login()).statusCode).toBe(401); // and no new one
     expect((await M.call("POST", `/admin/users/${V.id}/unblock`)).statusCode).toBe(204);
     expect((await V.login()).statusCode).toBe(200);
+    // PETTY-188 (NR-8): "sign out everywhere" ends the user's access tokens too
+    const tokenOk = (bearer: string) => app.inject({ method: "GET", url: "/me/token", headers: { authorization: `Bearer ${bearer}` } }).then((r) => r.statusCode);
+    const t1 = await V.makeAccessToken();
+    expect(await tokenOk(t1.bearer)).toBe(200);
     expect((await M.call("POST", `/admin/users/${V.id}/revoke-sessions`)).statusCode).toBe(204);
+    expect(await tokenOk(t1.bearer)).toBe(401);
     expect((await V.call("GET", "/me")).statusCode).toBe(401);
     expect((await V.login()).statusCode).toBe(200);
+    const t2 = await V.makeAccessToken("write");
+    expect(await tokenOk(t2.bearer)).toBe(200);
     expect((await M.call("POST", `/admin/users/${V.id}/admin`, { is_admin: true })).statusCode).toBe(204);
     expect((await V.call("GET", "/admin/users")).statusCode).toBe(200);
     // password reset: always 204; the mail carries a one-hour single-use token; sessions die on reset
@@ -516,6 +535,7 @@ describe("admin and password reset (Phase 15a)", () => {
     expect((await V.call("POST", "/auth/reset", { token: "nope-nope-nope-nope", password: "new-password-1" })).json().code).toBe("ResetInvalid");
     expect((await V.call("POST", "/auth/reset", { token, password: "new-password-1" })).statusCode).toBe(204);
     expect((await V.call("GET", "/me")).statusCode).toBe(401);
+    expect(await tokenOk(t2.bearer)).toBe(401); // PETTY-188: a reset ends the tokens as well
     expect((await V.login()).statusCode).toBe(401); // old password
     V.user.password = "new-password-1";
     expect((await V.login()).statusCode).toBe(200);

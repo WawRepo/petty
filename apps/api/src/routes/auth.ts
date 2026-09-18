@@ -8,6 +8,7 @@ import { ApiError, badRequest, conflict, unauthorized } from "../lib/errors.js";
 import { DUMMY_HASH, LOGIN_LIMIT_PER_EMAIL, LOGIN_LIMIT_PER_IP, checkRate, failuresExceeded, hashPassword, recordFailure, verifyPassword } from "../lib/password.js";
 import { createSession, destroySession, requireUser } from "../lib/session.js";
 import { withTx, type Queryable } from "../lib/tx.js";
+import { endAllTokens } from "../lib/tokens.js";
 import { mails } from "../lib/mail.js";
 import { authEvents } from "../lib/metrics.js";
 import { loadMe } from "./me.js";
@@ -137,6 +138,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       await db.query("update users set password_hash = $2 where id = $1", [r.user_id, await hashPassword(body.password)]);
       await db.query("update password_resets set used_at = now() where id = $1", [r.id]);
       await db.query("delete from sessions where user_id = $1", [r.user_id]);
+      await endAllTokens(db, r.user_id, { erase: false });
       return r;
     });
     // The owner hears about it (SR-2): a reset they did not ask for is the first sign of a stolen mailbox.

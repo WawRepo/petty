@@ -11,6 +11,7 @@ import { mails } from "../lib/mail.js";
 import { destroySession, hasLoginPassword } from "../lib/session.js";
 import { fromB64, iso, toB64 } from "../lib/bytes.js";
 import { withTx } from "../lib/tx.js";
+import { endAllTokens } from "../lib/tokens.js";
 import { userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import type { Queryable } from "../lib/tx.js";
@@ -226,6 +227,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       await db.query("update invitations set state = 'revoked', resolved_at = now() where state = 'pending' and (inviter_id = $1 or invitee_id = $1)", [me.id]);
       await db.query("delete from ownership_transfers where from_user_id = $1 or to_user_id = $1", [me.id]);
       await db.query("delete from sessions where user_id = $1", [me.id]);
+      await endAllTokens(db, me.id, { erase: true });
       await db.query("delete from user_docs where user_id = $1", [me.id]);
       await db.query("delete from passkey_vaults where user_id = $1", [me.id]);
       await db.query("delete from vault_history where user_id = $1", [me.id]);

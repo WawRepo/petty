@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { withTx } from "../lib/tx.js";
+import { endAllTokens } from "../lib/tokens.js";
 import { AdminUsers, SetAdminBody } from "@petty/protocol";
 import { revokeClerkSessions } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
@@ -57,6 +58,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const me = requireAdmin(req);
     const id = await target(req, me.id);
     await apiPool.query("delete from sessions where user_id = $1", [id]);
+    await endAllTokens(apiPool, id, { erase: false });
     return reply.code(204).send();
   });
   /**
