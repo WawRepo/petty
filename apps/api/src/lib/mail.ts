@@ -30,6 +30,7 @@ export function sendMail(to: string, subject: string, text: string): void {
 export const mails = {
   joinLink: (to: string, inviter: string, token: string) => sendMail(to, "You are invited to Petty", `${inviter} invited you to Petty, a shared cash ledger.\n\nCreate your account here (the link works once, for 7 days):\n${config.appUrl}/join#${token}\n`),
   invitation: (to: string, inviter: string, role: string) => sendMail(to, "A drawer was shared with you", `${inviter} invited you to a drawer in Petty as ${role === "write" ? "a writer" : "a reader"}.\n\nOpen Petty to accept or decline: ${config.appUrl}/\n`),
+  relinked: (to: string) => sendMail(to, "A new sign-in method was linked to your Petty account", `Your Petty account is now reached through a new sign-in (for example Google or GitHub) for this address. Your vault did not change and still needs your passphrase or passkey.\n\nIf this was not you, tell the person who runs your Petty right away: ${config.appUrl}/\n`),
   revoked: (to: string, owner: string) => sendMail(to, "Your access to a drawer ended", `${owner} removed you from a shared drawer in Petty. You keep nothing that was shared after this moment.\n`),
   transferOffered: (to: string, owner: string) => sendMail(to, "You were offered a drawer", `${owner} wants to hand a drawer over to you in Petty. Open Petty to accept: ${config.appUrl}/\n`),
   transferDone: (to: string, newOwner: string) => sendMail(to, "Ownership transferred", `${newOwner} accepted your drawer in Petty and now owns it. You stay a writer.\n`),

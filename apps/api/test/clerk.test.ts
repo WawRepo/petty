@@ -21,9 +21,12 @@ vi.mock("../src/lib/clerk.js", async (importOriginal) => {
     clerkProfile: async (id: string) => ({ email: profileEmail(id), emailVerified: !id.endsWith("UNVERIFIED"), name: `Clerk ${id}` }),
     deleteClerkUser: async () => { deleted.push("x"); },
     revokeClerkSessions: async () => 0,
+    clerkUserExists: async (id: string) => !gone.has(id),
   };
 });
 const deleted: string[] = [];
+/** Test hook: Clerk users that no longer exist (PETTY-187). */
+const gone = new Set<string>();
 /** Test hook: which email Clerk reports for an id (default: derived from the id). */
 const emails = new Map<string, string>();
 const profileEmail = (id: string) => emails.get(id) ?? `${id.toLowerCase().replace(/unverified$/, "")}@test.local`;
@@ -54,6 +57,9 @@ describe("clerk mode", () => {
     expect(csp).toContain("https://challenges.cloudflare.com");
     expect(csp).toContain("worker-src 'self' blob:");
     expect(csp).not.toContain("require-trusted-types-for");
+    // PETTY-185 (NR-5): clerk-js is bundled, so Clerk's origin is not a script source
+    expect(csp).toMatch(/script-src 'self' 'wasm-unsafe-eval' https:\/\/challenges\.cloudflare\.com;/);
+    expect(/script-src[^;]*clerk\.petty\.test/.test(csp)).toBe(false);
   });
 
   it("a verified identity with no vault gets NoVault, provisions once, then is a normal user; the custody proof alone gates the vault", async () => {
@@ -107,6 +113,10 @@ describe("clerk mode", () => {
     const second = `user_${run}R2`;
     emails.set(second, email.toUpperCase()); // case must not matter
     U.bearer = await token(second);
+    // PETTY-187 (NR-7): while the first Clerk user still exists, the row is not taken over
+    expect((await U.call("GET", "/me")).json().code).toBe("NoVault");
+    expect((await apiPool.query("select clerk_user_id from users where id = $1", [created.json().id])).rows[0].clerk_user_id).toBe(first);
+    gone.add(first);
     const me = await U.call("GET", "/me");
     expect(me.statusCode).toBe(200);
     expect(me.json().id).toBe(created.json().id);

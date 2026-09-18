@@ -40,6 +40,19 @@ export async function clerkProfile(userId: string): Promise<{ email: string; ema
   return { email: primary.emailAddress, emailVerified: primary.verification?.status === "verified", name };
 }
 
+/**
+ * Does this Clerk user still exist? Only a clear "not found" from Clerk counts as gone; any other
+ * error (network, rate limit) answers true, so a relink is refused rather than risked (PETTY-187).
+ */
+export async function clerkUserExists(userId: string): Promise<boolean> {
+  try {
+    await clerk().users.getUser(userId);
+    return true;
+  } catch (e) {
+    return (e as { status?: number }).status !== 404;
+  }
+}
+
 export async function deleteClerkUser(userId: string): Promise<void> {
   await clerk().users.deleteUser(userId);
 }

@@ -5,7 +5,8 @@ import { config } from "../config.js";
 import { randomToken, sha256 } from "./bytes.js";
 import { forbidden, unauthorized } from "./errors.js";
 
-import { clerkProfile, verifyClerkToken, type ClerkIdentity } from "./clerk.js";
+import { clerkProfile, clerkUserExists, verifyClerkToken, type ClerkIdentity } from "./clerk.js";
+import { mails } from "./mail.js";
 import { assertTokenMay, authenticateToken, PAT_PREFIX } from "./tokens.js";
 
 export interface SessionUser { id: string; email: string; display_name: string; locale: string; is_admin: boolean }
@@ -53,6 +54,11 @@ export function requireAdmin(req: FastifyRequest): SessionUser {
  * identity is necessarily gone: the row is relinked to this identity and the user meets their
  * own vault (unlock), not the setup screen. Only on the miss path, so one Clerk API call per
  * new identity, not per request; a Clerk outage here means "no vault yet" for that request.
+ *
+ * PETTY-187 (review NR-7): a row still linked to a Clerk user that EXISTS is never taken over, even
+ * with a verified email (an address can change hands, or a row's email can lag behind Clerk). Only
+ * a row with no Clerk link, or whose linked Clerk user is gone, is relinked, and the stored address
+ * is told when that happens.
  */
 async function relinkByVerifiedEmail(sub: string): Promise<SessionUser | null> {
   let email: string;
@@ -61,12 +67,21 @@ async function relinkByVerifiedEmail(sub: string): Promise<SessionUser | null> {
     if (!p.emailVerified) return null;
     email = p.email;
   } catch { return null; }
-  const { rows } = await apiPool.query<SessionUser>(
-    `update users set clerk_user_id = $2 where lower(email) = lower($1) and deleted_at is null and blocked_at is null and clerk_user_id is distinct from $2
-     returning id, email, display_name, locale, is_admin`,
+  const found = (await apiPool.query<{ id: string; clerk_user_id: string | null }>(
+    "select id, clerk_user_id from users where lower(email) = lower($1) and deleted_at is null and blocked_at is null and clerk_user_id is distinct from $2",
     [email, sub],
+  )).rows[0];
+  if (!found) return null;
+  if (found.clerk_user_id && (await clerkUserExists(found.clerk_user_id))) return null;
+  // The old link must still be the one we checked, so two racing sign-ins cannot both win.
+  const { rows } = await apiPool.query<SessionUser>(
+    `update users set clerk_user_id = $2 where id = $1 and clerk_user_id is not distinct from $3
+     returning id, email, display_name, locale, is_admin`,
+    [found.id, sub, found.clerk_user_id],
   );
-  return rows[0] ?? null;
+  const u = rows[0] ?? null;
+  if (u) mails.relinked(u.email);
+  return u;
 }
 
 export const sessionPlugin = fp(async (app: FastifyInstance) => {
