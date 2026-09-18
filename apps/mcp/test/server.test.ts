@@ -111,6 +111,27 @@ describe("petty mcp (PETTY-166)", () => {
     expect(history).toContain("comment: from Claude");
   });
 
+  it("stays up when Petty cannot be reached at start, and each call says why (PETTY-172)", async () => {
+    const token = await tokenFor("read");
+    let reachable = false;
+    const server = await buildServer({
+      token,
+      apiUrl: "http://petty.test",
+      connect: (o) => connect({ ...o, fetch: (async (i: RequestInfo | URL, init?: RequestInit) => {
+        if (!reachable) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "EHOSTUNREACH" } });
+        return inject(i, init);
+      }) as typeof fetch }),
+    });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const client = new McpClient({ name: "test-host", version: "1.0.0" });
+    await Promise.all([server.connect(serverSide), client.connect(clientSide)]);
+    const down = await client.callTool({ name: "list_drawers", arguments: {} });
+    expect(down.isError).toBe(true);
+    expect(text(down)).toContain("EHOSTUNREACH");
+    reachable = true; // the network comes back: the next call connects and answers
+    expect(text(await client.callTool({ name: "list_drawers", arguments: {} }))).toContain("drawer: Kitchen");
+  });
+
   it("a read token cannot write, even if the host asks for the tool", async () => {
     const client = await host("read");
     const res = await client.callTool({ name: "add", arguments: { item: "kitchen cash", amount: "1" } });

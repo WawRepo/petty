@@ -37,10 +37,27 @@ async function locate(client: AgentClient, target: string): Promise<{ drawer: Ag
   return client.find(target);
 }
 
+const log = (line: string) => process.stderr.write(`petty-mcp: ${line}\n`);
+
 export async function buildServer(opts: ServerOptions): Promise<McpServer> {
-  const client = await (opts.connect ?? connect)({ token: opts.token, apiUrl: opts.apiUrl });
+  // PETTY-172: never quit at start. If Petty cannot be reached yet (no network, a macOS permission
+  // prompt still open), stay up and answer each tool call with the real reason, retrying each time.
+  const open = () => (opts.connect ?? connect)({ token: opts.token, apiUrl: opts.apiUrl });
+  let client: AgentClient | null = null;
+  log(`starting on Node ${process.versions.node} (${process.execPath})`);
+  try {
+    client = await open();
+    log(`connected to ${opts.apiUrl} as "${client.identity.name}" (${client.identity.role})`);
+  } catch (e) {
+    log(`not connected yet: ${e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message}`);
+  }
+  const getClient = async (): Promise<AgentClient> => {
+    if (!client) client = await open();
+    return client;
+  };
   const server = new McpServer({ name: "petty", version: "1.0.0" });
-  const mayWrite = client.identity.role === "write";
+  // Unknown role (not connected yet): offer the write tools; a read-only token is still refused by the server.
+  const mayWrite = client ? client.identity.role === "write" : true;
 
   server.registerTool(
     "list_drawers",
@@ -51,7 +68,7 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     },
     async () => {
       try {
-        const drawers = await client.drawers();
+        const drawers = await (await getClient()).drawers();
         if (!drawers.length) return asText("No drawers are open to this token.");
         return asText(drawers.flatMap((d) => d.lines.map((l) => lineLine(d, l))).join("\n"));
       } catch (e) {
@@ -69,7 +86,7 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     },
     async ({ query }) => {
       try {
-        const hit = await client.find(query);
+        const hit = await (await getClient()).find(query);
         return asText(lineLine(hit.drawer, hit.line));
       } catch (e) {
         return fail(e);
@@ -86,8 +103,8 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     },
     async ({ item, limit }) => {
       try {
-        const hit = await locate(client, item);
-        const rows = await client.history(hit.drawer.id, hit.line.id, limit ?? 10);
+        const hit = await locate(await getClient(), item);
+        const rows = await (await getClient()).history(hit.drawer.id, hit.line.id, limit ?? 10);
         if (!rows.length) return asText(`No entries yet for item: ${hit.line.name}`);
         return asText(rows.map((r) => `${r.at} · ${r.op} · balance after: ${r.amount}${r.comment ? ` · comment: ${r.comment}` : ""}`).join("\n"));
       } catch (e) {
@@ -111,8 +128,8 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
         },
         async ({ item, amount, comment }) => {
           try {
-            const hit = await locate(client, item);
-            const res = await client[name](hit.drawer.id, hit.line.id, amount, comment ?? "");
+            const hit = await locate(await getClient(), item);
+            const res = await (await getClient())[name](hit.drawer.id, hit.line.id, amount, comment ?? "");
             return asText(`Done. ${hit.drawer.name} / ${hit.line.name} is now ${res.amount}.`);
           } catch (e) {
             return fail(e);
