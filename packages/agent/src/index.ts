@@ -3,6 +3,7 @@ import {
   openDocument,
   openEntryUnverified,
   openPatBundle,
+  sealDocument,
   sealEntry,
   signEntry,
   splitPatToken,
@@ -13,7 +14,7 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { assertDocumentShape, fold, formatAmount, foldText, lineTagsOf, parseAmount, tagsOf, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { applyOps, assertDocumentShape, fold, formatAmount, foldText, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
 import { Bootstrap, type AccessTokenSelf } from "@petty/protocol";
 
 /**
@@ -26,7 +27,7 @@ import { Bootstrap, type AccessTokenSelf } from "@petty/protocol";
  * logs content (spec rules 1 and 2).
  */
 export class TokenError extends Error {
-  constructor(readonly code: "WrongToken" | "TokenRevoked" | "ReadOnly" | "OutOfScope" | "NotFound" | "Ambiguous" | "Offline" | "RecountRequired" | "Refused", message: string) {
+  constructor(readonly code: "WrongToken" | "TokenRevoked" | "ReadOnly" | "OutOfScope" | "NotFound" | "Ambiguous" | "Offline" | "RecountRequired" | "Conflict" | "Refused", message: string) {
     super(message);
     this.name = "TokenError";
   }
@@ -69,6 +70,20 @@ export interface AgentEntry {
   readonly comment: string;
   readonly at: string;
   readonly mine: boolean;
+}
+
+/** One tag and the items carrying it, grouped by drawer (PETTY-174). */
+export interface AgentTag {
+  readonly label: string;
+  readonly holders: readonly { readonly drawer: string; readonly drawerId: string; readonly items: readonly { readonly id: string; readonly name: string }[] }[];
+}
+
+/** A node of the place tree built from drawer paths: Kitchen › shelf › tin. */
+export interface AgentPlace {
+  readonly name: string;
+  readonly path: readonly string[];
+  readonly drawers: readonly string[];
+  readonly children: readonly AgentPlace[];
 }
 
 const LOCALE = "en-GB";
@@ -140,7 +155,7 @@ export class AgentClient {
     }
   }
 
-  private async call(method: "GET" | "POST", path: string, body?: unknown): Promise<unknown> {
+  private async call(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<unknown> {
     let res: Response;
     try {
       res = await this.doFetch(`${this.api}${path}`, {
@@ -160,6 +175,7 @@ export class AgentClient {
     if (res.status === 409) {
       const body = (await res.json().catch(() => ({}))) as { code?: string };
       if (body.code === "RecountRequired") throw new TokenError("RecountRequired", "the item changed since it was read; count it again");
+      if (body.code === "VersionConflict") throw new TokenError("Conflict", "the drawer changed meanwhile");
       throw new TokenError("Refused", body.code ?? "the server refused this entry");
     }
     if (!res.ok) throw new TokenError("Refused", `the server answered ${res.status}`);
@@ -177,7 +193,8 @@ export class AgentClient {
       if (!held || !sealedDoc) continue; // no key in the bundle, or no document yet: not this token's business
       let doc: DrawerDocument;
       try {
-        const opened = await openDocument(held.key, this.identityFor(d.id, null, sealedDoc.key_version, sealedDoc.schema_version, "document", d.id), sealed(sealedDoc));
+        // the document's author is whoever wrote it last, which in a shared drawer may be another member
+        const opened = await openDocument(held.key, this.identityFor(d.id, null, sealedDoc.key_version, sealedDoc.schema_version, "document", d.id, sealedDoc.author_id), sealed(sealedDoc));
         assertDocumentShape(opened);
         doc = opened;
       } catch {
@@ -331,6 +348,147 @@ export class AgentClient {
       at: payload.logged_at,
       mine: true,
     };
+  }
+
+  /** Every tag on the items this token can see, with the items that carry it (PETTY-174). */
+  async tags(): Promise<AgentTag[]> {
+    const map = new Map<string, { label: string; holders: Map<string, { drawer: string; drawerId: string; items: { id: string; name: string }[] }> }>();
+    for (const d of await this.drawers()) {
+      for (const l of d.lines) {
+        for (const tg of l.tags) {
+          const k = foldText(tg);
+          const t = map.get(k) ?? { label: tg, holders: new Map() };
+          const h = t.holders.get(d.id) ?? { drawer: d.name, drawerId: d.id, items: [] };
+          h.items.push({ id: l.id, name: l.name });
+          t.holders.set(d.id, h);
+          map.set(k, t);
+        }
+      }
+    }
+    return [...map.values()].map((t) => ({ label: t.label, holders: [...t.holders.values()] })).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  /** The place tree, built from each drawer's path (PETTY-174). Drawers without a place are left out. */
+  async places(): Promise<AgentPlace[]> {
+    interface Node { name: string; path: string[]; drawers: string[]; children: Node[] }
+    const roots: Node[] = [];
+    for (const d of await this.drawers()) {
+      let level = roots;
+      let node: Node | null = null;
+      d.place.forEach((name, i) => {
+        let next = level.find((n) => foldText(n.name) === foldText(name));
+        if (!next) { next = { name, path: d.place.slice(0, i + 1), drawers: [], children: [] }; level.push(next); }
+        node = next;
+        level = next.children;
+      });
+      if (node) (node as Node).drawers.push(d.name);
+    }
+    return roots;
+  }
+
+  /** One drawer by id or by name (words), for tools that name a drawer rather than an item. */
+  async findDrawer(target: string): Promise<AgentDrawer> {
+    const all = await this.drawers();
+    const byId = all.find((d) => d.id === target);
+    if (byId) return byId;
+    const q = foldText(target.trim());
+    const hits = all.filter((d) => foldText(d.name) === q);
+    const loose = hits.length ? hits : all.filter((d) => q.split(/\s+/).every((w) => foldText(d.name).includes(w)));
+    if (loose.length === 0) throw new TokenError("NotFound", `no drawer matches "${target}"`);
+    if (loose.length > 1) throw new TokenError("Ambiguous", `"${target}" matches ${loose.map((d) => d.name).join(", ")}`);
+    return loose[0]!;
+  }
+
+  /**
+   * Changes a drawer's document the way the app does (PETTY-175): read it, apply the operations with
+   * the ledger's own rules, seal it with the drawer key, and send it with the version it was read at.
+   * If someone changed the drawer meanwhile, read it again and repeat.
+   */
+  async mutate(drawerId: string, ops: readonly DocumentOp[]): Promise<void> {
+    if (this.identity.role !== "write") throw new TokenError("ReadOnly", "this token may only read");
+    const held = this.keys.get(drawerId);
+    if (!held) throw new TokenError("OutOfScope", "this token cannot open that drawer");
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const got = (await this.call("GET", `/drawers/${drawerId}`)) as { drawer: { version: number; key_version: number }; document: { key_version: number; schema_version: number; nonce: string; ciphertext: string; author_id: string } };
+      const opened = await openDocument(held.key, this.identityFor(drawerId, null, got.document.key_version, got.document.schema_version, "document", drawerId, got.document.author_id), sealed(got.document));
+      assertDocumentShape(opened);
+      const next = applyOps(opened, ops, { lineHasEntries: () => true });
+      const out = await sealDocument(held.key, this.identityFor(drawerId, null, got.drawer.key_version, 1, "document", drawerId), next);
+      try {
+        await this.call("PUT", `/drawers/${drawerId}/document`, {
+          base_version: got.drawer.version,
+          key_version: got.drawer.key_version,
+          schema_version: 1,
+          nonce: toB64(out.nonce),
+          ciphertext: toB64(out.ciphertext),
+          verification: false,
+        });
+        return;
+      } catch (e) {
+        if (e instanceof TokenError && e.code === "Conflict") continue;
+        throw e;
+      }
+    }
+    throw new TokenError("Conflict", "the drawer kept changing; try again");
+  }
+
+  /** Puts a tag on an item. At most five tags per item, spelled like an existing tag when one matches. */
+  async tagItem(drawerId: string, lineId: string, tag: string): Promise<readonly string[]> {
+    const drawer = await this.findDrawer(drawerId);
+    const line = drawer.lines.find((l) => l.id === lineId);
+    if (!line) throw new TokenError("NotFound", "no such item");
+    if (line.tags.some((t) => foldText(t) === foldText(tag))) return line.tags;
+    if (line.tags.length >= MAX_TAGS) throw new TokenError("Refused", `an item holds at most ${MAX_TAGS} tags`);
+    const existing = (await this.tags()).find((t) => foldText(t.label) === foldText(tag))?.label;
+    const next = normalizeTags([...line.tags, existing ?? tag]);
+    await this.mutate(drawer.id, [{ type: "set_line_tags", line_id: lineId, tags: [...next] }]);
+    return next;
+  }
+
+  async untagItem(drawerId: string, lineId: string, tag: string): Promise<readonly string[]> {
+    const drawer = await this.findDrawer(drawerId);
+    const line = drawer.lines.find((l) => l.id === lineId);
+    if (!line) throw new TokenError("NotFound", "no such item");
+    const next = line.tags.filter((t) => foldText(t) !== foldText(tag));
+    if (next.length === line.tags.length) return line.tags;
+    await this.mutate(drawer.id, [{ type: "set_line_tags", line_id: lineId, tags: [...next] }]);
+    return next;
+  }
+
+  /** Renames a tag on every item this token can change; a name that exists already merges the two. Returns how many items changed. */
+  async renameTag(from: string, to: string): Promise<number> {
+    const target = (await this.tags()).find((t) => foldText(t.label) === foldText(to))?.label ?? to.trim();
+    return this.rewriteTag(from, () => target);
+  }
+
+  /** Removes a tag from every item this token can change. Returns how many items changed. */
+  removeTag(tag: string): Promise<number> {
+    return this.rewriteTag(tag, () => null);
+  }
+
+  private async rewriteTag(from: string, to: () => string | null): Promise<number> {
+    const key = foldText(from);
+    let changed = 0;
+    for (const d of await this.drawers()) {
+      const ops = d.lines.flatMap((l) => {
+        if (!l.tags.some((t) => foldText(t) === key)) return [];
+        const next = normalizeTags(l.tags.flatMap((t) => (foldText(t) !== key ? [t] : to() === null ? [] : [to()!])));
+        return [{ type: "set_line_tags" as const, line_id: l.id, tags: [...next] }];
+      });
+      if (!ops.length) continue;
+      await this.mutate(d.id, ops);
+      changed += ops.length;
+    }
+    if (!changed) throw new TokenError("NotFound", `no item carries the tag "${from}"`);
+    return changed;
+  }
+
+  /** Moves a drawer to a place path such as ["Kitchen", "shelf"]; an empty path takes it out of every place. */
+  async moveDrawer(drawerId: string, path: readonly string[]): Promise<readonly string[]> {
+    const drawer = await this.findDrawer(drawerId);
+    const next = normalizeTags(path.map((p) => p.trim()).filter(Boolean));
+    await this.mutate(drawer.id, [{ type: "set_tags", tags: [...next] }]);
+    return next;
   }
 
   private sigKeyIdCache: string | null = null;

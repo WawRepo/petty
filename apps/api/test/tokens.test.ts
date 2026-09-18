@@ -90,6 +90,18 @@ describe("access tokens (PETTY-164)", () => {
     expect((await tool(write.token)("POST", `/drawers/${d.id}/entries`, entry)).statusCode).not.toBe(403);
   });
 
+  it("a write token may replace a drawer document in its scope; a read token may not (PETTY-175)", async () => {
+    const d = await drawer(A, "Pantry");
+    const read = await makeToken(A, { role: "read" });
+    const write = await makeToken(A, { role: "write", scope: [d.id] });
+    const other = await drawer(A, "Elsewhere");
+    const got = (await A.call("GET", `/drawers/${d.id}`)).json();
+    const body = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: got.document.nonce, ciphertext: got.document.ciphertext, verification: false };
+    expect((await tool(read.token)("PUT", `/drawers/${d.id}/document`, body)).statusCode).toBe(403);
+    expect((await tool(write.token)("PUT", `/drawers/${d.id}/document`, body)).statusCode).toBe(200);
+    expect((await tool(write.token)("PUT", `/drawers/${other.id}/document`, body)).statusCode).toBe(403);
+  });
+
   it("a scoped token cannot touch a drawer outside its scope", async () => {
     const inside = await drawer(A, "Inside");
     const outside = await drawer(A, "Outside");

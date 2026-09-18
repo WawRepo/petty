@@ -76,7 +76,7 @@ describe("petty mcp (PETTY-166)", () => {
   it("offers reading tools to a read token and no writing tools", async () => {
     const client = await host("read");
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
-    expect(names).toEqual(["find_item", "history", "list_drawers"]);
+    expect(names).toEqual(["find_item", "history", "list_drawers", "list_places", "list_tags"]);
   });
 
   it("lists drawers with balances, labelled as data", async () => {
@@ -98,7 +98,7 @@ describe("petty mcp (PETTY-166)", () => {
   it("a write token gets add, withdraw and adjust, and the answer says the new balance", async () => {
     const client = await host("write");
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
-    expect(names).toEqual(["add", "adjust", "find_item", "history", "list_drawers", "withdraw"]);
+    expect(names).toEqual(["add", "adjust", "find_item", "history", "list_drawers", "list_places", "list_tags", "move_drawer", "remove_tag", "rename_tag", "tag_item", "untag_item", "withdraw"]);
 
     const added = text(await client.callTool({ name: "add", arguments: { item: "kitchen cash", amount: "10", comment: "from Claude" } }));
     expect(added).toContain("is now 60.00 PLN");
@@ -109,6 +109,21 @@ describe("petty mcp (PETTY-166)", () => {
 
     const history = text(await client.callTool({ name: "history", arguments: { item: "kitchen cash" } }));
     expect(history).toContain("comment: from Claude");
+  });
+
+  it("tags and places through the tools: tag, list, filter, rename, move, list places (PETTY-174/175)", async () => {
+    const client = await host("write");
+    expect(text(await client.callTool({ name: "tag_item", arguments: { item: "kitchen cash", tag: "food" } }))).toContain("now has tags: food");
+    expect(text(await client.callTool({ name: "list_tags", arguments: {} }))).toContain("tag: food · Kitchen: Cash");
+    expect(text(await client.callTool({ name: "list_drawers", arguments: { tag: "FOOD" } }))).toContain("item: Cash");
+    expect(text(await client.callTool({ name: "list_drawers", arguments: { tag: "travel" } }))).toBe("Nothing matches.");
+    expect(text(await client.callTool({ name: "rename_tag", arguments: { from: "food", to: "groceries" } }))).toContain("1 item");
+    expect(text(await client.callTool({ name: "move_drawer", arguments: { drawer: "Kitchen", place: "House › Pantry" } }))).toContain("House › Pantry");
+    expect(text(await client.callTool({ name: "list_places", arguments: {} }))).toContain("  place: Pantry · drawers: Kitchen");
+    expect(text(await client.callTool({ name: "list_drawers", arguments: { place: "house" } }))).toContain("drawer: Kitchen (House › Pantry)");
+    expect(text(await client.callTool({ name: "untag_item", arguments: { item: "kitchen cash", tag: "groceries" } }))).toContain("now has tags: none");
+    await client.callTool({ name: "move_drawer", arguments: { drawer: "Kitchen", place: "" } });
+    expect(text(await client.callTool({ name: "list_places", arguments: {} }))).toBe("No drawer has a place yet.");
   });
 
   it("stays up when Petty cannot be reached at start, and each call says why (PETTY-172)", async () => {

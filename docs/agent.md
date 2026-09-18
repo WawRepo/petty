@@ -91,6 +91,7 @@ see "On a phone" below.
 - "What is in the kitchen drawer?"
 - "Add 10 zloty to kitchen cash, from groceries."
 - "I counted 37.50 in the tin; set it."
+- "How much is in the kitchen?" · "What is tagged travel?" · "Move the tin to Kitchen › shelf."
 
 ## Tools
 
@@ -102,6 +103,14 @@ see "On a phone" below.
 | `add` | write | adds an amount |
 | `withdraw` | write | takes an amount out |
 | `adjust` | write | sets an item to what was counted |
+| `list_tags` | read | every tag with the items that carry it |
+| `list_places` | read | the place tree with the drawers in each place |
+| `tag_item`, `untag_item` | write | puts a tag on an item, or takes it off |
+| `rename_tag`, `remove_tag` | write | renames or removes a tag on every item; a rename onto an existing tag merges them |
+| `move_drawer` | write | puts a drawer in a place, such as "Kitchen › shelf" |
+
+`list_drawers` can be filtered by `tag` or `place`. The tools see the tags and places that
+drawers carry. Your own saved tag list and the order of your place tree stay in the app.
 
 A read-only token is offered no writing tools at all.
 

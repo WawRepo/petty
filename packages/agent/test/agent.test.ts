@@ -151,6 +151,81 @@ describe("headless client (PETTY-165)", () => {
     expect((await after.drawers()).map((d) => d.name).sort()).toEqual(["Attic", "Kitchen"]);
   });
 
+  it("tags and places: list, tag, untag, rename onto an existing tag, remove, and move a drawer (PETTY-174/175)", async () => {
+    const c = await client("write");
+    await c.tagItem(drawerId, lineId, "food");
+    await c.tagItem(drawerId, lineId, "Travel");
+    expect((await c.tags()).map((t) => t.label)).toEqual(["food", "Travel"]);
+    expect((await c.tags())[0]!.holders[0]!.items.map((i) => i.name)).toEqual(["Cash"]);
+    // an existing spelling wins, and a tag already there is not doubled
+    expect(await c.tagItem(drawerId, lineId, "FOOD")).toEqual(["food", "Travel"]);
+    await c.untagItem(drawerId, lineId, "travel");
+    expect((await c.drawers())[0]!.lines[0]!.tags).toEqual(["food"]);
+    await c.tagItem(drawerId, lineId, "groceries");
+    // rename "food" onto "groceries": the two merge
+    expect(await c.renameTag("food", "Groceries")).toBe(1);
+    expect((await c.drawers())[0]!.lines[0]!.tags).toEqual(["groceries"]);
+    expect(await c.removeTag("groceries")).toBe(1);
+    expect((await c.tags())).toEqual([]);
+    await expect(c.removeTag("nothing")).rejects.toMatchObject({ code: "NotFound" });
+
+    await c.moveDrawer("Kitchen", ["House", "Kitchen shelf"]);
+    const places = await c.places();
+    expect(places.map((p) => p.name)).toEqual(["House"]);
+    expect(places[0]!.children[0]!.name).toBe("Kitchen shelf");
+    expect(places[0]!.children[0]!.drawers).toEqual(["Kitchen"]);
+    await c.moveDrawer(drawerId, []);
+    expect(await c.places()).toEqual([]);
+  });
+
+  it("a read token cannot change tags or places", async () => {
+    const c = await client("read");
+    await expect(c.tagItem(drawerId, lineId, "x")).rejects.toMatchObject({ code: "ReadOnly" });
+    await expect(c.moveDrawer(drawerId, ["Somewhere"])).rejects.toMatchObject({ code: "ReadOnly" });
+  });
+
+  it("a change made by someone else meanwhile is kept: the write retries on the new version", async () => {
+    const c = await client("write");
+    await c.drawers();
+    // the owner's app renames the item in between
+    const got = (await owner.call("GET", `/drawers/${drawerId}`)).json();
+    const { applyOps } = await import("@petty/ledger");
+    const { openDocument, fromB64 } = await import("@petty/crypto");
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
+    const k = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+    const doc = await openDocument(k, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) });
+    const renamed = applyOps(doc as never, [{ type: "rename_line", line_id: lineId, name: "Cash box" }], { lineHasEntries: () => true });
+    const sealedDoc = await owner.sealDoc(drawerId, k, renamed);
+    expect((await owner.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false })).statusCode).toBe(200);
+    // the token's change still lands, and the rename survives
+    await c.tagItem(drawerId, lineId, "kept");
+    const line = (await c.drawers())[0]!.lines[0]!;
+    expect(line.name).toBe("Cash box");
+    expect(line.tags).toEqual(["kept"]);
+    await c.untagItem(drawerId, lineId, "kept");
+  });
+
+  it("a shared drawer last written by another member still opens (the document's author is read from the row)", async () => {
+    const bob = new Client(app, await userMaterial("agent-bob", { email: `agent-bob-${run}@test.local` }));
+    expect((await bob.signup(await makeJoinLink())).statusCode).toBe(201);
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
+    const k = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+    const inv = await owner.call("POST", `/drawers/${drawerId}/invitations`, { invitee_id: bob.id, role: "write", wrap: await owner.wrapFor(k, bob.user.pub.ecdh, drawerId, 1) });
+    expect(inv.statusCode).toBe(201);
+    expect((await bob.call("POST", `/invitations/${inv.json().id}/accept`)).statusCode).toBe(204);
+    // Bob renames the drawer, so the document's author is now Bob
+    const got = (await bob.call("GET", `/drawers/${drawerId}`)).json();
+    const { applyOps } = await import("@petty/ledger");
+    const { openDocument, fromB64 } = await import("@petty/crypto");
+    const doc = await openDocument(k, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) });
+    const renamed = applyOps(doc as never, [{ type: "rename_drawer", name: "Kitchen (shared)" }], { lineHasEntries: () => true });
+    const sealedDoc = await bob.sealDoc(drawerId, k, renamed);
+    expect((await bob.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false })).statusCode).toBe(200);
+
+    const c = await client("read");
+    expect((await c.drawers()).map((d) => d.name)).toContain("Kitchen (shared)");
+  });
+
   it("a token cannot reach a drawer outside its bundle", async () => {
     const c = await client("write");
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);

@@ -3,18 +3,27 @@
   "manifest_version": "0.3",
   "name": "petty",
   "display_name": "Petty",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Your Petty drawers as tools: balances, finding an item, history, and adding or taking cash.",
   "long_description": "Petty is an end-to-end encrypted ledger for the cash and things in your home. This add-on runs on your own computer. It holds your access token, opens your drawer keys here, and talks to your Petty server, which only ever sees ciphertext. Make a token in Petty: Settings → Access tokens.",
-  "author": { "name": "Petty contributors" },
+  "author": {
+    "name": "Petty contributors"
+  },
   "license": "AGPL-3.0-only",
-  "keywords": ["petty", "cash", "ledger", "encrypted"],
+  "keywords": [
+    "petty",
+    "cash",
+    "ledger",
+    "encrypted"
+  ],
   "server": {
     "type": "node",
     "entry_point": "server/index.mjs",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.mjs"],
+      "args": [
+        "${__dirname}/server/index.mjs"
+      ],
       "env": {
         "PETTY_API_URL": "${user_config.api_url}",
         "PETTY_TOKEN": "${user_config.token}"
@@ -37,15 +46,67 @@
     }
   },
   "tools": [
-    { "name": "list_drawers", "description": "Every drawer and item the token can open, with balances" },
-    { "name": "find_item", "description": "Find one item by words" },
-    { "name": "history", "description": "Recent entries of one item" },
-    { "name": "add", "description": "Add an amount to an item (writing tokens only)" },
-    { "name": "withdraw", "description": "Take an amount from an item (writing tokens only)" },
-    { "name": "adjust", "description": "Set an item to what was counted (writing tokens only)" }
+    {
+      "name": "list_drawers",
+      "description": "Every drawer and item, with balances; filter by tag or place"
+    },
+    {
+      "name": "find_item",
+      "description": "Find one item by words"
+    },
+    {
+      "name": "history",
+      "description": "Recent entries of one item"
+    },
+    {
+      "name": "list_tags",
+      "description": "Every tag with the items that carry it"
+    },
+    {
+      "name": "list_places",
+      "description": "The place tree with the drawers in each place"
+    },
+    {
+      "name": "add",
+      "description": "Add an amount to an item (writing tokens)"
+    },
+    {
+      "name": "withdraw",
+      "description": "Take an amount from an item (writing tokens)"
+    },
+    {
+      "name": "adjust",
+      "description": "Set an item to what was counted (writing tokens)"
+    },
+    {
+      "name": "tag_item",
+      "description": "Put a tag on an item (writing tokens)"
+    },
+    {
+      "name": "untag_item",
+      "description": "Take a tag off an item (writing tokens)"
+    },
+    {
+      "name": "rename_tag",
+      "description": "Rename a tag on every item (writing tokens)"
+    },
+    {
+      "name": "remove_tag",
+      "description": "Remove a tag from every item (writing tokens)"
+    },
+    {
+      "name": "move_drawer",
+      "description": "Put a drawer in a place (writing tokens)"
+    }
   ],
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
-    "runtimes": { "node": ">=20.0.0" }
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
   }
 }

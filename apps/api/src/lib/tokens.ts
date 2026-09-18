@@ -75,7 +75,9 @@ const READ_ROUTES = new Set([
   "GET /drawers/:id/photo",
   "GET /drawers/:id/lines/:lineId/entries",
 ]);
-const WRITE_ROUTES = new Set(["POST /drawers/:id/entries"]);
+// PETTY-175: a writing token may also edit a drawer's document (tags, places). The server cannot see
+// what changed, because the document is sealed; the tools on the owner's side decide which edits exist.
+const WRITE_ROUTES = new Set(["POST /drawers/:id/entries", "PUT /drawers/:id/document"]);
 
 /**
  * Called for every token request before the handler. Denies anything outside the allow-list, an

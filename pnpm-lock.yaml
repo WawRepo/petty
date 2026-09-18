@@ -123,6 +123,9 @@ importers:
       '@petty/agent':
         specifier: workspace:*
         version: link:../../packages/agent
+      '@petty/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -136,9 +139,6 @@ importers:
       '@petty/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
-      '@petty/ledger':
-        specifier: workspace:*
-        version: link:../../packages/ledger
       '@petty/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
