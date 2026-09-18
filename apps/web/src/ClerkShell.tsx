@@ -1,20 +1,29 @@
 import { useEffect, type ReactNode } from "react";
 import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/clerk-react";
+import { Clerk } from "@clerk/clerk-js";
 import { authConfig } from "./lib/authConfig.js";
 import { setTokenProvider } from "./lib/api.js";
 import { boot, setSessionScope, setSignOutHandler, toAnonymous } from "./lib/session.js";
 import { useClerkAppearance } from "./lib/clerkAppearance.js";
 
 /**
- * The Clerk side of the gate (PETTY-88), its own chunk, loaded only in clerk mode. clerk-js and its
- * UI come from the instance's frontend API origin (the CSP allows that origin in clerk mode). Once
- * Clerk reports a session, every API call carries its token and the app boots; when it reports
- * none, the app is anonymous.
+ * clerk-js is bundled into this chunk at a pinned version (PETTY-185, review NR-5), not fetched from
+ * Clerk's servers at run time: the page that holds the vault keys runs only code we built and can
+ * review. The CSP therefore no longer lists Clerk's origin under script-src.
+ */
+let clerkInstance: Clerk | null = null;
+const clerkJs = (publishableKey: string): Clerk => (clerkInstance ??= new Clerk(publishableKey));
+
+/**
+ * The Clerk side of the gate (PETTY-88), its own chunk, loaded only in clerk mode. Once Clerk
+ * reports a session, every API call carries its token and the app boots; when it reports none,
+ * the app is anonymous.
  */
 export function ClerkShell({ children }: { children: ReactNode }) {
   const appearance = useClerkAppearance();
+  const publishableKey = authConfig().clerk_publishable_key ?? "";
   return (
-    <ClerkProvider appearance={appearance} telemetry={{ disabled: true }} publishableKey={authConfig().clerk_publishable_key ?? ""} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join">
+    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join">
       <Bridge>{children}</Bridge>
     </ClerkProvider>
   );

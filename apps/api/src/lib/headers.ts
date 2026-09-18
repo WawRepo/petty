@@ -11,8 +11,8 @@ import { config } from "../config.js";
  *  - require-trusted-types-for 'script': DOM XSS sinks need a policy; React never uses them.
  */
 /**
- * Clerk mode (PETTY-88, docs/auth-clerk.md) relaxes exactly this much: clerk-js and its UI chunks
- * load from the instance's frontend API origin (script-src), Clerk's components inject styles
+ * Clerk mode (PETTY-88, docs/auth-clerk.md) relaxes exactly this much: clerk-js is bundled at a
+ * pinned version (PETTY-185), so script-src adds only Turnstile; Clerk's components inject styles
  * (style-src 'unsafe-inline'), the bot check is Cloudflare Turnstile (script + frame), the frontend
  * API is the only extra connect target, avatars come from img.clerk.com, clerk-js may spawn its
  * session poller as a blob: worker (worker-src), and Trusted Types enforcement is off because
@@ -22,7 +22,7 @@ const clerk = config.authProvider === "clerk";
 const fapi = clerk && config.clerkFrontendApi ? ` ${config.clerkFrontendApi}` : "";
 export const CSP = [
   "default-src 'self'",
-  clerk ? `script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com${fapi}` : "script-src 'self' 'wasm-unsafe-eval'",
+  clerk ? "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com" : "script-src 'self' 'wasm-unsafe-eval'",
   clerk ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
   clerk ? "img-src 'self' blob: data: https://img.clerk.com" : "img-src 'self' blob: data:",
   "font-src 'self'",

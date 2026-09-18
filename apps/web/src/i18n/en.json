@@ -684,6 +684,7 @@
     "notTitle": "What Petty cannot defend against",
     "not": [
       "Whoever serves this website could serve a version that steals your passphrase. Strict browser rules narrow this, they do not remove it.",
+      "When sign-in runs through Clerk, Clerk decides who may sign in. Whoever controls Clerk could sign in as you, but still needs your passphrase or passkey to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
       "Anyone you share a drawer with can read and copy everything in it. Removing them stops future access only.",
       "A member with write access can also damage a drawer's history (the app then shows those records as tampered, but their content is gone). Share with people you trust.",
       "A security bug in this app itself.",

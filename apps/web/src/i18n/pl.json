@@ -684,6 +684,7 @@
     "notTitle": "Przed czym Petty nie chroni",
     "not": [
       "Kto serwuje tę stronę, mógłby podać wersję, która kradnie hasło. Ścisłe reguły przeglądarki zawężają to ryzyko, ale go nie usuwają.",
+      "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
       "Każdy, z kim dzielisz szufladę, może przeczytać i skopiować całą jej zawartość. Usunięcie odcina tylko przyszły dostęp.",
       "Błąd bezpieczeństwa w samej aplikacji.",
       "Zapomniane hasło bez kodu odzyskiwania: nikt nie pomoże — celowo.",

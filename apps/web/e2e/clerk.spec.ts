@@ -36,6 +36,11 @@ test("clerk flow", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 420, height: 900 });
   await setupClerkTestingToken({ page });
+  // PETTY-185 (NR-5): under the production CSP, no script may come from anywhere but us and Turnstile.
+  const blocked: string[] = [];
+  page.on("console", (m) => { if (m.type() === "error" && /Content Security Policy/i.test(m.text())) blocked.push(m.text()); });
+  const scripts: string[] = [];
+  page.on("request", (r) => { if (r.resourceType() === "script") scripts.push(r.url()); });
   // 1. sign in with Clerk (user created through the backend API), no vault yet -> setup
   await clerkSignIn(page);
   await page.waitForURL(/\/(setup|unlock)/, { timeout: 40_000 }).catch(() => undefined);
@@ -70,4 +75,7 @@ test("clerk flow", async ({ page }) => {
   await page.getByLabel("Vault passphrase").fill(PASS);
   await page.getByRole("button", { name: /unlock|open/i }).first().click();
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Clerk tin" }).first()).toBeVisible({ timeout: 20_000 });
+  const base = new URL(page.url()).origin;
+  expect(scripts.filter((u) => !u.startsWith(base) && !u.startsWith("https://challenges.cloudflare.com/")), "scripts from elsewhere").toEqual([]);
+  expect(blocked.filter((t) => /script-src/.test(t)), "script-src violations").toEqual([]);
 });

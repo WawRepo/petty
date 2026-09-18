@@ -22,6 +22,8 @@ export default defineConfig({
   projects: [
     { name: "dev", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${WEB_PORT}` }, testIgnore: /prod\.spec\.ts/ },
     { name: "prod", use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" }, testMatch: /prod\.spec\.ts/ },
+    // PETTY-185: the Clerk flow against the built app under the production CSP (CLERK_E2E=1, root .env in clerk mode).
+    { name: "clerk-prod", use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" }, testMatch: /clerk\.spec\.ts/ },
   ],
   webServer: [
     // Test-only: the login limiter is per process; a day of e2e runs against one dev API would trip it.

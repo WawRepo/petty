@@ -42,9 +42,10 @@ cluster, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` tur
 
 ## Browser side
 
-- `@clerk/clerk-react`; clerk-js and its UI chunks load from the instance's frontend API
-  origin (`CLERK_FRONTEND_API`), so `script-src` and `connect-src` add that origin in clerk
-  mode. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`), the bot check loads
+- `@clerk/clerk-react` with `@clerk/clerk-js` bundled into the app at a pinned version
+  (PETTY-185): no Clerk code is fetched at run time, so `script-src` does not list Clerk. Only
+  `connect-src` adds the instance's frontend API origin (`CLERK_FRONTEND_API`) in clerk mode.
+  Upgrading clerk-js is a normal dependency bump, reviewed like any other. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`), the bot check loads
   Cloudflare Turnstile (`script-src`/`frame-src` `https://challenges.cloudflare.com`),
   `img-src` adds `https://img.clerk.com`, and Trusted Types enforcement is off. These are the
   relaxations, all listed in `lib/headers.ts`; local mode keeps the strict policy.
