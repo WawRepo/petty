@@ -1,5 +1,7 @@
 import {
+  delegationCovers,
   fromB64,
+  importEcdsaPublic,
   openDocument,
   openEntryUnverified,
   openPatBundle,
@@ -9,13 +11,16 @@ import {
   splitPatToken,
   toB64,
   unwrapDrawerKey,
+  verifyDelegation,
+  verifyEntry,
   type EntryPayloadV1,
+  type SignedEntryV1,
   type Bytes,
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
 import { applyOps, assertDocumentShape, fold, formatAmount, foldText, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
-import { EntryRow, TokenBootstrap, type AccessTokenSelf } from "@petty/protocol";
+import { EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
  * A headless Petty client for an access token (PETTY-165). Everything a tool needs — MCP for
@@ -38,6 +43,17 @@ export interface ConnectOptions {
   /** Where the API lives, for example https://petty.example.com/api */
   readonly apiUrl: string;
   readonly fetch?: typeof fetch;
+  /** Tests only: allow a plain-http API address that is not this machine. */
+  readonly allowInsecureHttp?: boolean;
+}
+
+/** PETTY-191 (NR-11): the token travels in every request, so only https, or http to this machine. */
+export function checkApiUrl(apiUrl: string, allowInsecureHttp = false): void {
+  let u: URL;
+  try { u = new URL(apiUrl); } catch { throw new TokenError("Refused", `not an address: ${apiUrl}`); }
+  const local = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(u.hostname);
+  if (u.protocol === "https:" || (u.protocol === "http:" && (local || allowInsecureHttp))) return;
+  throw new TokenError("Refused", `the Petty address must start with https:// (got ${u.protocol}//${u.host})`);
 }
 
 export interface AgentLine {
@@ -52,6 +68,8 @@ export interface AgentLine {
   /** The balance as a person reads it, for example "1,209.50 EUR". */
   readonly amount: string;
   readonly countedInTotal: boolean;
+  /** Entries left out of the balance because their signature did not check out (PETTY-191). */
+  readonly unverified: number;
 }
 
 export interface AgentDrawer {
@@ -66,10 +84,15 @@ export interface AgentEntry {
   readonly id: string;
   readonly seq: number;
   readonly op: EntryPayloadV1["op"];
+  /** This entry's own amount (for an adjust: what was counted), never a balance (PETTY-191). */
   readonly amount: string;
+  /** Only on an entry this client just wrote: the item's balance after it. */
+  readonly balanceAfter?: string;
   readonly comment: string;
   readonly at: string;
   readonly mine: boolean;
+  /** False when the signature did not check out against the author's published keys (PETTY-191). */
+  readonly verified: boolean;
 }
 
 /** One tag and the items carrying it, grouped by drawer (PETTY-174). */
@@ -108,6 +131,7 @@ export class AgentClient {
   private heads = new Map<string, number>();
 
   constructor(opts: ConnectOptions) {
+    checkApiUrl(opts.apiUrl, opts.allowInsecureHttp);
     const split = splitPatToken(opts.token);
     this.tokenId = split.tokenId;
     this.secret = split.secret;
@@ -186,10 +210,50 @@ export class AgentClient {
     return res.status === 204 ? undefined : await res.json();
   }
 
+  /** Published keys and delegations of entry authors, from the last start-up load. */
+  private authors: Record<string, EntryAuthor> = {};
+  private verifyKeys = new Map<string, CryptoKey>();
+
+  /**
+   * Does this entry's signature check out (PETTY-191, review NR-11)? Against the author's published
+   * account key with that id, or a token key the author's account key signed a delegation for, as
+   * long as the server received the entry before the delegation expired or was revoked. The same
+   * rule as the web app. The keys come from the server, so this catches a changed database, not a
+   * lying server; the web app's pinned keys are the stronger check.
+   */
+  private async signatureOk(entry: SignedEntryV1, receivedAt: string): Promise<boolean> {
+    const a = this.authors[entry.author_id];
+    if (!a) return false;
+    const importKey = async (spki: string) => {
+      const hit = this.verifyKeys.get(spki);
+      if (hit) return hit;
+      const k = await importEcdsaPublic(spki);
+      this.verifyKeys.set(spki, k);
+      return k;
+    };
+    try {
+      let spki = a.keys.find((k) => k.sig_key_id === entry.sig_key_id)?.ecdsa_pub ?? null;
+      if (!spki) {
+        const d = a.delegations.find((x) => x.delegation.token_sig_key_id === entry.sig_key_id);
+        const acct = d && a.keys.find((k) => k.sig_key_id === d.delegation.account_sig_key_id);
+        if (!d || !acct) return false;
+        const ok = await verifyDelegation(d.delegation, { user_id: entry.author_id, sig_key_id: acct.sig_key_id, ecdsa_pub: acct.ecdsa_pub });
+        if (!delegationCovers(ok, receivedAt, d.revoked_at)) return false;
+        spki = ok.token_ecdsa_pub;
+      }
+      await verifyEntry(entry, { author_id: entry.author_id, sig_key_id: entry.sig_key_id, ecdsaPublic: await importKey(spki) });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Every drawer this token can open, with its lines and balances. */
   async drawers(): Promise<AgentDrawer[]> {
     const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
+    this.authors = boot.authors;
     const entriesByLine = new Map<string, LedgerEntry[]>();
+    const unverified = new Map<string, number>();
     const out: AgentDrawer[] = [];
     for (const d of boot.drawers) {
       const held = this.keys.get(d.id);
@@ -207,10 +271,12 @@ export class AgentClient {
       for (const row of boot.entries.filter((e) => e.drawer_id === d.id)) {
         try {
           const entry = await openEntryUnverified(held.key, this.identityFor(d.id, row.line_id, row.key_version, row.schema_version, "entry", row.id, row.author_id), sealed(row));
+          this.heads.set(`${d.id}:${row.line_id}`, Math.max(this.heads.get(`${d.id}:${row.line_id}`) ?? 0, row.seq));
+          // an entry whose signature does not check out must not move a balance silently
+          if (!(await this.signatureOk(entry, row.received_at))) { unverified.set(row.line_id, (unverified.get(row.line_id) ?? 0) + 1); continue; }
           const list = entriesByLine.get(row.line_id) ?? [];
           list.push({ seq: row.seq, received_at: row.received_at, entry });
           entriesByLine.set(row.line_id, list);
-          this.heads.set(`${d.id}:${row.line_id}`, Math.max(this.heads.get(`${d.id}:${row.line_id}`) ?? 0, row.seq));
         } catch {
           // an entry this token cannot open is skipped, never guessed at
         }
@@ -220,13 +286,13 @@ export class AgentClient {
         name: doc.name,
         place: tagsOf(doc),
         role: d.role,
-        lines: doc.lines.map((l) => this.line(l, entriesByLine.get(l.id) ?? [])),
+        lines: doc.lines.map((l) => this.line(l, entriesByLine.get(l.id) ?? [], unverified.get(l.id) ?? 0)),
       });
     }
     return out;
   }
 
-  private line(l: Line, entries: readonly LedgerEntry[]): AgentLine {
+  private line(l: Line, entries: readonly LedgerEntry[], unverified = 0): AgentLine {
     const balance = l.kind === "single" ? 0 : fold(entries).balance;
     const exponent = l.kind === "money" ? l.exponent : 0;
     const currency = l.kind === "money" ? l.currency : null;
@@ -240,6 +306,7 @@ export class AgentClient {
       balance,
       amount: l.kind === "single" ? "" : `${formatAmount(balance, exponent, LOCALE)}${currency ? ` ${currency}` : ""}`,
       countedInTotal: l.kind === "single" ? false : l.counted !== false,
+      unverified,
     };
   }
 
@@ -280,6 +347,7 @@ export class AgentClient {
           comment: entry.comment,
           at: row.received_at,
           mine: row.author_id === this.identity.userId,
+          verified: await this.signatureOk(entry, row.received_at),
         });
       } catch {
         // unreadable rows are left out rather than half-reported
@@ -343,14 +411,17 @@ export class AgentClient {
       ciphertext: toB64(sealedEntry.ciphertext),
     });
     const after = op === "adjust" ? minor : line.balance + minor;
+    const fmt = (n: number) => `${formatAmount(n, line.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`;
     return {
       id,
       seq: 0,
       op,
-      amount: `${formatAmount(after, line.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`,
+      amount: fmt(minor),
+      balanceAfter: fmt(after),
       comment,
       at: payload.logged_at,
       mine: true,
+      verified: true, // signed here, just now
     };
   }
 

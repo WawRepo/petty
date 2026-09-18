@@ -4,7 +4,7 @@ import { applyOp, newDocument } from "@petty/ledger";
 import { buildApp } from "../../../apps/api/src/app.js";
 import { apiPool, maintPool } from "../../../apps/api/src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../../../apps/api/src/devtools/fixtures.js";
-import { connect, TokenError, type AgentClient } from "../src/index.js";
+import { checkApiUrl, connect, TokenError, type AgentClient } from "../src/index.js";
 
 /**
  * The headless client (PETTY-165) against the real API, in memory. It holds the token, opens the
@@ -69,7 +69,7 @@ beforeAll(async () => {
 
 afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); });
 
-const client = async (role: "read" | "write"): Promise<AgentClient> => connect({ token: await tokenFor(role), apiUrl: "http://petty.test", fetch: inject });
+const client = async (role: "read" | "write"): Promise<AgentClient> => connect({ token: await tokenFor(role), apiUrl: "https://petty.test", fetch: inject });
 
 describe("headless client (PETTY-165)", () => {
   it("reads the drawers the bundle covers, with balances a person can read", async () => {
@@ -97,13 +97,18 @@ describe("headless client (PETTY-165)", () => {
   it("a write token appends, and the new balance comes back in words", async () => {
     const c = await client("write");
     const res = await c.add(drawerId, lineId, "10.50", "from the agent");
-    expect(res.amount).toBe("20.50 PLN");
+    expect(res.amount).toBe("10.50 PLN");
+    expect(res.balanceAfter).toBe("20.50 PLN");
     const after = (await c.drawers())[0]!.lines[0]!;
     expect(after.balance).toBe(2050);
     // and the owner sees it in the history, as their own entry
     const history = await c.history(drawerId, lineId);
     expect(history[0]!.comment).toBe("from the agent");
     expect(history[0]!.mine).toBe(true);
+    // PETTY-191: history shows the entry's own amount, and the token-signed entry checks out
+    expect(history[0]!.amount).toBe("10.50 PLN");
+    expect(history.every((h) => h.verified)).toBe(true);
+    expect(after.unverified).toBe(0);
   });
 
   it("withdraw and adjust land as the right operations", async () => {
@@ -116,19 +121,19 @@ describe("headless client (PETTY-165)", () => {
 
   it("a revoked token is refused, and a wrong secret cannot open the bundle", async () => {
     const token = await tokenFor("read");
-    const c = await connect({ token, apiUrl: "http://petty.test", fetch: inject });
+    const c = await connect({ token, apiUrl: "https://petty.test", fetch: inject });
     const list = (await owner.call("GET", "/me/tokens")).json().tokens as { id: string; name: string }[];
     const mine = list.find((t) => t.name === "agent-read")!;
     expect((await owner.call("DELETE", `/me/tokens/${mine.id}`)).statusCode).toBe(204);
     await expect(c.drawers()).rejects.toMatchObject({ code: "TokenRevoked" });
 
     const other = patToken(token.split(".")[0]!.replace("petty_pat_", ""), patSecret());
-    await expect(connect({ token: other, apiUrl: "http://petty.test", fetch: inject })).rejects.toBeInstanceOf(Error);
+    await expect(connect({ token: other, apiUrl: "https://petty.test", fetch: inject })).rejects.toBeInstanceOf(Error);
   });
 
   it("a drawer made after the token reaches it once the owner's app wraps the key (PETTY-169)", async () => {
     const made = await tokenAndId("read");
-    const client = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    const client = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
     expect((await client.drawers()).map((d) => d.name)).toEqual(["Kitchen"]);
 
     // the owner makes a new drawer
@@ -137,7 +142,7 @@ describe("headless client (PETTY-165)", () => {
     const attic = await owner.createDrawer("Attic", doc);
     expect(attic.res.statusCode).toBe(201);
     // the token cannot see it yet
-    const before = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    const before = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
     expect((await before.drawers()).map((d) => d.name)).toEqual(["Kitchen"]);
 
     // the owner's app wraps the new drawer key for the token, as syncTokenWraps does
@@ -147,7 +152,7 @@ describe("headless client (PETTY-165)", () => {
     expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: attic.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(204);
 
     // now it does
-    const after = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    const after = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
     expect((await after.drawers()).map((d) => d.name).sort()).toEqual(["Attic", "Kitchen"]);
   });
 
@@ -229,5 +234,33 @@ describe("headless client (PETTY-165)", () => {
   it("a token cannot reach a drawer outside its bundle", async () => {
     const c = await client("write");
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);
+  });
+
+  it("PETTY-191 (NR-11): only https, or http to this machine", () => {
+    expect(() => checkApiUrl("https://petty.example.com/api")).not.toThrow();
+    expect(() => checkApiUrl("http://localhost:3000")).not.toThrow();
+    expect(() => checkApiUrl("http://127.0.0.1:3000/api")).not.toThrow();
+    expect(() => checkApiUrl("http://petty.example.com/api")).toThrow(/https/);
+    expect(() => checkApiUrl("ftp://petty.example.com")).toThrow(TokenError);
+  });
+
+  it("PETTY-191 (NR-11): an entry whose signature does not check out is left out of the balance and flagged", async () => {
+    const c = await client("read");
+    const before = (await c.drawers())[0]!.lines[0]!;
+    expect(before.unverified).toBe(0);
+    // a row that claims the owner's key but is signed by another key: what a changed database would hold
+    const real = owner.user.keys.ecdsa;
+    (owner.user.keys as { ecdsa: CryptoKeyPair }).ecdsa = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+    try {
+      expect((await owner.postEntry(drawerId, key, lineId, "add", 99_900)).res.statusCode).toBe(201);
+    } finally {
+      (owner.user.keys as { ecdsa: CryptoKeyPair }).ecdsa = real;
+    }
+    const after = (await c.drawers())[0]!.lines[0]!;
+    expect(after.balance).toBe(before.balance);
+    expect(after.unverified).toBe(1);
+    const history = await c.history(drawerId, lineId);
+    expect(history[0]!.verified).toBe(false);
+    expect(history.slice(1).every((h) => h.verified)).toBe(true);
   });
 });

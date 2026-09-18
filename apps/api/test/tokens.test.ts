@@ -159,7 +159,7 @@ describe("access tokens (PETTY-164)", () => {
     const res = await t("GET", "/me/token/bootstrap");
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    expect(Object.keys(body).sort()).toEqual(["documents", "drawers", "entries", "sig_key_id", "user_id"]);
+    expect(Object.keys(body).sort()).toEqual(["authors", "documents", "drawers", "entries", "sig_key_id", "user_id"]);
     expect(body.drawers.map((d: { id: string }) => d.id)).toEqual([inside.id]);
     expect(Object.keys(body.documents)).toEqual([inside.id]);
     expect(body.sig_key_id).toBeTruthy();

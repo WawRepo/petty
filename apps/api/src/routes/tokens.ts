@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { verifyDelegation } from "@petty/crypto";
 import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, TokenBootstrap, UserDelegations, type DrawerSummary } from "@petty/protocol";
 import type { DrawerRow } from "../lib/perm.js";
-import { drawerSummary, entryRow, sealedRow } from "../lib/rows.js";
+import { drawerSummary, entryRow, sealedRow, userKeys } from "../lib/rows.js";
 import { apiPool } from "../db.js";
 import { iso, sha256 } from "../lib/bytes.js";
 import { badRequest, notFound, unauthorized } from "../lib/errors.js";
@@ -192,7 +192,7 @@ export async function tokenRoutes(app: FastifyInstance) {
       [t.userId, t.scope],
     );
     const ids = ds.map((d) => d.id);
-    const [docs, entries, keys] = await Promise.all([
+    const [docs, entries, keys, authorKeys, authorDelegations] = await Promise.all([
       apiPool.query("select * from drawer_documents where drawer_id = any($1)", [ids]),
       apiPool.query(
         `select e.* from entries e join line_heads h on h.drawer_id = e.drawer_id and h.line_id = e.line_id
@@ -201,7 +201,21 @@ export async function tokenRoutes(app: FastifyInstance) {
         [ids],
       ),
       apiPool.query<{ sig_key_id: string }>("select sig_key_id from user_keys where user_id = $1 and retired_at is null", [t.userId]),
+      // PETTY-191 (NR-11): every key and delegation of anyone who wrote in these drawers, so the tool can check signatures
+      apiPool.query(
+        "select k.* from user_keys k where k.user_id in (select distinct author_id from entries where drawer_id = any($1)) order by k.created_at",
+        [ids],
+      ),
+      apiPool.query<{ user_id: string; delegation: unknown; revoked_at: Date | null }>(
+        `select user_id, delegation, revoked_at from access_tokens
+          where delegation is not null and user_id in (select distinct author_id from entries where drawer_id = any($1)) order by created_at`,
+        [ids],
+      ),
     ]);
+    const authors: Record<string, { keys: ReturnType<typeof userKeys>[]; delegations: { delegation: unknown; revoked_at: string | null }[] }> = {};
+    const author = (id: string) => (authors[id] ??= { keys: [], delegations: [] });
+    for (const r of authorKeys.rows) { const k = userKeys(r); if (k) author(r.user_id).keys.push(k); }
+    for (const r of authorDelegations.rows) author(r.user_id).delegations.push({ delegation: r.delegation, revoked_at: iso(r.revoked_at) });
     const documents: Record<string, ReturnType<typeof sealedRow>> = {};
     for (const r of docs.rows) documents[r.drawer_id] = sealedRow(r);
     return TokenBootstrap.parse({
@@ -210,6 +224,7 @@ export async function tokenRoutes(app: FastifyInstance) {
       drawers: ds.map((d) => drawerSummary(d, d.role, d.has_photo)),
       documents,
       entries: entries.rows.map(entryRow),
+      authors,
     });
   });
 

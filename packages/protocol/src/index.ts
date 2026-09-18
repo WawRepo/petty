@@ -244,12 +244,17 @@ export type Bootstrap = z.infer<typeof Bootstrap>;
  * What a token may load at start (PETTY-182, review NR-2): its drawers only, their documents and
  * entries, and the signing key id. No vault, passkeys, user wraps, members, invitations or transfers.
  */
+/** PETTY-191 (review NR-11): what a tool needs to check who signed an entry — every published key and delegation of each author. */
+export const EntryAuthor = z.object({ keys: z.array(UserKeys), delegations: UserDelegations.shape.delegations });
+export type EntryAuthor = z.infer<typeof EntryAuthor>;
 export const TokenBootstrap = z.object({
   user_id: uuid,
   sig_key_id: z.string(),
   drawers: z.array(DrawerSummary),
   documents: z.record(uuid, SealedRow),
   entries: z.array(EntryRow),
+  /** Authors of any entry in these drawers, by user id (PETTY-191). */
+  authors: z.record(uuid, EntryAuthor).default({}),
 });
 export type TokenBootstrap = z.infer<typeof TokenBootstrap>;
 

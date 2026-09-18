@@ -49,7 +49,7 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
 async function host(role: "read" | "write"): Promise<McpClient> {
   const server = await buildServer({
     token: await tokenFor(role),
-    apiUrl: "http://petty.test",
+    apiUrl: "https://petty.test",
     connect: (o) => connect({ ...o, fetch: inject }),
   });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
@@ -112,6 +112,10 @@ describe("petty mcp (PETTY-166)", () => {
 
     const history = text(await client.callTool({ name: "history", arguments: { item: "kitchen cash" } }));
     expect(history).toContain("comment: from Claude");
+    // PETTY-191 (NR-11): each row is the entry's own amount, never labelled as a balance
+    expect(history).not.toContain("balance after");
+    expect(history).toMatch(/ · counted: 37\.50 PLN/);
+    expect(history).not.toContain("signature did not check");
   });
 
   it("tags and places through the tools: tag, list, filter, rename, move, list places (PETTY-174/175)", async () => {
@@ -134,7 +138,7 @@ describe("petty mcp (PETTY-166)", () => {
     let reachable = false;
     const server = await buildServer({
       token,
-      apiUrl: "http://petty.test",
+      apiUrl: "https://petty.test",
       connect: (o) => connect({ ...o, fetch: (async (i: RequestInfo | URL, init?: RequestInit) => {
         if (!reachable) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "EHOSTUNREACH" } });
         return inject(i, init);
