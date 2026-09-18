@@ -919,6 +919,10 @@
     "revoke": "Revoke",
     "revokeNamed": "Revoke token {name}",
     "revokeBody": "Revoke “{name}”? The tool stops working at once. Data it already read stays read.",
-    "passphraseOrPasskey": "Leave empty to use your passkey instead."
+    "passphraseOrPasskey": "Leave empty to use your passkey instead.",
+    "addonTitle": "Use it in Claude Desktop",
+    "addonBody": "Download the add-on and open it. Claude Desktop asks for two things: the address below and the token above.",
+    "addonDownload": "Get the Claude Desktop add-on",
+    "address": "Petty address"
   }
 }

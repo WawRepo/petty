@@ -24,9 +24,14 @@ Only the `<id>` half is ever sent to the server. The `<secret>` half opens a key
 server stores and cannot read. Revoking the token stops future use; it cannot un-read what was
 already read.
 
-## 2. Tell Claude Desktop about it
+## 2. Add Petty to Claude Desktop
 
-Claude Desktop starts local MCP servers from its config. Add:
+**The easy way:** right after you make the token, Petty offers "Get the Claude Desktop add-on"
+(`petty.mcpb`). Open the file; Claude Desktop installs it and asks for the **Petty address** (shown
+next to the token) and the **token**. Claude Desktop runs the add-on with its own Node and keeps the
+token as a secret field.
+
+**By hand:** Claude Desktop also starts local MCP servers from its config. Add:
 
 ```json
 {

@@ -13,6 +13,8 @@ import { TextField } from "./TextField.js";
 import { useToast } from "./Toast.js";
 
 const DAYS = [30, 90, 365, 0] as const;
+/** What a tool needs as PETTY_API_URL: this very origin, where the app and its API live together. */
+const apiAddress = `${location.origin}/api`;
 
 /**
  * Settings → access tokens (PETTY-164). The owner makes a token for their own tools, for example
@@ -105,6 +107,14 @@ export function AccessTokens({ me }: { me: Me }) {
       <Sheet open={!!made} title={t("tokens.madeTitle")} onClose={() => setMade(null)}>
         <p className="hint">{t("tokens.madeBody")}</p>
         <p className="code" data-testid="token-value">{made}</p>
+        {/* PETTY-172: the easy way into Claude Desktop — one file, then paste the address and the token. */}
+        <h3 className="h-card mt12">{t("tokens.addonTitle")}</h3>
+        <p className="hint">{t("tokens.addonBody")}</p>
+        <div className="field">
+          <label htmlFor="petty-address">{t("tokens.address")}</label>
+          <input id="petty-address" readOnly value={apiAddress} data-testid="token-address" onFocus={(e) => e.currentTarget.select()} />
+        </div>
+        <p className="m0 mb12"><a className="btn btn-secondary" href="/downloads/petty.mcpb" download="petty.mcpb" data-testid="token-addon">{t("tokens.addonDownload")}</a></p>
         <div className="actions">
           <Button variant="secondary" onClick={() => { void navigator.clipboard?.writeText(made ?? "").then(() => toast(t("app.copied"))); }}>{t("app.copy")}</Button>
           <Button onClick={() => setMade(null)} data-testid="token-done">{t("app.done")}</Button>

@@ -12,3 +12,7 @@ notes.sh
 
 # private, per checkout
 CLAUDE.local.md
+
+# built add-on (PETTY-172)
+apps/mcp/mcpb/server/
+apps/web/public/downloads/

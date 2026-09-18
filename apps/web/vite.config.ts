@@ -31,7 +31,7 @@ export default defineConfig({
         // App shell only. API responses are never cached by the worker: ciphertext and
         // metadata live in IndexedDB under the app's own rules, not in the HTTP cache.
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/downloads\//],
         globPatterns: ["**/*.{js,css,html,svg,png}"],
         // The Clerk chunk (clerk-js bundled, PETTY-88) is above Workbox's 2 MiB default; it is precached like the rest.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

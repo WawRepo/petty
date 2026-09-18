@@ -37,6 +37,9 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
   expect(token).toMatch(/^petty_pat_[A-Za-z0-9_-]+\.[A-Za-z0-9+/=]+$/);
+  // PETTY-172: the add-on and the address to paste sit next to the token
+  await expect(page.getByTestId("token-address")).toHaveValue(/\/api$/);
+  await expect(page.getByTestId("token-addon")).toHaveAttribute("href", "/downloads/petty.mcpb");
   await page.getByTestId("token-done").click();
   await expect(page.getByTestId("token-row")).toHaveCount(1);
   await expect(page.getByTestId("token-row")).toContainText("May add entries");

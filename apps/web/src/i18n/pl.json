@@ -919,6 +919,10 @@
     "revoke": "Cofnij",
     "revokeNamed": "Cofnij token {name}",
     "revokeBody": "Cofnąć „{name}”? Narzędzie od razu przestanie działać. To, co już odczytało, zostaje odczytane.",
-    "passphraseOrPasskey": "Zostaw puste, aby użyć klucza dostępu."
+    "passphraseOrPasskey": "Zostaw puste, aby użyć klucza dostępu.",
+    "addonTitle": "Użyj w Claude Desktop",
+    "addonBody": "Pobierz dodatek i otwórz go. Claude Desktop zapyta o dwie rzeczy: adres poniżej i token powyżej.",
+    "addonDownload": "Pobierz dodatek do Claude Desktop",
+    "address": "Adres Petty"
   }
 }

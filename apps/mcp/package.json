@@ -9,7 +9,9 @@
   "scripts": {
     "start": "tsx src/bin.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "AUTH_PROVIDER=local vitest run"
+    "test": "AUTH_PROVIDER=local vitest run",
+    "bundle": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=mcpb/server/index.mjs --legal-comments=none --banner:js=\"import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);\"",
+    "pack": "pnpm run bundle && mcpb validate mcpb/manifest.json && mkdir -p ../web/public/downloads && mcpb pack mcpb ../web/public/downloads/petty.mcpb"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
@@ -17,11 +19,13 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^22.17.2",
-    "tsx": "^4.20.5",
+    "@anthropic-ai/mcpb": "2.1.2",
+    "@petty/api": "workspace:*",
     "@petty/crypto": "workspace:*",
     "@petty/ledger": "workspace:*",
     "@petty/protocol": "workspace:*",
-    "@petty/api": "workspace:*"
+    "@types/node": "^22.17.2",
+    "esbuild": "0.28.2",
+    "tsx": "^4.20.5"
   }
 }

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/dist/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "petty",
+  "display_name": "Petty",
+  "version": "1.0.0",
+  "description": "Your Petty drawers as tools: balances, finding an item, history, and adding or taking cash.",
+  "long_description": "Petty is an end-to-end encrypted ledger for the cash and things in your home. This add-on runs on your own computer. It holds your access token, opens your drawer keys here, and talks to your Petty server, which only ever sees ciphertext. Make a token in Petty: Settings → Access tokens.",
+  "author": { "name": "Petty contributors" },
+  "license": "AGPL-3.0-only",
+  "keywords": ["petty", "cash", "ledger", "encrypted"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.mjs"],
+      "env": {
+        "PETTY_API_URL": "${user_config.api_url}",
+        "PETTY_TOKEN": "${user_config.token}"
+      }
+    }
+  },
+  "user_config": {
+    "api_url": {
+      "type": "string",
+      "title": "Petty address",
+      "description": "Your Petty's API address, shown next to the token in Settings. For example https://petty.example.com/api",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "title": "Access token",
+      "description": "The token from Settings → Access tokens. It starts with petty_pat_.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "list_drawers", "description": "Every drawer and item the token can open, with balances" },
+    { "name": "find_item", "description": "Find one item by words" },
+    { "name": "history", "description": "Recent entries of one item" },
+    { "name": "add", "description": "Add an amount to an item (writing tokens only)" },
+    { "name": "withdraw", "description": "Take an amount from an item (writing tokens only)" },
+    { "name": "adjust", "description": "Set an item to what was counted (writing tokens only)" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": { "node": ">=20.0.0" }
+  }
+}
