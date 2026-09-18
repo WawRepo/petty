@@ -2,7 +2,7 @@
 name: petty
 services:
   db:
-    image: postgres:16
+    image: postgres:16.15@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
     environment:
       POSTGRES_USER: petty
       POSTGRES_PASSWORD: petty
@@ -19,7 +19,7 @@ services:
       retries: 30
 
   mailpit:
-    image: axllent/mailpit
+    image: axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365
     ports:
       - "8025:8025"   # web UI
       - "1025:1025"   # SMTP

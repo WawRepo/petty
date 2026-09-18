@@ -5,10 +5,15 @@
 #
 # The app listens on 127.0.0.1:3000 over plain HTTP. Put a TLS reverse proxy (Caddy, Traefik,
 # nginx) in front of it: Petty needs HTTPS for passkeys, cookies and the service worker.
+#
+# PETTY-190 (review NR-10): only the one-shot `migrate` service holds the database owner password.
+# The app gets the two runtime roles, so rule 8 (entries are append-only for the API) holds here
+# too. Images are pinned by digest; bump the tag AND the digest together.
+# This file has no backup service: see docs/deploy.md, "Backups".
 name: petty
 services:
   db:
-    image: postgres:16
+    image: postgres:16.15@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
     restart: unless-stopped
     environment:
       POSTGRES_USER: petty
@@ -25,15 +30,24 @@ services:
       timeout: 3s
       retries: 30
 
+  migrate:
+    image: ${PETTY_IMAGE:?set PETTY_IMAGE to ghcr.io/wawrepo/petty:<tag>@sha256:<digest>}
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://petty:${OWNER_DB_PASSWORD}@db:5432/petty
+    command: ["pnpm", "migrate"]
+
   app:
-    image: ghcr.io/wawrepo/petty:${PETTY_TAG:-latest}
+    image: ${PETTY_IMAGE:?set PETTY_IMAGE to ghcr.io/wawrepo/petty:<tag>@sha256:<digest>}
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      DATABASE_URL: postgres://petty:${OWNER_DB_PASSWORD}@db:5432/petty
       API_DATABASE_URL: postgres://petty_api:${API_DB_PASSWORD}@db:5432/petty
       MAINT_DATABASE_URL: postgres://petty_maint:${MAINT_DB_PASSWORD}@db:5432/petty
       APP_URL: ${APP_URL:?set APP_URL}
@@ -51,7 +65,7 @@ services:
       CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
       CLERK_FRONTEND_API: ${CLERK_FRONTEND_API:-}
       CLERK_JWT_KEY: ${CLERK_JWT_KEY:-}
-    command: ["sh", "-c", "pnpm migrate && pnpm start"]
+      CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES:-}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health/live"]
       interval: 10s

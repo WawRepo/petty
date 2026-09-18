@@ -13,8 +13,10 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 - The app listens on `127.0.0.1:3000`. Put Caddy, Traefik or nginx in front of it for HTTPS.
   Passkeys, secure cookies and the service worker need HTTPS.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
-  with the passwords from the env file. The app runs the migrations on every start.
-- Pin `PETTY_TAG` to a release tag or a digest.
+  with the passwords from the env file. A one-shot `migrate` service runs the migrations as
+  the owner before the app starts; the app itself never gets the owner password (PETTY-190).
+- Set `PETTY_IMAGE` to a tag and its digest. The Postgres image is pinned by digest too.
+- The compose file has no backup service. Add one (see "Backups") before you keep real data.
 
 ## Settings
 
