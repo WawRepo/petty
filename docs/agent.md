@@ -81,6 +81,20 @@ drawers without you making a new token. Open Petty once after adding a drawer.
 - A token cannot replace your vault, delete your account, share a drawer, export, use admin, or
   make another token. Those are refused by the server.
 
+## Troubleshooting
+
+**"cannot reach …: fetch failed (EHOSTUNREACH)" in Claude Desktop, while the site opens in a
+browser.** Your Petty is on a home-network address, and macOS only lets an app reach those with
+the "Local Network" permission. Open System Settings → Privacy & Security → Local Network, turn
+Claude on, and restart Claude Desktop. The program Claude starts inherits that permission.
+
+**"… (ENOTFOUND)"**: the name does not resolve from this machine; check `PETTY_API_URL`.
+
+**A certificate error**: Node does not read the macOS keychain. If your server uses a private
+certificate authority, point `NODE_EXTRA_CA_CERTS` at its certificate in the same `env` block.
+
+**"TokenRevoked"**: the token was revoked or expired; make a new one in Settings.
+
 ## On a phone
 
 Claude on a phone cannot start a local program. It only connects to a web address, and the call

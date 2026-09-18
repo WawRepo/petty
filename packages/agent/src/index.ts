@@ -149,7 +149,10 @@ export class AgentClient {
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
     } catch (e) {
-      throw new TokenError("Offline", `cannot reach ${this.api}: ${(e as Error).message}`);
+      // Node's fetch hides the real reason in `cause` (EHOSTUNREACH, ENOTFOUND, a certificate error…).
+      const cause = (e as { cause?: { code?: string; message?: string } }).cause;
+      const why = cause?.code ?? cause?.message ?? (e as Error).message;
+      throw new TokenError("Offline", `cannot reach ${this.api}: ${(e as Error).message} (${why})`);
     }
     if (res.status === 401) throw new TokenError("TokenRevoked", "this token is unknown, revoked or expired");
     if (res.status === 403) throw new TokenError("Refused", "this token may not do that");
