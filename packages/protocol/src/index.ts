@@ -103,6 +103,8 @@ export const AccessTokenCreate = z.object({
   scope: z.array(uuid).max(200).nullable(),
   expires_at: z.string().datetime().nullable(),
   bundle: SealedBundle,
+  /** PETTY-181: making a token needs the account's signing key, not only a session. */
+  proof: z.object({ challenge: b64, signature: b64 }),
 });
 export const AccessToken = z.object({
   id: uuid,

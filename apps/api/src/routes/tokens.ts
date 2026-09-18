@@ -4,6 +4,7 @@ import { apiPool } from "../db.js";
 import { iso, sha256 } from "../lib/bytes.js";
 import { badRequest, notFound, unauthorized } from "../lib/errors.js";
 import { requireUser } from "../lib/session.js";
+import { consumeCustodyProof } from "../lib/custody.js";
 import { PAT_PREFIX } from "../lib/tokens.js";
 
 interface Row {
@@ -48,6 +49,8 @@ export async function tokenRoutes(app: FastifyInstance) {
     const me = requireUser(req);
     if (req.token) throw unauthorized();
     const body = AccessTokenCreate.parse(req.body);
+    // Defence in depth (NR-1): a stolen session alone cannot make a token; it takes the signing key.
+    await consumeCustodyProof(req, me.id, body.proof);
     if (body.scope && body.scope.length === 0) throw badRequest("EmptyScope");
     if (body.expires_at && new Date(body.expires_at).getTime() <= Date.now()) throw badRequest("ExpiresInThePast");
     if (body.scope) {

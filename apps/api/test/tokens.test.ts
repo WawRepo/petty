@@ -44,6 +44,7 @@ async function makeToken(client: Client, opts: { role: "read" | "write"; scope?:
     scope: opts.scope ?? null,
     expires_at: opts.expires_at ?? null,
     bundle,
+    proof: await client.proof(),
   });
   return { res, token: patToken(id, secret), secret, id };
 }
@@ -165,7 +166,7 @@ describe("access tokens (PETTY-164)", () => {
     const secret = patSecret();
     const id = tokenId();
     const bundle = await sealPatBundle(secret, id, { v: 1, user_id: A.id, drawers: [] });
-    const created = await A.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: "wrapped", role: "read", scope: null, expires_at: null, bundle });
+    const created = await A.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: "wrapped", role: "read", scope: null, expires_at: null, bundle, proof: await A.proof() });
     expect(created.statusCode).toBe(201);
     expect(created.json().ecdh_pub).toBe(pub);
     const tokenRowId = created.json().id as string;
@@ -189,6 +190,18 @@ describe("access tokens (PETTY-164)", () => {
     expect((await tool(token)("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [] })).statusCode).toBe(403);
     const theirs = await drawer(B, "Not mine");
     expect((await A.call("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [{ drawer_id: theirs.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(400);
+  });
+
+  it("making a token needs the signing key, not only a session (PETTY-181)", async () => {
+    const secret = patSecret();
+    const id = tokenId();
+    const bundle = await sealPatBundle(secret, id, { v: 1, user_id: A.id, drawers: [] });
+    const base = { token_id: id, name: "no proof", role: "read", scope: null, expires_at: null, bundle };
+    expect((await A.call("POST", "/me/tokens", base)).statusCode).toBe(400);
+    // a proof signed with someone else's key is refused
+    const foreign = await A.proof(B.user.keys.ecdsa.privateKey);
+    expect((await A.call("POST", "/me/tokens", { ...base, proof: foreign })).statusCode).toBe(403);
+    expect((await A.call("POST", "/me/tokens", { ...base, proof: await A.proof() })).statusCode).toBe(201);
   });
 
   it("a made-up token id is refused", async () => {

@@ -1,4 +1,6 @@
 import type { Page } from "@playwright/test";
+import pg from "pg";
+import { randomBytes } from "node:crypto";
 import { openPatBundle, splitPatToken } from "@petty/crypto";
 import { expect, loginAndUnlock, openSettings, signupViaApi, test } from "./fixtures.js";
 
@@ -7,6 +9,12 @@ import { expect, loginAndUnlock, openSettings, signupViaApi, test } from "./fixt
  * only the id half; the secret half opens the bundle here, in this Node process, never on the server.
  */
 const API = process.env["API_URL"] ?? "http://127.0.0.1:3000";
+const OWNER_DB = process.env["DATABASE_URL"] ?? "postgres://petty:petty@localhost:5432/petty";
+async function sql<T extends pg.QueryResultRow>(text: string, values: unknown[] = []): Promise<T[]> {
+  const c = new pg.Client({ connectionString: OWNER_DB });
+  await c.connect();
+  try { return (await c.query<T>(text, values)).rows; } finally { await c.end(); }
+}
 
 async function addDrawerWithLine(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -80,4 +88,47 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   await page.getByRole("dialog").getByRole("button", { name: "Revoke" }).click();
   await expect(page.getByTestId("token-row")).toHaveCount(0);
   expect((await request.get(`${API}/drawers/${drawerId}`, { headers: bearer })).status()).toBe(401);
+});
+
+
+test("NR-1 (PETTY-181): a token the owner did not make, or one whose key was swapped, never receives drawer keys", async ({ page }) => {
+  const user = await signupViaApi("patnr1");
+  await loginAndUnlock(page, user);
+  await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
+  await addDrawerWithLine(page, "Kitchen");
+
+  // the owner makes one real token
+  await page.goto("/");
+  await openSettings(page);
+  await page.getByTestId("token-new").click();
+  await page.getByTestId("token-name").fill("Real one");
+  await page.getByTestId("token-passphrase").fill(user.passphrase);
+  await page.getByTestId("token-create").click();
+  await expect(page.getByTestId("token-value")).toBeVisible();
+  await page.getByTestId("token-done").click();
+  const userId = (await sql<{ id: string }>("select id from users where email = $1", [user.email]))[0]!.id;
+  const [real] = await sql<{ id: string }>("select id from access_tokens where user_id = $1", [userId]);
+
+  // an attacker who can write to the database: plant a token with their own key, and swap the real token's key
+  const attacker = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const attackerPub = Buffer.from(await crypto.subtle.exportKey("spki", attacker.publicKey)).toString("base64");
+  const [planted] = await sql<{ id: string }>(
+    `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, ecdh_pub)
+     values ($1, 'planted', $2, 'read', null, 'AAAA', 'AAAA', $3) returning id`,
+    [userId, randomBytes(32), attackerPub],
+  );
+  await sql("update access_tokens set ecdh_pub = $2 where id = $1", [real!.id, attackerPub]);
+
+  // a new drawer appears, and the owner opens the app again (the wrap sync runs)
+  await page.goto("/");
+  const later = await addDrawerWithLine(page, "Attic");
+  await page.goto("/");
+  await page.reload();
+  await expect(page.getByTestId("drawer-row").filter({ hasText: "Attic" })).toBeVisible();
+  await page.waitForTimeout(1500); // give the background sync time to (wrongly) post
+
+  const plantedWraps = await sql("select 1 from access_token_keys where token_id = $1", [planted!.id]);
+  expect(plantedWraps).toHaveLength(0);
+  const swappedWraps = await sql("select 1 from access_token_keys where token_id = $1 and drawer_id = $2", [real!.id, later]);
+  expect(swappedWraps).toHaveLength(0);
 });

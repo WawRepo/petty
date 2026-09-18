@@ -48,7 +48,7 @@ async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: 
     ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))),
     ...(role === "write" ? { ecdsa } : {}),
   });
-  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle });
+  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof() });
   expect(res.statusCode).toBe(201);
   return { token: patToken(id, secret), id: res.json().id as string, pair, pub };
 }

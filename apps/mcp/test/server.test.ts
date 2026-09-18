@@ -40,7 +40,7 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
     drawers: [{ drawer_id: drawerId, key_version: 1, key: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", key))) }],
     ...(role === "write" ? { ecdsa: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", owner.user.keys.ecdsa.privateKey))) } : {}),
   });
-  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope: null, expires_at: null, bundle })).statusCode).toBe(201);
+  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof() })).statusCode).toBe(201);
   return patToken(id, secret);
 }
 

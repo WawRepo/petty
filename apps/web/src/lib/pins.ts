@@ -19,8 +19,13 @@ const Pin = z.object({ ecdh: z.string(), ecdsa: z.string(), sig_key_id: z.string
 // `places` (PETTY-66): this person's tree of places; each node's path of names is what a drawer stores.
 // `line_tags` (PETTY-152): this person's tag list for items, across all drawers; merged on read with the tags found on drawers.
 interface PlaceNodeT { readonly name: string; readonly children: readonly PlaceNodeT[] }
+// `tokens` (PETTY-181, security review NR-1): the access tokens THIS person made, with a fingerprint of
+// each token's ECDH public key. Drawer keys are wrapped only to tokens listed here. The list lives in the
+// sealed user document, so the server can neither add a token to it nor swap a key.
+const TrustedToken = z.object({ id: z.string(), pub_fp: z.string(), scope: z.array(z.string()).nullable(), expires_at: z.string().nullable() });
+export type TrustedToken = z.infer<typeof TrustedToken>;
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional() });
+const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
 
@@ -162,6 +167,19 @@ export async function updateSavedLineTags(change: (tags: readonly string[]) => r
     const next = { ...doc };
     const tags = [...change(doc.line_tags ?? [])];
     if (tags.length) next.line_tags = tags; else delete next.line_tags;
+    return next;
+  };
+  set({ ...state, doc: mutate(state.doc) });
+  try { await save(mutate); } catch (e) { await loadPins().catch(() => undefined); throw e; }
+}
+
+/** The access tokens this person made (PETTY-181), as recorded in the sealed user document. */
+export function trustedTokens(doc: UserDocT = state.doc): readonly TrustedToken[] { return doc.tokens ?? []; }
+export async function updateTrustedTokens(change: (tokens: readonly TrustedToken[]) => readonly TrustedToken[]): Promise<void> {
+  const mutate = (doc: UserDocT): UserDocT => {
+    const next = { ...doc };
+    const list = [...change(doc.tokens ?? [])];
+    if (list.length) next.tokens = list; else delete next.tokens;
     return next;
   };
   set({ ...state, doc: mutate(state.doc) });

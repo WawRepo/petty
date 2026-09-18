@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { AccessToken, type AccessToken as AccessTokenT } from "@petty/protocol";
-import { patSecret, patToken, sealPatBundle, toB64, unwrapDrawerKey, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
+import { patSecret, patToken, sealPatBundle, sha256, toB64, toHex, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
+import { custodyProof } from "./custody.js";
+import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
 import { expectedSender, getDrawers, loadAll, type DrawerView } from "./drawers.js";
 import { getAuth } from "./session.js";
@@ -19,6 +21,9 @@ export interface NewTokenOptions {
   /** Needed for a writing token: its bundle carries the signing key, so entries are mine. */
   readonly unlocked?: UnlockedKeys;
 }
+
+/** A short, stable fingerprint of a token's public key, kept in the sealed user document (PETTY-181). */
+export const keyFingerprint = async (pub: string): Promise<string> => toHex(await sha256(utf8(pub)));
 
 const tokenId = (): string => toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -69,8 +74,18 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
       scope: opts.scope ? [...opts.scope] : null,
       expires_at: opts.expiresAt,
       bundle,
+      proof: await custodyProof(me.keys.ecdsaPrivate),
     }),
   );
+  // PETTY-181: record the token in the sealed user document BEFORE any key is wrapped to it. Only
+  // tokens recorded there ever receive wraps; the server cannot add one or swap its key.
+  const record = { id: row.id, pub_fp: await keyFingerprint(ecdhPub), scope: opts.scope ? [...opts.scope] : null, expires_at: opts.expiresAt };
+  try {
+    await updateTrustedTokens((list) => [...list.filter((t) => t.id !== row.id), record]);
+  } catch (e) {
+    await revokeAccessToken(row.id).catch(() => undefined);
+    throw e;
+  }
   // give the new token its wraps at once, so it sees today's drawers through the same path as later ones
   await postWraps(row.id, ecdhPub, openable).catch(() => undefined);
   return { token: patToken(id, secret), row };
@@ -109,12 +124,19 @@ export async function syncTokenWraps(): Promise<number> {
   const me = getAuth();
   if (me.status !== "unlocked") return 0;
   let added = 0;
+  const trusted = trustedTokens();
+  const now = Date.now();
   const tokens = await listAccessTokens();
   for (const token of tokens) {
     if (!token.ecdh_pub) continue;
+    // PETTY-181 (security review NR-1): wrap only to a token this person made, with the very key they
+    // made it with, that has not expired. The scope comes from their own record, not from the server.
+    const mine = trusted.find((t) => t.id === token.id);
+    if (!mine || mine.pub_fp !== (await keyFingerprint(token.ecdh_pub))) continue;
+    if (mine.expires_at && Date.parse(mine.expires_at) <= now) continue;
     const have = (await api<{ keys: { drawer_id: string; key_version: number }[] }>("GET", `/me/tokens/${token.id}/keys`)).keys;
     const held = new Set(have.map((k) => `${k.drawer_id}:${k.key_version}`));
-    const openable = await openableKeys(token.scope);
+    const openable = await openableKeys(mine.scope);
     const missing = openable.filter((k) => !held.has(`${k.drawerId}:${k.keyVersion}`));
     if (missing.length) added += await postWraps(token.id, token.ecdh_pub, missing);
   }
@@ -128,6 +150,7 @@ export async function listAccessTokens(): Promise<AccessTokenT[]> {
 
 export async function revokeAccessToken(id: string): Promise<void> {
   await api("DELETE", `/me/tokens/${id}`);
+  if (trustedTokens().some((t) => t.id === id)) await updateTrustedTokens((list) => list.filter((t) => t.id !== id)).catch(() => undefined);
 }
 
 /** The list, loaded when the section opens. Drawers are loaded too: their keys go into a new token. */
