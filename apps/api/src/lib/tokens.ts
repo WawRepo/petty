@@ -70,7 +70,8 @@ export async function authenticateToken(bearer: string): Promise<{ token: TokenA
 const READ_ROUTES = new Set([
   "GET /me/token",
   "GET /me/token/keys",
-  "GET /bootstrap",
+  // PETTY-182 (NR-2): a token loads /me/token/bootstrap, never /bootstrap (which carries the vault)
+  "GET /me/token/bootstrap",
   "GET /drawers/:id",
   "GET /drawers/:id/photo",
   "GET /drawers/:id/lines/:lineId/entries",

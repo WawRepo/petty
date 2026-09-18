@@ -223,6 +223,18 @@ export const Bootstrap = z.object({
   transfers: z.array(z.object({ drawer_id: uuid, from_user_id: uuid, to_user_id: uuid })),
 });
 export type Bootstrap = z.infer<typeof Bootstrap>;
+/**
+ * What a token may load at start (PETTY-182, review NR-2): its drawers only, their documents and
+ * entries, and the signing key id. No vault, passkeys, user wraps, members, invitations or transfers.
+ */
+export const TokenBootstrap = z.object({
+  user_id: uuid,
+  sig_key_id: z.string(),
+  drawers: z.array(DrawerSummary),
+  documents: z.record(uuid, SealedRow),
+  entries: z.array(EntryRow),
+});
+export type TokenBootstrap = z.infer<typeof TokenBootstrap>;
 
 export const CreateDrawerBody = z.object({
   id: uuid,

@@ -113,6 +113,23 @@ describe("access tokens (PETTY-164)", () => {
     expect((await tool(t.token)("GET", `/drawers/${outside.id}`)).statusCode).toBe(403);
   });
 
+  it("a token loads only its own start-up data, never the vault (PETTY-182)", async () => {
+    const inside = await drawer(A, "Scoped in");
+    await drawer(A, "Scoped out");
+    const t = tool((await makeToken(A, { role: "read", scope: [inside.id] })).token);
+    expect((await t("GET", "/bootstrap")).statusCode).toBe(403);
+    const res = await t("GET", "/me/token/bootstrap");
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(Object.keys(body).sort()).toEqual(["documents", "drawers", "entries", "sig_key_id", "user_id"]);
+    expect(body.drawers.map((d: { id: string }) => d.id)).toEqual([inside.id]);
+    expect(Object.keys(body.documents)).toEqual([inside.id]);
+    expect(body.sig_key_id).toBeTruthy();
+    const all = (await tool((await makeToken(A, { role: "read" })).token)("GET", "/me/token/bootstrap")).json();
+    expect(all.drawers.length).toBeGreaterThan(1);
+    expect(JSON.stringify(all)).not.toMatch(/vault|passkey|wraps|recovery/);
+  });
+
   it("a scope must be drawers the owner is a member of", async () => {
     const theirs = await drawer(B, "Theirs");
     const made = await makeToken(A, { role: "read", scope: [theirs.id] });

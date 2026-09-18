@@ -1,5 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf } from "@petty/protocol";
+import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, TokenBootstrap, type DrawerSummary } from "@petty/protocol";
+import type { DrawerRow } from "../lib/perm.js";
+import { drawerSummary, entryRow, sealedRow } from "../lib/rows.js";
 import { apiPool } from "../db.js";
 import { iso, sha256 } from "../lib/bytes.js";
 import { badRequest, notFound, unauthorized } from "../lib/errors.js";
@@ -136,6 +138,45 @@ export async function tokenRoutes(app: FastifyInstance) {
       [t.id],
     );
     return { keys: rows.filter((r) => !t.scope || t.scope.includes(r.drawer_id)) };
+  });
+
+  /**
+   * The token's own start-up load (PETTY-182, review NR-2): only the drawers in its scope, their
+   * documents and entries since the last Adjust, and the signing key id. Unlike /bootstrap, no vault,
+   * passkeys, user wraps, members, invitations or transfers.
+   */
+  app.get("/me/token/bootstrap", async (req) => {
+    const t = req.token;
+    if (!t) throw unauthorized();
+    const { rows: ds } = await apiPool.query<DrawerRow & { role: DrawerSummary["role"]; has_photo: boolean }>(
+      `select d.*, case when d.owner_id = $1 then 'owner' else m.role end as role, (p.drawer_id is not null) as has_photo
+         from drawers d
+         left join drawer_members m on m.drawer_id = d.id and m.user_id = $1
+         left join drawer_photos p on p.drawer_id = d.id
+        where (d.owner_id = $1 or m.user_id is not null) and ($2::uuid[] is null or d.id = any($2::uuid[]))
+        order by d.created_at`,
+      [t.userId, t.scope],
+    );
+    const ids = ds.map((d) => d.id);
+    const [docs, entries, keys] = await Promise.all([
+      apiPool.query("select * from drawer_documents where drawer_id = any($1)", [ids]),
+      apiPool.query(
+        `select e.* from entries e join line_heads h on h.drawer_id = e.drawer_id and h.line_id = e.line_id
+          where e.drawer_id = any($1) and e.seq >= greatest(h.checkpoint_seq, 1)
+          order by e.drawer_id, e.line_id, e.seq`,
+        [ids],
+      ),
+      apiPool.query<{ sig_key_id: string }>("select sig_key_id from user_keys where user_id = $1 and retired_at is null", [t.userId]),
+    ]);
+    const documents: Record<string, ReturnType<typeof sealedRow>> = {};
+    for (const r of docs.rows) documents[r.drawer_id] = sealedRow(r);
+    return TokenBootstrap.parse({
+      user_id: t.userId,
+      sig_key_id: keys.rows[0]?.sig_key_id ?? "",
+      drawers: ds.map((d) => drawerSummary(d, d.role, d.has_photo)),
+      documents,
+      entries: entries.rows.map(entryRow),
+    });
   });
 
   /** What a tool asks for with its own token: who it belongs to and its sealed bundle. */

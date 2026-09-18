@@ -15,7 +15,7 @@ import {
   type RecordIdentity,
 } from "@petty/crypto";
 import { applyOps, assertDocumentShape, fold, formatAmount, foldText, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
-import { Bootstrap, type AccessTokenSelf } from "@petty/protocol";
+import { EntryRow, TokenBootstrap, type AccessTokenSelf } from "@petty/protocol";
 
 /**
  * A headless Petty client for an access token (PETTY-165). Everything a tool needs — MCP for
@@ -184,7 +184,7 @@ export class AgentClient {
 
   /** Every drawer this token can open, with its lines and balances. */
   async drawers(): Promise<AgentDrawer[]> {
-    const boot = Bootstrap.parse(await this.call("GET", "/bootstrap"));
+    const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
     const entriesByLine = new Map<string, LedgerEntry[]>();
     const out: AgentDrawer[] = [];
     for (const d of boot.drawers) {
@@ -263,7 +263,7 @@ export class AgentClient {
     if (!line) throw new TokenError("NotFound", "no such item");
     const held = this.keys.get(drawerId)!;
     const rows = (await this.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=${limit}`)) as { entries: unknown[] };
-    const list = Bootstrap.shape.entries.parse(rows.entries ?? []);
+    const list = EntryRow.array().parse(rows.entries ?? []);
     const out: AgentEntry[] = [];
     for (const row of list) {
       try {
@@ -494,8 +494,8 @@ export class AgentClient {
   private sigKeyIdCache: string | null = null;
   private async sigKeyId(): Promise<string> {
     if (this.sigKeyIdCache) return this.sigKeyIdCache;
-    const boot = Bootstrap.parse(await this.call("GET", "/bootstrap"));
-    this.sigKeyIdCache = boot.me.keys.sig_key_id;
+    const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
+    this.sigKeyIdCache = boot.sig_key_id;
     return this.sigKeyIdCache;
   }
 
