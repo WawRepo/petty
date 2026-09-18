@@ -321,8 +321,8 @@ export class AgentClient {
         if (q.split(/\s+/).every((word) => hay.includes(word))) hits.push({ drawer, line });
       }
     }
-    if (hits.length === 0) throw new TokenError("NotFound", `nothing matches "${query}"`);
-    if (hits.length > 1) throw new TokenError("Ambiguous", `"${query}" matches ${hits.map((h) => `${h.drawer.name} / ${h.line.name}`).join(", ")}`);
+    if (hits.length === 0) throw new TokenError("NotFound", `nothing matches ${JSON.stringify(query)}`);
+    if (hits.length > 1) throw new TokenError("Ambiguous", `${JSON.stringify(query)} matches ${hits.map((h) => `${JSON.stringify(h.drawer.name)} / ${JSON.stringify(h.line.name)}`).join(", ")}`);
     return hits[0]!;
   }
 
