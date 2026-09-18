@@ -64,6 +64,12 @@ Instead of `PETTY_TOKEN`, the program also reads `~/.petty/token` (keep it mode 
 
 A read-only token is offered no writing tools at all.
 
+## Drawers made later
+
+A token has its own key pair. When you make a drawer, or someone shares one with you, your Petty
+app wraps that drawer's key for every live token the next time it starts. So the tool sees new
+drawers without you making a new token. Open Petty once after adding a drawer.
+
 ## What this does and does not protect
 
 - The token and your keys stay on your machine. The Petty server never sees the secret half.

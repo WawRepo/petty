@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { patSecret, patToken, sealPatBundle, toB64 } from "@petty/crypto";
+import { patSecret, patToken, sealPatBundle, toB64, wrapDrawerKey } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import { buildApp } from "../../../apps/api/src/app.js";
 import { apiPool, maintPool } from "../../../apps/api/src/db.js";
@@ -28,21 +28,29 @@ const inject: typeof fetch = async (input, init) => {
 };
 
 async function tokenFor(role: "read" | "write"): Promise<string> {
+  return (await tokenAndId(role)).token;
+}
+
+/** A token made the way the web app makes one: its own ECDH pair, the public half on the server. */
+async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
   const extractable = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
   const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", extractable)));
   const ecdsa = toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", owner.user.keys.ecdsa.privateKey)));
+  const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+  const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
   const bundle = await sealPatBundle(secret, id, {
     v: 1,
     user_id: owner.id,
     drawers: [{ drawer_id: drawerId, key_version: 1, key: raw }],
+    ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))),
     ...(role === "write" ? { ecdsa } : {}),
   });
-  const res = await owner.call("POST", "/me/tokens", { token_id: id, name: `agent-${role}`, role, scope: null, expires_at: null, bundle });
+  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle });
   expect(res.statusCode).toBe(201);
-  return patToken(id, secret);
+  return { token: patToken(id, secret), id: res.json().id as string, pair, pub };
 }
 
 beforeAll(async () => {
@@ -116,6 +124,31 @@ describe("headless client (PETTY-165)", () => {
 
     const other = patToken(token.split(".")[0]!.replace("petty_pat_", ""), patSecret());
     await expect(connect({ token: other, apiUrl: "http://petty.test", fetch: inject })).rejects.toBeInstanceOf(Error);
+  });
+
+  it("a drawer made after the token reaches it once the owner's app wraps the key (PETTY-169)", async () => {
+    const made = await tokenAndId("read");
+    const client = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    expect((await client.drawers()).map((d) => d.name)).toEqual(["Kitchen"]);
+
+    // the owner makes a new drawer
+    const laterLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Attic"), { type: "add_line", line: { id: laterLine, kind: "money", name: "Tin", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const attic = await owner.createDrawer("Attic", doc);
+    expect(attic.res.statusCode).toBe(201);
+    // the token cannot see it yet
+    const before = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    expect((await before.drawers()).map((d) => d.name)).toEqual(["Kitchen"]);
+
+    // the owner's app wraps the new drawer key for the token, as syncTokenWraps does
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === attic.id);
+    const key = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+    const forToken = await wrapDrawerKey(key, { ecdhPrivate: owner.user.keys.ecdh.privateKey, ecdhPublicB64: owner.user.pub.ecdh }, made.pub, attic.id, 1);
+    expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: attic.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(204);
+
+    // now it does
+    const after = await connect({ token: made.token, apiUrl: "http://petty.test", fetch: inject });
+    expect((await after.drawers()).map((d) => d.name).sort()).toEqual(["Attic", "Kitchen"]);
   });
 
   it("a token cannot reach a drawer outside its bundle", async () => {

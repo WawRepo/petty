@@ -7,6 +7,7 @@ import {
   signEntry,
   splitPatToken,
   toB64,
+  unwrapDrawerKey,
   type EntryPayloadV1,
   type Bytes,
   type PatBundleV1,
@@ -115,6 +116,24 @@ export class AgentClient {
     for (const d of this.bundle.drawers) {
       const key = await crypto.subtle.importKey("raw", new Uint8Array(fromB64(d.key)), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
       this.keys.set(d.drawer_id, { key, keyVersion: d.key_version });
+    }
+    // PETTY-169: drawers made after this token arrive as wraps for the token's own ECDH key.
+    if (this.bundle.ecdh) {
+      const mine = await crypto.subtle.importKey("pkcs8", new Uint8Array(fromB64(this.bundle.ecdh)), { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits", "deriveKey"]);
+      const owner = self.owner_ecdh_pub;
+      if (owner) {
+        const { keys } = (await this.call("GET", "/me/token/keys")) as { keys: { drawer_id: string; key_version: number; wrap: Parameters<typeof unwrapDrawerKey>[0] }[] };
+        for (const k of keys) {
+          const held = this.keys.get(k.drawer_id);
+          if (held && held.keyVersion >= k.key_version) continue; // the bundle already has this or newer
+          try {
+            const key = await unwrapDrawerKey(k.wrap, mine, { drawer_id: k.drawer_id, key_version: k.key_version, senderEcdhPublicB64: owner });
+            this.keys.set(k.drawer_id, { key, keyVersion: k.key_version });
+          } catch {
+            // a wrap this token cannot open is ignored: the drawer simply stays invisible
+          }
+        }
+      }
     }
     if (this.bundle.ecdsa) {
       this.signing = await crypto.subtle.importKey("pkcs8", new Uint8Array(fromB64(this.bundle.ecdsa)), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);

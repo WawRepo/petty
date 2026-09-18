@@ -31,9 +31,12 @@ export interface PatDrawerKey {
 export interface PatBundleV1 {
   readonly v: 1;
   readonly user_id: string;
+  /** The drawer keys copied in at creation. Later drawers arrive as wraps for `ecdh` (PETTY-169). */
   readonly drawers: readonly PatDrawerKey[];
   /** base64 PKCS#8 ECDSA P-256 private key; present only for a token that may write as the owner. */
   readonly ecdsa?: string;
+  /** base64 PKCS#8 ECDH P-256 private key: this token's own half, which later drawer keys are wrapped to. */
+  readonly ecdh?: string;
 }
 
 /** What the server stores next to the token row: a nonce and the sealed bundle, both base64. */
@@ -94,6 +97,7 @@ export async function openPatBundle(secret: Bytes, tokenId: string, userId: stri
     if (typeof d.key !== "string" || fromB64(d.key).length !== 32) throw new InvalidPayload("pat.bundle.key");
   }
   if (b.ecdsa !== undefined && typeof b.ecdsa !== "string") throw new InvalidPayload("pat.bundle.ecdsa");
+  if (b.ecdh !== undefined && typeof b.ecdh !== "string") throw new InvalidPayload("pat.bundle.ecdh");
   return b;
 }
 

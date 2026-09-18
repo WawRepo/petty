@@ -61,7 +61,18 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   expect((await request.get(`${API}/me`, { headers: bearer })).status()).toBe(403);
   expect((await request.get(`${API}/me/tokens`, { headers: bearer })).status()).toBe(403);
 
+  // PETTY-169: a drawer made after the token reaches it, because the app wraps its key for the token
+  await page.goto("/");
+  const laterId = await addDrawerWithLine(page, "Attic");
+  await page.goto("/");
+  await page.reload(); // the wrap sync runs once per session
+  await expect.poll(async () => {
+    const keys = await request.get(`${API}/me/token/keys`, { headers: bearer });
+    return ((await keys.json()) as { keys: { drawer_id: string }[] }).keys.map((k) => k.drawer_id);
+  }, { timeout: 15_000 }).toContain(laterId);
+
   // revoke: the same call stops working
+  await openSettings(page);
   await page.getByRole("button", { name: "Revoke token Desktop assistant" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Revoke" }).click();
   await expect(page.getByTestId("token-row")).toHaveCount(0);

@@ -24,6 +24,7 @@ import { addPlace, flatten, pathKey, placeOfView, savePlaceTree, usePlaceTree, t
 import { quantityLabel } from "../lib/format.js";
 import { lineBalance as balanceOf } from "../lib/drawers.js";
 import { searchDrawers } from "../lib/search.js";
+import { syncTokenWrapsOnce } from "../lib/accessTokens.js";
 import { useState } from "react";
 import type { Line } from "@petty/ledger";
 
@@ -149,6 +150,9 @@ export function HomeScreen() {
   const state = useDrawers();
   const [adding, setAdding] = useState(false);
   // Search (PETTY-47): the field shows on demand; matching waits ~300 ms after the last keystroke.
+  // PETTY-169: give every live access token the drawers it is missing, quietly, once per session.
+  useEffect(() => { if (state.status === "ready") void syncTokenWrapsOnce(); }, [state.status]);
+
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");

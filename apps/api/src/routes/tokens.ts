@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { AccessToken, AccessTokenCreate, AccessTokenSelf } from "@petty/protocol";
+import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf } from "@petty/protocol";
 import { apiPool } from "../db.js";
 import { iso, sha256 } from "../lib/bytes.js";
 import { badRequest, notFound, unauthorized } from "../lib/errors.js";
@@ -11,6 +11,7 @@ interface Row {
   name: string;
   role: "read" | "write";
   scope: string[] | null;
+  ecdh_pub: string | null;
   created_at: Date;
   last_used_at: Date | null;
   expires_at: Date | null;
@@ -21,6 +22,7 @@ const row = (r: Row) =>
     name: r.name,
     role: r.role,
     scope: r.scope,
+    ecdh_pub: r.ecdh_pub,
     created_at: iso(r.created_at),
     last_used_at: iso(r.last_used_at),
     expires_at: iso(r.expires_at),
@@ -36,7 +38,7 @@ export async function tokenRoutes(app: FastifyInstance) {
     const me = requireUser(req);
     if (req.token) throw unauthorized();
     const { rows } = await apiPool.query<Row>(
-      "select id, name, role, scope, created_at, last_used_at, expires_at from access_tokens where user_id = $1 and revoked_at is null order by created_at desc",
+      "select id, name, role, scope, ecdh_pub, created_at, last_used_at, expires_at from access_tokens where user_id = $1 and revoked_at is null order by created_at desc",
       [me.id],
     );
     return { tokens: rows.map(row) };
@@ -59,10 +61,10 @@ export async function tokenRoutes(app: FastifyInstance) {
       if (Number(rows[0]?.n ?? 0) !== body.scope.length) throw badRequest("ScopeNotAMember");
     }
     const { rows } = await apiPool.query<Row>(
-      `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, expires_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8)
-       returning id, name, role, scope, created_at, last_used_at, expires_at`,
-      [me.id, body.name, sha256(PAT_PREFIX + body.token_id), body.role, body.scope, body.bundle.nonce, body.bundle.ciphertext, body.expires_at],
+      `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, expires_at, ecdh_pub)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       returning id, name, role, scope, ecdh_pub, created_at, last_used_at, expires_at`,
+      [me.id, body.name, sha256(PAT_PREFIX + body.token_id), body.role, body.scope, body.bundle.nonce, body.bundle.ciphertext, body.expires_at, body.ecdh_pub ?? null],
     );
     reply.code(201);
     return row(rows[0]!);
@@ -79,12 +81,68 @@ export async function tokenRoutes(app: FastifyInstance) {
     reply.code(204);
   });
 
+  /**
+   * The wraps a token already holds (PETTY-169). The web app asks for this to see which drawers
+   * still need one, then posts the missing ones. Session only: a token cannot widen itself.
+   */
+  app.get<{ Params: { id: string } }>("/me/tokens/:id/keys", async (req) => {
+    const me = requireUser(req);
+    if (req.token) throw unauthorized();
+    const { rows } = await apiPool.query<{ drawer_id: string; key_version: number }>(
+      `select k.drawer_id, k.key_version from access_token_keys k join access_tokens t on t.id = k.token_id
+        where k.token_id = $1 and t.user_id = $2`,
+      [req.params.id, me.id],
+    );
+    return { keys: rows };
+  });
+
+  app.post<{ Params: { id: string } }>("/me/tokens/:id/keys", async (req, reply) => {
+    const me = requireUser(req);
+    if (req.token) throw unauthorized();
+    const body = AccessTokenKeysBody.parse(req.body);
+    const { rows } = await apiPool.query<{ id: string; scope: string[] | null }>(
+      "select id, scope from access_tokens where id = $1 and user_id = $2 and revoked_at is null",
+      [req.params.id, me.id],
+    );
+    const token = rows[0];
+    if (!token) throw notFound("TokenNotFound");
+    for (const k of body.keys) {
+      if (token.scope && !token.scope.includes(k.drawer_id)) throw badRequest("OutOfScope");
+      // The drawer must be one this user can already open, so a wrap can never widen access.
+      const ok = await apiPool.query(
+        `select 1 from drawers d where d.id = $1
+          and (d.owner_id = $2 or exists (select 1 from drawer_members m where m.drawer_id = d.id and m.user_id = $2))`,
+        [k.drawer_id, me.id],
+      );
+      if (!ok.rowCount) throw badRequest("NotAMember");
+      await apiPool.query(
+        `insert into access_token_keys (token_id, drawer_id, key_version, wrap) values ($1, $2, $3, $4)
+         on conflict (token_id, drawer_id, key_version) do nothing`,
+        [token.id, k.drawer_id, k.key_version, k.wrap],
+      );
+    }
+    reply.code(204);
+  });
+
+  /** The tool's own wraps, for the token it presents. */
+  app.get("/me/token/keys", async (req) => {
+    const t = req.token;
+    if (!t) throw unauthorized();
+    const { rows } = await apiPool.query<{ drawer_id: string; key_version: number; wrap: unknown }>(
+      "select drawer_id, key_version, wrap from access_token_keys where token_id = $1",
+      [t.id],
+    );
+    return { keys: rows.filter((r) => !t.scope || t.scope.includes(r.drawer_id)) };
+  });
+
   /** What a tool asks for with its own token: who it belongs to and its sealed bundle. */
   app.get("/me/token", async (req) => {
     const t = req.token;
     if (!t) throw unauthorized();
-    const { rows } = await apiPool.query<{ user_id: string; name: string; role: "read" | "write"; scope: string[] | null; bundle_nonce: string; bundle_ciphertext: string }>(
-      "select user_id, name, role, scope, bundle_nonce, bundle_ciphertext from access_tokens where id = $1",
+    const { rows } = await apiPool.query<{ user_id: string; name: string; role: "read" | "write"; scope: string[] | null; bundle_nonce: string; bundle_ciphertext: string; owner_ecdh_pub: string }>(
+      `select t.user_id, t.name, t.role, t.scope, t.bundle_nonce, t.bundle_ciphertext, k.ecdh_pub as owner_ecdh_pub
+         from access_tokens t join user_keys k on k.user_id = t.user_id and k.retired_at is null
+        where t.id = $1`,
       [t.id],
     );
     const r = rows[0];
@@ -94,6 +152,7 @@ export async function tokenRoutes(app: FastifyInstance) {
       name: r.name,
       role: r.role,
       scope: r.scope,
+      owner_ecdh_pub: r.owner_ecdh_pub,
       bundle: { nonce: r.bundle_nonce, ciphertext: r.bundle_ciphertext },
     });
   });

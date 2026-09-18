@@ -69,6 +69,7 @@ export async function authenticateToken(bearer: string): Promise<{ token: TokenA
 /** Route templates a token may call, by method. `write` routes also need the write role. */
 const READ_ROUTES = new Set([
   "GET /me/token",
+  "GET /me/token/keys",
   "GET /bootstrap",
   "GET /drawers/:id",
   "GET /drawers/:id/photo",

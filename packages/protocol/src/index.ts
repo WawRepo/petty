@@ -95,6 +95,8 @@ export type AuthConfig = z.infer<typeof AuthConfig>;
 export const SealedBundle = z.object({ nonce: b64, ciphertext: b64 });
 export const AccessTokenCreate = z.object({
   token_id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
+  /** The token's own ECDH public key (PETTY-169), so later drawers can be wrapped for it. */
+  ecdh_pub: b64.optional(),
   name: z.string().trim().min(1).max(80),
   role: z.enum(["read", "write"]),
   /** null = every drawer this user is a member of */
@@ -105,6 +107,8 @@ export const AccessTokenCreate = z.object({
 export const AccessToken = z.object({
   id: uuid,
   name: z.string(),
+  /** The token's own ECDH public key; absent on tokens made before PETTY-169. */
+  ecdh_pub: b64.nullable().optional(),
   role: z.enum(["read", "write"]),
   scope: z.array(uuid).nullable(),
   created_at: z.string(),
@@ -115,12 +119,18 @@ export type AccessToken = z.infer<typeof AccessToken>;
 /** What a tool fetches with its own token: the sealed bundle plus who it belongs to. */
 export const AccessTokenSelf = z.object({
   user_id: uuid,
+  /** The owner's current ECDH public key: the sender of every wrap this token holds. */
+  owner_ecdh_pub: b64.optional(),
   name: z.string(),
   role: z.enum(["read", "write"]),
   scope: z.array(uuid).nullable(),
   bundle: SealedBundle,
 });
 export type AccessTokenSelf = z.infer<typeof AccessTokenSelf>;
+/** Wrapped drawer keys for one token: what the tool unwraps with the token's private key. */
+export const AccessTokenKey = z.object({ drawer_id: uuid, key_version: z.number().int(), wrap: DrawerKeyWrap });
+export const AccessTokenKeysBody = z.object({ keys: z.array(AccessTokenKey).max(500) });
+export type AccessTokenKey = z.infer<typeof AccessTokenKey>;
 
 export const UserKeys = z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string(), created_at: z.string(), retired_at: z.string().nullable() });
 export const Me = z.object({

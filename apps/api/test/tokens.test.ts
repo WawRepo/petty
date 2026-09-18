@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64 } from "@petty/crypto";
+import { openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import { buildApp } from "../src/app.js";
 import { apiPool, maintPool } from "../src/db.js";
@@ -144,6 +144,39 @@ describe("access tokens (PETTY-164)", () => {
     const list = (await A.call("GET", "/me/tokens")).json().tokens as { id: string }[];
     expect(list.map((t) => t.id)).toContain(live.res.json().id);
     expect(list.map((t) => t.id)).not.toContain(doomed.res.json().id);
+  });
+
+  it("wraps for a token: the owner adds them, the tool reads its own, a token cannot add any (PETTY-169)", async () => {
+    const d = await drawer(A, "Cellar");
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+    const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    const secret = patSecret();
+    const id = tokenId();
+    const bundle = await sealPatBundle(secret, id, { v: 1, user_id: A.id, drawers: [] });
+    const created = await A.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: "wrapped", role: "read", scope: null, expires_at: null, bundle });
+    expect(created.statusCode).toBe(201);
+    expect(created.json().ecdh_pub).toBe(pub);
+    const tokenRowId = created.json().id as string;
+    const token = patToken(id, secret);
+
+    // nothing yet
+    expect((await A.call("GET", `/me/tokens/${tokenRowId}/keys`)).json().keys).toEqual([]);
+
+    const wrapRow = (await A.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === d.id);
+    const key = await A.unwrap(wrapRow, A.user.pub.ecdh, true);
+    const forToken = await wrapDrawerKey(key, { ecdhPrivate: A.user.keys.ecdh.privateKey, ecdhPublicB64: A.user.pub.ecdh }, pub, d.id, 1);
+    expect((await A.call("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [{ drawer_id: d.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(204);
+    expect((await A.call("GET", `/me/tokens/${tokenRowId}/keys`)).json().keys).toEqual([{ drawer_id: d.id, key_version: 1 }]);
+
+    // the tool reads its own wraps
+    const own = await tool(token)("GET", "/me/token/keys");
+    expect(own.statusCode).toBe(200);
+    expect(own.json().keys[0].drawer_id).toBe(d.id);
+
+    // a token cannot add wraps, and a drawer the owner is not in cannot be wrapped
+    expect((await tool(token)("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [] })).statusCode).toBe(403);
+    const theirs = await drawer(B, "Not mine");
+    expect((await A.call("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [{ drawer_id: theirs.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(400);
   });
 
   it("a made-up token id is refused", async () => {
