@@ -7,3 +7,7 @@ node_modules
 deploy
 *.md
 !README.md
+# PETTY-186 (review NR-6): secrets never reach any build stage
+.env
+**/.env
+**/.env.*

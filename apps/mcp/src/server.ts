@@ -72,7 +72,7 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     if (!client) client = await open();
     return client;
   };
-  const server = new McpServer({ name: "petty", version: "1.1.0" }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: "petty", version: "1.2.0" }, { instructions: INSTRUCTIONS });
   // Unknown role (not connected yet): offer the write tools; a read-only token is still refused by the server.
   const mayWrite = client ? client.identity.role === "write" : true;
 
