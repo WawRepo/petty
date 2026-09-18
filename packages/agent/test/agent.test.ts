@@ -236,6 +236,12 @@ describe("headless client (PETTY-165)", () => {
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);
   });
 
+  it("PETTY-193 (NR-13): the opened bundle is dropped once its keys are imported", async () => {
+    const c = await client("write");
+    expect((c as unknown as { bundle: unknown }).bundle).toBeNull();
+    expect((await c.drawers()).length).toBeGreaterThan(0);
+  });
+
   it("PETTY-191 (NR-11): only https, or http to this machine", () => {
     expect(() => checkApiUrl("https://petty.example.com/api")).not.toThrow();
     expect(() => checkApiUrl("http://localhost:3000")).not.toThrow();

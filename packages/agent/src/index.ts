@@ -125,6 +125,7 @@ export class AgentClient {
   private readonly tokenId: string;
   private self: AccessTokenSelf | null = null;
   private bundle: PatBundleV1 | null = null;
+  private bundleSigKeyId: string | null = null;
   private keys = new Map<string, { key: CryptoKey; keyVersion: number }>();
   private signing: CryptoKey | null = null;
   /** The last seq seen per drawer:line, which an Adjust must state (the server refuses a stale count). */
@@ -177,6 +178,9 @@ export class AgentClient {
     if (this.bundle.ecdsa) {
       this.signing = await crypto.subtle.importKey("pkcs8", new Uint8Array(fromB64(this.bundle.ecdsa)), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
     }
+    // PETTY-193 (NR-13): the keys now live as non-extractable CryptoKeys; drop the plain copies.
+    this.bundleSigKeyId = this.bundle.sig_key_id ?? null;
+    this.bundle = null;
   }
 
   private async call(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<unknown> {
@@ -571,7 +575,7 @@ export class AgentClient {
     if (this.sigKeyIdCache) return this.sigKeyIdCache;
     // PETTY-184 (NR-4): the token signs with its own key, named in its bundle. An older bundle has
     // the account key instead; the server refuses its writes, so fall back only to report that well.
-    if (this.bundle?.sig_key_id) return (this.sigKeyIdCache = this.bundle.sig_key_id);
+    if (this.bundleSigKeyId) return (this.sigKeyIdCache = this.bundleSigKeyId);
     const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
     this.sigKeyIdCache = boot.sig_key_id;
     return this.sigKeyIdCache;

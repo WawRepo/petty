@@ -7,7 +7,7 @@ import { config } from "./config.js";
 import type { HealthResponse } from "@petty/protocol";
 import { ZodError } from "zod";
 import { dbIsUp } from "./db.js";
-import { ApiError } from "./lib/errors.js";
+import { ApiError, notFound } from "./lib/errors.js";
 import { sessionPlugin } from "./lib/session.js";
 import { securityHeaders } from "./lib/headers.js";
 import { requestMetrics } from "./lib/metrics.js";
@@ -20,6 +20,8 @@ import { meRoutes } from "./routes/me.js";
 import { tokenRoutes } from "./routes/tokens.js";
 import { rotationRoutes } from "./routes/rotation.js";
 import { sharingRoutes } from "./routes/sharing.js";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ENTRY = /(?:^|\/)(index\.html|sw\.js|registerSW\.js|manifest\.webmanifest)$/;
 /** Cache-Control for a file under the web dist, by its on-disk path (a .br/.gz twin counts as the original). */
@@ -71,6 +73,16 @@ export function buildApp() {
   const api = async (a: FastifyInstance) => {
     // API answers are per-session and must never sit in a shared or disk cache (SR-13).
     a.addHook("onSend", async (_req, reply) => { reply.header("Cache-Control", "no-store"); });
+    // PETTY-193 (review NR-13): every :id, :lineId and :userId is a UUID. Anything else is a plain
+    // 404 here, before a handler hands it to Postgres (which answered 500 for a malformed uuid).
+    a.addHook("preValidation", async (req) => {
+      if (!req.user) return; // not signed in: the handler answers 401 first
+      const params = req.params as Record<string, string> | undefined;
+      for (const k of ["id", "lineId", "userId"]) {
+        const v = params?.[k];
+        if (v !== undefined && !UUID.test(v)) throw notFound();
+      }
+    });
     // Readiness: 503 while the database is unreachable, so the ingress does not route to a pod that
     // cannot serve (the NetworkPolicy controller admits a new pod ~10 s after it starts). Liveness
     // uses /health/live, which only says the process is up; a database outage must not restart the API.

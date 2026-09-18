@@ -101,7 +101,6 @@ export async function tokenRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>("/users/:id/delegations", async (req) => {
     requireUser(req);
     if (req.token) throw unauthorized();
-    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw notFound("UserNotFound");
     const { rows } = await apiPool.query<{ delegation: unknown; revoked_at: Date | null }>(
       "select delegation, revoked_at from access_tokens where user_id = $1 and delegation is not null order by created_at",
       [req.params.id],

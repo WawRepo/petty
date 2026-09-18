@@ -209,6 +209,15 @@ describe("access tokens (PETTY-164)", () => {
     expect((await list()).find((x) => x.delegation.token_sig_key_id === made.signing!.bundle.sig_key_id)?.revoked_at).toBeTruthy();
   });
 
+  it("PETTY-193 (NR-13): a malformed id is a 404, never a 500", async () => {
+    const d = await drawer(A, "Ids");
+    for (const url of ["/drawers/not-a-uuid", `/drawers/${d.id}/lines/nope/entries`, "/users/123/keys", "/users/x/delegations", "/invitations/zzz/accept", "/me/tokens/abc/keys"]) {
+      const method = url.endsWith("/accept") ? "POST" : "GET";
+      const res = await A.call(method, url, method === "POST" ? {} : undefined);
+      expect(res.statusCode, url).toBe(404);
+    }
+  });
+
   it("a scope must be drawers the owner is a member of", async () => {
     const theirs = await drawer(B, "Theirs");
     const made = await makeToken(A, { role: "read", scope: [theirs.id] });
