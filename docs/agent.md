@@ -54,6 +54,38 @@ Use a signed Node, such as the installer from nodejs.org (`/usr/local/bin/node`)
 Homebrew Node is only ad-hoc signed, and macOS may silently refuse it access to a server on your
 home network (see Troubleshooting). Run `pnpm install` in the repository first, so that `tsx` exists.
 
+## Other AI apps (Cursor, VS Code, Windsurf, Claude Code, …)
+
+Any app that runs local MCP servers can use the same program. Petty serves it as one file:
+`https://<your petty>/downloads/petty-mcp.mjs`. Save it somewhere, then add this to the app's MCP
+settings (the exact file name and place differ per app):
+
+```json
+{
+  "mcpServers": {
+    "petty": {
+      "command": "node",
+      "args": ["/path/to/petty-mcp.mjs"],
+      "env": {
+        "PETTY_TOKEN": "petty_pat_…",
+        "PETTY_API_URL": "https://petty.example.com/api"
+      }
+    }
+  }
+}
+```
+
+For Claude Code the same is one command:
+
+```
+claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node /path/to/petty-mcp.mjs
+```
+
+It needs Node 20 or newer. On macOS with a home-network Petty, see Troubleshooting.
+
+Apps that only accept remote connectors (for example on a phone) cannot run a local program;
+see "On a phone" below.
+
 ## 3. Ask
 
 - "What is in the kitchen drawer?"
