@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - tests/*
 allowBuilds:
   '@clerk/shared': false
   browser-tabs-lock: false

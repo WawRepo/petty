@@ -16,3 +16,6 @@ CLAUDE.local.md
 # built add-on (PETTY-172)
 apps/mcp/mcpb/server/
 apps/web/public/downloads/
+
+# integration test state when run outside run.sh
+tests/integration/.state.json

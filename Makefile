@@ -3,7 +3,7 @@ export DATABASE_URL       ?= postgres://petty:petty@localhost:5432/petty
 export API_DATABASE_URL   ?= postgres://petty_api:petty_api@localhost:5432/petty
 export MAINT_DATABASE_URL ?= postgres://petty_maint:petty_maint@localhost:5432/petty
 
-.PHONY: help install db db-wait migrate seed dev test e2e lint typecheck reset stop demo demo-down demo-reset
+.PHONY: help install db db-wait migrate seed dev test e2e integration lint typecheck reset stop demo demo-down demo-reset
 
 help:
 	@echo "make dev      start db + mailpit, migrate, run api (:3000) and web (:5173)"
@@ -39,6 +39,11 @@ test: migrate
 
 e2e: migrate
 	pnpm e2e
+
+# The production image under the production compose file, over real HTTP (tests/integration/README.md).
+# BASE=<image> also writes data with that older image first and checks it after the upgrade.
+integration:
+	PETTY_BASE_IMAGE="$(BASE)" sh tests/integration/run.sh
 
 typecheck:
 	pnpm typecheck

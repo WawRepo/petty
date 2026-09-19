@@ -6,7 +6,7 @@ import type { FastifyInstance, LightMyRequestResponse } from "fastify";
 import pg from "pg";
 import {
   createDrawerKey, createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys,
-  patSecret, sealDocument, sealEntry, sealPatBundle, signCustodyChallenge, signDelegation, signEntry, signingKeyId, toB64, wrapDrawerKey, unwrapDrawerKey,
+  patSecret, patToken, sealDocument, sealEntry, sealPatBundle, signCustodyChallenge, signDelegation, signEntry, signingKeyId, toB64, wrapDrawerKey, unwrapDrawerKey,
   type EntryPayloadV1, type RecordIdentity, type Sealed, type Sender, type UserKeyPairs,
 } from "@petty/crypto";
 import { newDocument, type DrawerDocument } from "@petty/ledger";
@@ -99,13 +99,17 @@ export class Client {
     return { pair, bundle: { ecdsa, sig_key_id: delegation.token_sig_key_id }, body: { ecdsa_pub, delegation } };
   }
 
-  /** Makes an access token (PETTY-164) and returns its row id and the bearer a tool would send. */
-  async makeAccessToken(role: "read" | "write" = "read") {
+  /**
+   * Makes an access token (PETTY-164) and returns its row id, the bearer a tool would send, and the
+   * whole token string. `drawers` are copied into the bundle, as the web app does at creation.
+   */
+  async makeAccessToken(role: "read" | "write" = "read", drawers: { drawer_id: string; key_version: number; key: string }[] = []) {
     const tokenId = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
+    const secret = patSecret();
     const signing = role === "write" ? await this.tokenSigning() : null;
-    const bundle = await sealPatBundle(patSecret(), tokenId, { v: 1, user_id: this.id, drawers: [], ...(signing ? signing.bundle : {}) });
+    const bundle = await sealPatBundle(secret, tokenId, { v: 1, user_id: this.id, drawers, ...(signing ? signing.bundle : {}) });
     const res = await this.call("POST", "/me/tokens", { token_id: tokenId, name: "Assistant", role, scope: null, expires_at: null, bundle, proof: await this.proof(), ...(signing ? { signing: signing.body } : {}) });
-    return { res, rowId: res.json().id as string, bearer: `petty_pat_${tokenId}` };
+    return { res, rowId: res.json().id as string, bearer: `petty_pat_${tokenId}`, token: patToken(tokenId, secret) };
   }
 
   get sender(): Sender {
