@@ -3,7 +3,7 @@ export DATABASE_URL       ?= postgres://petty:petty@localhost:5432/petty
 export API_DATABASE_URL   ?= postgres://petty_api:petty_api@localhost:5432/petty
 export MAINT_DATABASE_URL ?= postgres://petty_maint:petty_maint@localhost:5432/petty
 
-.PHONY: help install db db-wait migrate seed dev test e2e integration lint typecheck reset stop demo demo-down demo-reset
+.PHONY: help install db db-wait migrate seed dev test e2e integration image backup-image lint typecheck reset stop demo demo-down demo-reset
 
 help:
 	@echo "make dev      start db + mailpit, migrate, run api (:3000) and web (:5173)"
@@ -39,6 +39,17 @@ test: migrate
 
 e2e: migrate
 	pnpm e2e
+
+# PETTY-61: every published image is built for both PCs and servers (amd64) and Raspberry Pis (arm64).
+# A single-arch image once stopped the nightly backup on a mixed cluster.
+PLATFORMS ?= linux/amd64,linux/arm64
+IMAGE ?= ghcr.io/wawrepo/petty
+image:
+	@test -n "$(TAG)" || { echo "usage: make image TAG=<tag>"; exit 1; }
+	docker buildx build --platform $(PLATFORMS) -t $(IMAGE):$(TAG) --push .
+	docker buildx imagetools inspect $(IMAGE):$(TAG) | grep -E "^Digest|Platform: +linux"
+backup-image:
+	docker buildx build --platform $(PLATFORMS) -t $(IMAGE)-backup:1 --push deploy/backup
 
 # The production image under the production compose file, over real HTTP (tests/integration/README.md).
 # BASE=<image> also writes data with that older image first and checks it after the upgrade.

@@ -47,5 +47,5 @@ content is already ciphertext, but a dump still holds emails and vault material.
 ## Building the image
 
 ```
-docker buildx build --platform linux/arm64 -t <registry>/petty:<tag> --push .   # add linux/amd64 for x86 hosts
+make image TAG=<tag> IMAGE=<registry>/petty      # linux/amd64 and linux/arm64, pushed, digest printed
 ```
