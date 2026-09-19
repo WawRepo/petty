@@ -97,6 +97,14 @@ describe("household", () => {
     expect((await ben.call("GET", `/drawers/${drawerId}/document/history`)).statusCode).toBe(403);
   });
 
+  it("deleting a drawer needs a custody proof, not just an owner session (PETTY-201)", async () => {
+    const doomed = await ann.createDrawer("Doomed");
+    expect(doomed.res.statusCode).toBe(201);
+    expect((await ann.call("DELETE", `/drawers/${doomed.id}`)).statusCode).toBe(400);
+    expect((await ann.call("DELETE", `/drawers/${doomed.id}`, { proof: await ann.proof() })).statusCode).toBe(204);
+    expect((await ann.call("GET", `/drawers/${doomed.id}`)).statusCode).toBe(404);
+  });
+
   it("a new recovery code replaces only the recovery copy, and only with proof of the keys (PETTY-200)", async () => {
     const code = generateRecoveryCode();
     const vault = await createRecoveryVault(code, ann.user.keys);

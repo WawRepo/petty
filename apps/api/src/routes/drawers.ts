@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteLineBody, DocumentHistory, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DocumentHistory, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
+import { consumeCustodyProof } from "../lib/custody.js";
 import { drawerSummary, entryRow, sealedRow, userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import { withTx, type Queryable } from "../lib/tx.js";
@@ -224,10 +225,15 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(204).send();
   });
 
-  /** Owner only. Permanent (spec "Deletion is permanent"). Runs as petty_maint through delete_drawer(). */
+  /**
+   * Owner only. Permanent (spec "Deletion is permanent"). Runs as petty_maint through delete_drawer().
+   * PETTY-201 (red-team INFO-1): like the other destructive acts (SR-2), it needs a custody proof, so
+   * a stolen live session alone cannot erase a drawer without the account signing key.
+   */
   app.delete<{ Params: { id: string } }>("/drawers/:id", async (req, reply) => {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "owner");
+    await consumeCustodyProof(req, me.id, DeleteDrawerBody.parse(req.body).proof);
     await maintPool.query("select delete_drawer($1)", [req.params.id]);
     return reply.code(204).send();
   });

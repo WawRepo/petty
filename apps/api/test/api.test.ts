@@ -92,9 +92,12 @@ describe("permissions (called directly, never through a UI)", () => {
     expect((await C.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await C.sealDoc(id, key, newDocument("x")), 1), base_version: 1 })).statusCode).toBe(403);
     expect((await C.call("GET", `/drawers/${id}/export`)).statusCode).toBe(403);
     expect((await B.call("GET", `/drawers/${id}/export`)).statusCode).toBe(200);
-    expect((await B.call("DELETE", `/drawers/${id}`)).statusCode).toBe(403);
+    expect((await B.call("DELETE", `/drawers/${id}`, { proof: await B.proof() })).statusCode).toBe(403); // not the owner
     expect((await B.call("POST", `/drawers/${id}/invitations`, { invitee_id: N.id, role: "read", wrap: (await A.call("GET", "/bootstrap")).json().wraps[0] })).statusCode).toBe(403);
-    expect((await A.call("DELETE", `/drawers/${id}`)).statusCode).toBe(204);
+    // PETTY-201 (red-team INFO-1): the owner needs a custody proof to delete, not just a session
+    expect((await A.call("DELETE", `/drawers/${id}`)).statusCode).toBe(400); // no proof
+    expect((await A.call("DELETE", `/drawers/${id}`, { proof: await A.proof(B.user.keys.ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid"); // foreign key
+    expect((await A.call("DELETE", `/drawers/${id}`, { proof: await A.proof() })).statusCode).toBe(204);
     expect((await A.call("GET", `/drawers/${id}`)).statusCode).toBe(404);
     expect((await owner.query("select count(*)::int as n from entries where drawer_id = $1", [id])).rows[0].n).toBe(0);
   });

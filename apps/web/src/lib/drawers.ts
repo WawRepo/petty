@@ -17,6 +17,7 @@ import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
 import { getPin, loadPins, pinMembers, pinStatus, pinsBlocked, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
+import { custodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
 import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/crypto";
@@ -500,7 +501,10 @@ export async function mutateDocument(id: string, ops: readonly DocumentOp[], opt
 }
 
 export async function deleteDrawer(id: string): Promise<void> {
-  await api("DELETE", `/drawers/${id}`);
+  // PETTY-201 (red-team INFO-1): a permanent delete proves key custody, like vault/account changes.
+  const a = getAuth();
+  if (a.status !== "unlocked") throw new Error("vault locked");
+  await api("DELETE", `/drawers/${id}`, { proof: await custodyProof(a.keys.ecdsaPrivate) });
   const drawers = new Map(state.drawers);
   const v = drawers.get(id);
   if (v?.photo) URL.revokeObjectURL(v.photo);

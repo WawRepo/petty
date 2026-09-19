@@ -12,6 +12,11 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 
 - The app listens on `127.0.0.1:3000`. Put Caddy, Traefik or nginx in front of it for HTTPS.
   Passkeys, secure cookies and the service worker need HTTPS.
+- The image trusts `X-Forwarded-For` (`TRUST_PROXY=true`) for the client IP. Only run it behind
+  a proxy that sets and overwrites that header (Caddy, Traefik and nginx do). Exposed directly, a
+  client could spoof it to rotate the per-IP throttle counters (PETTY-201, red-team LOW-2). The
+  real brute-force defence does not depend on it: the account lock is keyed by email (10 wrong
+  passwords / 15 min), and password reset is capped per email.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).

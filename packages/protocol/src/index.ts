@@ -354,6 +354,8 @@ export const RemovePasskeyBody = z.object({ password: z.string().min(1).max(1024
 // ---------------------------------------------------------------- account deletion
 export const DeleteDecision = z.object({ drawer_id: uuid, action: z.enum(["transfer", "delete"]), to_user_id: uuid.optional() });
 export const DeleteAccountBody = z.object({ password: z.string().min(1).max(1024).optional(), proof: CustodyProof, decisions: z.array(DeleteDecision).default([]) });
+/** PETTY-201 (red-team INFO-1): deleting a drawer needs a custody proof, like the other destructive acts. */
+export const DeleteDrawerBody = z.object({ proof: CustodyProof });
 /** What the user must decide before the account can go: every owned drawer that has members. */
 export const DeletePreview = z.object({
   shared: z.array(z.object({ drawer_id: uuid, members: z.array(z.object({ user_id: uuid, display_name: z.string(), role: Role })) })),
