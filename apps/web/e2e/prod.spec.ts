@@ -69,6 +69,10 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   await page.reload();
   const diag = await page.evaluate(async () => ({ keys: await caches.keys(), hasIndex: !!(await caches.match("/index.html", { ignoreSearch: true })), controller: !!navigator.serviceWorker.controller }));
   expect(diag, JSON.stringify({ diag, swErrors })).toMatchObject({ hasIndex: true, controller: true });
+  // PETTY-195: go offline only once this online load has shown (and so cached) the drawers
+  await page.goto("/");
+  await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" })).toBeVisible({ timeout: 15_000 });
+  await page.waitForLoadState("networkidle");
   await ctx.setOffline(true);
   await page.reload();
   // signed in and unlocked → the shell boots from cache straight into the home screen, with its drawers
