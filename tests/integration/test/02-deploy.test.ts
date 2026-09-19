@@ -39,6 +39,11 @@ describe("deployment", () => {
     const addon = await fetch(`${ORIGIN}/downloads/petty.mcpb`);
     expect(addon.status).toBe(200);
     expect(new TextDecoder().decode(new Uint8Array(await addon.arrayBuffer()).slice(0, 2))).toBe("PK");
+    // PETTY-173: the program for other AI apps, and the page that explains it (an app route)
+    const mjs = await fetch(`${ORIGIN}/downloads/petty-mcp.mjs`);
+    expect(mjs.status).toBe(200);
+    expect((await mjs.text()).length).toBeGreaterThan(100_000);
+    expect((await fetch(`${ORIGIN}/ai`)).status).toBe(200);
   });
 
   it("API answers are never cached, and a malformed id is a 404 (PETTY-193)", async () => {

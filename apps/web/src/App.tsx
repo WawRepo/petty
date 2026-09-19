@@ -34,6 +34,7 @@ const LineScreen = screen(() => import("./screens/LineScreen.js"), (m) => m.Line
 const MembersScreen = screen(() => import("./screens/MembersScreen.js"), (m) => m.MembersScreen);
 const DeleteAccountScreen = screen(() => import("./screens/DeleteAccountScreen.js"), (m) => m.DeleteAccountScreen);
 const PrivacyScreen = screen(() => import("./screens/PrivacyScreen.js"), (m) => m.PrivacyScreen);
+const AiScreen = screen(() => import("./screens/AiScreen.js"), (m) => m.AiScreen);
 const ResetScreen = screen(() => import("./screens/ResetScreen.js"), (m) => m.ResetScreen);
 const AdminScreen = screen(() => import("./screens/AdminScreen.js"), (m) => m.AdminScreen);
 const LandingScreen = screen(() => import("./screens/LandingScreen.js"), (m) => m.LandingScreen);
@@ -115,6 +116,7 @@ export function App() {
           <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/privacy" element={<PrivacyScreen />} />
+            <Route path="/ai" element={<AiScreen />} />
             <Route path="/login/*" element={<Guard need="anonymous"><LoginRoute /></Guard>} />
             {/* Tokens travel in the URL fragment (/join#<token>), which never reaches the server (SR-9); the path form stays for links already sent. */}
             <Route path="/join/*" element={<JoinRoute />} />

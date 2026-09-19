@@ -60,6 +60,8 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   await expect(page.getByTestId("line-row").first()).toContainText("12.00 EUR");
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: "Privacy and security" })).toBeVisible();
+  await page.goto("/ai"); // PETTY-173: config blocks and links under the same policy
+  await expect(page.getByRole("heading", { name: "Use Petty with AI" })).toBeVisible();
   expect(await violations()).toEqual([]);
   // service worker: shell offline
   await page.goto("/login");

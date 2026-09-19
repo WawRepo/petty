@@ -948,5 +948,70 @@
     "addonBody": "Download the add-on and open it. Claude Desktop asks for two things: the address below and the token above.",
     "addonDownload": "Get the Claude Desktop add-on",
     "address": "Petty address"
+  },
+  "ai": {
+    "link": "Use Petty with AI",
+    "title": "Use Petty with AI",
+    "intro": "Ask an AI app about your drawers, or have it add an entry for you. A small program on your own computer holds an access token, opens your keys there and gives the app a few tools. The Petty server still sees only ciphertext.",
+    "tokenTitle": "1. Make an access token",
+    "tokenSteps": [
+      "Open Settings → Access tokens → New token.",
+      "Give it a name, and choose whether it may add entries.",
+      "Confirm with your passkey or vault passphrase.",
+      "Copy the token. It is shown once only."
+    ],
+    "desktopTitle": "2a. Claude Desktop",
+    "desktopSteps": [
+      "Download the add-on below and open it. Claude Desktop installs it.",
+      "When it asks, paste this Petty address and your token.",
+      "On a Mac, allow network access if asked, then restart Claude Desktop."
+    ],
+    "otherTitle": "2b. Other AI apps (Cursor, VS Code, Windsurf, Claude Code)",
+    "otherSteps": [
+      "Install Node 20 or newer.",
+      "Download petty-mcp.mjs and save it somewhere.",
+      "Add the block below to the app's MCP settings. Put your token in place of petty_pat_… and the file's path in place of /path/to/petty-mcp.mjs."
+    ],
+    "download": "Download petty-mcp.mjs",
+    "copyConfig": "Copy the settings block",
+    "claudeCode": "For Claude Code, the same as one command:",
+    "askTitle": "3. Ask",
+    "ask": [
+      "What is in my kitchen drawer?",
+      "Add 10 zł to kitchen cash, from groceries.",
+      "I counted 37.50 in the tin. Set it.",
+      "What did I take from the shed this week?",
+      "Which drawers hold euros?"
+    ],
+    "toolsTitle": "The tools",
+    "toolsHint": "A token that may only read gets no writing tools at all.",
+    "need": {
+      "read": "read",
+      "write": "write"
+    },
+    "tool": {
+      "list_drawers": "every drawer and item the token can open, with balances",
+      "find_item": "finds one item by words",
+      "history": "recent entries of one item",
+      "list_tags": "every tag with its items",
+      "list_places": "the place tree with its drawers",
+      "add": "adds an amount",
+      "withdraw": "takes an amount out",
+      "adjust": "sets what was counted",
+      "tag_item": "puts a tag on an item",
+      "untag_item": "takes a tag off an item",
+      "rename_tag": "renames a tag on every item",
+      "remove_tag": "removes a tag from every item",
+      "move_drawer": "puts a drawer in a place"
+    },
+    "honestTitle": "Good to know",
+    "honest": [
+      "The token and your keys stay on your computer. The server never sees the secret half of the token.",
+      "Whatever you ask reaches the AI model, because you asked it.",
+      "Text in your drawers is shown to the model as quoted data, and a change is always a separate tool the app can ask you to approve.",
+      "To stop it, revoke the token in Settings → Access tokens.",
+      "A phone app cannot run this program yet."
+    ],
+    "source": "Read the source code on GitHub"
   }
 }

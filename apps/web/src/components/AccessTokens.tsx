@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Me } from "@petty/protocol";
@@ -62,6 +63,7 @@ export function AccessTokens({ me }: { me: Me }) {
   return (
     <section className="card" data-testid="tokens-section">
       <h2 className="h-card">{t("tokens.title")}</h2>
+      <p className="hint mb8"><Link to="/ai" data-testid="tokens-ai-link">{t("ai.link")}</Link></p>
       <p className="hint my6">{t("tokens.hint")}</p>
       {tokens.length ? (
         <ul className="m0 p0" data-testid="token-list">

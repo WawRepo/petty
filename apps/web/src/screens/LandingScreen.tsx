@@ -118,6 +118,7 @@ export function LandingScreen() {
         </div>
         <Button variant="ghost" onClick={() => nav("/login")}>{t("auth.login.title")}</Button>
         <Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>
+        <Button variant="ghost" onClick={() => nav("/ai")} data-testid="landing-ai">{t("ai.link")}</Button>
         <p className="hint m0">{t("landing.made")}{contact ? <> · <a className="landing-mail" href={`mailto:${contact}`}>{contact}</a></> : null}</p>
         <p className="hint m0">{t("landing.footer")} · {t("landing.slogan")}</p>
       </footer>

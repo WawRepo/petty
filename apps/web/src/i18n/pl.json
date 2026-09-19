@@ -948,5 +948,70 @@
     "addonBody": "Pobierz dodatek i otwórz go. Claude Desktop zapyta o dwie rzeczy: adres poniżej i token powyżej.",
     "addonDownload": "Pobierz dodatek do Claude Desktop",
     "address": "Adres Petty"
+  },
+  "ai": {
+    "link": "Petty z AI",
+    "title": "Petty z AI",
+    "intro": "Zapytaj aplikację AI o swoje szuflady albo poproś ją o dodanie wpisu. Mały program na Twoim komputerze trzyma token dostępu, otwiera tam Twoje klucze i daje aplikacji kilka narzędzi. Serwer Petty nadal widzi tylko szyfrogram.",
+    "tokenTitle": "1. Utwórz token dostępu",
+    "tokenSteps": [
+      "Otwórz Ustawienia → Tokeny dostępu → Nowy token.",
+      "Nazwij go i wybierz, czy może dodawać wpisy.",
+      "Potwierdź kluczem dostępu lub hasłem sejfu.",
+      "Skopiuj token. Pokazujemy go tylko raz."
+    ],
+    "desktopTitle": "2a. Claude Desktop",
+    "desktopSteps": [
+      "Pobierz dodatek poniżej i otwórz go. Claude Desktop go zainstaluje.",
+      "Gdy zapyta, wklej ten adres Petty i swój token.",
+      "Na Macu zezwól na dostęp do sieci, jeśli pojawi się pytanie, a potem uruchom Claude Desktop ponownie."
+    ],
+    "otherTitle": "2b. Inne aplikacje AI (Cursor, VS Code, Windsurf, Claude Code)",
+    "otherSteps": [
+      "Zainstaluj Node 20 lub nowszy.",
+      "Pobierz petty-mcp.mjs i zapisz go gdzieś.",
+      "Dodaj blok poniżej do ustawień MCP aplikacji. Wpisz swój token zamiast petty_pat_… i ścieżkę pliku zamiast /path/to/petty-mcp.mjs."
+    ],
+    "download": "Pobierz petty-mcp.mjs",
+    "copyConfig": "Skopiuj blok ustawień",
+    "claudeCode": "W Claude Code to samo jednym poleceniem:",
+    "askTitle": "3. Zapytaj",
+    "ask": [
+      "Co jest w szufladzie w kuchni?",
+      "Dodaj 10 zł do gotówki w kuchni, z zakupów.",
+      "W puszce jest policzone 37,50. Ustaw to.",
+      "Co brałem z szopy w tym tygodniu?",
+      "Które szuflady mają euro?"
+    ],
+    "toolsTitle": "Narzędzia",
+    "toolsHint": "Token tylko do odczytu nie dostaje żadnych narzędzi zapisu.",
+    "need": {
+      "read": "odczyt",
+      "write": "zapis"
+    },
+    "tool": {
+      "list_drawers": "każda szuflada i pozycja, którą token może otworzyć, z saldami",
+      "find_item": "znajduje jedną pozycję po słowach",
+      "history": "ostatnie wpisy jednej pozycji",
+      "list_tags": "każdy tag z jego pozycjami",
+      "list_places": "drzewo miejsc z szufladami",
+      "add": "dodaje kwotę",
+      "withdraw": "wyjmuje kwotę",
+      "adjust": "ustawia policzoną kwotę",
+      "tag_item": "dodaje tag do pozycji",
+      "untag_item": "zdejmuje tag z pozycji",
+      "rename_tag": "zmienia nazwę tagu wszędzie",
+      "remove_tag": "usuwa tag ze wszystkich pozycji",
+      "move_drawer": "przenosi szufladę do miejsca"
+    },
+    "honestTitle": "Warto wiedzieć",
+    "honest": [
+      "Token i Twoje klucze zostają na Twoim komputerze. Serwer nigdy nie widzi tajnej połowy tokenu.",
+      "Wszystko, o co pytasz, trafia do modelu AI, bo o to pytasz.",
+      "Tekst z szuflad trafia do modelu jako cytowane dane, a każda zmiana to osobne narzędzie, które aplikacja może dać Ci do zatwierdzenia.",
+      "Aby to zatrzymać, unieważnij token w Ustawienia → Tokeny dostępu.",
+      "Aplikacja na telefonie nie może jeszcze uruchomić tego programu."
+    ],
+    "source": "Przeczytaj kod źródłowy na GitHubie"
   }
 }

@@ -478,3 +478,5 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .tag-holder + .tag-holder { margin-top: 10px; }
 .tag-holder-h { margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .tag-holder-h .hint { text-transform: none; letter-spacing: 0; font-weight: 500; }
+/* PETTY-173: config blocks on the "Use Petty with AI" page */
+.codeblock { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45; white-space: pre; overflow-x: auto; margin: 0; padding: 12px; background: var(--bg, transparent); border: 1px solid var(--border); border-radius: 10px; }
