@@ -90,6 +90,11 @@ describe("household", () => {
     const now = (await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version;
     expect((await ann.call("POST", `/drawers/${drawerId}/document/restore`, { history_id: last.id, base_version: now })).statusCode).toBe(200);
     expect(await documentName(ann)).toBe("Kitchen tin");
+    // PETTY-194: the list the app shows — newest first, the undone version kept too, members cannot read it
+    const after = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history as { id: string; by_token: boolean; replaced_at: string }[];
+    expect(after.length).toBeGreaterThanOrEqual(2);
+    expect(after.map((h) => h.replaced_at)).toEqual([...after.map((h) => h.replaced_at)].sort().reverse());
+    expect((await ben.call("GET", `/drawers/${drawerId}/document/history`)).statusCode).toBe(403);
   });
 
   it("a new recovery code replaces only the recovery copy, and only with proof of the keys (PETTY-200)", async () => {

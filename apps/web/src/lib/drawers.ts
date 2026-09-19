@@ -11,7 +11,7 @@ import {
   createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
 import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
-import type { Bootstrap, DrawerSummary, EntryRow, Invitation, Member, SealedRow, DrawerKeyWrap, UserDelegations } from "@petty/protocol";
+import { DocumentHistory, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
@@ -670,4 +670,45 @@ export async function removePhoto(id: string): Promise<void> {
 
 export function memberName(view: DrawerView, userId: string): string {
   return view.members.find((m) => m.user_id === userId)?.display_name ?? nameCache.get(userId) ?? "?";
+}
+
+/** One earlier version of a drawer's document (PETTY-194): the server keeps them 30 days (PETTY-183). */
+export interface DocumentVersion {
+  readonly id: string;
+  readonly replacedAt: string;
+  /** true when an access token (a tool) made the change that replaced it */
+  readonly byToken: boolean;
+  /** null when this device cannot open it (an older drawer key, or damaged) */
+  readonly name: string | null;
+  readonly lines: number | null;
+}
+
+/** Earlier versions, newest first, opened here with the drawer key. Owner only (the server says 403 to others). */
+export async function documentHistory(id: string): Promise<DocumentVersion[]> {
+  const view = state.drawers.get(id);
+  if (!view?.key) throw new Error("drawer not ready");
+  const r = DocumentHistory.parse(await api<unknown>("GET", `/drawers/${id}/document/history`));
+  const out: DocumentVersion[] = [];
+  for (const h of r.history) {
+    let name: string | null = null;
+    let lines: number | null = null;
+    if (h.document.key_version === view.summary.key_version) {
+      try {
+        const doc = await openDocument(view.key, docIdentity(view.summary, h.document.author_id, h.document.key_version), sealedOf(h.document));
+        assertDocumentShape(doc);
+        name = doc.name;
+        lines = doc.lines.length;
+      } catch { /* damaged or not ours: listed, not restorable */ }
+    }
+    out.push({ id: h.id, replacedAt: h.replaced_at, byToken: h.by_token, name, lines });
+  }
+  return out;
+}
+
+/** Puts an earlier version back, exactly as it was sealed. The current one becomes a version itself. */
+export async function restoreDocument(id: string, versionId: string): Promise<void> {
+  const view = state.drawers.get(id);
+  if (!view) throw new Error("drawer not ready");
+  await api("POST", `/drawers/${id}/document/restore`, { history_id: versionId, base_version: view.summary.version });
+  await loadAll();
 }

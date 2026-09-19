@@ -401,7 +401,18 @@
     "tagRemove": "Usuń tag",
     "tagNewName": "Nowa nazwa",
     "tagNameRequired": "Tag musi mieć nazwę.",
-    "tagRemoveConfirm": "Usunąć „{tag}” z {count, plural, one {# pozycji} few {# pozycji} many {# pozycji} other {# pozycji}}? Pozycje zostają."
+    "tagRemoveConfirm": "Usunąć „{tag}” z {count, plural, one {# pozycji} few {# pozycji} many {# pozycji} other {# pozycji}}? Pozycje zostają.",
+    "history": {
+      "title": "Wcześniejsze wersje",
+      "hint": "Nazwy, pozycje, tagi i miejsca sprzed każdej zmiany, przechowywane 30 dni. Przywrócenie zachowuje tu także obecną wersję. Wpisy i salda się nie zmieniają.",
+      "empty": "Brak wcześniejszych wersji z ostatnich 30 dni.",
+      "unreadable": "Nie da się otworzyć na tym urządzeniu",
+      "lines": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
+      "byTool": "zmienione przez narzędzie",
+      "restore": "Przywróć",
+      "restoreNamed": "Przywróć wersję z {{when}}",
+      "restored": "Przywrócono wcześniejszą wersję."
+    }
   },
   "line": {
     "noText": "Brak tekstu.",
@@ -808,6 +819,10 @@
       "lost": {
         "q": "Co, jeśli stracę klucz dostępu lub zapomnę hasła sejfu?",
         "a": "Sejf otworzy inny klucz dostępu, hasło sejfu lub kod odzyskiwania. Jeśli stracisz wszystkie, nikt — także my — nie odszyfruje Twoich danych; członek szuflady może ponownie udostępnić Ci wspólną szufladę."
+      },
+      "undo": {
+        "q": "Czy mogę cofnąć zmianę w szufladzie?",
+        "a": "Tak. Wpisy nigdy nie są usuwane: błąd cofa nowy wpis. Zmiany nazw, pozycji, tagów i miejsc są przechowywane 30 dni, a właściciel szuflady może przywrócić wcześniejszą wersję."
       },
       "cost": {
         "q": "Ile to kosztuje?",

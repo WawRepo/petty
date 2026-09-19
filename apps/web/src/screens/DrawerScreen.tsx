@@ -18,6 +18,7 @@ import { ReadOnlyHint } from "../components/ReadOnlyHint.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TagManager } from "../components/TagManager.js";
 import { useToast } from "../components/Toast.js";
+import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
 import { appendEntry, deleteDrawer, lineBalance, loadAll, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
 import { DEFAULT_DRAWER_ICON, DEFAULT_LINE_ICON, IconPicker, PIcon } from "../lib/icons.js";
@@ -140,7 +141,7 @@ export function DrawerScreen() {
   const state = useDrawers();
   const view = state.drawers.get(id);
   const [moved, setMoved] = useState(""); // live-region text for keyboard reorders (PETTY-130)
-  const [sheet, setSheet] = useState<null | "options" | "rename" | "tags" | "icon" | "delete" | "addLine" | "confirmState" | "lineTags">(null);
+  const [sheet, setSheet] = useState<null | "options" | "rename" | "tags" | "icon" | "delete" | "addLine" | "confirmState" | "lineTags" | "history">(null);
   // Line filters (PETTY-64): by "part of the total" and by one line tag.
   const [status, setStatus] = useState<"all" | "in" | "out">("all");
   const [lineTag, setLineTag] = useState<string | null>(null);
@@ -429,6 +430,7 @@ export function DrawerScreen() {
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("tags")} data-testid="drawer-tags">{tagsOf(doc).length ? `${t("drawer.tags")}: ${placeLabel(tagsOf(doc))}` : t("drawer.tags")}</Button> : null}
           {canWrite ? <Button variant="secondary" busy={photoBusy} onClick={() => { setSheet(null); fileRef.current?.click(); }} data-testid="drawer-photo-add">{photoBusy ? t("drawer.photoProcessing") : view.summary.has_photo ? t("drawer.photoChange") : t("drawer.photoAdd")}</Button> : null}
           {canWrite && view.summary.has_photo ? <Button variant="secondary" onClick={() => { setSheet(null); void run(() => removePhoto(id)); }}>{t("drawer.photoRemove")}</Button> : null}
+          {isOwner ? <Button variant="secondary" onClick={() => setSheet("history")} data-testid="drawer-history">{t("drawer.history.title")}</Button> : null}
           {isOwner ? <Button variant="danger-ghost" onClick={() => setSheet("delete")}>{t("drawer.delete")}</Button> : null}
         </div>
       </Sheet>
@@ -447,6 +449,7 @@ export function DrawerScreen() {
         <IconPicker value={iconOf(doc)} onPick={(icon) => { setSheet(null); void run(() => mutateDocument(id, [{ type: "set_icon", icon }])); }} />
       </Sheet>
       <AddLineSheet open={sheet === "addLine"} onClose={() => setSheet(null)} view={view} />
+      {isOwner ? <DocumentHistorySheet open={sheet === "history"} drawerId={id} onClose={() => setSheet(null)} /> : null}
       <ConfirmStateSheet open={sheet === "confirmState"} onClose={() => setSheet(null)} view={view} />
 
     </>

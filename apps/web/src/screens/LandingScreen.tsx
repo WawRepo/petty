@@ -33,7 +33,7 @@ export function LandingScreen() {
     alt: t(`landing.shots.${n}`),
   }));
   const features = ["private", "shared", "places", "currencies", "verify", "passkey"] as const; // PETTY-135 (audit F28): one grid of six, the pillars folded in
-  const faqs = ["see", "places", "lost", "cost", "phone"] as const;
+  const faqs = ["see", "places", "lost", "undo", "cost", "phone"] as const;
   return (
     <main className="landing">
       <section className="landing-hero">

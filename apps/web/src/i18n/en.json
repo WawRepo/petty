@@ -401,7 +401,18 @@
     "tagRemove": "Remove tag",
     "tagNewName": "New name",
     "tagNameRequired": "A tag needs a name.",
-    "tagRemoveConfirm": "Remove “{tag}” from {count, plural, one {# item} other {# items}}? The items stay."
+    "tagRemoveConfirm": "Remove “{tag}” from {count, plural, one {# item} other {# items}}? The items stay.",
+    "history": {
+      "title": "Earlier versions",
+      "hint": "Names, items, tags and places as they were before each change, kept for 30 days. Restoring one keeps the current version here too. Entries and balances are not affected.",
+      "empty": "No earlier versions in the last 30 days.",
+      "unreadable": "Cannot be opened on this device",
+      "lines": "{count, plural, one {# item} other {# items}}",
+      "byTool": "changed by a tool",
+      "restore": "Restore",
+      "restoreNamed": "Restore the version from {{when}}",
+      "restored": "Earlier version restored."
+    }
   },
   "line": {
     "noText": "No text yet.",
@@ -808,6 +819,10 @@
       "lost": {
         "q": "What if I lose my passkey or forget the passphrase?",
         "a": "Another passkey, the passphrase or the recovery code opens the vault. If all are lost, nobody — including us — can decrypt your data; a drawer member can re-share a shared drawer with you."
+      },
+      "undo": {
+        "q": "Can I undo a change to a drawer?",
+        "a": "Yes. Entries are never erased: a mistake is reversed by a new entry. Changes to names, items, tags and places are kept for 30 days, and the drawer's owner can put an earlier version back."
       },
       "cost": {
         "q": "What does it cost?",
