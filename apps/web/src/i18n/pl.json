@@ -253,7 +253,14 @@
     },
     "setPassphrase": "Ustaw zapasowe hasło sejfu",
     "setPassphraseHint": "Hasło sejfu otwiera sejf tam, gdzie klucze dostępu nie mogą. Najpierw potwierdzi to Twój obecny klucz dostępu.",
-    "passphraseSet": "Zapasowe hasło sejfu ustawione."
+    "passphraseSet": "Zapasowe hasło sejfu ustawione.",
+    "recovery": {
+      "new": "Utwórz nowy kod odzyskiwania",
+      "hint": "Obecny kod odzyskiwania przestanie działać, gdy zapiszesz nowy. Podaj hasło sejfu, aby go utworzyć.",
+      "hintPasskey": "Obecny kod odzyskiwania przestanie działać, gdy zapiszesz nowy. Klucz dostępu potwierdzi, że to Ty.",
+      "make": "Utwórz kod",
+      "saved": "Zapisano nowy kod odzyskiwania. Stary już nie działa."
+    }
   },
   "keypad": {
     "delete": "Usuń ostatnią cyfrę",

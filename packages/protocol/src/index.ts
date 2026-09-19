@@ -344,6 +344,8 @@ export const CustodyProof = z.object({ challenge: b64, signature: b64 });
 export type CustodyProof = z.infer<typeof CustodyProof>;
 export const CustodyChallenge = z.object({ challenge: b64, expires_at: z.string() });
 /** New passphrase (or recovery-code) wrap of the SAME keys. The server checks the public keys did not change, and the proof. */
+/** PETTY-200: a new recovery-code copy of the same keys (the passkey or passphrase copies stay). */
+export const PutRecoveryVaultBody = z.object({ password: z.string().min(1).max(1024).optional(), proof: CustodyProof, recovery_vault: VaultBlob });
 export const PutVaultBody = z.object({ password: z.string().min(1).max(1024).optional(), proof: CustodyProof, vault: VaultBlob, recovery_vault: VaultBlob.optional() });
 /** Add a passkey (POST /me/passkeys): the same custody proof as a vault replace, so a stolen session cannot add a door. */
 export const AddPasskeyBody = z.object({ password: z.string().min(1).max(1024).optional(), proof: CustodyProof, passkey: PasskeyVault });

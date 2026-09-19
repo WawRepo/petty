@@ -253,7 +253,14 @@
     },
     "setPassphrase": "Set a backup passphrase",
     "setPassphraseHint": "A passphrase opens the vault where passkeys cannot. Your existing passkey confirms this first.",
-    "passphraseSet": "Backup passphrase set."
+    "passphraseSet": "Backup passphrase set.",
+    "recovery": {
+      "new": "Make a new recovery code",
+      "hint": "Your current recovery code stops working once the new one is saved. Enter your vault passphrase to make it.",
+      "hintPasskey": "Your current recovery code stops working once the new one is saved. Your passkey confirms it is you.",
+      "make": "Make the code",
+      "saved": "New recovery code saved. The old one no longer works."
+    }
   },
   "keypad": {
     "delete": "Delete last digit",

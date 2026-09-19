@@ -4,7 +4,7 @@
  * a new passkey. The keys are extractable only between unwrap and re-wrap, inside these
  * functions, and never touch storage.
  */
-import { createPasskeyVault, createVault, keyPairsOf, signCustodyChallenge, unlockPasskeyVault, unlockVault, zero, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
+import { createPasskeyVault, createRecoveryVault, createVault, generateRecoveryCode, keyPairsOf, signCustodyChallenge, unlockPasskeyVault, unlockVault, zero, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
 import { CustodyChallenge, PasskeyEntry, type CustodyProof, type Me } from "@petty/protocol";
 import { api } from "./api.js";
 import { evaluatePrf, registerPasskey, rememberPasskey } from "./passkey.js";
@@ -49,6 +49,20 @@ export async function setPassphrase(unlocked: UnlockedKeys, newPassphrase: strin
   const vault = await createVault(newPassphrase, await keyPairsOf(unlocked));
   await api("PUT", "/me/vault", { ...pw(loginPassword), proof: await custodyProof(unlocked.ecdsaPrivate), vault });
   return vault;
+}
+
+/**
+ * A new recovery code (PETTY-200). Step one only makes it: nothing is stored until the person has
+ * typed the code back, so an abandoned attempt leaves the old code working.
+ */
+export async function makeRecoveryCode(unlocked: UnlockedKeys): Promise<{ code: string; vault: VaultBlobV1 }> {
+  const code = generateRecoveryCode();
+  return { code, vault: await createRecoveryVault(code, await keyPairsOf(unlocked)) };
+}
+
+/** Step two: store the new recovery copy; from now on only the new code opens it. */
+export async function storeRecoveryCode(unlocked: UnlockedKeys, vault: VaultBlobV1, loginPassword?: string): Promise<void> {
+  await api("PUT", "/me/recovery-vault", { ...pw(loginPassword), proof: await custodyProof(unlocked.ecdsaPrivate), recovery_vault: vault });
 }
 
 /** Recovery: open the recovery-code copy, wrap under the new passphrase, store. */

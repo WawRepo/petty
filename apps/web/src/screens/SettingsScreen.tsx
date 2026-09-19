@@ -14,12 +14,12 @@ import { AccessTokens } from "../components/AccessTokens.js";
 import { Sheet } from "../components/Sheet.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
-import { addPasskey, changePassphrase, openWithPasskey, openWithPassphrase, removePasskey, setPassphrase } from "../lib/custody.js";
+import { addPasskey, changePassphrase, makeRecoveryCode, openWithPasskey, openWithPassphrase, removePasskey, setPassphrase, storeRecoveryCode } from "../lib/custody.js";
 import { deviceLabel, PasskeyError, passkeyPrfSupported } from "../lib/passkey.js";
 import type { PasskeyEntry } from "@petty/protocol";
 import { updateMe } from "../lib/session.js";
 import { checkPassphrase } from "../lib/passphrase.js";
-import { WrongPassphrase } from "@petty/crypto";
+import { normalizeRecoveryCode, WrongPassphrase, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
 import { ApiError } from "../lib/api.js";
 import { updateVault } from "../lib/session.js";
 import { type FormEvent } from "react";
@@ -51,6 +51,36 @@ export function SettingsScreen() {
   const [pkErr, setPkErr] = useState<Record<string, string>>({});
   const [pkBusy, setPkBusy] = useState(false);
   const [sp, setSp] = useState(false); // set a backup passphrase (passkey-only account)
+  // PETTY-200: a new recovery code. Made after the vault is opened, stored only once typed back.
+  const [rc, setRc] = useState(false);
+  const [rcPass, setRcPass] = useState(""); const [rcLp, setRcLp] = useState(""); const [rcTyped, setRcTyped] = useState("");
+  const [rcNew, setRcNew] = useState<{ code: string; vault: VaultBlobV1; unlocked: UnlockedKeys } | null>(null);
+  const [rcErr, setRcErr] = useState<Record<string, string>>({}); const [rcBusy, setRcBusy] = useState(false);
+  const closeRc = () => { setRc(false); setRcNew(null); setRcPass(""); setRcLp(""); setRcTyped(""); setRcErr({}); };
+  async function doRecoveryOpen(e: FormEvent) {
+    e.preventDefault();
+    if (!me) return;
+    setRcBusy(true); setRcErr({});
+    try {
+      const unlocked = me.vault ? await openWithPassphrase(me, rcPass) : await openWithPasskey(me);
+      setRcNew({ ...(await makeRecoveryCode(unlocked)), unlocked });
+    } catch (err) {
+      setRcErr(err instanceof WrongPassphrase ? { pass: t("auth.unlock.wrong") } : passkeyMessage(err));
+    } finally { setRcBusy(false); }
+  }
+  async function doRecoveryStore(e: FormEvent) {
+    e.preventDefault();
+    if (!rcNew) return;
+    if (normalizeRecoveryCode(rcTyped) !== normalizeRecoveryCode(rcNew.code)) { setRcErr({ typed: t("auth.recovery.mismatch") }); return; }
+    setRcBusy(true); setRcErr({});
+    try {
+      await storeRecoveryCode(rcNew.unlocked, rcNew.vault, isClerk() ? undefined : rcLp);
+      toast(t("settings.recovery.saved"));
+      closeRc();
+    } catch (err) {
+      setRcErr(err instanceof ApiError && err.status === 401 ? { lp: t("auth.login.failed") } : { typed: t("errors.unknown") });
+    } finally { setRcBusy(false); }
+  }
   useEffect(() => { void passkeyPrfSupported().then(setPkAvail); }, []);
   function passkeyMessage(err: unknown): Record<string, string> {
     if (err instanceof WrongPassphrase) return { pass: t("auth.unlock.wrong") };
@@ -208,6 +238,7 @@ export function SettingsScreen() {
           {me?.vault
             ? <p className="mt12 mb0"><Button variant="ghost" onClick={() => setCp(true)}>{t("settings.changePassphrase")}</Button></p>
             : <p className="mt12 mb0"><Button variant="ghost" onClick={() => { setCErr({}); setSp(true); }} data-testid="set-passphrase">{t("settings.setPassphrase")}</Button></p>}
+          <p className="mt4 mb0"><Button variant="ghost" onClick={() => { closeRc(); setRc(true); }} data-testid="new-recovery-code">{t("settings.recovery.new")}</Button></p>
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button></p>
           {me?.is_admin ? <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/admin")} data-testid="admin-link">{t("admin.link")}</Button></p> : null}
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/settings/delete")}>{t("settings.deleteAccount")}</Button></p>
@@ -237,6 +268,31 @@ export function SettingsScreen() {
             <Button type="submit" variant="danger" busy={pkBusy}>{t("settings.passkey.remove")}</Button>
           </div>
         </form>
+      </Sheet>
+      <Sheet open={rc} title={t("settings.recovery.new")} onClose={closeRc}>
+        {!rcNew ? (
+          <form onSubmit={doRecoveryOpen} noValidate data-testid="recovery-open-form">
+            <p className="hint mb12">{t(me?.vault ? "settings.recovery.hint" : "settings.recovery.hintPasskey")}</p>
+            <input type="text" name="username" autoComplete="username" value={me ? vaultUsername(me.email) : ""} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
+            {me?.vault ? <TextField label={t("auth.unlock.passphrase")} type="password" name="vault-passphrase" autoComplete="current-password" value={rcPass} onChange={(e) => setRcPass(e.target.value)} error={rcErr["pass"]} autoFocus /> : null}
+            {rcErr["lp"] ? <p className="error" role="alert">{rcErr["lp"]}</p> : null}
+            <div className="actions">
+              <Button variant="secondary" onClick={closeRc}>{t("app.cancel")}</Button>
+              <Button type="submit" busy={rcBusy}>{t("settings.recovery.make")}</Button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={doRecoveryStore} noValidate data-testid="recovery-confirm-form">
+            <p className="hint mb8">{t("auth.recovery.body")}</p>
+            <p className="code" data-testid="new-recovery-code-value">{rcNew.code}</p>
+            <TextField label={t("auth.recovery.confirmLabel")} value={rcTyped} onChange={(e) => { setRcTyped(e.target.value); setRcErr({}); }} autoComplete="off" autoCapitalize="characters" spellCheck={false} error={rcErr["typed"]} />
+            {isClerk() ? null : <TextField label={t("auth.unlock.loginPassword")} type="password" autoComplete="current-password" value={rcLp} onChange={(e) => setRcLp(e.target.value)} error={rcErr["lp"]} />}
+            <div className="actions">
+              <Button variant="secondary" onClick={closeRc}>{t("app.cancel")}</Button>
+              <Button type="submit" busy={rcBusy}>{t("auth.recovery.done")}</Button>
+            </div>
+          </form>
+        )}
       </Sheet>
       <Sheet open={sp} title={t("settings.setPassphrase")} onClose={() => setSp(false)}>
         <form onSubmit={doSetPassphrase} noValidate data-testid="set-passphrase-form">

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, UserDocRow, UserLookup, VaultBlob, type Me as MeT } from "@petty/protocol";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, UserDocRow, UserLookup, VaultBlob, type Me as MeT } from "@petty/protocol";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
 import { z } from "zod";
 import { deleteClerkUser } from "../lib/clerk.js";
@@ -99,6 +99,27 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       // A passkey-only account (PETTY-102) has no passphrase copy yet: setting one is not a replacement, nothing to keep.
       if (u.vault) await db.query("insert into vault_history (user_id, vault, recovery_vault) values ($1, $2, $3)", [me.id, JSON.stringify(u.vault), u.recovery_vault ? JSON.stringify(u.recovery_vault) : null]);
       await db.query("update users set vault = $2, recovery_vault = coalesce($3, recovery_vault) where id = $1", [me.id, JSON.stringify(body.vault), body.recovery_vault ? JSON.stringify(body.recovery_vault) : null]);
+    });
+    mails.vaultReplaced(u.email, u.locale);
+    return reply.code(204).send();
+  });
+
+  /**
+   * A new recovery code (PETTY-200): replace only the recovery-code copy of the SAME keys. Same
+   * checks as PUT /me/vault: login password where one exists, custody proof, published keys. The
+   * old copy goes to vault_history when there is a passphrase copy to keep with it.
+   */
+  app.put("/me/recovery-vault", async (req, reply) => {
+    const me = requireUser(req);
+    const body = PutRecoveryVaultBody.parse(req.body);
+    const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown; email: string; locale: string }>("select u.password_hash, u.vault, u.recovery_vault, u.email, u.locale, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
+    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
+    await consumeCustodyProof(req, me.id, body.proof);
+    const v = body.recovery_vault;
+    if (v.kind !== "recovery" || v.pub.ecdh !== u.ecdh_pub || v.pub.ecdsa !== u.ecdsa_pub) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
+    await withTx(apiPool, async (db) => {
+      if (u.vault) await db.query("insert into vault_history (user_id, vault, recovery_vault) values ($1, $2, $3)", [me.id, JSON.stringify(u.vault), u.recovery_vault ? JSON.stringify(u.recovery_vault) : null]);
+      await db.query("update users set recovery_vault = $2 where id = $1", [me.id, JSON.stringify(v)]);
     });
     mails.vaultReplaced(u.email, u.locale);
     return reply.code(204).send();

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { fromB64, openDocument, openEntryUnverified, toB64 } from "@petty/crypto";
+import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, toB64, unlockVault, type VaultBlobV1 } from "@petty/crypto";
 import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
@@ -90,6 +90,20 @@ describe("household", () => {
     const now = (await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version;
     expect((await ann.call("POST", `/drawers/${drawerId}/document/restore`, { history_id: last.id, base_version: now })).statusCode).toBe(200);
     expect(await documentName(ann)).toBe("Kitchen tin");
+  });
+
+  it("a new recovery code replaces only the recovery copy, and only with proof of the keys (PETTY-200)", async () => {
+    const code = generateRecoveryCode();
+    const vault = await createRecoveryVault(code, ann.user.keys);
+    expect((await ann.call("PUT", "/me/recovery-vault", { password: ann.user.password, recovery_vault: vault })).statusCode).toBe(400); // no proof
+    const other = await createRecoveryVault(generateRecoveryCode(), await generateUserKeys());
+    expect((await ann.call("PUT", "/me/recovery-vault", { password: ann.user.password, proof: await ann.proof(), recovery_vault: other })).json().code).toBe("KeysMismatch");
+    expect((await ann.call("PUT", "/me/recovery-vault", { password: "wrong-password", proof: await ann.proof(), recovery_vault: vault })).statusCode).toBe(401);
+    expect((await ann.call("PUT", "/me/recovery-vault", { password: ann.user.password, proof: await ann.proof(), recovery_vault: vault })).statusCode).toBe(204);
+    const stored = (await ann.call("GET", "/me/recovery-vault")).json().recovery_vault as VaultBlobV1;
+    await expect(unlockVault(stored, code)).resolves.toBeTruthy();
+    await expect(unlockVault(stored, ann.user.recovery_code)).rejects.toThrow();
+    expect((await ann.call("GET", "/me")).json().vault).toBeTruthy(); // the passphrase copy is untouched
   });
 
   it("a tool with an access token reads and writes through the agent, and stops when revoked", async () => {
