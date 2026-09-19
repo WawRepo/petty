@@ -82,11 +82,14 @@ function RootRoute() {
 }
 
 /** Route guard: anonymous → /login, locked → /unlock, unlocked → the page. */
-function Guard({ need, children }: { need: "anonymous" | "locked" | "unlocked" | "novault"; children: React.ReactElement }) {
+function Guard({ need, children }: { need: "anonymous" | "locked" | "unlocked" | "novault" | "setup"; children: React.ReactElement }) {
   const auth = useAuth();
   const loc = useLocation();
   if (auth.status === "loading") return <PageSkeleton />;
   if (need === "novault") return auth.status === "novault" ? children : <Navigate to="/" replace />;
+  // PETTY-199: vault setup signs in (locked), unlocks, and only THEN shows the recovery code. The
+  // screen itself leaves once the code is confirmed, or at once when it is not in the middle of that.
+  if (need === "setup") return auth.status === "anonymous" ? <Navigate to="/login" replace /> : children;
   if (auth.status === "novault") return <Navigate to="/setup" replace />;
   if (need === "unlocked") {
     if (auth.status === "anonymous") return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
@@ -118,7 +121,7 @@ export function App() {
             <Route path="/join/:token" element={<JoinRoute />} />
             <Route path="/reset" element={<ResetRoute />} />
             <Route path="/reset/:token" element={<ResetRoute />} />
-            <Route path="/setup" element={<Guard need="novault"><VaultSetupScreen /></Guard>} />
+            <Route path="/setup" element={<Guard need="setup"><VaultSetupScreen /></Guard>} />
             <Route path="/admin" element={<Guard need="unlocked"><AdminScreen /></Guard>} />
             <Route path="/unlock" element={<Guard need="locked"><UnlockScreen /></Guard>} />
             <Route path="/" element={<RootRoute />} />

@@ -1,10 +1,11 @@
 /**
- * Clerk mode end to end (PETTY-88, docs/auth-clerk.md). Runs only with CLERK_E2E=1 and the Clerk keys
- * in the root .env; the Playwright config then starts the API in clerk mode. Needs a Clerk user
- * created through the backend API (a +clerk_test address takes the email code 424242):
- *   clerk api /users -d '{"email_address":["petty-user+clerk_test@example.com"],"password":"…","skip_password_checks":true}' --yes
- * Covers: sign in (device-trust email code), vault setup on the first visit or unlock later, a drawer,
- * sign out through the account menu, sign in again, unlock, the drawer is still there.
+ * Clerk mode end to end (PETTY-88, docs/auth-clerk.md). Runs only with CLERK_E2E=1 and the Clerk
+ * TEST keys in the root .env; the Playwright config then starts the API in clerk mode.
+ * Each run makes its own new Clerk user through the backend API (a +clerk_test address takes the
+ * email code 424242) and deletes it afterwards, so the first visit, with vault setup and the
+ * recovery code (PETTY-199), is always covered. CLERK_E2E_EMAIL reuses an existing user instead.
+ * Covers: sign in (device-trust email code), vault setup and the recovery code, a drawer, sign out
+ * through the account menu, sign in again, unlock, the drawer is still there.
  */
 import { existsSync } from "node:fs";
 import { test, expect, type Page } from "@playwright/test";
@@ -12,9 +13,22 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { choosePassphraseDoor } from "./fixtures.js";
 if (existsSync("../../.env")) process.loadEnvFile("../../.env");
 test.skip(!process.env["CLERK_E2E"], "clerk mode; set CLERK_E2E=1 with the Clerk keys in .env");
-test.beforeAll(async () => { await clerkSetup(); });
-const EMAIL = process.env["CLERK_E2E_EMAIL"] ?? "petty-user+clerk_test@example.com";
+const clerkApi = (path: string, init: RequestInit = {}) =>
+  fetch(`https://api.clerk.com/v1${path}`, { ...init, headers: { authorization: `Bearer ${process.env["CLERK_SECRET_KEY"]}`, "content-type": "application/json" } });
 const PW = process.env["CLERK_E2E_PASSWORD"] ?? "Tester-Passw0rd-2026!";
+let EMAIL = process.env["CLERK_E2E_EMAIL"] ?? "";
+let madeUserId: string | null = null;
+test.beforeAll(async () => {
+  await clerkSetup();
+  if (EMAIL) return;
+  // only ever against a development instance
+  if (!process.env["CLERK_SECRET_KEY"]?.startsWith("sk_test_")) throw new Error("CLERK_E2E needs Clerk test keys");
+  EMAIL = `petty-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}+clerk_test@example.com`;
+  const res = await clerkApi("/users", { method: "POST", body: JSON.stringify({ email_address: [EMAIL], password: PW, skip_password_checks: true }) });
+  if (!res.ok) throw new Error(`clerk user: ${res.status}`);
+  madeUserId = ((await res.json()) as { id: string }).id;
+});
+test.afterAll(async () => { if (madeUserId) await clerkApi(`/users/${madeUserId}`, { method: "DELETE" }); });
 const PASS = "correct horse battery staple 2026";
 async function clerkSignIn(page: Page) {
   await page.goto("/login"); await page.waitForTimeout(2500);
@@ -49,9 +63,10 @@ test("clerk flow", async ({ page }) => {
     await page.getByLabel(/^vault passphrase/i).first().fill(PASS);
     await page.getByLabel(/repeat/i).fill(PASS);
     await page.getByRole("button", { name: "Create vault" }).click();
+    // PETTY-199: the recovery code must be shown and typed back, not skipped by a redirect home
     const code = await page.getByTestId("recovery-code").textContent({ timeout: 60_000 });
-    await page.getByRole("textbox").last().fill(code ?? "");
-    await page.getByRole("button", { name: /done|continue|wrote/i }).click();
+    await page.getByLabel("Type the code to confirm you saved it").fill(code ?? "");
+    await page.getByRole("button", { name: "I saved it" }).click();
   } else {
     await page.getByLabel("Vault passphrase").fill(PASS);
     await page.getByRole("button", { name: /unlock|open/i }).first().click();

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import type { Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { TextField } from "../components/TextField.js";
@@ -8,7 +8,7 @@ import { TopBar } from "../components/TopBar.js";
 import { FirstDoorFields, RecoveryCodeStep, useFirstDoor, validateFirstDoor } from "../components/VaultCreate.js";
 import { api, ApiError, NetworkError } from "../lib/api.js";
 import { PasskeyError, rememberPasskey } from "../lib/passkey.js";
-import { afterLogin, unlockWithKeys } from "../lib/session.js";
+import { afterLogin, unlockWithKeys, useAuth } from "../lib/session.js";
 import { createVaultMaterial } from "../lib/vaultCreate.js";
 
 type Step = { kind: "form" } | { kind: "recovery"; code: string };
@@ -27,6 +27,7 @@ export function VaultSetupScreen() {
   const [door, setDoor, pkAvail] = useFirstDoor();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const auth = useAuth();
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
@@ -50,6 +51,8 @@ export function VaultSetupScreen() {
   }
 
   if (step.kind === "recovery") return <RecoveryCodeStep code={step.code} onDone={() => nav("/", { replace: true })} />;
+  // a vault that exists, with no code waiting to be confirmed, has nothing to set up here (PETTY-199)
+  if (auth.status !== "novault" && !busy) return <Navigate to="/" replace />;
   return (
     <>
       <TopBar title={t("auth.setup.title")} />
