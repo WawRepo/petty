@@ -65,3 +65,41 @@ new drawer key, wraps it for everyone left and re-encrypts the old rows.
 Keys are never regenerated. Lost passphrase → the recovery code opens the
 recovery vault → you choose a new passphrase → a new vault is uploaded, keys
 unchanged. Lost both on a drawer shared with nobody: unrecoverable, by design.
+
+## `petty-token.excalidraw` / `petty-token.svg` — access tokens (a tool's keys)
+
+The companion picture for access tokens (PETTY-164/169/181/184): how a tool
+(Claude Desktop / an MCP client) gets keys without breaking end-to-end
+encryption. Same lanes and colours as above, with a fourth colour (blue) for the
+tool's machine. Generated the same way:
+`python3 docs/generate-token-diagram.py` then
+`python3 docs/render-excalidraw.py docs/petty-token.excalidraw docs/petty-token.svg`.
+
+**1. Make a token.** In Settings you name it and pick read or write, and it takes
+a custody proof (a challenge signed by your account key — a stolen session alone
+cannot make one). Your device makes a random token id and secret, the token's own
+ECDH keypair, and, for a write token, its own ECDSA keypair with a delegation
+signed by your account key. A **bundle** — the drawer keys you can open plus the
+token's private keys — is sealed with HKDF(secret) (AES-256-GCM). The server is
+given the id hash, the sealed bundle it cannot open, and the public halves
+(ecdh_pub, and for a write token ecdsa_pub + sig_key_id + delegation). The token
+is also recorded in your sealed user document, so only tokens you listed ever get
+drawer keys. The string `petty_pat_<id>.<secret>` is shown once; you paste it into
+the tool.
+
+**2. The tool uses it.** It sends only `Bearer petty_pat_<id>`; the secret half
+stays on its machine. The server returns the sealed bundle; the tool opens it with
+HKDF(secret) and holds the drawer keys and private keys in memory. It reads by
+unwrapping and decrypting locally; a write token signs each entry with its own
+ECDSA key, never your account key.
+
+**3. Drawers made later.** A drawer you make or one shared with you is wrapped for
+the token's ECDH public key (`access_token_keys`), like wrapping for a member, so
+the tool sees it next time it starts — no new token needed.
+
+**4. Trust, revoke, delete.** Others verify a token-signed entry through the
+account-signed delegation, accepted only for entries received before the token
+expired or was revoked. Revoke stops the id at once; account delete erases the
+bundle and the wraps but keeps the public delegation so past entries still verify.
+A token can never open the vault, the account, sharing, admin or export, or make
+another token — the server refuses every route off its allow-list.

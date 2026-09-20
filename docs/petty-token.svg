@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1346" viewBox="0 0 1720 1346" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
+<rect width="1720" height="1346" fill="#ffffff"/>
+<rect x="40" y="100" width="680" height="44" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="100" width="440" height="44" rx="8" fill="#fde9d9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="100" width="360" height="44" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="210" width="300" height="70" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="210" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="300" width="300" height="92" rx="8" fill="#fff3c4" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="300" width="400" height="92" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="300" width="440" height="92" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="412" width="300" height="76" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="360" y="412" width="400" height="76" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="412" width="440" height="76" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="300" width="360" height="92" rx="8" fill="#fff3c4" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="625" width="360" height="70" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="625" width="440" height="70" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="715" width="360" height="70" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="805" width="360" height="70" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="895" width="360" height="76" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="895" width="440" height="76" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="1035" width="300" height="76" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="1035" width="440" height="76" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="1035" width="360" height="76" rx="8" fill="#e3ecfa" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="40" y="1175" width="300" height="92" rx="8" fill="#e0f2e9" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="820" y="1175" width="440" height="92" rx="8" fill="#f1f1f1" stroke="#1e1e1e" stroke-width="1.2"/>
+<rect x="1320" y="1175" width="360" height="92" rx="8" fill="#fbe4e0" stroke="#1e1e1e" stroke-width="1.2"/>
+<line x1="340.0" y1="245.0" x2="820.0" y2="245.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="346.0" x2="360.0" y2="346.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="760.0" y1="346.0" x2="820.0" y2="346.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="450.0" x2="360.0" y2="450.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="760.0" y1="450.0" x2="820.0" y2="450.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1320.0" y1="660.0" x2="1260.0" y2="660.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1260.0" y1="660.0" x2="1320.0" y2="750.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6,5"/>
+<line x1="1500.0" y1="785.0" x2="1500.0" y2="805.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1500.0" y1="875.0" x2="1500.0" y2="895.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1320.0" y1="933.0" x2="1260.0" y2="933.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="1073.0" x2="820.0" y2="1073.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1260.0" y1="1073.0" x2="1320.0" y2="1073.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="340.0" y1="1221.0" x2="820.0" y2="1221.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="1260.0" y1="1221.0" x2="1320.0" y2="1221.0" stroke="#1e1e1e" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="40" y="44.0" font-size="24" fill="#1e1e1e">PETTY ACCESS TOKENS — how a tool gets keys without ever giving up end-to-end encryption</text>
+<text x="40" y="73.0" font-size="13" fill="#555555">Green = your device (the Petty app), memory only.  Yellow = a secret made on your device.  Grey = server database (locked blobs + metadata only).  Blue = the tool&#x27;s machine (Claude Desktop / MCP).</text>
+<text x="380.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">YOUR DEVICE (browser)</text>
+<text x="1040.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">SERVER DATABASE (Postgres)</text>
+<text x="1500.0" y="122.0" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">THE TOOL&#x27;S MACHINE</text>
+<text x="40" y="193.0" font-size="18" fill="#1e1e1e">1  MAKE A TOKEN  (Settings -&gt; Access tokens)</text>
+<text x="190.0" y="236.2" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">You: name it, pick read or write,</text>
+<text x="190.0" y="253.8" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">confirm with passphrase or passkey</text>
+<text x="1040.0" y="228.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">POST /me/tokens needs a CUSTODY PROOF:</text>
+<text x="1040.0" y="245.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">a challenge signed by your account key</text>
+<text x="1040.0" y="261.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(a stolen session alone cannot make one)</text>
+<rect x="557.1" y="233.0" width="45.8" height="16.2" fill="#ffffff"/>
+<text x="580.0" y="241.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">proof</text>
+<text x="190.0" y="321.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Device makes (all random):</text>
+<text x="190.0" y="337.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">- token id + secret</text>
+<text x="190.0" y="354.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">- the token&#x27;s own ECDH keypair</text>
+<text x="190.0" y="370.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">- write token: its own ECDSA keypair</text>
+<text x="560.0" y="321.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">BUNDLE = drawer keys you can open + the token&#x27;s</text>
+<text x="560.0" y="337.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ECDH private key (+ the write ECDSA key), sealed</text>
+<text x="560.0" y="354.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">with HKDF(secret), AES-256-GCM. The server is</text>
+<text x="560.0" y="370.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">handed a blob it cannot open.</text>
+<text x="1040.0" y="321.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">access_tokens: token_hash = SHA-256(id half),</text>
+<text x="1040.0" y="337.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sealed bundle (nonce + ciphertext),</text>
+<text x="1040.0" y="354.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ecdh_pub, and for a write token</text>
+<text x="1040.0" y="370.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ecdsa_pub + sig_key_id + delegation (all public)</text>
+<rect x="770.7" y="334.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="790.0" y="342.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="190.0" y="433.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">A write token also gets its OWN</text>
+<text x="190.0" y="450.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ECDSA key. Your account key signs a</text>
+<text x="190.0" y="466.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">delegation vouching for it.</text>
+<text x="560.0" y="433.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Recorded in your sealed user document:</text>
+<text x="560.0" y="450.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">the token&#x27;s key fingerprint + its scope.</text>
+<text x="560.0" y="466.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Only tokens you listed here ever get keys.</text>
+<text x="1040.0" y="433.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">The secret half NEVER reaches the server.</text>
+<text x="1040.0" y="450.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Only the id half does. The delegation is public,</text>
+<text x="1040.0" y="466.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">so others can later check what the token signed.</text>
+<rect x="742.1" y="438.0" width="95.8" height="16.2" fill="#ffffff"/>
+<text x="790.0" y="446.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">id half only</text>
+<text x="1500.0" y="321.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">petty_pat_&lt;id&gt;.&lt;secret&gt;</text>
+<text x="1500.0" y="337.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Shown once. You paste it into the tool.</text>
+<text x="1500.0" y="354.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">&lt;id&gt; = names the token to the server</text>
+<text x="1500.0" y="370.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">&lt;secret&gt; = opens the bundle, on this machine</text>
+<text x="40" y="558.0" font-size="13" fill="#8a6d1f">The server stores a locked bundle and an id hash. Without the secret it cannot open the bundle or read any drawer.</text>
+<text x="40" y="608.0" font-size="18" fill="#1e1e1e">2  THE TOOL USES IT  (petty-mcp / the agent, on your computer)</text>
+<text x="1500.0" y="643.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Holds the token string. Sends only:</text>
+<text x="1500.0" y="660.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Authorization: Bearer petty_pat_&lt;id&gt;</text>
+<text x="1500.0" y="676.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">(the secret half stays on this machine)</text>
+<text x="1040.0" y="643.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Looks up the token by SHA-256(id half),</text>
+<text x="1040.0" y="660.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">returns the sealed bundle + who it belongs to.</text>
+<text x="1040.0" y="676.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Refused if revoked, expired or out of scope.</text>
+<rect x="1260.0" y="648.0" width="60.1" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="656.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">id half</text>
+<text x="1500.0" y="733.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">HKDF(secret) -&gt; open the bundle -&gt;</text>
+<text x="1500.0" y="750.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">drawer keys + ECDH private (+ ECDSA private),</text>
+<text x="1500.0" y="766.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">in memory on this machine only</text>
+<rect x="1245.7" y="693.0" width="88.7" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="701.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">bundle back</text>
+<text x="1500.0" y="823.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Reads: unwrap the drawer key -&gt; decrypt</text>
+<text x="1500.0" y="840.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">the document + entries, verify signatures,</text>
+<text x="1500.0" y="856.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">fold the balance -- all in memory here</text>
+<text x="1500.0" y="916.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Write token: signs each entry with ITS OWN</text>
+<text x="1500.0" y="933.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ECDSA key (never your account key), then</text>
+<text x="1500.0" y="949.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">encrypts it with the drawer key and appends it</text>
+<text x="1040.0" y="916.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">entries: ciphertext + line id, seq, author,</text>
+<text x="1040.0" y="933.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sig_key_id (the token&#x27;s).  Append-only:</text>
+<text x="1040.0" y="949.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">no UPDATE, no DELETE for the app role.</text>
+<rect x="1263.5" y="921.0" width="52.9" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="929.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">append</text>
+<text x="40" y="1018.0" font-size="18" fill="#1e1e1e">3  DRAWERS MADE LATER reach the token by themselves</text>
+<text x="190.0" y="1056.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">You make a drawer, or one is shared.</text>
+<text x="190.0" y="1073.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Your app wraps its key for the token&#x27;s</text>
+<text x="190.0" y="1089.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">ECDH public key, like for a member.</text>
+<text x="1040.0" y="1056.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">access_token_keys: one wrap per drawer</text>
+<text x="1040.0" y="1073.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">and key version, made by you for this token.</text>
+<text x="1040.0" y="1089.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">A token can never widen past your own drawers.</text>
+<rect x="560.7" y="1061.0" width="38.6" height="16.2" fill="#ffffff"/>
+<text x="580.0" y="1069.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sent</text>
+<text x="1500.0" y="1056.8" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Unwraps with the token&#x27;s ECDH private key</text>
+<text x="1500.0" y="1073.0" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">-&gt; sees the new drawer next time it starts.</text>
+<text x="1500.0" y="1089.2" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">No new token needed.</text>
+<rect x="1238.5" y="1061.0" width="103.0" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="1069.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">on next start</text>
+<text x="40" y="1158.0" font-size="18" fill="#1e1e1e">4  TRUST, REVOKE, DELETE</text>
+<text x="190.0" y="1196.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">A member&#x27;s app checks a token-signed</text>
+<text x="190.0" y="1212.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">entry through the account-signed</text>
+<text x="190.0" y="1229.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">delegation: accepted only while the</text>
+<text x="190.0" y="1245.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">token has not expired or been revoked.</text>
+<text x="1040.0" y="1196.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Revoke: the id stops working at once.</text>
+<text x="1040.0" y="1212.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">Account delete ERASES the bundle and the wraps,</text>
+<text x="1040.0" y="1229.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">but keeps the public delegation, so entries the</text>
+<text x="1040.0" y="1245.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">token already wrote still verify for everyone.</text>
+<text x="1500.0" y="1196.6" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">A token is weaker than a session.</text>
+<text x="1500.0" y="1212.9" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">It can never open the vault, the account,</text>
+<text x="1500.0" y="1229.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">sharing, admin, export, or make another token.</text>
+<text x="1500.0" y="1245.4" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">The server refuses every route off its list.</text>
+<rect x="1249.2" y="1209.0" width="81.5" height="16.2" fill="#ffffff"/>
+<text x="1290.0" y="1217.1" font-size="13" text-anchor="middle" dominant-baseline="middle" fill="#1e1e1e">allow-list</text>
+<text x="40" y="1303.0" font-size="13" fill="#8a6d1f">Same promise as a person&#x27;s keys: the plaintext lives only on a machine that holds the secret. The server, and anyone who reads its database, sees ciphertext.</text>
+</svg>
