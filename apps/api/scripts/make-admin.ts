@@ -1,6 +1,6 @@
 /**
  * Grants (or revokes, with --revoke) the admin flag. Run inside the API container:
- *   kubectl exec deploy/petty -n petty -- pnpm --filter @petty/api make-admin you@example.com
+ *   <exec into the API container> pnpm --filter @petty/api make-admin you@example.com
  * Uses the request role; admins can manage accounts but read no drawer content.
  */
 import pg from "pg";

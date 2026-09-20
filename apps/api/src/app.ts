@@ -84,7 +84,7 @@ export function buildApp() {
       }
     });
     // Readiness: 503 while the database is unreachable, so the ingress does not route to a pod that
-    // cannot serve (the NetworkPolicy controller admits a new pod ~10 s after it starts). Liveness
+    // cannot serve (some orchestrators admit a new pod to the network only seconds after it starts). Liveness
     // uses /health/live, which only says the process is up; a database outage must not restart the API.
     a.get("/health", async (_req, reply): Promise<HealthResponse> => {
       const up = await dbIsUp();

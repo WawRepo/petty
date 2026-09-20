@@ -210,6 +210,3 @@ Connection strings live in `.env.example`; copy to `.env` to override.
   allows it; run `pnpm install` again.
 - Port 5432 busy → stop the local Postgres (`brew services stop postgresql`) or change the
   port in `docker-compose.yml` and `.env`.
-- This folder is inside Google Drive. `node_modules` is in `.gitignore`, but Drive still
-  syncs it. If sync is slow, move the repo out of Drive or exclude the folder in Drive's
-  settings.

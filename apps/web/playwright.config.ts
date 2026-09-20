@@ -14,7 +14,7 @@ const WEB_PORT = process.env.WEB_PORT ?? "5173";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
-  // The self-hosted runner is a 4-core Pi: one retry there, and twice the per-test budget (export/import runs Argon2id twice and re-encodes a photo).
+  // On CI (a small self-hosted or hosted runner): one retry, and twice the per-test budget (export/import runs Argon2id twice and re-encodes a photo).
   retries: process.env["CI"] ? 1 : 0,
   reporter: [["list"]],
   timeout: process.env["CI"] ? 120_000 : 60_000,

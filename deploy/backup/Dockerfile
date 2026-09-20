@@ -1,4 +1,4 @@
-# A nightly backup job image: pg_dump piped through age (the household deployment runs it as a CronJob).
+# A nightly backup job image: pg_dump piped through age (run it on a schedule, e.g. a cron job or a Kubernetes CronJob).
 # postgres:16-alpine has neither age nor an openssl CLI, and installing at run time
 # would make every backup depend on the internet. Small, pinned, rebuilt rarely:
 #   make backup-image     (linux/amd64 and linux/arm64: an arm64-only image once stopped the backup, PETTY-61)

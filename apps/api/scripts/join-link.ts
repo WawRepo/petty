@@ -1,7 +1,7 @@
 /**
  * Mints a join link without an existing user — for the very first account of an
  * installation (signup is invite-only). Run inside the API container:
- *   kubectl exec deploy/petty -n petty -- pnpm --filter @petty/api join-link [email]
+ *   <exec into the API container> pnpm --filter @petty/api join-link [email]
  * Uses the request role (petty_api), which may insert join links.
  */
 import pg from "pg";
