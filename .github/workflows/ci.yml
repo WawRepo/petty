@@ -10,6 +10,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  # Secret scan (PETTY-208). gitleaks-action is free for public repos; it needs a licence on
+  # private ones, so this job stays dormant until the repo is public, then runs on every push/PR.
+  secrets:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30

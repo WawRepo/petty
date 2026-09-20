@@ -1,0 +1,20 @@
+# gitleaks config for CI secret scanning (PETTY-208 / review MF5).
+# Generic rules only — the household-specific patterns stay in the local pre-commit hook.
+title = "petty"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Built bundles, diagrams, lockfile, and deliberately-fake test material."
+paths = [
+  '''apps/web/dist/''',
+  '''.*\.(svg|excalidraw)$''',
+  '''pnpm-lock\.yaml$''',
+]
+# Fake values that appear in tests and fixtures on purpose.
+regexes = [
+  '''petty_pat_[A-Za-z0-9_-]+\.[A-Za-z0-9+/=_-]+''',   # example / test access tokens
+  '''(pk|sk)_test_offline''',                          # clerk.test.ts offline stand-ins
+  '''AAAA[A-Za-z0-9+/=]*''',                            # all-zero test ciphertext/nonces
+]
