@@ -15,7 +15,8 @@
     "reload": "Reload",
     "offline": "You are offline.",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "sourceCode": "Source code"
   },
   "nav": {
     "settings": "Settings",
@@ -708,7 +709,8 @@
       "A member with write access can also damage a drawer's history (the app then shows those records as tampered, but their content is gone). Share with people you trust.",
       "A security bug in this app itself.",
       "A forgotten passphrase with no recovery code: nobody can help, by design."
-    ]
+    ],
+    "source": "Petty is free software (AGPL-3.0). Read or run the source yourself:"
   },
   "admin": {
     "title": "Admin",

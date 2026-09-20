@@ -3,13 +3,13 @@ import { useBack } from "../lib/nav.js";
 import { Button } from "../components/Button.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
+import { SOURCE_URL } from "../lib/links.js";
 
 /**
  * "Use Petty with AI" (PETTY-173): how to connect an AI app through an access token and the local
  * MCP program, from scratch. Public, like the privacy page. The config blocks carry this Petty's
  * own address; the token is always a placeholder, never filled in here.
  */
-const SOURCE = "https://github.com/WawRepo/petty";
 const TOOLS: readonly (readonly [string, "read" | "write"])[] = [
   ["list_drawers", "read"], ["find_item", "read"], ["history", "read"], ["list_tags", "read"], ["list_places", "read"],
   ["add", "write"], ["withdraw", "write"], ["adjust", "write"], ["tag_item", "write"], ["untag_item", "write"],
@@ -67,7 +67,7 @@ export function AiScreen() {
         <section className="card">
           <h2 className="h-card">{t("ai.honestTitle")}</h2>
           <ul className="list">{list("ai.honest")}</ul>
-          <p className="m0"><a href={SOURCE} target="_blank" rel="noopener noreferrer" data-testid="ai-source">{t("ai.source")}</a></p>
+          <p className="m0"><a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="ai-source">{t("ai.source")}</a></p>
         </section>
       </main>
     </>

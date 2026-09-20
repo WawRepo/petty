@@ -15,7 +15,8 @@
     "reload": "Odśwież",
     "offline": "Brak połączenia.",
     "yes": "Tak",
-    "no": "Nie"
+    "no": "Nie",
+    "sourceCode": "Kod źródłowy"
   },
   "nav": {
     "settings": "Ustawienia",
@@ -708,7 +709,8 @@
       "Błąd bezpieczeństwa w samej aplikacji.",
       "Zapomniane hasło bez kodu odzyskiwania: nikt nie pomoże — celowo.",
       "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz."
-    ]
+    ],
+    "source": "Petty to wolne oprogramowanie (AGPL-3.0). Przeczytaj kod lub uruchom go samodzielnie:"
   },
   "admin": {
     "title": "Administracja",

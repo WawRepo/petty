@@ -3,6 +3,11 @@ import { expect, loginAndUnlock, openSettings, signupViaApi, test } from "./fixt
 /** PETTY-173: the "Use Petty with AI" page, public, with this Petty's address filled in. */
 test("the AI page explains the setup with this Petty's own address, and is linked from the landing page and Settings", async ({ page, baseURL }) => {
   await page.goto("/");
+  // MF2 (AGPL section 13): the source link is offered on the landing footer and the privacy page
+  await expect(page.getByTestId("landing-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
+  await page.goto("/privacy");
+  await expect(page.getByTestId("privacy-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
+  await page.goto("/");
   await page.getByTestId("landing-ai").click();
   await expect(page.getByRole("heading", { name: "Use Petty with AI" })).toBeVisible();
   const api = `${new URL(baseURL!).origin}/api`;
