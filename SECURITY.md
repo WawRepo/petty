@@ -31,4 +31,4 @@ Include what you found, how to reproduce it, and what an attacker gains. We answ
 
 ## Supported versions
 
-Only the latest release receives security fixes.
+The latest tagged release and the `main` branch receive security fixes. Petty follows semver; the current line is 1.x.
