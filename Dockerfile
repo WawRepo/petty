@@ -36,6 +36,11 @@ COPY packages/protocol/package.json packages/protocol/
 RUN pnpm install --frozen-lockfile --prod --filter @petty/api...
 
 FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+# OCI labels (PETTY-211): GHCR reads image.source to link the package to the repo and inherit its visibility.
+LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.title="Petty" \
+      org.opencontainers.image.description="End-to-end encrypted ledger for physical cash across places and currencies."
 RUN npm install -g pnpm@11.2.2
 ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=true SECURE_COOKIES=true TMPDIR=/tmp
 WORKDIR /app
