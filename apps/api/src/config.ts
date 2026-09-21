@@ -52,6 +52,8 @@ export const config = {
   clerkPublishableKey: env("CLERK_PUBLISHABLE_KEY", ""),
   /** PETTY-160: the operator's address for invite requests; empty hides the "Get an invite" links. */
   contactEmail: env("CONTACT_EMAIL", ""),
+  /** PETTY-215: local mode only — allow signup without a join link (a public self-hosted instance). */
+  openSignup: env("OPEN_SIGNUP", "") === "true",
   /** PEM public key for networkless token verification (tests, air-gapped); empty = fetch JWKS with the secret key. */
   clerkJwtKey: env("CLERK_JWT_KEY", ""),
   /** Clerk frontend API origin (https://….clerk.accounts.dev or https://clerk.<domain>): CSP connect-src in clerk mode. */

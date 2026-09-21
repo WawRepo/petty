@@ -5,7 +5,7 @@ import { Button } from "../components/Button.js";
 import { setLocale } from "../i18n/index.js";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { contactEmail, isClerk } from "../lib/authConfig.js";
+import { contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
 import { SOURCE_URL } from "../lib/links.js";
 
 
@@ -18,7 +18,7 @@ export function LandingScreen() {
   const nav = useNavigate();
   const loc = i18n.language === "pl" ? "pl" : "en";
   // PETTY-108 (audit F1): a visitor needs a way in. With Clerk, sign-up is self-serve; in local mode Petty is invite-only.
-  const open = isClerk();
+  const open = isClerk() || openSignup(); // PETTY-215: local open-signup also gets the self-serve CTA
   const contact = contactEmail();
   const cta = (
     <div className="actions landing-cta">

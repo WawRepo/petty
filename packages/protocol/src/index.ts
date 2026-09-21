@@ -68,7 +68,7 @@ export type DrawerKeyWrap = z.infer<typeof DrawerKeyWrap>;
 
 // ---------------------------------------------------------------- auth
 export const SignupBody = z.object({
-  join_token: z.string().min(16).max(128),
+  join_token: z.string().min(16).max(128).optional(),   // absent = open signup (server allows it only when OPEN_SIGNUP=true)
   email: z.string().email().max(254),
   password: z.string().min(8).max(1024),
   display_name: z.string().trim().min(1).max(80),
@@ -85,7 +85,7 @@ export const LoginBody = z.object({ email: z.string().email().max(254), password
 export const ProvisionBody = SignupBody.omit({ join_token: true, email: true, password: true }).extend({ display_name: z.string().trim().min(1).max(80).optional() });
 /** Public: which identity provider the web app must use. */
 // contact_email (PETTY-160): where "Get an invite" writes to; set by the operator, absent in older answers and caches.
-export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional() });
+export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional(), open_signup: z.boolean().optional() });
 export type AuthConfig = z.infer<typeof AuthConfig>;
 /**
  * Access tokens (PETTY-164). The client makes the whole token: `petty_pat_<id>.<secret>`.

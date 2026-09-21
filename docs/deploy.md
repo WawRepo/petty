@@ -35,6 +35,7 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail |
 | `CONTACT_EMAIL` | where "Get an invite" writes to; empty hides the link |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |
+| `OPEN_SIGNUP` | local mode only: `true` lets anyone create an account without a join link (a public self-hosted instance). Default off = invite-only. In Clerk mode, open sign-up is a setting in the Clerk dashboard, not here. |
 | `CLERK_*` | Clerk keys, only with `AUTH_PROVIDER=clerk` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | optional OTLP/HTTP traces |
 | `METRICS_PORT` | optional Prometheus metrics port (`0` = off) |

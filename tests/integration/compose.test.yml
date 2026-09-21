@@ -12,3 +12,4 @@ services:
       mailpit: { condition: service_started }
     environment:
       LOGIN_LIMIT_PER_IP: "1000"
+      OPEN_SIGNUP: "true"   # PETTY-215: exercise open signup (invite path still works)

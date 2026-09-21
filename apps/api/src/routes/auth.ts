@@ -62,13 +62,18 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   /** Invite-only signup. The client generated the keys and both vault blobs; the server stores what it cannot open. */
   app.post("/auth/signup", async (req, reply) => {
     const body = SignupBody.parse(req.body);
+    // PETTY-215: open signup (no join link) is allowed only when the operator turned it on; rate-limit it per IP.
+    if (!body.join_token) {
+      if (!config.openSignup) throw badRequest("JoinLinkRequired", "this instance is invite-only");
+      if (!checkRate(`signup:${req.ip}`, 10, 60 * 60_000)) throw new ApiError(429, "TooManyAttempts", "try again later");
+    }
     const me = await withTx(apiPool, async (db) => {
-      const link = (await db.query<{ id: string; email: string | null }>(
+      const link = body.join_token ? (await db.query<{ id: string; email: string | null }>(
         "select id, email from join_links where token_hash = $1 and used_at is null and expires_at > now() for update",
         [sha256(body.join_token)],
-      )).rows[0];
-      if (!link) throw badRequest("JoinLinkInvalid", "join link is invalid or used");
-      if (link.email && link.email.toLowerCase() !== body.email.toLowerCase()) throw badRequest("JoinLinkEmailMismatch", "join link is for another address");
+      )).rows[0] : null;
+      if (body.join_token && !link) throw badRequest("JoinLinkInvalid", "join link is invalid or used");
+      if (link?.email && link.email.toLowerCase() !== body.email.toLowerCase()) throw badRequest("JoinLinkEmailMismatch", "join link is for another address");
       checkVaultMaterial(body);
       const exists = await db.query("select 1 from users where lower(email) = lower($1)", [body.email]);
       if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
@@ -78,7 +83,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       )).rows[0]!;
       await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
       await insertPasskey(db, user.id, body.passkey);
-      await db.query("update join_links set used_by = $1, used_at = now() where id = $2", [user.id, link.id]);
+      if (link) await db.query("update join_links set used_by = $1, used_at = now() where id = $2", [user.id, link.id]);
       return loadMe(db, user.id);
     });
     await createSession(reply, me.id);

@@ -53,6 +53,15 @@ describe("database roles (CLAUDE.md rule 8)", () => {
 });
 
 describe("auth", () => {
+  it("open signup is refused unless the operator turned it on (PETTY-215)", async () => {
+    // default env has OPEN_SIGNUP unset, so a signup with no join link is invite-only-refused
+    const u = await userMaterial("nolink", { email: `nolink-${run}@test.local` });
+    const res = await app.inject({ method: "POST", url: "/auth/signup", headers: { "content-type": "application/json" }, payload: JSON.stringify(u.signupBody) });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe("JoinLinkRequired");
+    expect((await app.inject({ method: "GET", url: "/config" })).json().open_signup).toBe(false);
+  });
+
   it("join links are single-use; duplicate email is 409; wrong password is 401; logout ends the session", async () => {
     const token = await makeJoinLink();
     const u = new Client(app, await userMaterial("dup", { email: `dup-${run}@test.local` }));

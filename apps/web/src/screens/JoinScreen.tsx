@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
+import { openSignup } from "../lib/authConfig.js";
 import type { Me } from "@petty/protocol";
 import { z } from "zod";
 import { Button } from "../components/Button.js";
@@ -33,6 +34,8 @@ export function JoinScreen() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    // PETTY-215: open signup has no join link — show the form directly instead of looking one up.
+    if (!token) { setInfo(openSignup() ? { valid: true, inviter_name: null, email: null } : { valid: false, inviter_name: null, email: null }); return; }
     api("GET", `/join-links/${encodeURIComponent(token)}`).then((r) => { const i = Info.parse(r); setInfo(i); if (i.email) setEmail(i.email); }).catch(() => setInfo({ valid: false, inviter_name: null, email: null }));
   }, [token]);
 
@@ -48,7 +51,7 @@ export function JoinScreen() {
       const m = await createVaultMaterial(door.method === "passkey"
         ? { kind: "passkey", email, displayName: name, label: door.label || t("settings.passkey.thisDevice") }
         : { kind: "passphrase", passphrase: door.passphrase });
-      const me = await api<Me>("POST", "/auth/signup", { join_token: token, email, password, display_name: name, locale: i18n.language === "pl" ? "pl" : "en", ...m.body });
+      const me = await api<Me>("POST", "/auth/signup", { ...(token ? { join_token: token } : {}), email, password, display_name: name, locale: i18n.language === "pl" ? "pl" : "en", ...m.body });
       if (m.body.passkey) rememberPasskey(m.body.passkey.credential_id);
       await afterLogin(me);
       await unlockWithKeys(m.keys);

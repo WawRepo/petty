@@ -23,3 +23,5 @@ export const authConfig = (): AuthConfig => current;
 export const isClerk = (): boolean => current.auth === "clerk";
 /** The operator's address for invite requests (PETTY-160), or null: then no "Get an invite" link is shown. */
 export const contactEmail = (): string | null => current.contact_email ?? null;
+/** PETTY-215: local mode only — this instance lets anyone create an account without a join link. */
+export const openSignup = (): boolean => current.open_signup === true;
