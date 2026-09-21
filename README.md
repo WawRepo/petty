@@ -53,9 +53,9 @@ and `docs/monitoring.md` covers metrics, logs and traces.
 
 ## License
 
-Petty is free software under the GNU Affero General Public License v3.0 (`LICENSE`). If you run a
-changed version for other people, you must offer them its source. Contributions are welcome; see
-`CONTRIBUTING.md`.
+Copyright (C) 2026 Petty contributors. Petty is free software under the GNU Affero General Public
+License v3.0 (`LICENSE`, and `NOTICE`). If you run a changed version for other people, you must
+offer them its source. Contributions are welcome; see `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
 
 ---
 

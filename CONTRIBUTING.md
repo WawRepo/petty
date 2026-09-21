@@ -10,6 +10,7 @@ change before you write a large pull request.
 - Read `petty-app-spec.md`. Its Decisions log is settled. If you think a decision is wrong, say so
   in an issue instead of implementing something else.
 - Security problems go through the private process in `SECURITY.md`, never a public issue.
+- This project follows a `CODE_OF_CONDUCT.md`. Be kind.
 
 ## Development
 

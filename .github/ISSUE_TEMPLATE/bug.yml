@@ -1,0 +1,38 @@
+name: Bug report
+description: Something works incorrectly.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do **not** report security problems here — use the private advisory (see SECURITY.md).
+        Never paste real drawer data, tokens or passphrases.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got.
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: The release tag or commit, and the image digest if self-hosting.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [web app, API, agent / MCP, deployment, docs, not sure]
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Browser and OS, or self-host details (auth mode, reverse proxy). No secrets.

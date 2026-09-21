@@ -1,0 +1,20 @@
+name: Feature or change
+description: Suggest an improvement. Please open this before a large pull request.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Petty makes hard today?
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should change? Petty is small and opinionated — say how it fits the threat model and the Decisions log.
+    validations: { required: true }
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
