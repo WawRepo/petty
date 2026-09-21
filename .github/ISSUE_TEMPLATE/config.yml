@@ -6,3 +6,6 @@ contact_links:
   - name: Question or idea
     url: https://github.com/WawRepo/petty/discussions
     about: Ask a question or float an idea before opening a change.
+  - name: Email the maintainers
+    url: mailto:petty@szatanik.dev
+    about: For anything that does not fit an issue.

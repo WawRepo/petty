@@ -6,7 +6,7 @@ drawer content. The design, the threat model and the settled decisions are in
 
 ## Reporting a vulnerability
 
-Please report security problems **privately** through GitHub:
+Please report security problems **privately**: email <petty@szatanik.dev>, or use
 **Security → Report a vulnerability** on this repository. Do not open a public issue.
 
 Include what you found, how to reproduce it, and what an attacker gains. We answer within
