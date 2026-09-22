@@ -8,7 +8,10 @@
 # for four packages was judged more risk than the ~1 s of start-up transpilation.
 # What DID change: only src/, scripts/ and migrations/ of the API are copied,
 # never test/ or the seed, and there is no dev tooling beyond tsx itself.
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
+# Runs on the BUILDER's native arch (not the target), because its only outputs — the web bundle and the
+# packed MCP add-on — are plain JS/HTML, identical on every CPU. This keeps the arm64 image off the slow
+# QEMU emulation for the heavy vite build; only the small per-arch runtime deps below are emulated.
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
 RUN npm install -g pnpm@11.2.2
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
