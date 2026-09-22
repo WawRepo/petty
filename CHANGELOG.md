@@ -6,6 +6,15 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-22
+
+### Added
+- Push metrics and logs over OTLP to one `OTEL_EXPORTER_OTLP_ENDPOINT` (traces already did), gated by
+  `OTEL_PUSH`, so an instance nothing can scrape from outside (a cloud host) still reports. The
+  Prometheus `/metrics` scrape and the stdout JSON logs keep working unchanged, so there is no gap
+  while migrating. `DEPLOYMENT_ENV` sets a `deployment.environment` tag on every signal, so several
+  instances that share `service.name=petty` (for example a home and a public one) do not merge.
+
 ## [1.2.0] — 2026-09-20
 
 First tagged release. Petty is an end-to-end-encrypted ledger for physical cash kept in several
