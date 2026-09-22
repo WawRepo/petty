@@ -4,10 +4,10 @@ import { SpanKind, SpanStatusCode, context, trace, type Span } from "@openteleme
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { resourceFromAttributes } from "@opentelemetry/resources";
+import { PinoInstrumentation } from "@opentelemetry/instrumentation-pino";
 import { BatchSpanProcessor, SimpleSpanProcessor, type SpanExporter } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
+import { otelResource } from "./otel-resource.js";
 
 /**
  * Traces (Phase 15b follow-up, PETTY-34). One trace per API request, pushed
@@ -20,7 +20,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic
  * before Fastify is imported — the http instrumentation patches `node:http` as
  * Fastify requires it — which is why index.ts imports the app dynamically.
  */
-export interface TracingOptions { exporter?: SpanExporter | null; endpoint?: string | undefined; apiPrefix: string; version?: string | undefined }
+export interface TracingOptions { exporter?: SpanExporter | null; endpoint?: string | undefined; apiPrefix: string; version?: string | undefined; deploymentEnv?: string | undefined; logs?: boolean }
 
 let provider: NodeTracerProvider | null = null;
 
@@ -28,7 +28,7 @@ export function startTracing(opts: TracingOptions): boolean {
   const exporter = opts.exporter !== undefined ? opts.exporter : opts.endpoint ? new OTLPTraceExporter({ url: `${opts.endpoint.replace(/\/$/, "")}/v1/traces` }) : null;
   if (!exporter) return false;
   provider = new NodeTracerProvider({
-    resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: "petty", [ATTR_SERVICE_VERSION]: opts.version ?? "dev" }),
+    resource: otelResource(opts.version ?? "dev", opts.deploymentEnv ?? ""),
     // Simple = synchronous export, for tests that read spans right after a request.
     spanProcessors: [opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
   });
@@ -46,6 +46,10 @@ export function startTracing(opts: TracingOptions): boolean {
         // The metrics port and the SMTP transport are not HTTP; nothing outgoing is worth a span here.
         ignoreOutgoingRequestHook: () => true,
       }),
+      // Feeds each pino log record to the global OTLP logger provider (lib/otel-push.ts) with its trace
+      // context, so logs and traces correlate. Only when OTLP log push is on; it must be registered
+      // before Fastify creates the pino logger, which is why index.ts imports the app after this.
+      ...(opts.logs ? [new PinoInstrumentation()] : []),
     ],
   });
   patchPg();

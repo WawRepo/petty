@@ -41,6 +41,17 @@ export const config = {
   otlpEndpoint: env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
   /** Prometheus /metrics on its own port (never behind the ingress); 0 = off. */
   metricsPort: Number(env("METRICS_PORT", "0")),
+  /**
+   * PETTY-92: also push metrics and logs to <OTEL_EXPORTER_OTLP_ENDPOINT> over OTLP (traces always do).
+   * Default off so the endpoint can point at a traces-only receiver (Tempo) without 404s; the operator
+   * flips this on in the same window the endpoint moves to a full OTLP collector (Alloy) or Grafana Cloud.
+   */
+  otlpPush: env("OTEL_PUSH", "") === "true",
+  /**
+   * PETTY-92: distinguishes this instance's telemetry from other instances that share service.name=petty
+   * (home vs the public cloud). Becomes the `deployment.environment` resource attribute; empty = unset.
+   */
+  deploymentEnv: env("DEPLOYMENT_ENV", ""),
   /** Secure cookies need HTTPS; off for the local http dev server. */
   secureCookies: env("SECURE_COOKIES", "false") === "true",
   /**

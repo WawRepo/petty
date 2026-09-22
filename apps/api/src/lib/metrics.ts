@@ -1,54 +1,67 @@
 import http from "node:http";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import client from "prom-client";
+import { metrics as otelApi } from "@opentelemetry/api";
 import { apiPool, maintPool } from "../db.js";
 import { safeUrl } from "./tracing.js";
 
 /**
- * Prometheus metrics (Phase 15b). Served on a SEPARATE port, never through the
- * app's ingress: the deployment annotates the pod and Alloy scrapes it inside
- * the cluster. Labels are bounded by construction — route templates, not URLs;
- * event names, not ids — because nothing downstream can drop a label once pushed.
- * No label ever carries content, an email, or a user id (CLAUDE.md rule 2).
+ * Metrics (Phase 15b, PETTY-92). Two paths from one definition:
+ *  - a Prometheus registry served on a SEPARATE port (pull), scraped inside the cluster — unchanged, so
+ *    the existing scrape stays byte-for-byte the same during the OTLP migration;
+ *  - an OpenTelemetry mirror pushed over OTLP when `otlpPush` is on (lib/otel-push.ts), so the Fly
+ *    instance — which nothing can scrape from outside — still reports.
+ * `dualCounter`/`dualHistogram` write both from one call, so the call sites never change. When OTLP is
+ * off there is no MeterProvider, the OTel side is a no-op, and only the Prometheus path runs.
+ *
+ * Labels are bounded by construction — route templates, not URLs; event names, not ids — because nothing
+ * downstream can drop a label once pushed. No label ever carries content, an email, or a user id (rule 2).
  */
 export const registry = new client.Registry();
 client.collectDefaultMetrics({ register: registry });
 
-export const httpDuration = new client.Histogram({
-  name: "petty_http_request_duration_seconds",
-  help: "API request latency by route template and status code",
-  labelNames: ["method", "route", "status"] as const,
-  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-  registers: [registry],
-});
+const meter = otelApi.getMeter("petty");
+const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 
-export const authEvents = new client.Counter({
-  name: "petty_auth_events_total",
-  help: "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout",
-  labelNames: ["event"] as const,
-  registers: [registry],
-});
+function dualCounter(name: string, help: string, labelNames: string[] = []) {
+  const prom = new client.Counter({ name, help, labelNames, registers: [registry] });
+  const otel = meter.createCounter(name, { description: help });
+  return {
+    inc(labels?: Record<string, string>): void {
+      if (labels) { prom.inc(labels); otel.add(1, labels); } else { prom.inc(); otel.add(1); }
+    },
+  };
+}
 
-export const entriesAppended = new client.Counter({
-  name: "petty_entries_total",
-  help: "Entry appends by result: created (new row) or duplicate (idempotent replay)",
-  labelNames: ["result"] as const,
-  registers: [registry],
-});
+function dualHistogram(name: string, help: string, labelNames: string[], buckets: number[]) {
+  const prom = new client.Histogram({ name, help, labelNames, buckets, registers: [registry] });
+  const otel = meter.createHistogram(name, { description: help, unit: "s", advice: { explicitBucketBoundaries: buckets } });
+  return {
+    observe(labels: Record<string, string>, value: number): void { prom.observe(labels, value); otel.record(value, labels); },
+  };
+}
 
-export const rotationsStarted = new client.Counter({
-  name: "petty_rotations_started_total",
-  help: "Drawer key rotations started",
-  registers: [registry],
-});
+export const httpDuration = dualHistogram(
+  "petty_http_request_duration_seconds",
+  "API request latency by route template and status code",
+  ["method", "route", "status"], BUCKETS,
+);
 
-export const mailsSent = new client.Counter({
-  name: "petty_mail_total",
-  help: "Notification emails handed to SMTP, by result",
-  labelNames: ["result"] as const,
-  registers: [registry],
-});
+export const authEvents = dualCounter(
+  "petty_auth_events_total",
+  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout", ["event"],
+);
 
+export const entriesAppended = dualCounter(
+  "petty_entries_total",
+  "Entry appends by result: created (new row) or duplicate (idempotent replay)", ["result"],
+);
+
+export const rotationsStarted = dualCounter("petty_rotations_started_total", "Drawer key rotations started");
+
+export const mailsSent = dualCounter("petty_mail_total", "Notification emails handed to SMTP, by result", ["result"]);
+
+// pg pool occupancy: prom collects on scrape; OTel observes on its export interval. Same numbers, two readers.
 new client.Gauge({
   name: "petty_pg_pool_clients",
   help: "pg pool clients by pool (api, maint) and state (total, idle, waiting)",
@@ -61,6 +74,13 @@ new client.Gauge({
       this.set({ pool: name, state: "waiting" }, pool.waitingCount);
     }
   },
+});
+meter.createObservableGauge("petty_pg_pool_clients", { description: "pg pool clients by pool and state" }).addCallback((obs) => {
+  for (const [name, pool] of [["api", apiPool], ["maint", maintPool]] as const) {
+    obs.observe(pool.totalCount, { pool: name, state: "total" });
+    obs.observe(pool.idleCount, { pool: name, state: "idle" });
+    obs.observe(pool.waitingCount, { pool: name, state: "waiting" });
+  }
 });
 
 /**
@@ -92,14 +112,17 @@ export function usageSnapshot(): Promise<Usage | null> {
 // prom-client collects every metric IN PARALLEL on a scrape (Promise.all over
 // get()), so a single collector on one gauge leaves the others a scrape behind.
 // Each usage gauge therefore awaits the same cached snapshot (one query per 30 s).
+// The OTel observable gauge shares that same cache, so adding it costs no extra query.
 function usageGauge(name: string, help: string, pick: (u: Usage) => number): void {
   const g = new client.Gauge({ name, help, registers: [registry], async collect() { const u = await usageSnapshot(); if (u) g.set(pick(u)); } });
+  meter.createObservableGauge(name, { description: help }).addCallback(async (obs) => { const u = await usageSnapshot(); if (u) obs.observe(pick(u)); });
 }
 usageGauge("petty_users_total", "Accounts that exist (not deleted)", (u) => u.users_total);
 usageGauge("petty_sessions_open", "Unexpired sessions (signed-in devices)", (u) => u.sessions_open);
 usageGauge("petty_drawers_total", "Drawers that exist", (u) => u.drawers_total);
 usageGauge("petty_drawers_shared", "Drawers with at least one member besides the owner", (u) => u.drawers_shared);
 usageGauge("petty_entries_stored", "Entry rows in the ledger (all drawers, all time)", (u) => u.entries_stored);
+
 const usersActive = new client.Gauge({
   name: "petty_users_active", help: "Distinct users with a request in the window (15m, 24h, 7d)", labelNames: ["window"] as const, registers: [registry],
   async collect() {
@@ -109,6 +132,13 @@ const usersActive = new client.Gauge({
     usersActive.set({ window: "24h" }, u.active_24h);
     usersActive.set({ window: "7d" }, u.active_7d);
   },
+});
+meter.createObservableGauge("petty_users_active", { description: "Distinct users with a request in the window (15m, 24h, 7d)" }).addCallback(async (obs) => {
+  const u = await usageSnapshot();
+  if (!u) return;
+  obs.observe(u.active_15m, { window: "15m" });
+  obs.observe(u.active_24h, { window: "24h" });
+  obs.observe(u.active_7d, { window: "7d" });
 });
 
 /** Route label: the matched template under the API prefix; everything else is one bucket. */

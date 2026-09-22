@@ -9,6 +9,19 @@ Petty ──JSON logs, stdout────────────▶ your log co
 Petty ──traces, push, OTLP/HTTP──────▶ Tempo, Jaeger or any OTLP receiver
 ```
 
+You can instead push **all three over OTLP to one endpoint** — useful where nothing can scrape the
+process (a public cloud host) and to keep two instances identical. Traces always push; set
+`OTEL_PUSH=true` to also push metrics (`<endpoint>/v1/metrics`) and logs (`<endpoint>/v1/logs`)
+to the same `OTEL_EXPORTER_OTLP_ENDPOINT` — a collector such as Grafana Alloy, or Grafana Cloud's
+OTLP endpoint. The metrics `/metrics` pull and the stdout logs keep working at the same time, so you
+migrate without a gap. Point `OTEL_PUSH` at a full OTLP collector, not a traces-only receiver like
+Tempo, or `/v1/metrics` and `/v1/logs` will 404.
+
+`service.name` is always `petty`. When more than one instance runs (say a home and a public one), set
+`DEPLOYMENT_ENV` to a distinct value per instance (for example `home` and `public`); it becomes the
+`deployment.environment` resource attribute on every signal, so their metrics do not merge and Grafana
+can key dashboards on it.
+
 Nothing in these signals holds drawer content, amounts or line names: the server only has
 ciphertext. There is no client-side analytics, and the Content-Security-Policy
 (`connect-src 'self'`) prevents it.
