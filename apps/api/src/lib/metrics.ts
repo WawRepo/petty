@@ -26,6 +26,11 @@ const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 function dualCounter(name: string, help: string, labelNames: string[] = []) {
   const prom = new client.Counter({ name, help, labelNames, registers: [registry] });
   const otel = meter.createCounter(name, { description: help });
+  // prom-client pre-initialises a label-free counter to 0, so the scrape shows a 0 series from the start.
+  // The OTel SDK emits only on first record, so the same counter is No-data on the OTLP path until it
+  // first fires — a panel or alert that reads the 0 then breaks after the scrape is retired. Emit 0 once
+  // to match. Labeled counters create a series per label value on both paths, so only these need it.
+  if (labelNames.length === 0) otel.add(0);
   return {
     inc(labels?: Record<string, string>): void {
       if (labels) { prom.inc(labels); otel.add(1, labels); } else { prom.inc(); otel.add(1); }
