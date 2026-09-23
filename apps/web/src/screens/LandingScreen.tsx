@@ -5,7 +5,7 @@ import { Button } from "../components/Button.js";
 import { setLocale } from "../i18n/index.js";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
+import { appVersion, contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
 import { SOURCE_URL } from "../lib/links.js";
 
 
@@ -122,7 +122,7 @@ export function LandingScreen() {
         <Button variant="ghost" onClick={() => nav("/ai")} data-testid="landing-ai">{t("ai.link")}</Button>
         <a className="btn btn-ghost" href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
         <p className="hint m0">{t("landing.made")}{contact ? <> · <a className="landing-mail" href={`mailto:${contact}`}>{contact}</a></> : null}</p>
-        <p className="hint m0">{t("landing.footer")} · {t("landing.slogan")}</p>
+        <p className="hint m0">{t("landing.footer")} · {t("landing.slogan")}{appVersion() ? <> · {appVersion()}</> : null}</p>
       </footer>
     </main>
   );

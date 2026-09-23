@@ -52,6 +52,8 @@ export const config = {
    * (home vs the public cloud). Becomes the `deployment.environment` resource attribute; empty = unset.
    */
   deploymentEnv: env("DEPLOYMENT_ENV", ""),
+  /** PETTY-218: the release version, baked into the image at build (Dockerfile ARG PETTY_VERSION). "dev" locally. */
+  version: env("PETTY_VERSION", "dev"),
   /** Secure cookies need HTTPS; off for the local http dev server. */
   secureCookies: env("SECURE_COOKIES", "false") === "true",
   /**

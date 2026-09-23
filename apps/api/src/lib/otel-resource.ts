@@ -12,5 +12,9 @@ export const ATTR_DEPLOYMENT_ENVIRONMENT = "deployment.environment";
 export function otelResource(version: string, deploymentEnv: string): Resource {
   const attrs: Record<string, string> = { [ATTR_SERVICE_NAME]: "petty", [ATTR_SERVICE_VERSION]: version };
   if (deploymentEnv) attrs[ATTR_DEPLOYMENT_ENVIRONMENT] = deploymentEnv;
+  // PETTY-218: distinguish the machines/pods of one instance so their metric series don't collapse into
+  // one (two Fly machines, several home pods). Fly sets FLY_MACHINE_ID; Kubernetes sets HOSTNAME.
+  const instanceId = process.env["FLY_MACHINE_ID"] ?? process.env["HOSTNAME"] ?? "";
+  if (instanceId) attrs["service.instance.id"] = instanceId;
   return resourceFromAttributes(attrs);
 }

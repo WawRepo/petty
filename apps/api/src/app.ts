@@ -93,7 +93,7 @@ export function buildApp() {
     });
     a.get("/health/live", async () => ({ ok: true }));
     // Public (PETTY-88): which identity provider the web app must use; one image serves both modes.
-    a.get("/config", async () => AuthConfig.parse({ auth: config.authProvider, clerk_publishable_key: config.clerkPublishableKey || null, contact_email: config.contactEmail || null, open_signup: config.openSignup }));
+    a.get("/config", async () => AuthConfig.parse({ auth: config.authProvider, clerk_publishable_key: config.clerkPublishableKey || null, contact_email: config.contactEmail || null, open_signup: config.openSignup, version: config.version }));
     await a.register(authRoutes);
     await a.register(meRoutes);
     await a.register(tokenRoutes);

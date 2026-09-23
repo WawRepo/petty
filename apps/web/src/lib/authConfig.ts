@@ -25,3 +25,5 @@ export const isClerk = (): boolean => current.auth === "clerk";
 export const contactEmail = (): string | null => current.contact_email ?? null;
 /** PETTY-215: local mode only — this instance lets anyone create an account without a join link. */
 export const openSignup = (): boolean => current.open_signup === true;
+/** PETTY-218: the running server's version (baked into the image), or null before /config is loaded. */
+export const appVersion = (): string | null => current.version ?? null;

@@ -31,6 +31,8 @@ jobs:
           push: true
           provenance: true
           sbom: true
+          build-args: |
+            PETTY_VERSION=${{ github.ref_name }}
           tags: |
             ghcr.io/wawrepo/petty:${{ github.ref_name }}
             ghcr.io/wawrepo/petty:latest

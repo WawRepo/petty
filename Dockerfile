@@ -45,7 +45,9 @@ LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.title="Petty" \
       org.opencontainers.image.description="End-to-end encrypted ledger for physical cash across places and currencies."
 RUN npm install -g pnpm@11.2.2
-ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=true SECURE_COOKIES=true TMPDIR=/tmp
+# PETTY-218: the release version, passed in by release.yml from the git tag; "dev" for local builds.
+ARG PETTY_VERSION=dev
+ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=true SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules

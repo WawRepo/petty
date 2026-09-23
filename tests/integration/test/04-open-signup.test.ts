@@ -8,7 +8,11 @@ import { API, ORIGIN } from "../lib.js";
  */
 describe("open signup", () => {
   it("advertises open signup and accepts a link-less signup", async () => {
-    expect((await (await fetch(`${API}/config`)).json()).open_signup).toBe(true);
+    const cfg = (await (await fetch(`${API}/config`)).json()) as { open_signup: boolean; version?: string };
+    expect(cfg.open_signup).toBe(true);
+    // PETTY-218: the server reports its own version (baked into the image at build).
+    expect(typeof cfg.version).toBe("string");
+    expect((cfg.version ?? "").length).toBeGreaterThan(0);
     const u = await userMaterial("open", { email: `open-${Date.now()}@petty.test` });
     const res = await fetch(`${API}/auth/signup`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(u.signupBody) });
     const text = await res.text();
