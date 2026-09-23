@@ -26,7 +26,7 @@ import { type FormEvent } from "react";
 import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
 import { promptInstall, useInstallState } from "../lib/install.js";
 import { placesShown, setPlacesShown, setTotalsShown, setVerificationShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
-import { isClerk } from "../lib/authConfig.js";
+import { appVersion, isClerk } from "../lib/authConfig.js";
 
 export function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -243,6 +243,7 @@ export function SettingsScreen() {
           {me?.is_admin ? <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/admin")} data-testid="admin-link">{t("admin.link")}</Button></p> : null}
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/settings/delete")}>{t("settings.deleteAccount")}</Button></p>
         </section>
+        {appVersion() ? <p className="hint mt12 mb0" data-testid="app-version">Petty {appVersion()}</p> : null}
       </main>
       <Sheet open={pkAdd} title={t("settings.passkey.add")} onClose={() => setPkAdd(false)}>
         <form onSubmit={doPasskeyAdd} noValidate>
