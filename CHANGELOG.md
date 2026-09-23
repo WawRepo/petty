@@ -6,6 +6,18 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-09-23
+
+### Added
+- The running version is shown in the app — the landing footer and the bottom of Settings — and is
+  stamped into telemetry (`service.version`). It is baked into the image at build from the release tag,
+  so the image always knows its own version.
+
+### Changed
+- Telemetry: label-free counters are pre-initialised to 0 on the OTLP push path (parity with the
+  Prometheus scrape), and the resource now carries `service.instance.id` so several machines or pods of
+  one instance don't collapse into a single metric series.
+
 ## [1.3.0] — 2026-09-22
 
 ### Added
