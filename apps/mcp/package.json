@@ -23,7 +23,7 @@
     "@petty/api": "workspace:*",
     "@petty/crypto": "workspace:*",
     "@petty/protocol": "workspace:*",
-    "@types/node": "^22.17.2",
+    "@types/node": "^26.6.2",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
     "tsx": "^4.20.5"

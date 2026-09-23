@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@petty/crypto": "workspace:*",
-    "@types/node": "^22.17.2",
+    "@types/node": "^26.6.2",
     "tsx": "^4.20.5"
   }
 }
