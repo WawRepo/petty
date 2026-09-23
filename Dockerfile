@@ -11,7 +11,7 @@
 # Runs on the BUILDER's native arch (not the target), because its only outputs — the web bundle and the
 # packed MCP add-on — are plain JS/HTML, identical on every CPU. This keeps the arm64 image off the slow
 # QEMU emulation for the heavy vite build; only the small per-arch runtime deps below are emulated.
-FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
+FROM --platform=$BUILDPLATFORM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS build
 RUN npm install -g pnpm@11.2.2
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
@@ -28,7 +28,7 @@ COPY . .
 RUN pnpm --filter @petty/mcp run pack
 RUN pnpm --filter @petty/web build
 
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS deps
 RUN npm install -g pnpm@11.2.2
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
@@ -38,7 +38,7 @@ COPY packages/ledger/package.json packages/ledger/
 COPY packages/protocol/package.json packages/protocol/
 RUN pnpm install --frozen-lockfile --prod --filter @petty/api...
 
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
 # OCI labels (PETTY-211): GHCR reads image.source to link the package to the repo and inherit its visibility.
 LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
