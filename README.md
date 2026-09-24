@@ -36,7 +36,7 @@ choose. Everything is encrypted on your device before it is sent.
 | Operators (self-hosting) | [docs/deploy.md](docs/deploy.md) · [docs/monitoring.md](docs/monitoring.md) · [docs/auth-clerk.md](docs/auth-clerk.md) · [docs/agent.md](docs/agent.md) |
 | Contributors | [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/decisions.md](docs/decisions.md) · [CLAUDE.md](CLAUDE.md) — the engineering rules; plain text, no AI tool needed to read or follow them |
 | Security reviewers | [SECURITY.md](SECURITY.md) · [docs/threat-model.md](docs/threat-model.md) · [docs/security-review-2026-09.md](docs/security-review-2026-09.md) · [docs/README.md](docs/README.md) (how keys and tokens work, with diagrams) |
-| History, not maintained | `petty-app-spec.md` (frozen 2026-09-25), `petty-spec-review.md`, `SPEC-ISSUES.md` — the original specification, its review and the reasoning behind the first decisions · `petty.html` — the pre-rewrite prototype |
+| History, not maintained | [petty-app-spec.md](docs/history/petty-app-spec.md) (frozen 2026-09-25), [petty-spec-review.md](docs/history/petty-spec-review.md), [SPEC-ISSUES.md](docs/history/SPEC-ISSUES.md) — the original specification, its review and the reasoning behind the first decisions · [petty.html](docs/history/petty.html) — the pre-rewrite prototype |
 
 Ticket IDs such as `PETTY-123` in docs and commit messages refer to the maintainers' internal tracker.
 The public trail for changes is this repository's issues, pull requests and [CHANGELOG.md](CHANGELOG.md).
@@ -181,7 +181,7 @@ person's encrypted user document (`apps/web/src/lib/places.ts`, edited on
 `/places`). Renaming or moving a place rewrites the path on the drawers you can
 write. Drawers and lines carry an optional Lucide icon slug; lines carry tags
 and a "part of the total" flag, all inside the document. Details and the
-reasoning: [docs/decisions.md](docs/decisions.md) (rows *Places*, *Icons*, *Line tags*); background in the frozen `petty-app-spec.md`, section "Places, icons and line tags".
+reasoning: [docs/decisions.md](docs/decisions.md) (rows *Places*, *Icons*, *Line tags*); background in the frozen [petty-app-spec.md](docs/history/petty-app-spec.md), section "Places, icons and line tags".
 
 ## API (apps/api)
 

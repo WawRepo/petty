@@ -3,8 +3,8 @@
 > **Historical — frozen 2026-09-25, not maintained.** This is the original specification the app was
 > built from. It is out of date (no access tokens, Clerk, admins, document history, telemetry or open
 > sign-up; its backup section describes one operator's plan). The maintained documents are
-> [docs/threat-model.md](docs/threat-model.md) (what Petty protects and what it does not) and
-> [docs/decisions.md](docs/decisions.md) (every settled decision, continuing the log below). Where they
+> [docs/threat-model.md](../threat-model.md) (what Petty protects and what it does not) and
+> [docs/decisions.md](../decisions.md) (every settled decision, continuing the log below). Where they
 > differ, they win.
 
 Petty is a ledger for physical cash kept in different places (a kitchen drawer, a

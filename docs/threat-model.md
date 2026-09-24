@@ -1,7 +1,7 @@
 # Threat model
 
 **Current as of v1.3.1 (2026-09-25).** This is the maintained description of what Petty protects,
-from whom, and what it does not. It replaces the "Security" section of `petty-app-spec.md`, which is
+from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
 

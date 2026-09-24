@@ -194,7 +194,7 @@ causes and fixes are unchanged.
   - A racing duplicate entry id is answered as a replay instead of a 500.
   - Signup checks the recovery vault's ECDSA key.
 - **Crypto library:** Petty uses `hash-wasm` plus WebCrypto instead of libsodium. The reasoning is
-  in `SPEC-ISSUES.md` (C1).
+  in [SPEC-ISSUES.md](history/SPEC-ISSUES.md) (C1).
 
 ## Checked, no issue
 

@@ -1,10 +1,10 @@
 # Decisions
 
 **Maintained log of settled design decisions.** Continues the Decisions log of
-`petty-app-spec.md` (frozen 2026-09-25 as history). A settled decision is not re-litigated during
+[petty-app-spec.md](history/petty-app-spec.md) (frozen 2026-09-25 as history). A settled decision is not re-litigated during
 implementation: if you believe one is wrong, open an issue and say why, rather than quietly building
 something else. Superseded rows are marked, not deleted. The reasoning for the early rows is in
-`SPEC-ISSUES.md` and `petty-spec-review.md`; the threat model they serve is [threat-model.md](threat-model.md).
+[SPEC-ISSUES.md](history/SPEC-ISSUES.md) and [petty-spec-review.md](history/petty-spec-review.md); the threat model they serve is [threat-model.md](threat-model.md).
 
 ## Settled with the specification (2026-08)
 
@@ -83,7 +83,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   image takes everything from its environment.
 - **Backups are the operator's (2026-09-24).** The app ships no backup job and promises no retention.
   The privacy page and docs describe what a backup would contain and leave schedule and retention to
-  the operator; [deploy.md](deploy.md) gives a tested dump/restore procedure.
+  the operator; [deploy.md](deploy.md) gives a dump/restore procedure and says to test a restore.
 - **Telemetry (PETTY-92).** Metrics, logs and traces never carry content. All three can push over
   OTLP to one endpoint (`OTEL_PUSH`), alongside the Prometheus scrape and stdout logs;
   `DEPLOYMENT_ENV` tags every signal so instances don't merge. See [monitoring.md](monitoring.md).

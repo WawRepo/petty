@@ -49,4 +49,4 @@ Forgot it? `git commit --amend -s` (last commit) or `git rebase --signoff main` 
 
 Ticket IDs such as `PETTY-123` refer to the maintainers' internal tracker; you do not need access to
 it. The public trail is this repository's issues, pull requests and `CHANGELOG.md`, and the settled
-design decisions are in `docs/decisions.md` (reasoning for the early ones: `SPEC-ISSUES.md`).
+design decisions are in `docs/decisions.md` (reasoning for the early ones: [SPEC-ISSUES.md](docs/history/SPEC-ISSUES.md)).
