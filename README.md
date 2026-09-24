@@ -28,9 +28,24 @@ choose. Everything is encrypted on your device before it is sent.
   installs like an app and keeps working without a network.
 - **English and Polish.**
 
+## Documentation
+
+| For | Read |
+|---|---|
+| Users | this README and the in-app privacy page |
+| Operators (self-hosting) | [docs/deploy.md](docs/deploy.md) · [docs/monitoring.md](docs/monitoring.md) · [docs/auth-clerk.md](docs/auth-clerk.md) · [docs/agent.md](docs/agent.md) |
+| Contributors | [CONTRIBUTING.md](CONTRIBUTING.md) · [CLAUDE.md](CLAUDE.md) — the engineering rules; plain text, no AI tool needed to read or follow them |
+| Security reviewers | [SECURITY.md](SECURITY.md) · [docs/security-review-2026-09.md](docs/security-review-2026-09.md) · [docs/README.md](docs/README.md) (how keys and tokens work, with diagrams) |
+| History, not maintained | `petty-app-spec.md`, `petty-spec-review.md`, `SPEC-ISSUES.md` — the original specification, its review and the decisions it settled · `petty.html` — the pre-rewrite prototype |
+
+Ticket IDs such as `PETTY-123` in docs and commit messages refer to the maintainers' internal tracker.
+The public trail for changes is this repository's issues, pull requests and [CHANGELOG.md](CHANGELOG.md).
+
 ## Security in five lines
 
-1. Drawer content is encrypted in the browser (AES-256-GCM). The server stores ciphertext only.
+1. Drawer content is encrypted in the browser (AES-256-GCM). The server stores that content only as ciphertext — it still sees account
+   details (email, display name) and activity metadata (who wrote which entry, when); the in-app
+   privacy page lists exactly what.
 2. Each drawer has its own key, wrapped for each member with ECDH P-256. Your private keys never
    leave your device unencrypted.
 3. Your keys sit in a vault opened by a passkey or a passphrase (Argon2id), with a recovery code.
@@ -87,7 +102,7 @@ deployment passes the same names as environment variables or secrets.
 ## Requirements (clean machine)
 
 - Docker Desktop (or any Docker with Compose v2)
-- Node 22 or newer (`.node-version` says 22; Node 24 works)
+- Node 24 (LTS; `.node-version` says 24 — the image and CI use it too)
 - pnpm 11: `corepack enable && corepack prepare pnpm@11.2.2 --activate`
 - GNU make (preinstalled on macOS; `apt install make` on Debian/Ubuntu)
 

@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+# Every local env variant (.env.local, .env.production, .env.backup, ...) — but keep the examples.
+.env.*
+!.env.example
 *.log
 .DS_Store
 coverage/
@@ -15,7 +18,11 @@ CLAUDE.local.md
 
 # built add-on (PETTY-172)
 apps/mcp/mcpb/server/
+apps/mcp/mcpb/LICENSE
+apps/mcp/mcpb/THIRD_PARTY_NOTICES.md
+apps/mcp/meta.json
 apps/web/public/downloads/
+apps/web/public/THIRD_PARTY_NOTICES.md
 
 # integration test state when run outside run.sh
 tests/integration/.state.json

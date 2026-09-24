@@ -16,7 +16,8 @@
     "offline": "Brak połączenia.",
     "yes": "Tak",
     "no": "Nie",
-    "sourceCode": "Kod źródłowy"
+    "sourceCode": "Kod źródłowy",
+    "thirdPartyNotices": "Licencje bibliotek"
   },
   "nav": {
     "settings": "Ustawienia",
@@ -689,12 +690,12 @@
       "Kto z kim dzieli którą szufladę i w jakiej roli.",
       "Kiedy każdy wpis powstał, kto go dodał, na której linii i czy było to liczenie albo cofnięcie — nigdy kwotę, komentarz ani nazwę linii.",
       "Rozmiar każdego zaszyfrowanego rekordu, zaokrąglony do 256 bajtów.",
-      "Nocna kopia zapasowa bazy, szyfrowana zanim opuści klaster. Zawiera ten sam szyfrogram, Twój e-mail i zaszyfrowany sejf; kopie są przechowywane 30 dni, także po usunięciu konta.",
+      "Kopie zapasowe to decyzja operatora: ta aplikacja żadnych nie tworzy. Jeśli operator wykonuje kopie bazy, zawierają ten sam szyfrogram, Twój e-mail i zaszyfrowany sejf — zapytaj go, jak długo są przechowywane, także po usunięciu konta.",
       "Jeśli pozwolisz menedżerowi haseł w przeglądarce zapisać hasło sejfu, ten menedżer (i jego synchronizacja w chmurze) też je ma. To Twój wybór, nie serwera."
     ],
     "defendsTitle": "Przed czym Petty chroni",
     "defends": [
-      "Każdy, kto czyta bazę lub kopię zapasową, dostaje tylko szyfrogram — ze zdjęciami włącznie.",
+      "Każdy, kto czyta bazę lub kopię zapasową: treść szuflad, zdjęcia i sejfy to tylko szyfrogram. Nadal widzi jednak dane konta i aktywności wymienione wyżej.",
       "Każdy, kto zmienia bazę: przeniesione, zamienione lub usunięte wpisy są wykrywane.",
       "Przejęty serwer: nie ma kluczy i nie odczyta zawartości szuflad.",
       "Zgubiony telefon: sejf pozostaje zamknięty bez hasła i zamyka się sam po 24 godzinach.",
@@ -758,7 +759,7 @@
     "tagline": "Wspólna ewidencja gotówki z Twoich szuflad — zaszyfrowana tak, że tylko Ty ją odczytasz.",
     "sub": "Gotówka w szufladzie w kuchni, euro na wakacje, kasa klubu: policz raz, daj każdej szufladzie miejsce, podziel się z tymi, którzy z niej korzystają.",
     "how": "Jak to szyfruje",
-    "beta": "Bezpłatne w czasie testów. Masz zaproszenie? Zaloguj się powyżej.",
+    "beta": "Masz zaproszenie? Zaloguj się powyżej.",
     "shotsTitle": "Zrzuty ekranu",
     "shots": {
       "home": "Ekran główny: suma i szuflady pogrupowane po miejscu",
@@ -828,7 +829,7 @@
       },
       "cost": {
         "q": "Ile to kosztuje?",
-        "a": "Nic w czasie testów. Jeśli kiedyś będzie płatne, zostanie darmowy plan i jasna zapowiedź."
+        "a": "Petty to wolne oprogramowanie (AGPL-3.0) — możesz uruchomić własne za darmo. Jeśli operator hostowanej instancji kiedyś zacznie pobierać opłaty, musi Cię o tym wcześniej wyraźnie poinformować."
       },
       "phone": {
         "q": "Czy jest aplikacja na telefon?",
@@ -840,8 +841,8 @@
     "made": "Tworzone w Polsce",
     "create": "Załóż sejf",
     "getInvite": "Poproś o zaproszenie",
-    "betaOpen": "Bezpłatnie na czas testów. Bez karty, bez instalacji.",
-    "betaInvite": "Bezpłatnie na czas testów. Petty jest na razie tylko na zaproszenia: poproś członka albo napisz do nas.",
+    "betaOpen": "Bez karty, bez instalacji.",
+    "betaInvite": "To Petty jest tylko na zaproszenia: poproś członka albo napisz do nas.",
     "again": "Gotowi? To zajmuje minutę.",
     "againInvite": "Masz zaproszenie? Zaloguj się i załóż sejf.",
     "shotOpen": "Powiększ: {name}",

@@ -1,9 +1,14 @@
 {
   "name": "petty",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WawRepo/petty.git"
+  },
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "packageManager": "pnpm@11.2.2",
   "scripts": {

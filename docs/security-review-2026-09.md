@@ -5,6 +5,13 @@ This is the public version of an internal application security review of Petty. 
 reviewer's own deployment (addresses, storage paths, cluster settings) are removed. Findings,
 causes and fixes are unchanged.
 
+> **Scope note (added 2026-09-24).** This review looked at the reviewer's own deployment of that
+> day — a Kubernetes cluster with its own manifests, which are not part of this repository — as well
+> as the application code. Statements about pods, manifests, network policies or cluster settings are
+> observations of that deployment, not guarantees of the shipped image or of `deploy/compose`. The
+> application-level findings (SR-1 … SR-14) and their fixes are in this repository. A second internal
+> review on 2026-09-19 (13 findings, cited in CHANGELOG 1.2.0 → Security) is not published in full.
+
 ## Scope and method
 
 - **Static review:**

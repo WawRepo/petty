@@ -16,7 +16,8 @@
     "offline": "You are offline.",
     "yes": "Yes",
     "no": "No",
-    "sourceCode": "Source code"
+    "sourceCode": "Source code",
+    "thirdPartyNotices": "Third-party notices"
   },
   "nav": {
     "settings": "Settings",
@@ -689,12 +690,12 @@
       "Who shares which drawer with whom, and with which role.",
       "When each entry was written, by whom, on which line, and whether it was a count or a reversal — never the amount, the comment or the line's name.",
       "The size of each encrypted record, rounded up to 256-byte steps.",
-      "A nightly backup of the database, encrypted before it leaves the cluster. It holds the same ciphertext, your email and your encrypted vault; copies are kept for 30 days, also after an account is deleted.",
+      "Backups are your operator's choice: this app ships none. If your operator backs up the database, a copy holds the same ciphertext, your email and your encrypted vault — ask them how long copies are kept, including after an account is deleted.",
       "If you let your browser's password manager save the vault passphrase, that manager (and its cloud sync) holds it too. That is your choice, not the server's."
     ],
     "defendsTitle": "What Petty defends against",
     "defends": [
-      "Anyone reading the database or a backup: they get ciphertext only, photos included.",
+      "Anyone reading the database or a backup: drawer content, photos and vaults are ciphertext only. They still see the account and activity details listed above.",
       "Anyone changing the database: moved, swapped or deleted entries are detected.",
       "A compromised server: it holds no keys and cannot read drawer content.",
       "A lost phone: the vault stays locked without the passphrase and locks itself after 24 hours.",
@@ -758,7 +759,7 @@
     "tagline": "A shared ledger for the cash in your drawers — encrypted so only you can read it.",
     "sub": "Cash in the kitchen drawer, euros for the holiday, the club's cash box: count it once, give each drawer its place, share it with the people who use it.",
     "how": "How it's encrypted",
-    "beta": "Free while we test. Have an invite? Sign in above.",
+    "beta": "Have an invite? Sign in above.",
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Home screen: the total, and the drawers grouped by place",
@@ -828,7 +829,7 @@
       },
       "cost": {
         "q": "What does it cost?",
-        "a": "Nothing while we test. If it ever costs money, there will be a free plan and clear notice first."
+        "a": "Petty is free software (AGPL-3.0) — you can run your own for nothing. If whoever runs a hosted instance ever charges for it, they must tell you clearly first."
       },
       "phone": {
         "q": "Is there a phone app?",
@@ -840,8 +841,8 @@
     "made": "Made in Poland",
     "create": "Create your vault",
     "getInvite": "Get an invite",
-    "betaOpen": "Free while we test. No card, nothing to install.",
-    "betaInvite": "Free while we test. Petty is invite-only for now: ask a member, or write to us.",
+    "betaOpen": "No card, nothing to install.",
+    "betaInvite": "This Petty is invite-only: ask a member, or write to us.",
     "again": "Ready? It takes a minute.",
     "againInvite": "Have an invite? Sign in and set up your vault.",
     "shotOpen": "Enlarge: {name}",

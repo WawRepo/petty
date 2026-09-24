@@ -4,7 +4,7 @@ contact_links:
     url: https://github.com/WawRepo/petty/security/advisories/new
     about: Report a security problem privately. Never open a public issue for it (see SECURITY.md).
   - name: Question or idea
-    url: https://github.com/WawRepo/petty/discussions
+    url: https://github.com/WawRepo/petty/issues
     about: Ask a question or float an idea before opening a change.
   - name: Email the maintainers
     url: mailto:petty@szatanik.dev

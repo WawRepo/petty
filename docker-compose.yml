@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: petty
       POSTGRES_DB: petty
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
@@ -21,8 +21,8 @@ services:
   mailpit:
     image: axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365
     ports:
-      - "8025:8025"   # web UI
-      - "1025:1025"   # SMTP
+      - "127.0.0.1:8025:8025"   # web UI
+      - "127.0.0.1:1025:1025"   # SMTP
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
@@ -40,7 +40,7 @@ services:
     depends_on:
       db: { condition: service_healthy }
     ports:
-      - "3300:3000"
+      - "127.0.0.1:3300:3000"
     environment: &app-env
       API_HOST: 0.0.0.0
       API_PORT: "3000"

@@ -1,6 +1,7 @@
 {
   "name": "@petty/integration",
   "version": "1.3.1",
+  "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +13,7 @@
     "@petty/api": "workspace:*",
     "@petty/crypto": "workspace:*",
     "@petty/ledger": "workspace:*",
-    "@types/node": "^26.6.2",
+    "@types/node": "^24.0.0",
     "vitest": "^4.1.11"
   }
 }

@@ -35,3 +35,9 @@ Petty is licensed under the GNU Affero General Public License v3.0 (`LICENSE`).
 Before your first pull request can be merged, you will be asked to sign a short Contributor
 License Agreement. It lets the maintainers keep offering Petty under the AGPL and, if needed,
 under other terms, for example for a hosted service. You keep the copyright to your work.
+
+## Tracking and decisions
+
+Ticket IDs such as `PETTY-123` refer to the maintainers' internal tracker; you do not need access to
+it. The public trail is this repository's issues, pull requests and `CHANGELOG.md`, and the settled
+design decisions are the Decisions log in `petty-app-spec.md` and `SPEC-ISSUES.md`.

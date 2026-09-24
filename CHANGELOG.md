@@ -29,7 +29,7 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [1.2.0] — 2026-09-20
 
-First tagged release. Petty is an end-to-end-encrypted ledger for physical cash kept in several
+First release, published as an image before git tags were used (`v1.3.0` is the first git tag). Petty is an end-to-end-encrypted ledger for physical cash kept in several
 places, across currencies, shared per drawer. Highlights of what the 1.2.0 image contains:
 
 ### Added
@@ -43,7 +43,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
 - Places, line tags and per-person Settings (hide totals, verification or places).
 
 ### Security
-- Fixes from the 2026-09-19 review (NR-1…NR-13): token key wrapping, token bootstrap scope,
+- Fixes from a second internal review on 2026-09-19 (13 findings; that review is not published in
+  full — `docs/security-review-2026-09.md` covers the earlier 2026-09-08 one): token key wrapping, token bootstrap scope,
   document history, per-token signing keys, bundled Clerk JS, custody proof on token creation
   and drawer deletion, and more. See `docs/security-review-2026-09.md`.
 
@@ -52,5 +53,6 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/WawRepo/petty/releases/tag/v1.2.0
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/WawRepo/petty/releases/tag/v1.3.1
+[1.3.0]: https://github.com/WawRepo/petty/releases/tag/v1.3.0

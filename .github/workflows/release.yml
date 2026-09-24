@@ -7,7 +7,32 @@ on:
 permissions:
   contents: read
 jobs:
+  # PETTY-228: a tag becomes a release only if ci.yml's `test` and `integration` passed for this exact
+  # commit. Reuses that result instead of re-running the suite; polls because both workflows start
+  # from the same push. A tag on a commit that never went through CI can therefore not be released.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      checks: read
+      contents: read
+    steps:
+      - name: Require ci.yml test + integration to have passed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 40); do
+            json=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs?per_page=100")
+            t=$(echo "$json" | jq -r '[.check_runs[] | select(.name=="test")]        | (.[0].conclusion // "pending")')
+            n=$(echo "$json" | jq -r '[.check_runs[] | select(.name=="integration")] | (.[0].conclusion // "pending")')
+            echo "attempt $i: test=$t integration=$n"
+            if [ "$t" = "success" ] && [ "$n" = "success" ]; then exit 0; fi
+            case "$t $n" in *failure*|*cancelled*|*timed_out*|*action_required*) echo "::error::CI did not pass for ${{ github.sha }} — refusing to release"; exit 1;; esac
+            sleep 60
+          done
+          echo "::error::CI did not complete within 40 minutes for ${{ github.sha }}"; exit 1
   image:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:

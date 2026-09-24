@@ -1,6 +1,11 @@
 {
   "name": "@petty/mcp",
   "version": "1.3.1",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WawRepo/petty.git"
+  },
   "private": true,
   "type": "module",
   "bin": {
@@ -10,8 +15,9 @@
     "start": "tsx src/bin.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "AUTH_PROVIDER=local vitest run",
-    "bundle": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=mcpb/server/index.mjs --legal-comments=none --banner:js=\"import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);\"",
-    "pack": "pnpm run bundle && mkdir -p ../web/public/downloads && tsx scripts/pack.ts mcpb ../web/public/downloads/petty.mcpb && cp mcpb/server/index.mjs ../web/public/downloads/petty-mcp.mjs"
+    "bundle": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=mcpb/server/index.mjs --legal-comments=eof --metafile=meta.json --banner:js=\"import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);\"",
+    "notices": "tsx scripts/notices.ts meta.json mcpb/THIRD_PARTY_NOTICES.md && cp ../../LICENSE mcpb/LICENSE",
+    "pack": "pnpm run bundle && pnpm run notices && mkdir -p ../web/public/downloads && tsx scripts/pack.ts mcpb ../web/public/downloads/petty.mcpb && cp mcpb/server/index.mjs ../web/public/downloads/petty-mcp.mjs && cp mcpb/LICENSE mcpb/THIRD_PARTY_NOTICES.md ../web/public/downloads/"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
@@ -23,7 +29,7 @@
     "@petty/api": "workspace:*",
     "@petty/crypto": "workspace:*",
     "@petty/protocol": "workspace:*",
-    "@types/node": "^26.6.2",
+    "@types/node": "^24.0.0",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
     "tsx": "^4.20.5"

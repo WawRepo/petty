@@ -4,7 +4,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic
 /**
  * The one identity every signal (traces, metrics, logs) is tagged with, so Grafana can join them and,
  * crucially, tell two instances apart: home and the public cloud both run `service.name=petty`, so
- * without `deployment.environment` their metrics merge into nonsense (homelab, PETTY-92). The value
+ * without `deployment.environment` their metrics merge into nonsense (PETTY-92). The value
  * comes from `DEPLOYMENT_ENV` (home = "home", Fly = "public").
  */
 export const ATTR_DEPLOYMENT_ENVIRONMENT = "deployment.environment";

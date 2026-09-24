@@ -2,7 +2,7 @@
 # One image: the API serves the built web app and its routes under /api.
 #
 # Base images are pinned by digest (security review SR-11); bump the tag AND the
-# digest together: `docker buildx imagetools inspect node:22-alpine | head -1`.
+# digest together: `docker buildx imagetools inspect node:24-alpine | head -1`.
 # The API still runs from TypeScript via tsx (not a tsc build): the workspace
 # packages are consumed as source through pnpm links, and a full compile pipeline
 # for four packages was judged more risk than the ~1 s of start-up transpilation.
@@ -52,10 +52,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages ./packages
-COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml tsconfig.base.json LICENSE NOTICE ./
 COPY apps/api/package.json apps/api/tsconfig.json ./apps/api/
 COPY apps/api/src ./apps/api/src
-COPY apps/api/scripts ./apps/api/scripts
+# Only the two operator scripts ship; the seeds (dev/demo data) never enter the image.
+COPY apps/api/scripts/join-link.ts apps/api/scripts/make-admin.ts ./apps/api/scripts/
 COPY apps/api/migrations ./apps/api/migrations
 COPY packages/crypto/src ./packages/crypto/src
 COPY packages/ledger/src ./packages/ledger/src

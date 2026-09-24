@@ -1,20 +1,29 @@
-# gitleaks config for CI secret scanning (PETTY-208 / review MF5).
-# Generic rules only — the household-specific patterns stay in the local pre-commit hook.
+# gitleaks config for CI secret scanning (PETTY-208 / review MF5; narrowed in PETTY-229).
+# Generic rules only — the household-specific patterns stay in the local pre-commit hook, which is a
+# convenience, not a control: this CI job is the control that runs on every fresh clone.
 title = "petty"
 
 [extend]
 useDefault = true
 
+# A Petty access token (petty_pat_<id>.<secret>) is a real credential and must be caught anywhere.
+# Tests mint theirs at run time, so no literal token exists in the tree; the docs' placeholder
+# `petty_pat_<id>.<secret>` is shorter than the minimum lengths here and does not match.
+[[rules]]
+id = "petty-access-token"
+description = "Petty access token (petty_pat_<id>.<secret>)"
+regex = '''petty_pat_[A-Za-z0-9_-]{6,}\.[A-Za-z0-9+/=_-]{20,}'''
+keywords = ["petty_pat_"]
+
 [allowlist]
-description = "Built bundles, diagrams, lockfile, and deliberately-fake test material."
+description = "Built bundles, generated diagrams (vector data looks like base64), the lockfile (integrity hashes), and deliberately fake test material."
 paths = [
   '''apps/web/dist/''',
   '''.*\.(svg|excalidraw)$''',
   '''pnpm-lock\.yaml$''',
 ]
-# Fake values that appear in tests and fixtures on purpose.
+# Exact synthetic values only — never a whole credential shape.
 regexes = [
-  '''petty_pat_[A-Za-z0-9_-]+\.[A-Za-z0-9+/=_-]+''',   # example / test access tokens
-  '''(pk|sk)_test_offline''',                          # clerk.test.ts offline stand-ins
-  '''AAAA[A-Za-z0-9+/=]*''',                            # all-zero test ciphertext/nonces
+  '''(pk|sk)_test_offline''',   # clerk.test.ts offline stand-ins
+  '''A{24,}={0,2}''',            # all-zero test ciphertext/nonces: a run of base64 'A'
 ]

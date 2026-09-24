@@ -21,6 +21,11 @@ export function checkManifest(root: string): void {
   const m = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")) as Record<string, unknown>;
   for (const k of ["manifest_version", "name", "version", "description", "author", "server"]) if (m[k] === undefined) fail(`manifest.${k} missing`);
   if (!/^\d+\.\d+\.\d+$/.test(String(m["version"]))) fail("manifest.version is not x.y.z");
+  // PETTY-232: the add-on must identify the release it came from — the manifest may not drift from the package.
+  const pkg = JSON.parse(readFileSync(join(root, "..", "package.json"), "utf8")) as { version?: string };
+  if (m["version"] !== pkg.version) fail(`manifest.version ${String(m["version"])} != package.json version ${pkg.version} — bump them together`);
+  // PETTY-225: the archive must carry its licence and third-party notices (produced by `pnpm run notices`).
+  for (const f of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) if (!statSync(join(root, f), { throwIfNoEntry: false })?.isFile()) fail(`${f} missing from ${root} — run \`pnpm run pack\`, not pack.ts directly`);
   const server = m["server"] as { type?: string; entry_point?: string; mcp_config?: { command?: string; args?: unknown[] } };
   if (server.type !== "node") fail("server.type must be node");
   if (!server.entry_point || !statSync(join(root, server.entry_point), { throwIfNoEntry: false })?.isFile()) fail("server.entry_point is not a file in the folder");

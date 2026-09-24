@@ -121,6 +121,7 @@ export function LandingScreen() {
         <Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>
         <Button variant="ghost" onClick={() => nav("/ai")} data-testid="landing-ai">{t("ai.link")}</Button>
         <a className="btn btn-ghost" href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
+        <a className="btn btn-ghost" href="/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" data-testid="landing-notices">{t("app.thirdPartyNotices")}</a>
         <p className="hint m0">{t("landing.made")}{contact ? <> · <a className="landing-mail" href={`mailto:${contact}`}>{contact}</a></> : null}</p>
         <p className="hint m0">{t("landing.footer")} · {t("landing.slogan")}{appVersion() ? <> · {appVersion()}</> : null}</p>
       </footer>
