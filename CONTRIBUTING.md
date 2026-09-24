@@ -28,13 +28,22 @@ pnpm --filter @petty/web exec playwright test --project=dev
 - The ciphertext compatibility corpus in `packages/crypto` must keep passing. Never regenerate
   old fixtures.
 
-## License and contributor agreement
+## License and sign-off
 
-Petty is licensed under the GNU Affero General Public License v3.0 (`LICENSE`).
+Petty is licensed under the GNU Affero General Public License v3.0 (`LICENSE`). Your contribution is
+licensed under the same terms (inbound = outbound), and you keep the copyright to your work. There is
+no separate agreement to sign.
 
-Before your first pull request can be merged, you will be asked to sign a short Contributor
-License Agreement. It lets the maintainers keep offering Petty under the AGPL and, if needed,
-under other terms, for example for a hosted service. You keep the copyright to your work.
+Every commit carries a [Developer Certificate of Origin](https://developercertificate.org/)
+sign-off — your statement that you wrote the change or otherwise have the right to submit it under
+the AGPL:
+
+```
+git commit -s -m "Fix the thing"
+# adds:  Signed-off-by: Your Name <you@example.com>
+```
+
+Forgot it? `git commit --amend -s` (last commit) or `git rebase --signoff main` (a whole branch).
 
 ## Tracking and decisions
 

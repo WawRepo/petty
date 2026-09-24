@@ -15,4 +15,4 @@ Closes #
 - [ ] A visible screen change updates the landing-page captures.
 - [ ] The ciphertext compatibility corpus in `packages/crypto` still passes (old fixtures untouched).
 - [ ] Integration test added or changed — or: not applicable because: <!-- reason -->
-- [ ] I have the right to submit this work under the project's AGPL-3.0 licence.
+- [ ] Every commit is signed off (`git commit -s`, [DCO](https://developercertificate.org/)): I have the right to submit this work under the project's AGPL-3.0 licence.
