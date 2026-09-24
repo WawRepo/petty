@@ -7,7 +7,7 @@ change before you write a large pull request.
 
 - Read `CLAUDE.md` ("Non-negotiable rules"). Those rules come from the threat model. A change that
   breaks one of them cannot be merged, whatever else it fixes.
-- Read `petty-app-spec.md`. Its Decisions log is settled. If you think a decision is wrong, say so
+- Read `docs/threat-model.md` and `docs/decisions.md`. The decisions are settled. If you think a decision is wrong, say so
   in an issue instead of implementing something else.
 - Security problems go through the private process in `SECURITY.md`, never a public issue.
 - This project follows a `CODE_OF_CONDUCT.md`. Be kind.
@@ -49,4 +49,4 @@ Forgot it? `git commit --amend -s` (last commit) or `git rebase --signoff main` 
 
 Ticket IDs such as `PETTY-123` refer to the maintainers' internal tracker; you do not need access to
 it. The public trail is this repository's issues, pull requests and `CHANGELOG.md`, and the settled
-design decisions are the Decisions log in `petty-app-spec.md` and `SPEC-ISSUES.md`.
+design decisions are in `docs/decisions.md` (reasoning for the early ones: `SPEC-ISSUES.md`).

@@ -1,0 +1,105 @@
+# Decisions
+
+**Maintained log of settled design decisions.** Continues the Decisions log of
+`petty-app-spec.md` (frozen 2026-09-25 as history). A settled decision is not re-litigated during
+implementation: if you believe one is wrong, open an issue and say why, rather than quietly building
+something else. Superseded rows are marked, not deleted. The reasoning for the early rows is in
+`SPEC-ISSUES.md` and `petty-spec-review.md`; the threat model they serve is [threat-model.md](threat-model.md).
+
+## Settled with the specification (2026-08)
+
+| Question | Decision |
+|---|---|
+| Key verification | Safety numbers, confirmed out of band, pinned on first use |
+| Ledger integrity | AAD binding (incl. line and author), hash-linked entries as a tree + pinned head, ECDSA author signatures |
+| Photo storage | Own encrypted row under the drawer key; downscaled, EXIF stripped |
+| Invitations | Two-phase — join the app first, then be added; drawer key wrapped at invite time |
+| Concurrency | Optimistic locking on the document; entries append freely |
+| Offline | Short windows, PWA, encrypted outbox, reports differences on reconnect |
+| Key rotation | Resumable and versioned; **executed by a member's client** (the server holds no keys and only tracks progress). *Corrects the spec table, which said "backend-executed" while its own Security section said the client does it.* |
+| Authorship | Recorded on everything; shown as a small hover/tap icon |
+| Threat model | Written, including what is explicitly *not* defended against — now [threat-model.md](threat-model.md) |
+| Write enforcement | All writes via the backend API; never client-to-database |
+| Money representation | Integers in minor units; exponent pinned to the line |
+| Places | An ordered path of names on the drawer (`tags`); the tree per person in the user document, merged with drawer paths on read; renames/moves rewrite the writable drawers |
+| Icons | A slug from a fixed Lucide set on drawers and lines; unknown slugs fall back |
+| Line tags / not cash | In the document (shared): `tags` for filtering, `counted: false` keeps a line out of every total; the tag list is per person in the user document (`line_tags`), merged with drawer tags on read |
+| Session lock | 24 hours, no idle timeout, manual "Lock now" |
+| Deletion | Permanent, no trash, no undo — for entries (reversed, never erased) and deleted drawers. *Refined 2026-09-19, see "Drawer document history".* |
+| Verification staleness | Any change of any kind marks it stale |
+| Single items in verification | Included, as ticks defaulting to present |
+| Account deletion | Forces a per-drawer choice: hand over or delete |
+| Editing after creation | Names and currency code always; kind locks on first entry |
+| Correcting mistakes | Reverse operation, linked to the entry it cancels |
+| Read access | Sees everything except export |
+| Negative balances | Warn, allow, flag until reconciled |
+| Currency codes | Free text with ISO suggestions and formatting fallback |
+| History loading | Paginated, always fetched back to the last Adjust |
+| Accessibility | Keyboard and labelling built in; formal audits deferred |
+| Totals and search | Totals in scope; search deferred |
+| Auth | Backend-owned email + password; invite-only signup. *Extended: see "Identity provider" and "Open sign-up".* |
+| Concurrent Adjust | Conditional insert on `expected_head_seq`; first write wins |
+| Reverse limits | Not past the latest Adjust; reverse-once enforced by a plaintext UNIQUE |
+| Stored balances | None; fold only |
+| Staleness clock | Server `last_write_at` vs. verification server time |
+| Signing key | Separate ECDSA P-256 keypair; both keys in the safety number |
+| Private-key wrap | AES-256-GCM with public keys in the AAD |
+
+## Decided since
+
+- **Passkey unlock (Phase 14, 2026-08-29)**, then **passkey first (PETTY-102, 2026-09-16)** — a vault
+  is created with a passkey as its first door (a passphrase on request or later); one passkey vault per
+  device (`passkey_vaults`); the recovery code stays mandatory; adding/removing a passkey takes the
+  custody proof; the last passkey cannot go while there is no passphrase (`LastDoor`). The server never
+  verifies assertions — a passkey is a key holder, not a login. A plaintext storage mode was rejected:
+  it breaks the product's one promise.
+- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-201).** Replacing the vault,
+  deleting the account, deleting a drawer and creating an access token require a server-issued
+  challenge signed with the account key. Replaced vault blobs are kept 30 days in `vault_history`; an
+  admin can restore one; the owner is emailed on a password reset and a vault change. Reason: the
+  login password is resettable by email; the vault key is not.
+- **Identity provider (PETTY-88).** `AUTH_PROVIDER=local` (Petty's own login, the self-host default)
+  or `clerk` (sign-up, sign-in, sessions, reset via Clerk). In both, the vault, passkey unlock and
+  custody proofs stay Petty's. See [auth-clerk.md](auth-clerk.md).
+- **Clerk code is bundled, not fetched (PETTY-185, 2026-09-19).** clerk-js ships inside the app at a
+  pinned version so the page holding the vault keys runs only code that was built and reviewed; the
+  CSP lists no Clerk script origin.
+- **Admins (2026-09).** An admin flag grants account management (list, block/unblock, revoke sessions,
+  restore a vault blob, grant admin) and no content access. Granted from the container with
+  `make-admin`.
+- **Access tokens (PETTY-164/169/181/184).** A token carries a sealed key bundle opened only on the
+  tool's machine, its own delegated signing key, and a scope (all drawers or listed ones, read or
+  write). The server keeps an allow-list; every route not on it is refused to tokens. Revocation is
+  immediate. Diagram in [README.md](README.md).
+- **Drawer document history (PETTY-194, 2026-09-19).** Names, items, tags and places before each
+  change are kept for 30 days and the drawer's owner can restore an earlier version. Entries and
+  balances are unaffected. Refines "Deletion" above for the document only.
+- **Open sign-up (PETTY-215).** Local mode only: `OPEN_SIGNUP=true` lets anyone create an account
+  without a join link (a public self-hosted instance). Default stays invite-only; the first account of
+  an installation is minted with the `join-link` script.
+- **Public hosted instance (Route B, 2026-09-21).** Petty also runs as a public hosted service. The
+  household-scale design is unchanged: each account is its own household. Large multi-tenant scale
+  remains a non-goal. Operator specifics (hosting, secrets, DNS) live outside this repository; the
+  image takes everything from its environment.
+- **Backups are the operator's (2026-09-24).** The app ships no backup job and promises no retention.
+  The privacy page and docs describe what a backup would contain and leave schedule and retention to
+  the operator; [deploy.md](deploy.md) gives a tested dump/restore procedure.
+- **Telemetry (PETTY-92).** Metrics, logs and traces never carry content. All three can push over
+  OTLP to one endpoint (`OTEL_PUSH`), alongside the Prometheus scrape and stdout logs;
+  `DEPLOYMENT_ENV` tags every signal so instances don't merge. See [monitoring.md](monitoring.md).
+- **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
+  tag); `/api/config`, Settings and the landing footer show it.
+- **Releases (2026-09-23/24).** Multi-architecture images built by CI with provenance and an SBOM,
+  pinned by digest; a tag is released only if CI's `test` and `integration` passed for that commit.
+  Runtime is Node 24 LTS.
+- **Contributions (2026-09-25).** AGPL inbound = outbound with a DCO `Signed-off-by` per commit; no CLA.
+- **History (2026-09-25).** Deleted hosting files and private repository names in git history are
+  accepted as public (no credentials); no history rewrite.
+
+## Non-goals
+
+- No budget categories, no bank sync, no automatic exchange-rate conversion.
+- No server-side plaintext access to drawer content, by design — support and debugging work from error
+  classes and ids, never content.
+- Not built for large multi-tenant scale. A public instance serves many households, each at household
+  scale; several decisions above would need revisiting beyond that.

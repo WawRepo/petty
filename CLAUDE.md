@@ -6,8 +6,11 @@ a handful of users, not a multi-tenant product.
 
 ## Read these first
 
-- `petty-app-spec.md` — the specification. Its **Decisions log** at the end
-  records every design question and its settled answer.
+- `docs/decisions.md` — every settled design decision (continues the Decisions log of the
+  original spec). Settled means settled: disagree out loud, don't build around it.
+- `docs/threat-model.md` — what Petty defends against and what it explicitly does not.
+- `petty-app-spec.md` — the original specification, **frozen as history** (2026-09-25). Useful for
+  background and reasoning; where it disagrees with the two documents above, they win.
 - `petty.html` — the working prototype. Reference for UI, visual design and
   interaction flows. Its *code* is not reused; it is a single-file vanilla-JS
   artifact and the real app is a rewrite.
@@ -71,7 +74,7 @@ and `pl.json`. A landing page that shows last month's app is a bug.
 
 ## Working style
 
-- The Decisions log is settled. If you believe a decision is wrong, **say so**
+- The Decisions log (`docs/decisions.md`) is settled. If you believe a decision is wrong, **say so**
   rather than quietly implementing something else.
 - Prefer boring, reviewed libraries (libsodium) over hand-assembled WebCrypto.
 - If something cannot be tested meaningfully, say so rather than writing a test

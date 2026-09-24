@@ -1,8 +1,8 @@
 # Security policy
 
-Petty is an end-to-end encrypted ledger. The server stores only ciphertext and cannot read
-drawer content. The design, the threat model and the settled decisions are in
-`petty-app-spec.md` (sections "Security" and "Decisions log").
+Petty is an end-to-end encrypted ledger. The server stores drawer content only as ciphertext and cannot read
+it (it does see account and activity metadata, listed in the threat model). The design, the threat model and the settled decisions are in
+`docs/threat-model.md` and `docs/decisions.md`.
 
 ## Reporting a vulnerability
 
