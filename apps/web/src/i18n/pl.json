@@ -972,10 +972,14 @@
     "otherTitle": "2b. Inne aplikacje AI (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [
       "Zainstaluj Node 20 lub nowszy.",
-      "Pobierz petty-mcp.mjs i zapisz go gdzieś.",
-      "Dodaj blok poniżej do ustawień MCP aplikacji. Wpisz swój token zamiast petty_pat_… i ścieżkę pliku zamiast /path/to/petty-mcp.mjs."
+      "Uruchom dwa polecenia dla swojego komputera poniżej. Pierwsze zapisuje petty-mcp.mjs w folderze .petty w Twoim folderze domowym; drugie wypisuje blok ustawień z prawdziwą ścieżką do tego pliku.",
+      "Wklej wypisany blok do ustawień MCP aplikacji i wpisz swój token zamiast petty_pat_…."
     ],
     "download": "Pobierz petty-mcp.mjs",
+    "unix": "macOS lub Linux (Terminal)",
+    "windows": "Windows (PowerShell)",
+    "manual": "Albo pobierz plik i przenieś go do tego folderu samodzielnie:",
+    "example": "Wypisany blok wygląda tak, z Twoimi ścieżkami:",
     "copyConfig": "Skopiuj blok ustawień",
     "claudeCode": "W Claude Code to samo jednym poleceniem:",
     "askTitle": "3. Zapytaj",

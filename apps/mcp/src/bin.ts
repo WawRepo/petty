@@ -2,6 +2,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { buildServer } from "./server.js";
 
@@ -26,7 +27,23 @@ function token(): string {
   }
 }
 
+/**
+ * `petty-mcp.mjs --print-config <Petty address>/api` prints the MCP settings block for THIS machine and
+ * exits: the absolute path of the running Node (GUI apps often lack the shell's PATH) and of this file,
+ * so nobody has to work out and type a path into JSON. The token stays a placeholder.
+ */
+function printConfig(apiArg: string | undefined): void {
+  const apiUrl = (apiArg ?? process.env["PETTY_API_URL"] ?? "").replace(/\/$/, "");
+  if (!/^https?:\/\//.test(apiUrl)) {
+    process.stderr.write("usage: node petty-mcp.mjs --print-config https://<your petty>/api\n");
+    process.exit(2);
+  }
+  const config = { mcpServers: { petty: { command: process.execPath, args: [fileURLToPath(import.meta.url)], env: { PETTY_TOKEN: "petty_pat_…", PETTY_API_URL: apiUrl } } } };
+  process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
+}
+
 async function main() {
+  if (process.argv[2] === "--print-config") return printConfig(process.argv[3]);
   const server = await buildServer({ token: token(), apiUrl: (process.env["PETTY_API_URL"] ?? "http://localhost:3000").replace(/\/$/, "") });
   await server.connect(new StdioServerTransport());
 }

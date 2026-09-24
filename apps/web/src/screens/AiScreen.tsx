@@ -21,8 +21,13 @@ export function AiScreen() {
   const back = useBack("/");
   const toast = useToast();
   const api = `${location.origin}/api`;
-  const config = JSON.stringify({ mcpServers: { petty: { command: "node", args: ["/path/to/petty-mcp.mjs"], env: { PETTY_TOKEN: "petty_pat_…", PETTY_API_URL: api } } } }, null, 2);
-  const claudeCode = `claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=${api} -- node /path/to/petty-mcp.mjs`;
+  const file = `${location.origin}/downloads/petty-mcp.mjs`;
+  // The program lives in ~/.petty (where it also looks for a token file); --print-config then prints the
+  // settings block with this machine's absolute paths, so nobody types a path into JSON by hand.
+  const unix = `mkdir -p ~/.petty && curl -fsSL ${file} -o ~/.petty/petty-mcp.mjs\nnode ~/.petty/petty-mcp.mjs --print-config ${api}`;
+  const windows = `New-Item -ItemType Directory -Force "$HOME\\.petty" | Out-Null; Invoke-WebRequest ${file} -OutFile "$HOME\\.petty\\petty-mcp.mjs"\nnode "$HOME\\.petty\\petty-mcp.mjs" --print-config ${api}`;
+  const config = JSON.stringify({ mcpServers: { petty: { command: "/usr/local/bin/node", args: ["/Users/you/.petty/petty-mcp.mjs"], env: { PETTY_TOKEN: "petty_pat_…", PETTY_API_URL: api } } } }, null, 2);
+  const claudeCode = `claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=${api} -- node ~/.petty/petty-mcp.mjs`;
   const list = (key: string) => (t(key, { returnObjects: true }) as string[]).map((s, i) => <li key={i} className="mb6">{s}</li>);
   const copy = (text: string) => { void navigator.clipboard?.writeText(text).then(() => toast(t("app.copied"))); };
   return (
@@ -46,7 +51,15 @@ export function AiScreen() {
         <section className="card" data-testid="ai-other">
           <h2 className="h-card">{t("ai.otherTitle")}</h2>
           <ol className="list">{list("ai.otherSteps")}</ol>
-          <p className="m0 mb8"><a className="btn btn-secondary" href="/downloads/petty-mcp.mjs" download="petty-mcp.mjs">{t("ai.download")}</a></p>
+          <p className="hint mb4">{t("ai.unix")}</p>
+          <pre className="codeblock" data-testid="ai-install-unix">{unix}</pre>
+          <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(unix)}>{t("app.copy")}</Button></p>
+          <p className="hint mb4">{t("ai.windows")}</p>
+          <pre className="codeblock" data-testid="ai-install-windows">{windows}</pre>
+          <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(windows)}>{t("app.copy")}</Button></p>
+          <p className="hint mb4">{t("ai.manual")}</p>
+          <p className="m0 mb12"><a className="btn btn-secondary" href="/downloads/petty-mcp.mjs" download="petty-mcp.mjs">{t("ai.download")}</a></p>
+          <p className="hint mb4">{t("ai.example")}</p>
           <pre className="codeblock" data-testid="ai-config">{config}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(config)}>{t("ai.copyConfig")}</Button></p>
           <p className="hint mb4">{t("ai.claudeCode")}</p>

@@ -14,6 +14,11 @@ test("the AI page explains the setup with this Petty's own address, and is linke
   await expect(page.getByTestId("ai-address")).toHaveValue(api);
   const config = JSON.parse(await page.getByTestId("ai-config").innerText()) as { mcpServers: { petty: { env: Record<string, string> } } };
   expect(config.mcpServers.petty.env).toEqual({ PETTY_TOKEN: "petty_pat_…", PETTY_API_URL: api }); // never a real token
+  // the easy install: one copyable command per OS, downloading from THIS Petty into ~/.petty, then --print-config
+  const origin = new URL(baseURL!).origin;
+  await expect(page.getByTestId("ai-install-unix")).toContainText(`curl -fsSL ${origin}/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs`);
+  await expect(page.getByTestId("ai-install-unix")).toContainText(`--print-config ${api}`);
+  await expect(page.getByTestId("ai-install-windows")).toContainText(`Invoke-WebRequest ${origin}/downloads/petty-mcp.mjs`);
   await expect(page.getByTestId("ai-tools").locator("li")).toHaveCount(13);
   await expect(page.getByTestId("ai-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
   expect((await page.request.get("/downloads/petty-mcp.mjs")).status()).toBe(200);

@@ -31,14 +31,41 @@ already read.
 next to the token) and the **token**. Claude Desktop runs the add-on with its own Node and keeps the
 token as a secret field.
 
-**By hand:** Claude Desktop also starts local MCP servers from its config. Add:
+**By hand** (Claude Desktop without the add-on, or any other app): see the next section. The
+settings block it produces goes into Claude Desktop's `claude_desktop_config.json` the same way.
+
+## Other AI apps (Cursor, VS Code, Windsurf, Claude Code, …)
+
+Any app that runs local MCP servers can use the same program. Petty serves it as one file,
+`https://<your petty>/downloads/petty-mcp.mjs`. It needs Node 20 or newer. Put it in a `.petty`
+folder in your home folder — the same place the program looks for a token file — and let it print
+its own settings block, so you never type a path by hand.
+
+The in-app page **Use Petty with AI** shows these commands with your Petty's address filled in.
+
+**macOS or Linux** (Terminal):
+
+```
+mkdir -p ~/.petty && curl -fsSL https://petty.example.com/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs
+node ~/.petty/petty-mcp.mjs --print-config https://petty.example.com/api
+```
+
+**Windows** (PowerShell):
+
+```
+New-Item -ItemType Directory -Force "$HOME\.petty" | Out-Null; Invoke-WebRequest https://petty.example.com/downloads/petty-mcp.mjs -OutFile "$HOME\.petty\petty-mcp.mjs"
+node "$HOME\.petty\petty-mcp.mjs" --print-config https://petty.example.com/api
+```
+
+The second command prints the block for this machine — the full path of your Node and of the file
+(apps started from the dock or Start menu often cannot find a bare `node`):
 
 ```json
 {
   "mcpServers": {
     "petty": {
       "command": "/usr/local/bin/node",
-      "args": ["<path to petty>/apps/mcp/node_modules/tsx/dist/cli.mjs", "<path to petty>/apps/mcp/src/bin.ts"],
+      "args": ["/Users/you/.petty/petty-mcp.mjs"],
       "env": {
         "PETTY_TOKEN": "petty_pat_…",
         "PETTY_API_URL": "https://petty.example.com/api"
@@ -48,40 +75,18 @@ token as a secret field.
 }
 ```
 
-Instead of `PETTY_TOKEN`, the program also reads `~/.petty/token` (keep it mode 600).
+Paste it into the app's MCP settings (the file name and place differ per app) and put your token
+in place of `petty_pat_…`. Instead of `PETTY_TOKEN`, the program also reads `~/.petty/token` (keep it
+mode 600): then the block needs no secret at all.
 
-Use a signed Node, such as the installer from nodejs.org (`/usr/local/bin/node`). On macOS, a
-Homebrew Node is only ad-hoc signed, and macOS may silently refuse it access to a server on your
-home network (see Troubleshooting). Run `pnpm install` in the repository first, so that `tsx` exists.
-
-## Other AI apps (Cursor, VS Code, Windsurf, Claude Code, …)
-
-Any app that runs local MCP servers can use the same program. Petty serves it as one file:
-`https://<your petty>/downloads/petty-mcp.mjs`. Save it somewhere, then add this to the app's MCP
-settings (the exact file name and place differ per app):
-
-```json
-{
-  "mcpServers": {
-    "petty": {
-      "command": "node",
-      "args": ["/path/to/petty-mcp.mjs"],
-      "env": {
-        "PETTY_TOKEN": "petty_pat_…",
-        "PETTY_API_URL": "https://petty.example.com/api"
-      }
-    }
-  }
-}
-```
-
-For Claude Code the same is one command:
+For Claude Code, skip the block — one command:
 
 ```
-claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node /path/to/petty-mcp.mjs
+claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node ~/.petty/petty-mcp.mjs
 ```
 
-It needs Node 20 or newer. On macOS with a home-network Petty, see Troubleshooting.
+On macOS with a Petty on your home network, use a signed Node (see Troubleshooting). To update, run
+the download command again.
 
 Apps that only accept remote connectors (for example on a phone) cannot run a local program;
 see "On a phone" below.
