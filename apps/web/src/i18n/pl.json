@@ -948,7 +948,7 @@
     "revokeBody": "Cofnąć „{name}”? Narzędzie od razu przestanie działać. To, co już odczytało, zostaje odczytane.",
     "passphraseOrPasskey": "Zostaw puste, aby użyć klucza dostępu.",
     "addonTitle": "Użyj w Claude Desktop",
-    "addonBody": "Pobierz dodatek i otwórz go. Claude Desktop zapyta o dwie rzeczy: adres poniżej i token powyżej.",
+    "addonBody": "Pobierz dodatek, kliknij go dwukrotnie i wybierz Zainstaluj. Claude Desktop zapyta wtedy o dwie rzeczy: adres poniżej i token powyżej.",
     "addonDownload": "Pobierz dodatek do Claude Desktop",
     "address": "Adres Petty"
   },
@@ -965,9 +965,11 @@
     ],
     "desktopTitle": "2a. Claude Desktop",
     "desktopSteps": [
-      "Pobierz dodatek poniżej i otwórz go. Claude Desktop go zainstaluje.",
-      "Gdy zapyta, wklej ten adres Petty i swój token.",
-      "Na Macu zezwól na dostęp do sieci, jeśli pojawi się pytanie, a potem uruchom Claude Desktop ponownie."
+      "Zainstaluj Claude Desktop ze strony claude.ai/download i zaloguj się, jeśli jeszcze tego nie zrobiłeś.",
+      "Utwórz token dostępu (krok 1) i miej go pod ręką.",
+      "Pobierz dodatek poniżej. Kliknij dwukrotnie petty.mcpb (albo przeciągnij go na okno Claude Desktop) i kliknij Zainstaluj.",
+      "Claude Desktop zapyta o dwie rzeczy: wklej ten adres Petty i swój token, potem zapisz. Później zmienisz je w Claude Desktop → Ustawienia → Rozszerzenia → Petty.",
+      "Zacznij nowy czat i zapytaj: „Co jest w moich szufladach?” Na Macu zezwól na dostęp do sieci, jeśli pojawi się pytanie, a potem uruchom Claude Desktop ponownie."
     ],
     "otherTitle": "2b. Inne aplikacje AI (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [

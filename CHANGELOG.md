@@ -6,6 +6,27 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-09-25
+
+### Added
+- Easier AI setup: the "Use Petty with AI" page gives one copy-paste command per operating system to
+  download the MCP program into `~/.petty`, and `petty-mcp.mjs --print-config <address>` prints a
+  ready settings block with this machine's real paths. Beginner steps for Claude Desktop.
+- Each GitHub release now carries the Claude Desktop add-on (`petty.mcpb`), `petty-mcp.mjs`, their
+  licence and third-party notices, and `SHA256SUMS`.
+- Third-party notices ship with every artifact: the container (LICENSE, NOTICE), the web app
+  (`/THIRD_PARTY_NOTICES.md`, linked from the landing page) and the add-on.
+- Self-hosting docs: first account, backup, restore and upgrade; every documented setting is now
+  passed through `deploy/compose`.
+
+### Changed
+- The privacy page no longer promises an operator's backup schedule; it says backups are the
+  operator's choice and that account and activity metadata stay visible to the server.
+- Node 24 LTS everywhere; the image no longer contains the demo seed scripts; the dev compose file
+  binds its services to 127.0.0.1 only.
+- Contributions use a DCO sign-off instead of a CLA. The original specification moved to
+  `docs/history/`; the maintained threat model and decisions are in `docs/`.
+
 ## [1.3.1] — 2026-09-23
 
 ### Added
@@ -53,6 +74,7 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/WawRepo/petty/releases/tag/v1.3.2
 [1.3.1]: https://github.com/WawRepo/petty/releases/tag/v1.3.1
 [1.3.0]: https://github.com/WawRepo/petty/releases/tag/v1.3.0

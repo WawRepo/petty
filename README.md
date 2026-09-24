@@ -24,6 +24,9 @@ choose. Everything is encrypted on your device before it is sent.
 - **Shared, with roles.** Writers add entries; readers only look. The server enforces this.
 - **Count, confirm, never erase.** Confirm a drawer after a real count. Mistakes are reversed,
   not deleted.
+- **Works with AI apps.** Ask Claude Desktop (a one-click add-on) or any MCP app about your drawers,
+  or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. See
+  [docs/agent.md](docs/agent.md).
 - **Passkey first, works offline.** Face ID, Touch ID or Windows Hello opens your vault. It
   installs like an app and keeps working without a network.
 - **English and Polish.**
@@ -32,8 +35,8 @@ choose. Everything is encrypted on your device before it is sent.
 
 | For | Read |
 |---|---|
-| Users | this README and the in-app privacy page |
-| Operators (self-hosting) | [docs/deploy.md](docs/deploy.md) · [docs/monitoring.md](docs/monitoring.md) · [docs/auth-clerk.md](docs/auth-clerk.md) · [docs/agent.md](docs/agent.md) |
+| Users | this README, the in-app privacy page, [docs/agent.md](docs/agent.md) (use Petty from Claude Desktop or another AI app) |
+| Operators (self-hosting) | [docs/deploy.md](docs/deploy.md) · [docs/monitoring.md](docs/monitoring.md) · [docs/auth-clerk.md](docs/auth-clerk.md) |
 | Contributors | [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/decisions.md](docs/decisions.md) · [CLAUDE.md](CLAUDE.md) — the engineering rules; plain text, no AI tool needed to read or follow them |
 | Security reviewers | [SECURITY.md](SECURITY.md) · [docs/threat-model.md](docs/threat-model.md) · [docs/security-review-2026-09.md](docs/security-review-2026-09.md) · [docs/README.md](docs/README.md) (how keys and tokens work, with diagrams) |
 | History, not maintained | [petty-app-spec.md](docs/history/petty-app-spec.md) (frozen 2026-09-25), [petty-spec-review.md](docs/history/petty-spec-review.md), [SPEC-ISSUES.md](docs/history/SPEC-ISSUES.md) — the original specification, its review and the reasoning behind the first decisions · [petty.html](docs/history/petty.html) — the pre-rewrite prototype |

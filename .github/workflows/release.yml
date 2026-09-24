@@ -68,5 +68,25 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             --repo "${{ github.repository }}" \
             --title "${{ github.ref_name }}" \
-            --notes "Image: \`ghcr.io/wawrepo/petty:${{ github.ref_name }}@${{ steps.build.outputs.digest }}\` (linux/amd64, linux/arm64). See CHANGELOG.md." \
+            --notes "Image: \`ghcr.io/wawrepo/petty:${{ github.ref_name }}@${{ steps.build.outputs.digest }}\` (linux/amd64, linux/arm64). Claude Desktop add-on: \`petty.mcpb\`; other MCP apps: \`petty-mcp.mjs\` — see docs/agent.md. Checksums in \`SHA256SUMS\`. See CHANGELOG.md." \
             --verify-tag
+      # The AI add-on as release files too (not only served by each running Petty), with its licence,
+      # third-party notices and checksums. Built from the same tagged commit as the image.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Pack the add-on and check its version matches the tag
+        run: |
+          pnpm --filter @petty/mcp run pack
+          want="${GITHUB_REF_NAME#v}"
+          got=$(node -p "require('./apps/mcp/mcpb/manifest.json').version")
+          [ "$got" = "$want" ] || { echo "::error::mcpb manifest $got != tag $want"; exit 1; }
+      - name: Attach the add-on to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: apps/web/public/downloads
+        run: |
+          sha256sum petty.mcpb petty-mcp.mjs > SHA256SUMS
+          gh release upload "${{ github.ref_name }}" --repo "${{ github.repository }}" \
+            petty.mcpb petty-mcp.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS

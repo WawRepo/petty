@@ -26,10 +26,19 @@ already read.
 
 ## 2. Add Petty to Claude Desktop
 
-**The easy way:** right after you make the token, Petty offers "Get the Claude Desktop add-on"
-(`petty.mcpb`). Open the file; Claude Desktop installs it and asks for the **Petty address** (shown
-next to the token) and the **token**. Claude Desktop runs the add-on with its own Node and keeps the
-token as a secret field.
+**The easy way** — no terminal, nothing else to install:
+
+1. Install **Claude Desktop** from [claude.ai/download](https://claude.ai/download) and sign in.
+2. Make a token (step 1). The token screen then offers **Get the Claude Desktop add-on**; the same
+   button is on the in-app page **Use Petty with AI**. It downloads `petty.mcpb`. The file is the same
+   for everyone and holds no secret, so any Petty (`https://<your petty>/downloads/petty.mcpb`) or the
+   GitHub release page can give it to you.
+3. **Double-click `petty.mcpb`** (or drag it onto the Claude Desktop window) and click **Install**.
+4. Claude Desktop asks for the **Petty address** (shown next to the token, ending in `/api`) and the
+   **token**. Paste both and save. Claude Desktop keeps the token as a secret and runs the add-on with
+   its own built-in Node. Change either later in **Settings → Extensions → Petty**.
+5. Start a new chat and ask *"What is in my drawers?"*. On a Mac with a Petty on your home network,
+   allow network access if asked and restart Claude Desktop (see Troubleshooting).
 
 **By hand** (Claude Desktop without the add-on, or any other app): see the next section. The
 settings block it produces goes into Claude Desktop's `claude_desktop_config.json` the same way.

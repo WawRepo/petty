@@ -948,7 +948,7 @@
     "revokeBody": "Revoke “{name}”? The tool stops working at once. Data it already read stays read.",
     "passphraseOrPasskey": "Leave empty to use your passkey instead.",
     "addonTitle": "Use it in Claude Desktop",
-    "addonBody": "Download the add-on and open it. Claude Desktop asks for two things: the address below and the token above.",
+    "addonBody": "Download the add-on, double-click it and click Install. Claude Desktop then asks for two things: the address below and the token above.",
     "addonDownload": "Get the Claude Desktop add-on",
     "address": "Petty address"
   },
@@ -965,9 +965,11 @@
     ],
     "desktopTitle": "2a. Claude Desktop",
     "desktopSteps": [
-      "Download the add-on below and open it. Claude Desktop installs it.",
-      "When it asks, paste this Petty address and your token.",
-      "On a Mac, allow network access if asked, then restart Claude Desktop."
+      "Install Claude Desktop from claude.ai/download and sign in, if you have not yet.",
+      "Make an access token (step 1) and keep the token in view.",
+      "Download the add-on below. Double-click petty.mcpb (or drag it onto the Claude Desktop window) and click Install.",
+      "Claude Desktop asks for two things: paste this Petty address and your token, then save. You can change them later in Claude Desktop → Settings → Extensions → Petty.",
+      "Start a new chat and ask: \"What is in my drawers?\" On a Mac, allow network access if asked, then restart Claude Desktop."
     ],
     "otherTitle": "2b. Other AI apps (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [
