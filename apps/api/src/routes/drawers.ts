@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DocumentHistory, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
-import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
+import { badRequest, conflict, forbidden, notFound, tooLarge } from "../lib/errors.js";
+import { assertQuota } from "../lib/quota.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
 import { consumeCustodyProof } from "../lib/custody.js";
 import { drawerSummary, entryRow, sealedRow, userKeys } from "../lib/rows.js";
@@ -46,15 +47,21 @@ async function keepHistory(db: Queryable, drawerId: string, version: number, use
   await db.query(`delete from drawer_document_history where drawer_id = $1 and replaced_at < now() - make_interval(days => $2)`, [drawerId, HISTORY_DAYS]);
 }
 
-/** Version check + sealed write of the document. Used by PUT document and delete-line. */
-async function writeDocument(db: Queryable, drawerId: string, userId: string, body: typeof PutDocumentBody._type, tokenId: string | null = null) {
+/**
+ * Version check + sealed write of the document. Used by PUT document and delete-line. The old
+ * document moves to history, so a write adds the new document's size to the owner's storage
+ * (PETTY-243). Delete-line skips the quota: it is how a full account frees space.
+ */
+async function writeDocument(db: Queryable, drawerId: string, userId: string, body: typeof PutDocumentBody._type, tokenId: string | null = null, checkQuota = true) {
   const d = await lockDrawer(db, drawerId);
   if (d.version !== body.base_version) throw conflict("VersionConflict", "document changed since you loaded it", { drawer_id: drawerId, current_version: d.version });
   if (d.key_version !== body.key_version) throw conflict("KeyVersionMismatch", "drawer key rotated; re-seal with the current key", { drawer_id: drawerId, key_version: d.key_version });
+  const ciphertext = fromB64(body.ciphertext);
+  if (checkQuota) await assertQuota(db, d.owner_id, ciphertext.length);
   await keepHistory(db, drawerId, d.version, userId, tokenId);
   await db.query(
     `update drawer_documents set author_id = $2, key_version = $3, schema_version = $4, nonce = $5, ciphertext = $6, updated_at = now() where drawer_id = $1`,
-    [drawerId, userId, body.key_version, body.schema_version, fromB64(body.nonce), fromB64(body.ciphertext)],
+    [drawerId, userId, body.key_version, body.schema_version, fromB64(body.nonce), ciphertext],
   );
   const { rows } = await db.query<DrawerRow>(
     `update drawers set version = version + 1, last_write_at = now(), last_verified_at = case when $2 then now() else last_verified_at end where id = $1 returning *`,
@@ -118,13 +125,15 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = CreateDrawerBody.parse(req.body);
     if (body.self_wrap.drawer_id !== body.id || body.self_wrap.key_version !== 1 || body.document.key_version !== 1) throw badRequest("WrapMismatch", "self wrap must be for this drawer at key version 1");
+    const ciphertext = fromB64(body.document.ciphertext);
     const d = await withTx(apiPool, async (db) => {
       const exists = await db.query("select 1 from drawers where id = $1", [body.id]);
       if (exists.rowCount) throw conflict("DrawerExists", "drawer id already used", { drawer_id: body.id });
+      await assertQuota(db, me.id, ciphertext.length);
       const { rows } = await db.query<DrawerRow>("insert into drawers (id, owner_id) values ($1, $2) returning *", [body.id, me.id]);
       await db.query(
         "insert into drawer_documents (drawer_id, author_id, key_version, schema_version, nonce, ciphertext) values ($1, $2, 1, $3, $4, $5)",
-        [body.id, me.id, body.document.schema_version, fromB64(body.document.nonce), fromB64(body.document.ciphertext)],
+        [body.id, me.id, body.document.schema_version, fromB64(body.document.nonce), ciphertext],
       );
       await db.query("insert into drawer_keys (drawer_id, user_id, key_version, wrap) values ($1, $2, 1, $3)", [body.id, me.id, JSON.stringify({ ...body.self_wrap, sender_id: me.id })]);
       return rows[0]!;
@@ -185,6 +194,7 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
       const h = (await db.query("select * from drawer_document_history where id = $1 and drawer_id = $2", [body.history_id, d.id])).rows[0];
       if (!h) throw notFound("HistoryNotFound", { drawer_id: d.id });
       if (h.key_version !== d.key_version) throw conflict("KeyVersionMismatch", "this document was sealed with an older drawer key", { drawer_id: d.id, key_version: d.key_version });
+      await assertQuota(db, d.owner_id, (h.ciphertext as Buffer).length);
       await keepHistory(db, d.id, d.version, me.id, null);
       await db.query(
         "update drawer_documents set author_id = $2, key_version = $3, schema_version = $4, nonce = $5, ciphertext = $6, updated_at = now() where drawer_id = $1",
@@ -208,10 +218,15 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     const { drawer } = await requireRole(apiPool, req.params.id, me.id, "write");
     const body = PutPhotoBody.parse(req.body);
     if (body.key_version !== drawer.key_version) throw conflict("KeyVersionMismatch", "re-seal with the current key", { key_version: drawer.key_version });
+    // PETTY-243: the client limit, enforced here too, so a script or token cannot store bigger photos.
+    const ciphertext = fromB64(body.ciphertext);
+    if (ciphertext.length > PHOTO_MAX_CIPHERTEXT) throw tooLarge("PhotoTooLarge", "photo over the size limit", { drawer_id: drawer.id, max_bytes: PHOTO_MAX_CIPHERTEXT });
+    const old = (await apiPool.query<{ n: number }>("select octet_length(ciphertext) as n from drawer_photos where drawer_id = $1", [drawer.id])).rows[0]?.n ?? 0;
+    await assertQuota(apiPool, drawer.owner_id, ciphertext.length - old);
     await apiPool.query(
       `insert into drawer_photos (drawer_id, author_id, key_version, schema_version, nonce, ciphertext) values ($1, $2, $3, $4, $5, $6)
        on conflict (drawer_id) do update set author_id = excluded.author_id, key_version = excluded.key_version, schema_version = excluded.schema_version, nonce = excluded.nonce, ciphertext = excluded.ciphertext, updated_at = now()`,
-      [drawer.id, me.id, body.key_version, body.schema_version, fromB64(body.nonce), fromB64(body.ciphertext)],
+      [drawer.id, me.id, body.key_version, body.schema_version, fromB64(body.nonce), ciphertext],
     );
     await apiPool.query("update drawers set last_write_at = now() where id = $1", [drawer.id]);
     return reply.code(204).send();
@@ -248,7 +263,7 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     await requireRole(apiPool, req.params.id, me.id, "write");
     const body = DeleteLineBody.parse(req.body);
     if (req.token && body.document.verification) throw forbidden("TokenCannotVerify", { drawer_id: req.params.id });
-    const res = await withTx(apiPool, (db) => writeDocument(db, req.params.id, me.id, body.document, req.token?.id ?? null));
+    const res = await withTx(apiPool, (db) => writeDocument(db, req.params.id, me.id, body.document, req.token?.id ?? null, false));
     const { rows } = await maintPool.query<{ n: string }>("select delete_line($1, $2) as n", [req.params.id, req.params.lineId]);
     return { ...res, deleted_entries: Number(rows[0]?.n ?? 0) };
   });

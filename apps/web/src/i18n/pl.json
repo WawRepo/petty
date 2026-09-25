@@ -262,6 +262,11 @@
       "hintPasskey": "Obecny kod odzyskiwania przestanie działać, gdy zapiszesz nowy. Klucz dostępu potwierdzi, że to Ty.",
       "make": "Utwórz kod",
       "saved": "Zapisano nowy kod odzyskiwania. Stary już nie działa."
+    },
+    "storage": {
+      "title": "Miejsce",
+      "used": "Zajęte {used} z {quota}",
+      "hint": "Liczy wszystko w szufladach, których jesteś właścicielem, także to, co dodają osoby, którym je udostępniasz. Najwięcej miejsca zajmują zdjęcia."
     }
   },
   "keypad": {
@@ -271,7 +276,10 @@
   "errors": {
     "network": "Nie można połączyć się z serwerem.",
     "unknown": "Coś poszło nie tak.",
-    "sessionExpired": "Sesja wygasła. Zaloguj się ponownie."
+    "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
+    "storageFull": "Twoje miejsce jest pełne. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. Ustawienia pokazują, ile zajmujesz.",
+    "ownerStorageFull": "Właściciel tej szuflady nie ma już miejsca, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
+    "photoTooLarge": "To zdjęcie jest za duże. Wybierz mniejsze."
   },
   "drawer": {
     "options": "Opcje szuflady",
@@ -609,6 +617,8 @@
       "reverseRefused": "Twoje cofnięcie na linii {line} nie zostało zapisane: {reason}",
       "opsDropped": "Zmiany w „{drawer}” nie udało się zastosować: ktoś zmienił ją w międzyczasie.",
       "failed": "Nie udało się wysłać zmiany w „{drawer}”.",
+      "storageFull": "Zmiana w „{drawer}” nie została zapisana: Twoje miejsce jest pełne.",
+      "ownerStorageFull": "Zmiana w „{drawer}” nie została zapisana: właściciel nie ma już miejsca.",
       "dismiss": "OK"
     }
   },

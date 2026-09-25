@@ -64,6 +64,8 @@ services:
       # Local mode only: "true" lets anyone create an account without a join link (a public instance).
       # Default = invite-only; the first account is minted with the join-link script (docs/deploy.md).
       OPEN_SIGNUP: ${OPEN_SIGNUP:-}
+      # Per-person storage limit in MB (photos, documents, entries in the drawers they own). Empty = no limit.
+      STORAGE_QUOTA_MB: ${STORAGE_QUOTA_MB:-}
       # Telemetry (docs/monitoring.md): traces always push to the OTLP endpoint when set;
       # OTEL_PUSH=true also pushes metrics + logs; DEPLOYMENT_ENV tags every signal.
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}

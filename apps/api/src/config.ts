@@ -67,6 +67,11 @@ export const config = {
   contactEmail: env("CONTACT_EMAIL", ""),
   /** PETTY-215: local mode only — allow signup without a join link (a public self-hosted instance). */
   openSignup: env("OPEN_SIGNUP", "") === "true",
+  /**
+   * PETTY-243: per-user storage limit in MB — ciphertext in the drawers a person owns (photos,
+   * documents and their 30-day history, entries). 0 or unset = no limit (a household instance).
+   */
+  storageQuotaBytes: Number(env("STORAGE_QUOTA_MB", "0")) > 0 ? Math.round(Number(env("STORAGE_QUOTA_MB", "0")) * 1024 * 1024) : null,
   /** PEM public key for networkless token verification (tests, air-gapped); empty = fetch JWKS with the secret key. */
   clerkJwtKey: env("CLERK_JWT_KEY", ""),
   /** Clerk frontend API origin (https://….clerk.accounts.dev or https://clerk.<domain>): CSP connect-src in clerk mode. */

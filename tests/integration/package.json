@@ -13,6 +13,7 @@
     "@petty/api": "workspace:*",
     "@petty/crypto": "workspace:*",
     "@petty/ledger": "workspace:*",
+    "@petty/protocol": "workspace:*",
     "@types/node": "^24.0.0",
     "vitest": "^4.1.11"
   }

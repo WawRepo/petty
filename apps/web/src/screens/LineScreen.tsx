@@ -17,6 +17,7 @@ import { SyncReport } from "../components/SyncReport.js";
 import { useToast } from "../components/Toast.js";
 import { acknowledgeChain, appendEntry, lineFold, loadAll, loadOlder, memberName, RecountRequired, reverseFor, ReverseRefused, useDrawers, type DrawerView } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
+import { storageErrorKey } from "../lib/storage.js";
 
 type Op = Exclude<EntryOp, "reverse">;
 type MoneyOrCount = Exclude<Line, { kind: "single" }>;
@@ -85,7 +86,7 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
       onSaved(saved.entry.id);
     } catch (e) {
       if (e instanceof RecountRequired) setRecount(true);
-      else setError(t("errors.unknown"));
+      else setError(t(storageErrorKey(e) ?? "errors.unknown"));
     } finally { setBusy(false); }
   }
 

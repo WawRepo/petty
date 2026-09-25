@@ -27,6 +27,7 @@ import { Coins, Tags } from "lucide-react";
 import { PlacePicker } from "../components/PlacePicker.js";
 import { addPlace, savePlaceTree, usePlaceTree } from "../lib/places.js";
 import { processPhoto } from "../lib/photo.js";
+import { storageErrorKey } from "../lib/storage.js";
 import { ApiError } from "../lib/api.js";
 
 type Kind = Line["kind"];
@@ -87,6 +88,8 @@ function AddLineSheet({ open, onClose, view }: { open: boolean; onClose: () => v
       await mutateDocument(view.summary.id, [{ type: "add_line", line }]);
       if (starting > 0) await appendEntry(view.summary.id, line, "add", newEntryAmount("add", starting));
       onClose();
+    } catch (err) {
+      setErrors({ name: t(storageErrorKey(err) ?? "errors.unknown") });
     } finally { setBusy(false); }
   }
 
@@ -215,6 +218,7 @@ export function DrawerScreen() {
   async function run(fn: () => Promise<void>) {
     try { await fn(); } catch (e) {
       if (e instanceof OpsNoLongerApply) toast(t("drawer.errors.opsDropped"));
+      else if (storageErrorKey(e)) toast(t(storageErrorKey(e)!));
       else if (e instanceof ApiError && e.status === 403) toast(t("errors.unknown"));
       else toast(t("errors.unknown"));
     }
@@ -223,7 +227,7 @@ export function DrawerScreen() {
   async function onPhoto(file: File | undefined) {
     if (!file) return;
     setPhotoBusy(true);
-    try { await setPhoto(id, await processPhoto(file)); } catch { toast(t("drawer.photoFailed")); } finally { setPhotoBusy(false); if (fileRef.current) fileRef.current.value = ""; }
+    try { await setPhoto(id, await processPhoto(file)); } catch (e) { toast(t(storageErrorKey(e) ?? "drawer.photoFailed")); } finally { setPhotoBusy(false); if (fileRef.current) fileRef.current.value = ""; }
   }
 
   /**

@@ -4,8 +4,9 @@
  * Re-encoding drops EXIF — including GPS — by construction, and that is the
  * point, not a side effect: the bytes that leave this function never carry it.
  */
+import { PHOTO_MAX_BYTES } from "@petty/protocol"; // shared with the API, which refuses a bigger sealed photo (PETTY-243)
+
 export const PHOTO_MAX_EDGE = 1000;
-export const PHOTO_MAX_BYTES = 300 * 1024;
 
 export async function processPhoto(file: Blob): Promise<Uint8Array> {
   const bitmap = await createImageBitmap(file);

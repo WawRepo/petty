@@ -25,6 +25,7 @@ import { quantityLabel } from "../lib/format.js";
 import { lineBalance as balanceOf } from "../lib/drawers.js";
 import { searchDrawers } from "../lib/search.js";
 import { syncTokenWrapsOnce } from "../lib/accessTokens.js";
+import { storageErrorKey } from "../lib/storage.js";
 import { useState } from "react";
 import type { Line } from "@petty/ledger";
 
@@ -127,7 +128,7 @@ function AddDrawerSheet({ open, tree, onClose, onCreate }: { open: boolean; tree
     e.preventDefault();
     if (!name.trim()) { setError(t("drawer.errors.nameRequired")); return; }
     setBusy(true);
-    try { await onCreate(name.trim(), place); onClose(); } catch (err) { setError(err instanceof Error ? err.message : t("errors.unknown")); } finally { setBusy(false); }
+    try { await onCreate(name.trim(), place); onClose(); } catch (err) { setError(t(storageErrorKey(err) ?? "errors.unknown")); } finally { setBusy(false); }
   }
   return (
     <Sheet open={open} title={t("home.addDrawerTitle")} onClose={onClose}>

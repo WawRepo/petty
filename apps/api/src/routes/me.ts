@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, UserDocRow, UserLookup, VaultBlob, type Me as MeT } from "@petty/protocol";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, UserDocRow, UserLookup, VaultBlob, type Me as MeT } from "@petty/protocol";
+import { config } from "../config.js";
+import { storageUsed } from "../lib/quota.js";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
 import { z } from "zod";
 import { deleteClerkUser } from "../lib/clerk.js";
@@ -187,6 +189,12 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       );
       return { version: r.rows[0]!.version, updated_at: iso(r.rows[0]!.updated_at) };
     });
+  });
+
+  /** PETTY-243: bytes stored in the drawers you own, against the instance's limit (null = none). */
+  app.get("/me/storage", async (req) => {
+    const me = requireUser(req);
+    return StorageUsage.parse({ used_bytes: await storageUsed(apiPool, me.id), quota_bytes: config.storageQuotaBytes });
   });
 
   async function preview(userId: string) {

@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- Storage limits. The server now refuses a photo over the client's 300 KB limit and an entry over
+  16 KiB, whatever sent it. An optional per-person quota, `STORAGE_QUOTA_MB` (off by default), covers
+  the encrypted photos, documents and entries in the drawers a person owns; members' writes count
+  against the drawer's owner. Settings shows the space used when a quota is set, and a refused write
+  says why (also after an offline sync).
+
 ## [1.3.3] — 2026-09-25
 
 ### Fixed

@@ -262,6 +262,11 @@
       "hintPasskey": "Your current recovery code stops working once the new one is saved. Your passkey confirms it is you.",
       "make": "Make the code",
       "saved": "New recovery code saved. The old one no longer works."
+    },
+    "storage": {
+      "title": "Storage",
+      "used": "{used} of {quota} used",
+      "hint": "Counts everything in the drawers you own, including what people you share them with add. Photos take the most space."
     }
   },
   "keypad": {
@@ -271,7 +276,10 @@
   "errors": {
     "network": "Could not reach the server.",
     "unknown": "Something went wrong.",
-    "sessionExpired": "Your session ended. Sign in again."
+    "sessionExpired": "Your session ended. Sign in again.",
+    "storageFull": "Your storage is full. Remove photos or drawers you no longer need. Settings shows how much you use.",
+    "ownerStorageFull": "This drawer's owner has no storage left, so the change was not saved. Ask them to free some space.",
+    "photoTooLarge": "This photo is too large. Choose a smaller one."
   },
   "drawer": {
     "options": "Drawer options",
@@ -609,6 +617,8 @@
       "reverseRefused": "Your reversal on {line} was not saved: {reason}",
       "opsDropped": "A change to “{drawer}” could not be applied: someone changed it meanwhile.",
       "failed": "A change to “{drawer}” could not be sent.",
+      "storageFull": "A change to “{drawer}” was not saved: your storage is full.",
+      "ownerStorageFull": "A change to “{drawer}” was not saved: its owner has no storage left.",
       "dismiss": "OK"
     }
   },

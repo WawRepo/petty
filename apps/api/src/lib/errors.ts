@@ -12,3 +12,5 @@ export const unauthorized = () => new ApiError(401, "Unauthorized", "sign in req
 export const forbidden = (code = "Forbidden", context: Ctx = {}) => new ApiError(403, code, "not allowed", context);
 export const notFound = (code = "NotFound", context: Ctx = {}) => new ApiError(404, code, "not found", context);
 export const conflict = (code: string, message: string, context: Ctx = {}) => new ApiError(409, code, message, context);
+/** PETTY-243: a record over its size limit, or a write that would pass the storage quota. */
+export const tooLarge = (code: string, message: string, context: Ctx = {}) => new ApiError(413, code, message, context);

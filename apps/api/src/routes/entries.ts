@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { EntriesPage, PostEntryBody, PostEntryResponse } from "@petty/protocol";
+import { ENTRY_MAX_CIPHERTEXT, EntriesPage, PostEntryBody, PostEntryResponse } from "@petty/protocol";
 import { z } from "zod";
 import { apiPool } from "../db.js";
 import { fromB64 } from "../lib/bytes.js";
-import { badRequest, conflict } from "../lib/errors.js";
+import { badRequest, conflict, tooLarge } from "../lib/errors.js";
+import { assertQuota } from "../lib/quota.js";
 import { entriesAppended } from "../lib/metrics.js";
 import { requireRole } from "../lib/perm.js";
 import { entryRow } from "../lib/rows.js";
@@ -34,6 +35,10 @@ export async function entryRoutes(app: FastifyInstance): Promise<void> {
     };
     const existing = (await apiPool.query("select * from entries where id = $1", [body.id])).rows[0];
     if (existing) return replay(existing);
+    // PETTY-243: after the replay check, so an entry already stored always answers as a replay.
+    const ciphertext = fromB64(body.ciphertext);
+    if (ciphertext.length > ENTRY_MAX_CIPHERTEXT) throw tooLarge("EntryTooLarge", "entry over the size limit", { drawer_id: drawerId, max_bytes: ENTRY_MAX_CIPHERTEXT });
+    await assertQuota(apiPool, drawer.owner_id, ciphertext.length);
 
     const row = await withTx(apiPool, async (db) => {
       const head = (await db.query<{ head_seq: string; checkpoint_seq: string }>(
@@ -59,7 +64,7 @@ export async function entryRoutes(app: FastifyInstance): Promise<void> {
       const inserted = (await db.query(
         `insert into entries (id, drawer_id, line_id, seq, author_id, is_checkpoint, reverses_entry_id, key_version, schema_version, nonce, ciphertext)
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`,
-        [body.id, drawerId, body.line_id, seq, me.id, body.is_checkpoint, body.reverses_entry_id, body.key_version, body.schema_version, fromB64(body.nonce), fromB64(body.ciphertext)],
+        [body.id, drawerId, body.line_id, seq, me.id, body.is_checkpoint, body.reverses_entry_id, body.key_version, body.schema_version, fromB64(body.nonce), ciphertext],
       )).rows[0]!;
       if (body.is_checkpoint) await db.query("update line_heads set checkpoint_seq = $3 where drawer_id = $1 and line_id = $2", [drawerId, body.line_id, seq]);
       return inserted;

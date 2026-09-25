@@ -11,12 +11,14 @@ import { getDrawers, loadAll, lineFold, mutateDocument, OpsNoLongerApply, refres
 import { isOnline, onBackOnline } from "./net.js";
 import { outboxList, outboxRemove, type OutboxItem } from "./outbox.js";
 import { getAuth } from "./session.js";
+import { storageErrorKey } from "./storage.js";
 
 export type ReportItem =
   | { kind: "foreign"; drawer_id: string; line_id: string; amount: number; author_id: string; op: string }
   | { kind: "recount"; drawer_id: string; line_id: string }
   | { kind: "reverse_refused"; drawer_id: string; line_id: string; reason: string }
   | { kind: "ops_dropped"; drawer_id: string }
+  | { kind: "storage_full"; drawer_id: string; mine: boolean }
   | { kind: "failed"; drawer_id: string };
 export interface SyncReport { readonly at: string; readonly items: readonly ReportItem[] }
 
@@ -83,6 +85,9 @@ async function send(item: OutboxItem): Promise<void> {
 }
 
 function describeFailure(item: OutboxItem, e: unknown): ReportItem {
+  // PETTY-243: refused because the drawer owner's storage is full — say so, not "failed"
+  const storage = storageErrorKey(e);
+  if (storage === "errors.storageFull" || storage === "errors.ownerStorageFull") return { kind: "storage_full", drawer_id: item.drawer_id, mine: storage === "errors.storageFull" };
   if (item.kind === "entry") {
     if (e instanceof ApiError && e.code === "RecountRequired") return { kind: "recount", drawer_id: item.drawer_id, line_id: item.line_id };
     if (e instanceof ApiError && e.code === "ReverseRefused") return { kind: "reverse_refused", drawer_id: item.drawer_id, line_id: item.line_id, reason: String(e.context["reason"] ?? "refused") };

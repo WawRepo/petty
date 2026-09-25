@@ -95,6 +95,13 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Contributions (2026-09-25).** AGPL inbound = outbound with a DCO `Signed-off-by` per commit; no CLA.
 - **History (2026-09-25).** Deleted hosting files and private repository names in git history are
   accepted as public (no credentials); no history rewrite.
+- **Storage limits (PETTY-243).** The server counts only ciphertext bytes; it never needs to read
+  anything to enforce a limit. A photo is at most 300 KB before sealing, enforced by the API as well
+  as the client; an entry at most 16 KiB sealed. An optional per-person quota (`STORAGE_QUOTA_MB`,
+  off by default) covers photos, documents with their 30-day history and entries in the drawers a
+  person owns: a member's writes to a shared drawer count against its owner, who is the one able to
+  free space. Writes that free space (a smaller photo, removing a photo, deleting a line or drawer)
+  always pass. The check is soft: writes racing at the limit may overshoot by one record.
 
 ## Non-goals
 

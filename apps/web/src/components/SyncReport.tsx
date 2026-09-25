@@ -25,6 +25,7 @@ export function SyncReport() {
       case "recount": return t("offline.report.recount", { line: line(it).name });
       case "reverse_refused": return t("offline.report.reverseRefused", { line: line(it).name, reason: t(`line.reverse.refused.${it.reason}`) });
       case "ops_dropped": return t("offline.report.opsDropped", { drawer: s.drawers.get(it.drawer_id)?.doc?.name ?? "?" });
+      case "storage_full": return t(it.mine ? "offline.report.storageFull" : "offline.report.ownerStorageFull", { drawer: s.drawers.get(it.drawer_id)?.doc?.name ?? "?" });
       case "failed": return t("offline.report.failed", { drawer: s.drawers.get(it.drawer_id)?.doc?.name ?? "?" });
     }
   };

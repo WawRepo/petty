@@ -16,7 +16,8 @@ import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
 import { addPasskey, changePassphrase, makeRecoveryCode, openWithPasskey, openWithPassphrase, removePasskey, setPassphrase, storeRecoveryCode } from "../lib/custody.js";
 import { deviceLabel, PasskeyError, passkeyPrfSupported } from "../lib/passkey.js";
-import type { PasskeyEntry } from "@petty/protocol";
+import type { PasskeyEntry, StorageUsage } from "@petty/protocol";
+import { fetchStorage, formatMegabytes } from "../lib/storage.js";
 import { updateMe } from "../lib/session.js";
 import { checkPassphrase } from "../lib/passphrase.js";
 import { normalizeRecoveryCode, WrongPassphrase, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
@@ -160,6 +161,8 @@ export function SettingsScreen() {
   }
   const me = auth.status === "unlocked" || auth.status === "locked" ? auth.me : null;
   useEffect(() => { if (me) void mySafetyNumber(me).then(setSafety); }, [me]);
+  const [storage, setStorage] = useState<StorageUsage | null>(null);
+  useEffect(() => { if (auth.status === "unlocked") void fetchStorage().then(setStorage).catch(() => setStorage(null)); }, [auth.status]);
   const install = useInstallState();
 
   return (
@@ -187,6 +190,14 @@ export function SettingsScreen() {
         </section>
         {me && auth.status === "unlocked" ? <AccessTokens me={me} /> : null}
         <BackupSection />
+        {storage?.quota_bytes ? (
+          <section className="card" data-testid="storage-section">
+            <h2 className="h-card">{t("settings.storage.title")}</h2>
+            <p className="mb4" data-testid="storage-used">{t("settings.storage.used", { used: formatMegabytes(storage.used_bytes, i18n.language), quota: formatMegabytes(storage.quota_bytes, i18n.language) })}</p>
+            <meter className="storage-meter" min={0} max={storage.quota_bytes} value={storage.used_bytes} aria-label={t("settings.storage.title")} />
+            <p className="hint mb0">{t("settings.storage.hint")}</p>
+          </section>
+        ) : null}
         <section className="card" data-testid="install-section">
           <h2 className="h-card">{t("install.title")}</h2>
           {install === "installed" ? <p className="hint mb0">{t("install.installed")}</p> : null}

@@ -194,6 +194,13 @@ test("photo: a JPEG with GPS Exif is re-encoded; the stored photo has no Exif an
   const api = await apiClient(user);
   const boot = (await api.call("GET", "/bootstrap")).json as { drawers: { id: string; has_photo: boolean }[] };
   expect(boot.drawers.find((d) => d.id === id)?.has_photo).toBe(true);
+  // PETTY-243: Settings shows the storage this person uses against the instance's quota (500 MB in e2e)
+  const storage = (await api.call("GET", "/me/storage")).json as { used_bytes: number; quota_bytes: number };
+  expect(storage.quota_bytes).toBe(500 * 1024 * 1024);
+  expect(storage.used_bytes).toBeGreaterThan(check.size);
+  await openSettings(page);
+  await expect(page.getByTestId("storage-used")).toHaveText(/^[\d.,]+ MB of 500 MB used$/);
+  await page.goBack();
   // PETTY-122: the photo controls live in the drawer options
   await page.getByRole("button", { name: "Drawer options" }).click();
   await expect(page.getByRole("dialog").getByTestId("drawer-photo-add")).toHaveText("Change photo");

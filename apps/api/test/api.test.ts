@@ -1,7 +1,8 @@
 import pg from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hashEntry } from "@petty/crypto";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { generateDrawerKey, hashEntry, sealPhoto } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
+import { ENTRY_MAX_CIPHERTEXT, PHOTO_MAX_BYTES, PHOTO_MAX_CIPHERTEXT } from "@petty/protocol";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
 import { apiPool, maintPool } from "../src/db.js";
@@ -500,6 +501,68 @@ describe("line deletion", () => {
     expect((await owner.query("select count(*)::int as n from entries where drawer_id = $1", [id])).rows[0].n).toBe(0);
     expect((await C.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await C.sealDoc(id, key, without), 1), base_version: 2 } })).statusCode).toBe(403);
   });
+});
+
+describe("storage limits (PETTY-243)", () => {
+  // The quota is read from the environment at start; these tests set it on the loaded config.
+  const setQuota = (bytes: number | null) => { (config as { storageQuotaBytes: number | null }).storageQuotaBytes = bytes; };
+  afterEach(() => setQuota(null));
+  const fake = (n: number) => Buffer.alloc(n, 7).toString("base64"); // the server never opens ciphertext; size is all it sees
+  const photo = (n: number) => ({ key_version: 1, schema_version: 1, nonce: fake(12), ciphertext: fake(n) });
+  const storage = async (c: Client) => (await c.call("GET", "/me/storage")).json() as { used_bytes: number; quota_bytes: number | null };
+
+  it("the server's photo limit is exactly what a 300 KB photo seals to", async () => {
+    const id = crypto.randomUUID();
+    const sealed = await sealPhoto(await generateDrawerKey(), { record_type: "photo", record_id: id, drawer_id: id, line_id: null, author_id: A.id, key_version: 1, schema_version: 1 }, new Uint8Array(PHOTO_MAX_BYTES));
+    expect(sealed.ciphertext.length).toBe(PHOTO_MAX_CIPHERTEXT);
+  });
+
+  it("refuses a photo or an entry over its size limit, from any client; a stored entry still replays", async () => {
+    const { id, key, line } = await sharedDrawer();
+    const big = await B.call("PUT", `/drawers/${id}/photo`, photo(PHOTO_MAX_CIPHERTEXT + 1));
+    expect(big.statusCode).toBe(413);
+    expect(big.json()).toMatchObject({ code: "PhotoTooLarge", context: { max_bytes: PHOTO_MAX_CIPHERTEXT } });
+    expect((await B.call("PUT", `/drawers/${id}/photo`, photo(PHOTO_MAX_CIPHERTEXT))).statusCode).toBe(204);
+    const entry = { id: crypto.randomUUID(), line_id: line, is_checkpoint: false, reverses_entry_id: null, key_version: 1, schema_version: 1, nonce: fake(12), ciphertext: fake(ENTRY_MAX_CIPHERTEXT + 1) };
+    const huge = await A.call("POST", `/drawers/${id}/entries`, entry);
+    expect(huge.statusCode).toBe(413);
+    expect(huge.json().code).toBe("EntryTooLarge");
+    const e = await A.postEntry(id, key, line, "add", 1);
+    expect((await A.call("POST", `/drawers/${id}/entries`, { ...entry, id: e.id })).statusCode).toBe(200); // replay answers before the size check
+  });
+
+  it("no quota by default; with one, writes to a drawer count against its owner, and freeing space always works", async () => {
+    const { id, key, line, doc } = await sharedDrawer();
+    expect((await storage(A)).quota_bytes).toBeNull();
+    const memberBefore = (await storage(B)).used_bytes;
+    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(100_000))).statusCode).toBe(204);
+    const used = (await storage(A)).used_bytes;
+    expect(used).toBeGreaterThanOrEqual(100_000);
+    setQuota(used + 50_000);
+    expect(await storage(A)).toEqual({ used_bytes: used, quota_bytes: used + 50_000 });
+
+    // B writes into A's drawer: the bytes are A's, so A's quota refuses the bigger photo
+    const over = await B.call("PUT", `/drawers/${id}/photo`, photo(200_000));
+    expect(over.statusCode).toBe(413);
+    expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { owner_id: A.id, used_bytes: used, quota_bytes: used + 50_000 } });
+    expect((await B.call("PUT", `/drawers/${id}/photo`, photo(120_000))).statusCode).toBe(204); // +20 000 still fits
+    expect((await B.postEntry(id, key, line, "add", 1)).res.statusCode).toBe(201);
+    expect((await A.createDrawer("Small", newDocument("Small"))).res.statusCode).toBe(201);  // a new drawer (a 16 KiB padded document) fits
+
+    setQuota((await storage(A)).used_bytes); // full
+    expect((await B.postEntry(id, key, line, "add", 1)).res.json().code).toBe("StorageQuotaExceeded");
+    expect((await A.createDrawer("None", newDocument("None"))).res.json().code).toBe("StorageQuotaExceeded");
+    const put = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1 });
+    expect(put.json().code).toBe("StorageQuotaExceeded");
+    // what frees space passes: a smaller photo, removing the photo, deleting a line
+    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(10_000))).statusCode).toBe(204);
+    expect((await A.call("DELETE", `/drawers/${id}/photo`)).statusCode).toBe(204);
+    const without = applyOp(doc, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
+    setQuota((await storage(A)).used_bytes);
+    expect((await A.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await A.sealDoc(id, key, without), 1), base_version: 1 } })).statusCode).toBe(200);
+    // the member's own storage is untouched by their writes into A's drawer
+    expect((await storage(B)).used_bytes).toBe(memberBefore);
+  }, 60_000);
 });
 
 describe("admin and password reset (Phase 15a)", () => {

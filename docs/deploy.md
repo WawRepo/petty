@@ -57,6 +57,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `CONTACT_EMAIL` | where "Get an invite" writes to; empty hides the link |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |
 | `OPEN_SIGNUP` | local mode only: `true` lets anyone create an account without a join link (a public self-hosted instance). Default off = invite-only. In Clerk mode, open sign-up is a setting in the Clerk dashboard, not here. |
+| `STORAGE_QUOTA_MB` | per-person storage limit in MB: the encrypted photos, documents (with their 30-day history) and entries in the drawers a person owns; writes by members of a shared drawer count against its owner. Empty = no limit. A photo is at most about 300 KB whatever this says. Each person sees their use in Settings. |
 | `CLERK_*` | Clerk keys, only with `AUTH_PROVIDER=clerk` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | optional OTLP/HTTP endpoint; traces push there when set |
 | `OTEL_EXPORTER_OTLP_HEADERS` | auth for that endpoint as an env-format pair, e.g. `Authorization=Basic <token>` |

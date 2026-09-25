@@ -272,6 +272,20 @@ export const PutDocumentResponse = z.object({ version: z.number().int(), last_wr
 export const DeleteLineBody = z.object({ document: PutDocumentBody });
 export const PutPhotoBody = SealedBody;
 
+/**
+ * PETTY-243: size limits the server enforces on ciphertext it cannot read. A photo is a JPEG of at
+ * most PHOTO_MAX_BYTES (the web client downscales to that); sealing adds a 4-byte length, pads to
+ * the 16 KiB photo bucket and appends the 16-byte GCM tag (@petty/crypto seal.ts). An entry's
+ * plaintext is a few hundred bytes (256-byte bucket); 16 KiB leaves wide room for a long comment.
+ */
+export const PHOTO_MAX_BYTES = 300 * 1024;
+export const PHOTO_MAX_CIPHERTEXT = Math.ceil((PHOTO_MAX_BYTES + 4) / (16 * 1024)) * 16 * 1024 + 16;
+export const ENTRY_MAX_CIPHERTEXT = 16 * 1024 + 16;
+
+/** PETTY-243: ciphertext bytes stored in the drawers you own, and the instance's limit (null = none). */
+export const StorageUsage = z.object({ used_bytes: z.number().int().min(0), quota_bytes: z.number().int().min(1).nullable() });
+export type StorageUsage = z.infer<typeof StorageUsage>;
+
 /** PETTY-183 (review NR-3): documents replaced in the last 30 days, still sealed. Owner only. */
 export const DocumentHistoryItem = z.object({
   id: z.string(),
