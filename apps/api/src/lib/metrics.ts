@@ -3,7 +3,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import client from "prom-client";
 import { metrics as otelApi } from "@opentelemetry/api";
 import { apiPool, maintPool } from "../db.js";
-import { safeUrl } from "./tracing.js";
+import { isHealthProbe, safeUrl } from "./tracing.js";
 
 /**
  * Metrics (Phase 15b, PETTY-92). Two paths from one definition:
@@ -154,8 +154,6 @@ export function routeLabel(req: FastifyRequest, apiPrefix: string): string {
   return "static";
 }
 
-const HEALTH = /\/health$/;
-
 /**
  * One metrics observation and ONE log line per request, on completion.
  * Replaces Fastify's two-line default. Health probes are measured but not logged:
@@ -166,7 +164,7 @@ export function requestMetrics(app: FastifyInstance, apiPrefix: string): void {
     const route = routeLabel(req, apiPrefix);
     const ms = reply.elapsedTime;
     httpDuration.observe({ method: req.method, route, status: String(reply.statusCode) }, ms / 1000);
-    if (HEALTH.test(req.url) && reply.statusCode < 500) return;
+    if (isHealthProbe(req.url) && reply.statusCode < 500) return;
     req.log.info({ method: req.method, route, url: safeUrl(req), status: reply.statusCode, ms: Math.round(ms * 10) / 10, user: req.user?.id ?? null }, "request");
   });
 }

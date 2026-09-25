@@ -39,9 +39,16 @@ describe("traces (PETTY-34)", () => {
     expect(server!.attributes["url.path"]).toBe("/join-links/:token");
   });
 
-  it("health probes are not traced", async () => {
+  it("health probes are not traced, including the /health/live one Fly calls (PETTY-240)", async () => {
     exporter.reset();
     expect((await fetch(`${base}/health`)).status).toBe(200);
+    expect((await fetch(`${base}/health/live`)).status).toBe(200);
     expect(exporter.getFinishedSpans().filter((s) => s.kind === 1 /* SERVER */)).toEqual([]);
+  });
+
+  it("isHealthProbe matches only the two probes", async () => {
+    const { isHealthProbe } = await import("../src/lib/tracing.js");
+    for (const url of ["/health", "/health/live", "/api/health", "/api/health/live", "/api/health?x=1", "/api/health/live?x=1"]) expect(isHealthProbe(url), url).toBe(true);
+    for (const url of ["/api/me", "/api/health/other", "/api/healthz", "/api/health/live/x", "/healthcheck"]) expect(isHealthProbe(url), url).toBe(false);
   });
 });

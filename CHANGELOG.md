@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.3.3] — 2026-09-25
+
+### Fixed
+- The liveness probe `/api/health/live` is no longer logged or traced. It was missed by the probe
+  filter, so on a host that probes every few seconds it made up almost all log lines and traces. It is
+  still counted in the request metrics.
+
 ## [1.3.2] — 2026-09-25
 
 ### Added
@@ -74,7 +81,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/WawRepo/petty/releases/tag/v1.3.3
 [1.3.2]: https://github.com/WawRepo/petty/releases/tag/v1.3.2
 [1.3.1]: https://github.com/WawRepo/petty/releases/tag/v1.3.1
 [1.3.0]: https://github.com/WawRepo/petty/releases/tag/v1.3.0

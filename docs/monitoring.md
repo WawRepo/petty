@@ -55,7 +55,7 @@ app restarts.
 The API writes one JSON line per request to stdout (`msg="request"`: route, url, status,
 duration in ms, user id), plus error lines with a typed error class and ids. `level` is a
 word (`"error"`, `"info"`), so a query such as `| json | level="error"` works in Loki.
-Health probes are not logged. Set the detail with `LOG_LEVEL`.
+Health probes (`/api/health`, `/api/health/live`) are measured but not logged. Set the detail with `LOG_LEVEL`.
 
 Errors never contain plaintext content (spec rule 2).
 
@@ -71,7 +71,7 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` to an OTLP/HTTP receiver (for example
   holds a token (`/join-links/:token` is reported as the template).
 - Every log line of a traced request carries `traceId`, so a log line can link to its trace.
 
-Health probes and static files are not traced.
+Health probes (`/api/health`, `/api/health/live`) and static files are not traced.
 
 ## Who can read these signals
 

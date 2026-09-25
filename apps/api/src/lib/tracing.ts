@@ -20,6 +20,13 @@ import { otelResource } from "./otel-resource.js";
  * before Fastify is imported — the http instrumentation patches `node:http` as
  * Fastify requires it — which is why index.ts imports the app dynamically.
  */
+/**
+ * The health probes, `/health` and `/health/live` (PETTY-240: Fly probes `/live` every 10 s, which the
+ * old `/health$` test missed, so the probe was 97% of logs and traces). Measured in metrics, never
+ * logged or traced. Shared by the log hook (lib/metrics.ts) and the http instrumentation below.
+ */
+export const isHealthProbe = (url: string): boolean => /\/health(\/live)?(\?|$)/.test(url);
+
 export interface TracingOptions { exporter?: SpanExporter | null; endpoint?: string | undefined; apiPrefix: string; version?: string | undefined; deploymentEnv?: string | undefined; logs?: boolean }
 
 let provider: NodeTracerProvider | null = null;
@@ -40,7 +47,7 @@ export function startTracing(opts: TracingOptions): boolean {
         // API calls only: not the health probes (three every few seconds), not the static files of the web app.
         ignoreIncomingRequestHook: (req) => {
           const url = req.url ?? "";
-          if (/\/health(\?|$)/.test(url)) return true;
+          if (isHealthProbe(url)) return true;
           return prefix !== "" && !url.startsWith(`${prefix}/`);
         },
         // The metrics port and the SMTP transport are not HTTP; nothing outgoing is worth a span here.

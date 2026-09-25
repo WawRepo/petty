@@ -11,6 +11,16 @@ describe("deployment", () => {
     expect(ps).toMatch(/^app running 0$/m);
   });
 
+  it("health probes are not logged, other requests are (PETTY-240)", async () => {
+    for (let i = 0; i < 3; i++) { await fetch(`${API}/health/live`); await fetch(`${API}/health`); }
+    expect((await fetch(`${API}/config`)).status).toBe(200);
+    const loggedRoutes = () => compose("logs --no-color --no-log-prefix app").split("\n")
+      .filter((l) => l.includes('"msg":"request"'))
+      .map((l) => (JSON.parse(l.slice(l.indexOf("{"))) as { route: string }).route);
+    await expect.poll(loggedRoutes, { timeout: 10_000 }).toContain("/api/config"); // request logging works
+    expect(loggedRoutes().filter((r) => r.startsWith("/api/health"))).toEqual([]);
+  });
+
   it("the app never holds the database owner password (PETTY-190)", () => {
     const env = compose("exec -T app env");
     expect(env).not.toContain(testEnv("OWNER_DB_PASSWORD"));
