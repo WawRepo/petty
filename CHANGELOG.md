@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.3.4] — 2026-09-26
+
 ### Added
 - Storage limits. The server now refuses a photo over the client's 300 KB limit and an entry over
   16 KiB, whatever sent it. An optional per-person quota, `STORAGE_QUOTA_MB` (off by default), covers
@@ -88,7 +90,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.4...HEAD
+[1.3.4]: https://github.com/WawRepo/petty/releases/tag/v1.3.4
 [1.3.3]: https://github.com/WawRepo/petty/releases/tag/v1.3.3
 [1.3.2]: https://github.com/WawRepo/petty/releases/tag/v1.3.2
 [1.3.1]: https://github.com/WawRepo/petty/releases/tag/v1.3.1
