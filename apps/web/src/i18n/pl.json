@@ -769,6 +769,203 @@
     "tagline": "Wspólna ewidencja gotówki z Twoich szuflad — zaszyfrowana tak, że tylko Ty ją odczytasz.",
     "sub": "Gotówka w szufladzie w kuchni, euro na wakacje, kasa klubu: policz raz, daj każdej szufladzie miejsce, podziel się z tymi, którzy z niej korzystają.",
     "how": "Jak to szyfruje",
+    "uses": {
+      "title": "Jeden pomysł, wiele zastosowań",
+      "sub": "Miejsca mieszczą szuflady, a szuflady pozycje — pieniądze, rzeczy albo notatki. Te same trzy elementy pasują do wszystkiego, co przechowujesz.",
+      "legend": {
+        "place": "Miejsce",
+        "drawer": "Szuflada",
+        "items": "Pozycje"
+      },
+      "pick": "Przykłady",
+      "demo": "Przykład: {title}",
+      "pause": "Wstrzymaj",
+      "play": "Odtwórz",
+      "cases": {
+        "workshop": {
+          "chip": "Warsztat",
+          "title": "Znajdź wszystko w kilka sekund",
+          "body": "Narzędzia i części, każda szuflada na swoim miejscu: opaski zawsze leżą w Piwnica › Warsztat › Biurko.",
+          "place": [
+            "Piwnica",
+            "Warsztat",
+            "Biurko, prawa strona"
+          ],
+          "drawer": "Szuflada 1",
+          "meta": "4 pozycje",
+          "items": {
+            "hammer": {
+              "name": "Młotek",
+              "note": "ciesielski, 450 g"
+            },
+            "zipties": {
+              "name": "Opaski zaciskowe",
+              "value": "50 szt."
+            },
+            "tape": {
+              "name": "Taśma naprawcza",
+              "note": "srebrna",
+              "value": "2 rolki"
+            },
+            "screws": {
+              "name": "Wkręty 4×30",
+              "value": "120 szt."
+            }
+          }
+        },
+        "trip": {
+          "chip": "Wspólny wyjazd",
+          "title": "Wyjazd ze znajomymi",
+          "body": "Jedna szuflada na wyjazd, jedna pozycja na osobę. Każdy dopisuje, ile zapłacił, i nikt nie zmieni tego po cichu.",
+          "place": [
+            "Wyjazdy",
+            "2026",
+            "Malezja"
+          ],
+          "drawer": "George Town, maj",
+          "meta": "Wspólna z Benem, Carą i Danem",
+          "items": {
+            "anna": {
+              "name": "Anna",
+              "note": "hotel"
+            },
+            "ben": {
+              "name": "Ben",
+              "note": "targ, taksówka"
+            },
+            "cara": {
+              "name": "Cara",
+              "note": "prom"
+            },
+            "dan": {
+              "name": "Dan",
+              "note": "skutery"
+            }
+          }
+        },
+        "accounts": {
+          "chip": "Konta raz w roku",
+          "title": "Pieniądze, o których łatwo zapomnieć",
+          "body": "Emerytura, stare konto maklerskie, oszczędności: po jednej pozycji, sprawdzane raz w roku.",
+          "place": [
+            "Dom",
+            "Gabinet",
+            "Szafka na dokumenty"
+          ],
+          "drawer": "Konta",
+          "meta": "Potwierdzone 2 stycznia",
+          "items": {
+            "pension": {
+              "name": "Emerytura",
+              "note": "wyciąg"
+            },
+            "brokerage": {
+              "name": "Akcje",
+              "note": "niebieska teczka"
+            },
+            "savings": {
+              "name": "Lokata",
+              "note": "3,1% rocznie"
+            },
+            "gold": {
+              "name": "Złote monety",
+              "note": "poza sumą",
+              "value": "4 szt."
+            }
+          }
+        },
+        "cash": {
+          "chip": "Gotówka w domu",
+          "title": "Każdy banknot na swoim miejscu",
+          "body": "Od tego zaczęło się Petty: puszka z gotówką na półce w kuchni, policzona i potwierdzona.",
+          "place": [
+            "Dom",
+            "Kuchnia",
+            "Górna półka"
+          ],
+          "drawer": "Puszka na gotówkę",
+          "meta": "Potwierdzone dziś",
+          "items": {
+            "groceries": {
+              "name": "Na zakupy",
+              "note": "na tydzień"
+            },
+            "holiday": {
+              "name": "Na wakacje",
+              "note": "na wyjazd"
+            },
+            "jar": {
+              "name": "Monety"
+            },
+            "emergency": {
+              "name": "Rezerwa",
+              "note": "zaklejona koperta"
+            }
+          }
+        },
+        "lent": {
+          "chip": "Pożyczone",
+          "title": "Pamiętaj, kto ma Twoją wiertarkę",
+          "body": "Pożyczone rzeczy mają swoją szufladę: każda pozycja mówi, kto ją ma i od kiedy.",
+          "place": [
+            "Dom",
+            "Garaż",
+            "Regał"
+          ],
+          "drawer": "Pożyczone",
+          "meta": "Wspólna z Tomem",
+          "items": {
+            "drill": {
+              "name": "Wiertarka",
+              "note": "Tom · od maja"
+            },
+            "book": {
+              "name": "„Diuna”",
+              "note": "Kate · od czerwca"
+            },
+            "chairs": {
+              "name": "Krzesła turystyczne",
+              "note": "Maya",
+              "value": "4 szt."
+            },
+            "ladder": {
+              "name": "Drabina",
+              "note": "Leo · od niedzieli"
+            }
+          }
+        },
+        "family": {
+          "chip": "Domowy sejf",
+          "title": "Zostaw mapę, nie bałagan",
+          "body": "Gdzie są paszporty, klucze i dokumenty — udostępnione do odczytu osobom, które kiedyś mogą ich potrzebować.",
+          "place": [
+            "Sypialnia",
+            "Szafa",
+            "Sejf"
+          ],
+          "drawer": "Dokumenty",
+          "meta": "Anna: tylko odczyt",
+          "items": {
+            "passports": {
+              "name": "Paszporty",
+              "value": "3 szt."
+            },
+            "ring": {
+              "name": "Pierścionek babci",
+              "note": "w niebieskim pudełku"
+            },
+            "carkey": {
+              "name": "Zapasowy kluczyk",
+              "note": "czerwona zawieszka"
+            },
+            "insurance": {
+              "name": "Polisy",
+              "note": "zielona teczka"
+            }
+          }
+        }
+      }
+    },
     "beta": "Masz zaproszenie? Zaloguj się powyżej.",
     "shotsTitle": "Zrzuty ekranu",
     "shots": {

@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- Landing page: "One idea, many uses" — a live demo right under the introduction. Six examples (a
+  workshop drawer, a trip kitty, yearly accounts, cash at home, things lent out, a family safe) are all
+  the same three pieces — a place in the tree, a drawer in it, items in the drawer — and each turns into
+  the next. It pauses on hover, focus, a Pause button or a picked example, and never moves on its own
+  under reduced motion.
+
 ## [1.3.4] — 2026-09-26
 
 ### Added

@@ -769,6 +769,203 @@
     "tagline": "A shared ledger for the cash in your drawers — encrypted so only you can read it.",
     "sub": "Cash in the kitchen drawer, euros for the holiday, the club's cash box: count it once, give each drawer its place, share it with the people who use it.",
     "how": "How it's encrypted",
+    "uses": {
+      "title": "One idea, many uses",
+      "sub": "Places hold drawers, drawers hold items — money, things or notes. The same three pieces fit everything you keep.",
+      "legend": {
+        "place": "Place",
+        "drawer": "Drawer",
+        "items": "Items"
+      },
+      "pick": "Examples",
+      "demo": "Example: {title}",
+      "pause": "Pause",
+      "play": "Play",
+      "cases": {
+        "workshop": {
+          "chip": "Workshop",
+          "title": "Find anything in seconds",
+          "body": "Tools and spare parts, every drawer in its place: the zip ties are always in Basement › Workshop › Desk.",
+          "place": [
+            "Basement",
+            "Workshop",
+            "Desk, right"
+          ],
+          "drawer": "Drawer 1",
+          "meta": "4 items",
+          "items": {
+            "hammer": {
+              "name": "Hammer",
+              "note": "claw, 16 oz"
+            },
+            "zipties": {
+              "name": "Zip ties",
+              "value": "50 pcs"
+            },
+            "tape": {
+              "name": "Duct tape",
+              "note": "silver",
+              "value": "2 rolls"
+            },
+            "screws": {
+              "name": "Screws 4×30",
+              "value": "120 pcs"
+            }
+          }
+        },
+        "trip": {
+          "chip": "Trip kitty",
+          "title": "Share a trip with friends",
+          "body": "One drawer for the trip, one item per person. Everyone adds what they paid, and nobody can quietly change it.",
+          "place": [
+            "Trips",
+            "2026",
+            "Malaysia"
+          ],
+          "drawer": "George Town, May",
+          "meta": "Shared with Ben, Cara and Dan",
+          "items": {
+            "anna": {
+              "name": "Anna",
+              "note": "hotel"
+            },
+            "ben": {
+              "name": "Ben",
+              "note": "night market, taxi"
+            },
+            "cara": {
+              "name": "Cara",
+              "note": "ferry"
+            },
+            "dan": {
+              "name": "Dan",
+              "note": "scooters"
+            }
+          }
+        },
+        "accounts": {
+          "chip": "Yearly accounts",
+          "title": "The money you forgot you had",
+          "body": "A pension, an old brokerage account, savings: one item each, checked once a year.",
+          "place": [
+            "Home",
+            "Study",
+            "Filing cabinet"
+          ],
+          "drawer": "Accounts",
+          "meta": "Confirmed on 2 January",
+          "items": {
+            "pension": {
+              "name": "Pension",
+              "note": "statement"
+            },
+            "brokerage": {
+              "name": "Brokerage",
+              "note": "blue folder"
+            },
+            "savings": {
+              "name": "Savings",
+              "note": "3.1% interest"
+            },
+            "gold": {
+              "name": "Gold coins",
+              "note": "not in total",
+              "value": "4 pcs"
+            }
+          }
+        },
+        "cash": {
+          "chip": "Cash at home",
+          "title": "Every note in its place",
+          "body": "Where Petty started: the cash tin on the kitchen shelf, counted and confirmed.",
+          "place": [
+            "Home",
+            "Kitchen",
+            "Top shelf"
+          ],
+          "drawer": "Cash tin",
+          "meta": "Confirmed today",
+          "items": {
+            "groceries": {
+              "name": "Groceries",
+              "note": "for the week"
+            },
+            "holiday": {
+              "name": "Holiday money",
+              "note": "for the trip"
+            },
+            "jar": {
+              "name": "Coin jar"
+            },
+            "emergency": {
+              "name": "Emergency",
+              "note": "sealed envelope"
+            }
+          }
+        },
+        "lent": {
+          "chip": "Lent out",
+          "title": "Remember who has your drill",
+          "body": "Things you lent have their own drawer: each item says who has it and since when.",
+          "place": [
+            "Home",
+            "Garage",
+            "Shelf"
+          ],
+          "drawer": "Lent out",
+          "meta": "Shared with Tom",
+          "items": {
+            "drill": {
+              "name": "Drill",
+              "note": "Tom · since May"
+            },
+            "book": {
+              "name": "“Dune”",
+              "note": "Kate · since June"
+            },
+            "chairs": {
+              "name": "Camping chairs",
+              "note": "Maya",
+              "value": "4 pcs"
+            },
+            "ladder": {
+              "name": "Ladder",
+              "note": "Leo · since Sunday"
+            }
+          }
+        },
+        "family": {
+          "chip": "Family safe",
+          "title": "Leave a map, not a mess",
+          "body": "Where the passports, keys and papers are — shared read-only with the people who may one day need it.",
+          "place": [
+            "Bedroom",
+            "Wardrobe",
+            "Safe"
+          ],
+          "drawer": "Documents",
+          "meta": "Read-only for Anna",
+          "items": {
+            "passports": {
+              "name": "Passports",
+              "value": "3 pcs"
+            },
+            "ring": {
+              "name": "Grandma's ring",
+              "note": "in the blue box"
+            },
+            "carkey": {
+              "name": "Spare car key",
+              "note": "red tag"
+            },
+            "insurance": {
+              "name": "Insurance papers",
+              "note": "green folder"
+            }
+          }
+        }
+      }
+    },
     "beta": "Have an invite? Sign in above.",
     "shotsTitle": "Screenshots",
     "shots": {

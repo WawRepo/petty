@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "../components/Button.js";
+import { UseCases } from "../components/UseCases.js";
 import { setLocale } from "../i18n/index.js";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -48,6 +49,9 @@ export function LandingScreen() {
         <p className="hint m0">{t(open ? "landing.betaOpen" : "landing.betaInvite")}</p>
         <p className="m0"><Button variant="ghost" onClick={() => document.getElementById("crypto")?.scrollIntoView({ behavior: "smooth" })}>{t("landing.how")}</Button></p>
       </section>
+
+      {/* PETTY-248: the one pattern (place › drawer › items) as a live demo, one example turning into the next. */}
+      <UseCases />
 
       {/* Five real captures (PETTY-77/79; audit F2 in PETTY-109): whole frames in a row from 1000 px up, a swipe strip on phones;
           a tap or Enter opens the frame at full size in an overlay — no reflow, no reserved empty height. */}
