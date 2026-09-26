@@ -196,3 +196,25 @@ test("after saving an entry the page jumps to the top and the new entry is highl
   await expect(page.getByTestId("entry-row").first()).toHaveClass(/fresh/);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+test("the computer keyboard drives the amount keypad: digits, decimal, Backspace, Enter reviews, Escape cancels", async ({ page }) => {
+  const user = await signupWithKeys("kb");
+  await loginAndUnlock(page, user);
+  await makeLine(page, "Kitchen", "PLN", "PLN", "100");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const display = page.getByTestId("amount-display");
+  await page.keyboard.type("123.45");
+  await expect(display).toHaveText("123.45");
+  await page.keyboard.press("Backspace");
+  await expect(display).toHaveText("123.4");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("confirm-summary")).toContainText("+123.40 PLN");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("confirm-summary")).toBeHidden();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.keyboard.type("7");
+  await expect(display).toHaveText("7");
+  await page.keyboard.press("Escape");
+  await expect(display).toBeHidden();
+  await expect(page.getByTestId("line-balance")).toHaveText("100.00");
+});
