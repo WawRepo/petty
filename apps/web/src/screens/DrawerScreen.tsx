@@ -32,6 +32,11 @@ import { storageErrorKey } from "../lib/storage.js";
 import { ApiError } from "../lib/api.js";
 
 type Kind = Line["kind"];
+/** A picture's "+N" goes down to the full list (PETTY-250). */
+function scrollToList(selector: string) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelector(selector)?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+}
 
 /** Add-line sheet: kind, name, and the fields that kind needs. A starting amount becomes the first entry. */
 const LAST_CURRENCY = "petty.lastCurrency";
@@ -328,6 +333,7 @@ export function DrawerScreen() {
           <DrawerArt drawerId={id} lines={lines} testId="drawer-art" icon={view.photo ? null : iconOf(doc) ?? DEFAULT_DRAWER_ICON}
             center={view.photo ? <img className="uc-bub-photo" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" /> : <PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} />}
             centerName={t("drawer.options")} onCenter={() => setSheet("options")}
+            moreName={t("drawer.filter.all")} onMore={() => scrollToList("[data-testid='lines']")}
             onLine={(l) => morph(`/drawers/${id}/lines/${l.id}`, `.hero-bubble[data-vt="${vtName("l", l.id)}"]`)} />
           {/* The name is the sticky top bar's title; the card shows only who edited it last (PETTY-81). */}
           <div className="rowmain">

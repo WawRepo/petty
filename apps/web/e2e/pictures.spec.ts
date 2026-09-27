@@ -115,3 +115,16 @@ test("reduced motion: the pictures still open what they show, without a morph", 
   await expect(page).toHaveURL(new RegExp(`/drawers/${id}$`));
   expect(await morphs(page)).toBe(0);
 });
+
+test("more than six lines: the picture shows five and a +N that goes down to the full list", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 560 });
+  const user = await signupWithKeys("ivy");
+  await loginAndUnlock(page, user);
+  await addDrawer(page, "Attic");
+  for (let i = 1; i <= 7; i++) await addLine(page, "Single item", `Box ${i}`, { Text: `shelf ${i}` });
+  await expect(page.getByTestId("drawer-art")).toHaveAttribute("data-count", "7");
+  await expect(page.getByTestId("drawer-art").locator(".uc-bub.sat")).toHaveCount(6);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await bubble(page, "drawer-art", "All items").click();
+  await expect.poll(() => page.evaluate(() => Math.round(document.querySelector('[data-testid="lines"]')!.getBoundingClientRect().top))).toBeLessThan(80);
+});

@@ -7,7 +7,7 @@ import { orbit } from "./UseCaseArt.js";
  * The app's pictures (PETTY-250), in the landing page's look: bubbles round a middle, joined by
  * dashed spokes, drawn by the same CSS as the landing's (base.css, "the picture"). Bubbles are keyed
  * by what they show, so a reorder sends them round the middle to their new places, a new one pops in
- * and the others make room. More than six show as five and a "+N".
+ * and the others make room. More than six show as five and a "+N", which scrolls to the full list.
  *
  * Every bubble is a shortcut, as the landing's pictures are: a tap opens what it shows, and its bubble
  * grows into the next screen's picture (useMorph; `vt` is the shared view-transition name). Only the
@@ -61,9 +61,9 @@ function Bubble({ cls, style, vt, name, onClick, children }: { cls: string; styl
  * photo with its alt text and test id, or the icon — inside a disc that carries the drawer's
  * view-transition name (the Home bubble grows into it) and the `.tile[data-icon]` the tests read.
  */
-export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter, onLine, testId }: {
+export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter, onLine, moreName, onMore, testId }: {
   drawerId: string; lines: readonly Line[]; center: ReactNode; icon: string | null; centerName: string;
-  onCenter: () => void; onLine: (line: Line) => void; testId?: string;
+  onCenter: () => void; onLine: (line: Line) => void; moreName: string; onMore: () => void; testId?: string;
 }) {
   const { shown, more, n } = fit(lines);
   const geo = { rot: start(n), rx: 30, ry: 33, wobble: n >= 4 ? 0.08 : 0 };
@@ -78,7 +78,7 @@ export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter,
           <PIcon name={lineIcon(l)} />
         </Bubble>
       ))}
-      {more ? <Bubble key="more" cls="k-plain" style={orbit(geo, n, n - 1)}><span className="uc-more">+{more}</span></Bubble> : null}
+      {more ? <Bubble key="more" cls="k-plain" style={orbit(geo, n, n - 1)} name={moreName} onClick={onMore}><span className="uc-more">+{more}</span></Bubble> : null}
       <span className="uc-bub center">
         <span className="uc-bub-float">
           <span className={`uc-bub-disc clickable${icon ? " tile" : " photo"}`} style={vtStyle(vt)} data-vt={vt} {...(icon ? { "data-icon": icon, "aria-hidden": true } : {})}>
@@ -95,9 +95,9 @@ export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter,
  * The home with the drawers of the view on one ring round it — the landing's last picture, small, for
  * the Home total. A drawer's bubble opens the drawer; while a place is picked, the home clears it.
  */
-export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
+export function HomeArt({ drawers, onDrawer, onHome, homeName, moreName, onMore }: {
   drawers: readonly { readonly id: string; readonly icon: string; readonly name: string }[];
-  onDrawer: (id: string) => void; onHome?: (() => void) | undefined; homeName: string;
+  onDrawer: (id: string) => void; onHome?: (() => void) | undefined; homeName: string; moreName: string; onMore: () => void;
 }) {
   const { shown, more, n } = fit(drawers);
   const geo = { rot: start(n), rx: 36, ry: 36 };
@@ -110,7 +110,7 @@ export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
           <PIcon name={d.icon} />
         </Bubble>
       ))}
-      {more ? <Bubble key="more" cls="k-case" style={orbit(geo, n, n - 1)}><span className="uc-more">+{more}</span></Bubble> : null}
+      {more ? <Bubble key="more" cls="k-case" style={orbit(geo, n, n - 1)} name={moreName} onClick={onMore}><span className="uc-more">+{more}</span></Bubble> : null}
       <span className="uc-bub center">
         <span className="uc-bub-float">
           <span className={`uc-bub-disc${onHome ? " clickable" : ""}`}>
