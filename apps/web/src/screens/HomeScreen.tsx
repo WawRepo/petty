@@ -230,11 +230,7 @@ export function HomeScreen() {
   const homeArt = (
     <HomeArt drawers={visibleIds.map((id) => ({ id, icon: drawerIcon(state.drawers.get(id)), name: state.drawers.get(id)?.doc?.name ?? "…" }))}
       onDrawer={(id) => morph(`/drawers/${id}`, `.drawer-art [data-vt="${vtName("d", id)}"]`)}
-      onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")}
-      moreName={t("home.drawersTitle")} onMore={() => {
-        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        listRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-      }} />
+      onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")} />
   );
   const result = searchDrawers(visibleIds.map((id) => state.drawers.get(id)).filter((v): v is DrawerView => !!v), searching ? debounced : "");
   const active = searching && debounced.trim() !== "";

@@ -116,15 +116,28 @@ test("reduced motion: the pictures still open what they show, without a morph", 
   expect(await morphs(page)).toBe(0);
 });
 
-test("more than six lines: the picture shows five and a +N that goes down to the full list", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 560 });
+test("more than six: five and a +N; pointing at it (or tapping it) brings those out and folds the far side into a new +N", async ({ page }) => {
   const user = await signupWithKeys("ivy");
   await loginAndUnlock(page, user);
   await addDrawer(page, "Attic");
   for (let i = 1; i <= 7; i++) await addLine(page, "Single item", `Box ${i}`, { Text: `shelf ${i}` });
-  await expect(page.getByTestId("drawer-art")).toHaveAttribute("data-count", "7");
-  await expect(page.getByTestId("drawer-art").locator(".uc-bub.sat")).toHaveCount(6);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await bubble(page, "drawer-art", "All items").click();
-  await expect.poll(() => page.evaluate(() => Math.round(document.querySelector('[data-testid="lines"]')!.getBoundingClientRect().top))).toBeLessThan(80);
+  const art = page.getByTestId("drawer-art");
+  await expect(art).toHaveAttribute("data-count", "7");
+  const shown = () => art.locator(".uc-bub.sat:not(.off):not(.uc-more-bub):not(.uc-more-burst) .uc-bub-tip").allTextContents();
+  const more = art.locator(".uc-more-bub");
+  await expect.poll(shown).toEqual(["Box 1", "Box 2", "Box 3", "Box 4", "Box 5"]);
+  await expect(more).toHaveText("+2");
+  // a mouse pointing at it: the two come out, and the two across the ring fold into a new +2
+  await more.locator(".uc-bub-hit").hover();
+  await expect.poll(shown).toEqual(["Box 1", "Box 2", "Box 5", "Box 6", "Box 7"]);
+  await expect(more).toHaveText("+2");
+  await expect(art.locator(".uc-bub.sat.off")).toHaveCount(2);
+  // a tap (no hover on a touch screen) does the same
+  await page.mouse.move(2, 2);
+  await more.locator(".uc-bub-hit").dispatchEvent("click");
+  await expect.poll(shown).toEqual(["Box 2", "Box 3", "Box 4", "Box 5", "Box 6"]);
+  // the bubbles still open their lines
+  await page.waitForTimeout(500);
+  await bubble(page, "drawer-art", "Box 4").click();
+  await expect(page.getByRole("heading", { name: "Box 4" })).toBeVisible();
 });

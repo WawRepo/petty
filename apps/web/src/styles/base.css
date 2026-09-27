@@ -564,11 +564,22 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .hero-bubble { position: relative; transition: transform 0.25s var(--ease), box-shadow 0.3s ease; }
 .hero-bubble:hover { transform: scale(1.06); }
 .hero-bubble .uc-bub-tip { top: calc(100% + 6px); }
+/* A ring's "+N" (DrawerArt, useRing): hidden bubbles wait folded where their "+N" is. Opening it sends
+   them out of it — it bursts — while bubbles on the far side slide together into a new "+N", which pops
+   in as they meet. One glide for everything, no stagger, so it reads as one move. */
+.app-art .uc-bub, .app-art .uc-spoke { --dl: 0ms; transition-duration: 0.75s, 0.75s, 0.75s, 0.6s, 0.45s, 0.55s; }
+.uc-bub.off .uc-bub-hit { pointer-events: none; }
+.app-art .uc-bub.sat.uc-more-bub .uc-bub-disc { animation-delay: 320ms; }
+.uc-more-burst { pointer-events: none; }
+.app-art .uc-bub.sat.uc-more-burst .uc-bub-disc { animation: uc-burst 0.42s ease-out forwards; }
+@keyframes uc-burst { from { opacity: 1; scale: 1; } to { opacity: 0; scale: 1.55; } }
+.uc-bub-tip:empty { display: none; }
 ::view-transition-group(*) { animation-duration: 0.5s; animation-timing-function: var(--glide); }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.3s; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .uc-bub-disc.clickable, .hero-bubble { transition: none; }
+  .uc-more-burst { display: none; }
 }
 /* lists come in in turn when a screen opens; a changed amount fades in (its element is keyed by value) */
 .enter > * { animation: app-in 0.42s var(--ease) both; }
