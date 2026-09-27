@@ -30,10 +30,14 @@ const start = (n: number) => (n % 2 === 0 ? -90 + 180 / n : -90);
 export const vtName = (kind: "d" | "l", id: string) => `${kind}-${id}`;
 const vtStyle = (vt: string | undefined): CSSProperties | undefined => (vt ? { viewTransitionName: vt } : undefined);
 
-/** The invisible button over a disc, and the name that shows on hover. `vt`: the name its disc takes when tapped. */
-function Hit({ name, vt, onClick }: { name: string; vt?: string | undefined; onClick: () => void }) {
+/**
+ * The invisible button over a disc, and the name that shows on hover — above the disc when `up` (a bubble
+ * in the top half of a small picture, so the name does not cover the middle). `vt`: the name its disc
+ * takes when tapped.
+ */
+function Hit({ name, vt, up = false, onClick }: { name: string; vt?: string | undefined; up?: boolean; onClick: () => void }) {
   return (
-    <button type="button" className="uc-bub-hit" tabIndex={-1} aria-hidden="true" onClick={(e) => {
+    <button type="button" className={`uc-bub-hit${up ? " up" : ""}`} tabIndex={-1} aria-hidden="true" onClick={(e) => {
       if (vt) (e.currentTarget.parentElement as HTMLElement).style.viewTransitionName = vt;
       onClick();
     }}>
@@ -42,13 +46,13 @@ function Hit({ name, vt, onClick }: { name: string; vt?: string | undefined; onC
   );
 }
 
-function Bubble({ cls, style, vt, name, onClick, children }: { cls: string; style: CSSProperties; vt?: string; name?: string; onClick?: () => void; children: ReactNode }) {
+function Bubble({ cls, style, vt, name, up, onClick, children }: { cls: string; style: CSSProperties; vt?: string; name?: string; up?: boolean; onClick?: () => void; children: ReactNode }) {
   return (
     <span className={`uc-bub sat ${cls}`} style={style} aria-hidden="true">
       <span className="uc-bub-float">
         <span className={`uc-bub-disc${onClick ? " clickable" : ""}`}>
           {children}
-          {onClick && name ? <Hit name={name} vt={vt} onClick={onClick} /> : null}
+          {onClick && name ? <Hit name={name} vt={vt} up={up ?? false} onClick={onClick} /> : null}
         </span>
       </span>
     </span>
@@ -101,16 +105,17 @@ export function HomeArt({ drawers, onDrawer, onHome, homeName, moreName, onMore 
 }) {
   const { shown, more, n } = fit(drawers);
   const geo = { rot: start(n), rx: 36, ry: 36 };
+  const up = (i: number) => Math.sin(((geo.rot + (360 / n) * i) * Math.PI) / 180) < -0.3;
   return (
     <div className="uc-art app-art home-art" aria-hidden="true" data-testid="home-art" data-count={drawers.length}>
       <span className="uc-orbit" style={{ "--uc-rx": geo.rx, "--uc-ry": geo.ry } as CSSProperties} />
       {shown.map((d, i) => <span key={d.id} className="uc-spoke" style={orbit(geo, n, i)} />)}
       {shown.map((d, i) => (
-        <Bubble key={d.id} cls="k-case" style={orbit(geo, n, i)} vt={vtName("d", d.id)} name={d.name} onClick={() => onDrawer(d.id)}>
+        <Bubble key={d.id} cls="k-case" style={orbit(geo, n, i)} vt={vtName("d", d.id)} name={d.name} up={up(i)} onClick={() => onDrawer(d.id)}>
           <PIcon name={d.icon} />
         </Bubble>
       ))}
-      {more ? <Bubble key="more" cls="k-case" style={orbit(geo, n, n - 1)} name={moreName} onClick={onMore}><span className="uc-more">+{more}</span></Bubble> : null}
+      {more ? <Bubble key="more" cls="k-case" style={orbit(geo, n, n - 1)} name={moreName} up={up(n - 1)} onClick={onMore}><span className="uc-more">+{more}</span></Bubble> : null}
       <span className="uc-bub center">
         <span className="uc-bub-float">
           <span className={`uc-bub-disc${onHome ? " clickable" : ""}`}>

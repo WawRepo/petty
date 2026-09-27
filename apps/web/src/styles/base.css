@@ -558,6 +558,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .uc-bub:has(.clickable:hover) { z-index: 6; }
 .uc-bub-tip { position: absolute; top: calc(100% + 8px); left: 50%; translate: -50% -3px; padding: 3px 8px; border-radius: 7px; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 700; line-height: 1.25; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s ease, translate 0.15s ease; }
 .uc-bub-hit:hover .uc-bub-tip { opacity: 1; translate: -50% 0; }
+.uc-bub-hit.up .uc-bub-tip { top: auto; bottom: calc(100% + 8px); translate: -50% 3px; }
+.uc-bub-hit.up:hover .uc-bub-tip { translate: -50% 0; }
 @media (hover: none) { .uc-bub-tip { display: none; } }
 .hero-bubble { position: relative; transition: transform 0.25s var(--ease), box-shadow 0.3s ease; }
 .hero-bubble:hover { transform: scale(1.06); }
