@@ -16,8 +16,10 @@ All notable, user-visible changes to Petty. The format follows
   the same three pieces — a place in the tree, a drawer in it, items in the drawer — each with its own
   shape and its own picture. Going to the next example, the picture's pieces glide to their new places
   while the app view reshapes line by line; after the six, a last picture puts every example around the
-  home, next to one drawer from each. Item colours show money, things and notes. It pauses on hover,
-  focus, a Pause button or a picked example, and never moves on its own under reduced motion.
+  home, next to one drawer from each. Item colours show money, things and notes. The examples are
+  picked from a row of their symbols joined to the picture; a pick jumps there and the demo plays on.
+  It holds on hover or keyboard focus, stops with its Pause button, and never moves on its own under
+  reduced motion.
 
 ### Changed
 - Landing page: a headline about everything you keep, not only cash; the English page no longer talks

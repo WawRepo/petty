@@ -4,7 +4,7 @@ import { Archive, ChevronDown, CircleCheck, Eye, MapPin, Pause, Play, Users } fr
 import { formatAmount } from "@petty/ledger";
 import { PIcon } from "../lib/icons.js";
 import { Roll } from "./Roll.js";
-import { SCENES, UseCaseArt, finaleScene } from "./UseCaseArt.js";
+import { SCENES, UseCaseArt, caseIcon, finaleScene } from "./UseCaseArt.js";
 
 /**
  * "One idea, many uses" on the landing page (PETTY-248). Every example is built from the three pieces
@@ -13,17 +13,20 @@ import { SCENES, UseCaseArt, finaleScene } from "./UseCaseArt.js";
  * example has a picture (UseCaseArt) and a live mini app; going to the next example the picture's
  * bubbles travel to their new places while each line of the app reshapes (a place becomes a drawer
  * card, a card splits in two) and its words fade over to the new ones, top to bottom. After the six
- * examples a last step puts them together: one drawer from each, every one in its place.
+ * examples a last step puts them together: one drawer from each, every one in its place. The examples
+ * are picked from a row of their symbols joined to the picture (the same symbol as its middle); a
+ * thumb slides to the one showing, and a ring round it fills until the next.
  *
  * Item colours mean something: money, things (counted) and notes (single items) — the app's three
  * kinds of line. Badges show sharing, a confirmed count and read-only access. Nothing here is a
  * feature the app lacks. Words come from the i18n dictionaries; amounts and currency codes are data,
  * and the examples use no local names or currency.
  *
- * Autoplay (WCAG 2.2.2): a Pause button, which also stops the picture's gentle floating (so does
- * being off screen); it also holds while a mouse is over the section or keyboard focus is in it, while
- * the demo is off screen or the tab is hidden; it never starts under reduced motion, which also shows
- * every change at once; and picking an example stops it for good.
+ * Autoplay (WCAG 2.2.2): it plays by default, and a Pause button in the row stops it (and the
+ * picture's gentle floating, which also stops off screen). It holds while a mouse is over the section,
+ * while keyboard focus is in it (a mouse click's focus does not count, so a pick plays on), while the
+ * demo is off screen or the tab is hidden. Picking an example jumps there and plays on from it. It
+ * never starts under reduced motion, which also shows every change at once.
  */
 
 type Kind = "money" | "things" | "notes";
@@ -118,6 +121,10 @@ const BADGE_ICON: Record<Badge, ReactNode> = {
   readonly: <Eye size={13} strokeWidth={2.2} aria-hidden="true" />,
 };
 
+const keyboardFocus = (el: EventTarget | null): boolean => {
+  try { return el instanceof Element && el.matches(":focus-visible"); } catch { return true; }
+};
+
 const reducedQuery = () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null);
 
 export function UseCases() {
@@ -156,7 +163,8 @@ export function UseCases() {
     if (!el) return;
     const enter = (e: PointerEvent) => { if (e.pointerType === "mouse") setHover(true); };
     const leave = () => setHover(false);
-    const focusIn = () => setFocus(true);
+    // only focus a keyboard put there (:focus-visible) holds it: a mouse click also focuses the button
+    const focusIn = (e: FocusEvent) => setFocus(keyboardFocus(e.target));
     const focusOut = (e: FocusEvent) => { if (!el.contains(e.relatedTarget as Node | null)) setFocus(false); };
     el.addEventListener("pointerenter", enter);
     el.addEventListener("pointerleave", leave);
@@ -191,7 +199,7 @@ export function UseCases() {
     const h = window.setTimeout(next, STEPS[idx]!.ms);
     return () => window.clearTimeout(h);
   }, [running, idx, next]);
-  const pick = (i: number) => { setPlaying(false); setIdx(i); };
+  const pick = (i: number) => setIdx(i);
 
   const step = STEPS[idx]!;
   const title = t(`landing.uses.cases.${step.key}.title`);
@@ -257,8 +265,31 @@ export function UseCases() {
 
       <UseCaseArt ref={artRef} scene={scene} sceneKey={step.key} seen={seen} />
 
+      <div className="uc-dock" role="group" aria-label={t("landing.uses.pick")} style={{ "--sel": idx } as CSSProperties}>
+        <span className="uc-dock-thumb" aria-hidden="true">
+          {running && !reduced ? (
+            <svg key={idx} className="uc-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" pathLength={100} style={{ animationDuration: `${step.ms}ms` }} /></svg>
+          ) : null}
+        </span>
+        {STEPS.map((x, i) => {
+          const Icon = caseIcon(x.key);
+          return (
+            <button type="button" key={x.key} className="uc-tab" aria-pressed={i === idx} aria-controls="uc-stage" onClick={() => pick(i)} data-testid={`use-case-${x.key}`}>
+              <Icon size={19} strokeWidth={2} aria-hidden="true" />
+              <span className="uc-tab-name">{t(`landing.uses.cases.${x.key}.chip`)}</span>
+            </button>
+          );
+        })}
+        <span className="uc-dock-sep" aria-hidden="true" />
+        <button type="button" className="uc-tab uc-toggle" onClick={() => setPlaying((p) => !p)} data-testid="use-case-toggle">
+          {playing ? <Pause size={18} strokeWidth={2.2} aria-hidden="true" /> : <Play size={18} strokeWidth={2.2} aria-hidden="true" />}
+          <span className="uc-tab-name">{playing ? t("landing.uses.pause") : t("landing.uses.play")}</span>
+        </button>
+      </div>
+
       <Roll k={`${step.key}-${locale}-caption`} className="uc-caption">
         <span className="uc-caption-body" data-testid="use-case-caption">
+          <span className="uc-kicker">{t(`landing.uses.cases.${step.key}.chip`)}</span>
           <span className="uc-title">{title}</span>
           <span className="hint">{t(`landing.uses.cases.${step.key}.body`)}</span>
         </span>
@@ -291,21 +322,6 @@ export function UseCases() {
           <span className="k-things">{t("landing.uses.legend.things")}</span>
           <span className="k-notes">{t("landing.uses.legend.notes")}</span>
         </p>
-      </div>
-
-      <div className="uc-controls">
-        <div className="uc-chips" role="group" aria-label={t("landing.uses.pick")}>
-          {STEPS.map((x, i) => (
-            <button type="button" key={x.key} className={`tag-chip uc-chip${x.key === "all" ? " uc-chip-all" : ""}`} aria-pressed={i === idx} aria-controls="uc-stage" onClick={() => pick(i)} data-testid={`use-case-${x.key}`}>
-              {t(`landing.uses.cases.${x.key}.chip`)}
-              {i === idx && running && !reduced ? <span key={idx} className="uc-progress" style={{ animationDuration: `${x.ms}ms` }} aria-hidden="true" /> : null}
-            </button>
-          ))}
-        </div>
-        <button type="button" className="btn btn-ghost uc-toggle" onClick={() => setPlaying((p) => !p)} data-testid="use-case-toggle">
-          {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
-          {playing ? t("landing.uses.pause") : t("landing.uses.play")}
-        </button>
       </div>
     </section>
   );

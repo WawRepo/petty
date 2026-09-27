@@ -31,7 +31,7 @@ async function leave(page: Page) {
   await page.mouse.move(2, 2);
 }
 
-test("every example is place › drawer › items; it moves on by itself, Pause holds it, picking one stops it", async ({ page }) => {
+test("every example is place › drawer › items; it plays by itself, Pause and keyboard focus hold it, a pick jumps there and plays on", async ({ page }) => {
   const stage = await openDemo(page);
   const toggle = page.getByTestId("use-case-toggle");
   await expect(stage).toHaveAttribute("data-case", "workshop");
@@ -64,6 +64,17 @@ test("every example is place › drawer › items; it moves on by itself, Pause 
   await page.clock.runFor(STEP);
   await expect(stage).toHaveAttribute("data-case", "accounts");
 
+  // keyboard focus in the demo holds it too
+  await page.getByTestId("use-case-trip").focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(page.getByTestId("use-case-trip")).toBeFocused();
+  await page.clock.runFor(20_000);
+  await expect(stage).toHaveAttribute("data-case", "accounts");
+  await leave(page);
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "cash");
+
   // every example is places, drawers and items, all with words in them — each in its own shape —
   // and every item wears the colour of its kind: money, things or notes
   const shapes = new Set<string>();
@@ -82,11 +93,12 @@ test("every example is place › drawer › items; it moves on by itself, Pause 
     await expect(page.getByTestId(`use-case-${key}`)).toHaveAttribute("aria-pressed", "true");
   }
   expect(shapes.size, [...shapes].join(" ")).toBeGreaterThanOrEqual(5);
-  // picking an example stopped the autoplay for good
-  await expect(toggle).toHaveText("Play");
-  await leave(page);
-  await page.clock.runFor(20_000);
-  await expect(stage).toHaveAttribute("data-case", "family");
+  // a pick jumped there and it plays on from it: the focus a mouse click leaves does not hold it
+  await expect(toggle).toHaveText("Pause");
+  await expect(page.getByTestId("use-case-family")).toBeFocused();
+  await page.mouse.move(2, 2);
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "all");
 });
 
 test("each example has its picture; after the six, a last step puts them all together, then it starts again", async ({ page }) => {
@@ -106,7 +118,11 @@ test("each example has its picture; after the six, a last step puts them all tog
   await expect(page.getByTestId("use-case-drawer")).toHaveText(["Pegboard", "George Town kitty", "Pension", "Cash tin", "Lent out", "Documents"]);
   await expect(page.getByTestId("use-case-path")).toHaveText(["Basement › Workshop", "Malaysia", "Paperwork", "Kitchen", "Garage", "Bedroom › Wardrobe › Safe"]);
   await expect(art.locator(".uc-bub-label > :not(.morph-out)")).toHaveText(["Workshop", "Trip kitty", "Yearly accounts", "Cash at home", "Lent out", "Family safe"]);
-  // it stays longer than an example, then starts again
+  // it stays longer than an example, then starts again. Timed from a fresh start of the step (a mouse
+  // over the demo holds it, leaving starts it again): the fake clock also runs in real time, so a busy
+  // machine must not eat into the margins.
+  await page.getByTestId("use-case-all").hover();
+  await page.mouse.move(2, 2);
   await page.clock.runFor(STEP);
   await expect(stage).toHaveAttribute("data-case", "all");
   await page.clock.runFor(FINALE - STEP + 100);

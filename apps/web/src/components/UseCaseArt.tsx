@@ -55,6 +55,9 @@ export const SCENES: Readonly<Record<string, Scene>> = {
   ] },
 };
 
+/** An example's symbol — the middle of its picture — and the home for the last step. */
+export const caseIcon = (key: string): LucideIcon => SCENES[key]?.center ?? House;
+
 /** The last picture: the home in the middle and every example's own symbol on one ring around it. */
 export function finaleScene(label: (key: string) => string): Scene {
   const around = ["workshop", "trip", "accounts", "cash", "lent", "family"] as const;
