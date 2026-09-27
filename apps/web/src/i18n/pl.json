@@ -1009,6 +1009,11 @@
               "note": "czerwona zawieszka"
             }
           }
+        },
+        "all": {
+          "chip": "Wszystko razem",
+          "title": "Wszystko w jednym miejscu",
+          "body": "Narzędzia, wyjazdy, konta, gotówka, pożyczone rzeczy i rodzinne dokumenty: każda szuflada na swoim miejscu, każda udostępniona tylko wybranym osobom."
         }
       }
     },

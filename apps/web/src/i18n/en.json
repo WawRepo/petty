@@ -1009,6 +1009,11 @@
               "note": "red tag"
             }
           }
+        },
+        "all": {
+          "chip": "All together",
+          "title": "All of it, in one place",
+          "body": "Tools, trips, accounts, cash, lent things and family papers: every drawer in its own place, each one shared only with the people you pick."
         }
       }
     },

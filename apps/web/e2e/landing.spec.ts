@@ -4,10 +4,12 @@ import { expect, test } from "./fixtures.js";
 
 /**
  * PETTY-248: the "One idea, many uses" demo on the landing page. Every example is the app's one
- * pattern — places in a tree, drawers in places, items in drawers — each in its own shape, and each
- * turns into the next. Timers run on Playwright's clock, so the 5.5 s steps take no real time.
+ * pattern — places in a tree, drawers in places, items in drawers — each in its own shape and with its
+ * own picture, and each turns into the next; a last step puts them all together. Timers run on
+ * Playwright's clock, so the 5.5 s steps take no real time.
  */
 const STEP = 5600;
+const FINALE = 8000;
 const EXAMPLES = ["workshop", "trip", "accounts", "cash", "lent", "family"] as const;
 
 async function openDemo(page: Page): Promise<Locator> {
@@ -18,14 +20,14 @@ async function openDemo(page: Page): Promise<Locator> {
   await page.mouse.move(2, 2); // keep the pointer off the demo: hovering holds it
   return stage;
 }
-/** Lets the slot rolls finish (their timers are on the fake clock) so only the current words are in the page. */
+/** Lets the lines' fades finish (their timers are on the fake clock) so only the current words are in the page. */
 async function settle(page: Page, stage: Locator) {
   await page.clock.runFor(1200);
   await expect(stage.locator(".morph-out")).toHaveCount(0);
 }
-/** Clicks outside the demo: focus inside it holds the autoplay too. */
+/** Takes focus and the mouse out of the demo (either holds the autoplay) without scrolling it away. */
 async function leave(page: Page) {
-  await page.locator(".landing-hero").click({ position: { x: 4, y: 4 } });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.mouse.move(2, 2);
 }
 
@@ -87,6 +89,31 @@ test("every example is place › drawer › items; it moves on by itself, Pause 
   await expect(stage).toHaveAttribute("data-case", "family");
 });
 
+test("each example has its picture; after the six, a last step puts them all together, then it starts again", async ({ page }) => {
+  const stage = await openDemo(page);
+  const art = page.getByTestId("use-case-art");
+  for (const key of EXAMPLES) {
+    await expect(stage).toHaveAttribute("data-case", key);
+    await expect(art).toHaveAttribute("data-scene", key); // the picture follows the example
+    await page.clock.runFor(STEP);
+  }
+  // one drawer from each example, each saying where it is, and one picture of them all around the home
+  await expect(stage).toHaveAttribute("data-case", "all");
+  await expect(art).toHaveAttribute("data-scene", "all");
+  await settle(page, stage);
+  await expect(page.getByTestId("use-case-all")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("use-case-caption")).toContainText("All of it, in one place");
+  await expect(page.getByTestId("use-case-drawer")).toHaveText(["Pegboard", "George Town kitty", "Pension", "Cash tin", "Lent out", "Documents"]);
+  await expect(page.getByTestId("use-case-path")).toHaveText(["Basement › Workshop", "Malaysia", "Paperwork", "Kitchen", "Garage", "Bedroom › Wardrobe › Safe"]);
+  await expect(art.locator(".uc-bub-label > :not(.morph-out)")).toHaveText(["Workshop", "Trip kitty", "Yearly accounts", "Cash at home", "Lent out", "Family safe"]);
+  // it stays longer than an example, then starts again
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "all");
+  await page.clock.runFor(FINALE - STEP + 100);
+  await expect(stage).toHaveAttribute("data-case", "workshop");
+  await expect(art).toHaveAttribute("data-scene", "workshop");
+});
+
 test("reduced motion: the demo never moves on its own, and a picked example shows at once", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const stage = await openDemo(page);
@@ -95,7 +122,9 @@ test("reduced motion: the demo never moves on its own, and a picked example show
   await expect(stage).toHaveAttribute("data-case", "workshop");
   await page.getByTestId("use-case-cash").click();
   await expect(stage.getByText("Cash tin")).toBeVisible();
-  await expect(stage.getByText("Desk drawer")).toBeHidden(); // no rolling copy of the old words
+  await expect(stage.getByText("Desk drawer")).toBeHidden(); // no fading copy of the old words
+  await expect(page.getByTestId("use-case-art")).toHaveAttribute("data-scene", "cash");
+  await expect(page.getByTestId("use-case-art")).not.toHaveClass(/unseen/); // the picture is there at once
 });
 
 test("the Polish page shows the same examples in Polish, with no local names or currency", async ({ page }) => {
@@ -105,7 +134,7 @@ test("the Polish page shows the same examples in Polish, with no local names or 
   await settle(page, stage);
   await expect(stage).toContainText("Piwnica");
   await expect(page.getByTestId("use-case-drawer").first()).toHaveText("Szuflada biurka");
-  for (const key of EXAMPLES) {
+  for (const key of [...EXAMPLES, "all"]) {
     await page.getByTestId(`use-case-${key}`).click();
     await settle(page, stage);
     await expect(stage).not.toContainText("PLN");

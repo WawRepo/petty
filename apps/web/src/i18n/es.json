@@ -1009,6 +1009,11 @@
               "note": "etiqueta roja"
             }
           }
+        },
+        "all": {
+          "chip": "Todo junto",
+          "title": "Todo en un solo lugar",
+          "body": "Herramientas, viajes, cuentas, efectivo, cosas prestadas y papeles de la familia: cada cajón en su sitio, y cada uno compartido solo con quien tú elijas."
         }
       }
     },

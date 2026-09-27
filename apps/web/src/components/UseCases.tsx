@@ -1,24 +1,29 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, CircleCheck, Eye, Pause, Play, Users } from "lucide-react";
+import { Archive, ChevronDown, CircleCheck, Eye, MapPin, Pause, Play, Users } from "lucide-react";
 import { formatAmount } from "@petty/ledger";
 import { PIcon } from "../lib/icons.js";
+import { Roll } from "./Roll.js";
+import { SCENES, UseCaseArt, finaleScene } from "./UseCaseArt.js";
 
 /**
  * "One idea, many uses" on the landing page (PETTY-248). Every example is built from the three pieces
  * the app is made of — places in a tree, drawers in places, items in drawers — but each has its own
- * shape: a deep tree or a wide one, one drawer with many items or many drawers with one each. One
- * example turns into the next line by line: each line of the stage reshapes (a place becomes a drawer
- * card, a card splits in two) and its words roll to the new ones, top to bottom.
+ * shape: a deep tree or a wide one, one drawer with many items or many drawers with one each. Each
+ * example has a picture (UseCaseArt) and a live mini app; going to the next example the picture's
+ * bubbles travel to their new places while each line of the app reshapes (a place becomes a drawer
+ * card, a card splits in two) and its words fade over to the new ones, top to bottom. After the six
+ * examples a last step puts them together: one drawer from each, every one in its place.
  *
  * Item colours mean something: money, things (counted) and notes (single items) — the app's three
  * kinds of line. Badges show sharing, a confirmed count and read-only access. Nothing here is a
  * feature the app lacks. Words come from the i18n dictionaries; amounts and currency codes are data,
  * and the examples use no local names or currency.
  *
- * Autoplay (WCAG 2.2.2): a Pause button; it also holds while a mouse is over the section or keyboard
- * focus is in it, while the demo is off screen or the tab is hidden; it never starts under reduced
- * motion; and picking an example stops it for good.
+ * Autoplay (WCAG 2.2.2): a Pause button, which also stops the picture's gentle floating (so does
+ * being off screen); it also holds while a mouse is over the section or keyboard focus is in it, while
+ * the demo is off screen or the tab is hidden; it never starts under reduced motion, which also shows
+ * every change at once; and picking an example stops it for good.
  */
 
 type Kind = "money" | "things" | "notes";
@@ -60,27 +65,53 @@ const CASES: readonly UseCase[] = [
   ] }] }] }] } },
 ];
 
-/** The stage is one list of lines: a place, a drawer card's head, or an item inside the card above it. */
+/**
+ * The stage is one list of lines: a place, a drawer card's head, or an item inside the card above it.
+ * `ck` is the example whose words the line shows; a drawer with a `path` shows the places it is in.
+ */
 type Line =
-  | { readonly t: "place"; readonly lvl: number; readonly key: string; readonly leaf: boolean }
-  | { readonly t: "drawer"; readonly lvl: number; readonly key: string; readonly icon: string; readonly badge?: Badge; readonly solo: boolean }
-  | { readonly t: "item"; readonly lvl: number; readonly item: Item; readonly last: boolean };
-function flatten(p: Place, lvl = 0, out: Line[] = []): Line[] {
-  out.push({ t: "place", lvl, key: p.key, leaf: !!p.drawers?.length });
+  | { readonly t: "place"; readonly ck: string; readonly lvl: number; readonly key: string; readonly leaf: boolean }
+  | { readonly t: "drawer"; readonly ck: string; readonly lvl: number; readonly key: string; readonly icon: string; readonly badge?: Badge; readonly solo: boolean; readonly path?: readonly string[] }
+  | { readonly t: "item"; readonly ck: string; readonly lvl: number; readonly item: Item; readonly last: boolean };
+function flatten(ck: string, p: Place, lvl = 0, out: Line[] = []): Line[] {
+  out.push({ t: "place", ck, lvl, key: p.key, leaf: !!p.drawers?.length });
   for (const d of p.drawers ?? []) {
-    out.push({ t: "drawer", lvl: lvl + 1, key: d.key, icon: d.icon, ...(d.badge ? { badge: d.badge } : {}), solo: d.items.length === 0 });
-    d.items.forEach((item, i) => out.push({ t: "item", lvl: lvl + 1, item, last: i === d.items.length - 1 }));
+    out.push({ t: "drawer", ck, lvl: lvl + 1, key: d.key, icon: d.icon, ...(d.badge ? { badge: d.badge } : {}), solo: d.items.length === 0 });
+    d.items.forEach((item, i) => out.push({ t: "item", ck, lvl: lvl + 1, item, last: i === d.items.length - 1 }));
   }
-  for (const k of p.kids ?? []) flatten(k, lvl + 1, out);
+  for (const k of p.kids ?? []) flatten(ck, k, lvl + 1, out);
   return out;
 }
-const LINES = CASES.map((c) => flatten(c.root));
-const SLOTS = Math.max(...LINES.map((l) => l.length));
-export const USE_CASE_KEYS = CASES.map((c) => c.key);
+/** A drawer and the places it is in, from the top of the tree. */
+function locate(p: Place, key: string, above: readonly string[] = []): { d: Drawer; path: readonly string[] } | null {
+  const path = [...above, p.key];
+  const d = p.drawers?.find((x) => x.key === key);
+  if (d) return { d, path };
+  for (const k of p.kids ?? []) {
+    const found = locate(k, key, path);
+    if (found) return found;
+  }
+  return null;
+}
 
-const STEP_MS = 5500;   // how long one example stays
-const ROLL_MS = 470;    // the new words finish rolling in by then (90 ms offset + 380 ms, .morph-in in base.css)
-const STAGGER_MS = 45;  // each line starts a beat after the one above it
+/**
+ * The last step: one drawer from each example, each card saying where it is — the places under the
+ * top of its tree ("Basement › Workshop", not "Home › Basement › Workshop").
+ */
+const FINALE_DRAWERS: Readonly<Record<string, string>> = { workshop: "pegboard", trip: "kitty", accounts: "pension", cash: "tin", lent: "lent", family: "documents" };
+const FINALE_LINES: readonly Line[] = CASES.map((c) => {
+  const { d, path } = locate(c.root, FINALE_DRAWERS[c.key]!)!;
+  return { t: "drawer", ck: c.key, lvl: 0, key: d.key, icon: d.icon, ...(d.badge ? { badge: d.badge } : {}), solo: true, path: path.length > 1 ? path.slice(1) : path };
+});
+
+const STEP_MS = 5500;    // how long one example stays
+const FINALE_MS = 8000;  // the last picture stays longer
+const STEPS: readonly { key: string; lines: readonly Line[]; ms: number }[] = [
+  ...CASES.map((c) => ({ key: c.key, lines: flatten(c.key, c.root), ms: STEP_MS })),
+  { key: "all", lines: FINALE_LINES, ms: FINALE_MS },
+];
+const SLOTS = Math.max(...STEPS.map((s) => s.lines.length));
+const STAGGER_MS = 45;   // each line starts a beat after the one above it; the last is done by 9 × 45 + SWAP_MS
 const BADGE_ICON: Record<Badge, ReactNode> = {
   shared: <Users size={13} strokeWidth={2.2} aria-hidden="true" />,
   confirmed: <CircleCheck size={13} strokeWidth={2.2} aria-hidden="true" />,
@@ -88,31 +119,6 @@ const BADGE_ICON: Record<Badge, ReactNode> = {
 };
 
 const reducedQuery = () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null);
-
-/**
- * One line of the demo. When `k` changes, the previous content rolls up and out while the new rolls
- * in, after `delay` ms. Only the current content is live; the leaving copy is hidden from assistive tech.
- */
-function Roll({ k, delay = 0, className = "", children }: { k: string; delay?: number; className?: string; children: ReactNode }) {
-  const last = useRef<{ k: string; node: ReactNode }>({ k, node: children });
-  const [prev, setPrev] = useState<{ k: string; node: ReactNode } | null>(null);
-  useLayoutEffect(() => {
-    if (last.current.k !== k) setPrev(last.current);
-    last.current = { k, node: children };
-  }, [k, children]);
-  useEffect(() => {
-    if (!prev) return;
-    const h = window.setTimeout(() => setPrev(null), ROLL_MS + delay + 40);
-    return () => window.clearTimeout(h);
-  }, [prev, delay]);
-  const style = { "--d": `${delay}ms` } as CSSProperties;
-  return (
-    <span className={`morph ${className}`}>
-      {prev ? <span key={`out-${prev.k}`} className="morph-out" style={style} aria-hidden="true">{prev.node}</span> : null}
-      <span key={`in-${k}`} className={prev ? "morph-in" : "morph-now"} style={style}>{children}</span>
-    </span>
-  );
-}
 
 export function UseCases() {
   const { t, i18n } = useTranslation();
@@ -123,15 +129,18 @@ export function UseCases() {
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
+  // the picture unfolds the first time it comes into view (at once under reduced motion)
+  const [seen, setSeen] = useState(() => reducedQuery()?.matches ?? false);
   const [tabVisible, setTabVisible] = useState(() => typeof document === "undefined" || document.visibilityState !== "hidden");
   const sectionRef = useRef<HTMLElement>(null);
+  const artRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const running = playing && !hover && !focus && onScreen && tabVisible;
 
   useEffect(() => {
     const q = reducedQuery();
     if (!q) return;
-    const on = () => { setReduced(q.matches); if (q.matches) setPlaying(false); };
+    const on = () => { setReduced(q.matches); if (q.matches) { setPlaying(false); setSeen(true); } };
     q.addEventListener("change", on);
     return () => q.removeEventListener("change", on);
   }, []);
@@ -160,34 +169,42 @@ export function UseCases() {
       el.removeEventListener("focusout", focusOut);
     };
   }, []);
+  // The demo is on screen while its picture or its phone is at least half in view (on a phone the
+  // two are far apart, and either one alone is worth playing for).
   useEffect(() => {
-    const el = stageRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") { setOnScreen(true); return; }
-    const io = new IntersectionObserver(([e]) => setOnScreen(!!e && e.intersectionRatio >= 0.5), { threshold: [0, 0.5, 1] });
-    io.observe(el);
+    const els = [artRef.current, stageRef.current].filter((e): e is HTMLDivElement => !!e);
+    if (typeof IntersectionObserver === "undefined") { setOnScreen(true); setSeen(true); return; }
+    const inView = new Map<Element, boolean>();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) inView.set(e.target, e.intersectionRatio >= 0.5);
+      const visible = [...inView.values()].some(Boolean);
+      setOnScreen(visible);
+      if (visible) setSeen(true);
+    }, { threshold: [0, 0.5, 1] });
+    for (const el of els) io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  const next = useCallback(() => setIdx((i) => (i + 1) % CASES.length), []);
+  const next = useCallback(() => setIdx((i) => (i + 1) % STEPS.length), []);
   useEffect(() => {
     if (!running) return;
-    const h = window.setTimeout(next, STEP_MS);
+    const h = window.setTimeout(next, STEPS[idx]!.ms);
     return () => window.clearTimeout(h);
   }, [running, idx, next]);
   const pick = (i: number) => { setPlaying(false); setIdx(i); };
 
-  const c = CASES[idx]!;
-  const lines = LINES[idx]!;
-  const k = `landing.uses.cases.${c.key}`;
-  const title = t(`${k}.title`);
+  const step = STEPS[idx]!;
+  const title = t(`landing.uses.cases.${step.key}.title`);
+  const scene = step.key === "all" ? finaleScene((key) => t(`landing.uses.cases.${key}.chip`)) : SCENES[step.key]!;
   const at = (slot: number) => (reduced ? 0 : slot * STAGGER_MS);
 
   const content = (l: Line): ReactNode => {
+    const k = `landing.uses.cases.${l.ck}`;
     if (l.t === "place") {
       return (
         <span className="uc-place">
           <ChevronDown size={14} strokeWidth={2} aria-hidden="true" />
-          <span className="uc-place-name">{t(`${k}.places.${l.key}`)}</span>
+          <span className={`uc-place-name${l.leaf ? " leaf" : ""}`}>{t(`${k}.places.${l.key}`)}</span>
         </span>
       );
     }
@@ -197,8 +214,11 @@ export function UseCases() {
           <span className="tile k-drawer" aria-hidden="true"><PIcon name={l.icon} size={18} /></span>
           <span className="uc-txt">
             <span className="uc-dname" data-testid="use-case-drawer">{t(`${k}.drawers.${l.key}.name`)}</span>
-            <span className={`uc-meta${l.badge ? ` b-${l.badge}` : ""}`}>{l.badge ? BADGE_ICON[l.badge] : null}{t(`${k}.drawers.${l.key}.meta`)}</span>
+            {l.path
+              ? <span className="uc-meta uc-path" data-testid="use-case-path"><MapPin size={12} strokeWidth={2.2} aria-hidden="true" />{l.path.map((p) => t(`${k}.places.${p}`)).join(" › ")}</span>
+              : <span className={`uc-meta${l.badge ? ` b-${l.badge}` : ""}`}>{l.badge ? BADGE_ICON[l.badge] : null}{t(`${k}.drawers.${l.key}.meta`)}</span>}
           </span>
+          {l.path && l.badge ? <span className={`uc-badge b-${l.badge}`} aria-hidden="true">{BADGE_ICON[l.badge]}</span> : null}
         </span>
       );
     }
@@ -221,11 +241,28 @@ export function UseCases() {
   };
 
   return (
-    <section ref={sectionRef} className="usecases" aria-labelledby="uses-title" data-testid="use-cases">
+    <section ref={sectionRef} className={`usecases${playing && onScreen && tabVisible ? "" : " paused"}`} aria-labelledby="uses-title" data-testid="use-cases">
       <div className="uc-intro">
         <h2 id="uses-title" className="landing-h2">{t("landing.uses.title")}</h2>
         <p className="hint m0">{t("landing.uses.sub")}</p>
+        {/* the idea in one line, in the picture's colours: a plain place, the drawer, coloured items */}
+        <p className="uc-formula" aria-hidden="true">
+          <span className="uc-f"><MapPin size={14} strokeWidth={2.2} />{t("landing.uses.legend.place")}</span>
+          <span className="sep">›</span>
+          <span className="uc-f uc-f-drawer"><Archive size={14} strokeWidth={2.2} />{t("landing.uses.legend.drawer")}</span>
+          <span className="sep">›</span>
+          <span className="uc-f"><span className="dot k-money" /><span className="dot k-things" /><span className="dot k-notes" />{t("landing.uses.legend.items")}</span>
+        </p>
       </div>
+
+      <UseCaseArt ref={artRef} scene={scene} sceneKey={step.key} seen={seen} />
+
+      <Roll k={`${step.key}-${locale}-caption`} className="uc-caption">
+        <span className="uc-caption-body" data-testid="use-case-caption">
+          <span className="uc-title">{title}</span>
+          <span className="hint">{t(`landing.uses.cases.${step.key}.body`)}</span>
+        </span>
+      </Roll>
 
       <div
         ref={stageRef}
@@ -235,19 +272,16 @@ export function UseCases() {
         aria-label={t("landing.uses.demo", { title })}
         aria-live={running ? "off" : "polite"}
         data-testid="use-case-stage"
-        data-case={c.key}
+        data-case={step.key}
       >
-        <p className="uc-legend" aria-hidden="true">
-          <span>{t("landing.uses.legend.place")}</span><span className="sep">›</span><span>{t("landing.uses.legend.drawer")}</span><span className="sep">›</span><span>{t("landing.uses.legend.items")}</span>
-        </p>
         <ul className="uc-lines" aria-label={t("landing.uses.legend.all")}>
           {Array.from({ length: SLOTS }, (_, i) => {
-            const l = lines[i];
+            const l = step.lines[i];
             const cls = !l ? "t-none"
-              : `t-${l.t}${l.lvl > 0 && l.t !== "item" ? " nested" : ""}${l.t === "place" && l.leaf ? " leaf" : ""}${l.t === "drawer" && l.solo ? " solo" : ""}${l.t === "item" && l.last ? " last" : ""}`;
+              : `t-${l.t}${l.lvl > 0 && l.t !== "item" ? " nested" : ""}${l.t === "drawer" && l.solo ? " solo" : ""}${l.t === "item" && l.last ? " last" : ""}`;
             return (
               <li key={i} className={`uc-line ${cls}`} style={{ "--lvl": l?.lvl ?? 0, "--d": `${at(i)}ms` } as CSSProperties} aria-hidden={l ? undefined : true}>
-                <Roll k={l ? `${c.key}-${locale}-${i}` : `none-${i}`} delay={at(i)} className="uc-line-body">{l ? content(l) : null}</Roll>
+                <Roll k={l ? `${step.key}-${locale}-${i}` : `none-${i}`} delay={at(i)} className="uc-line-body">{l ? content(l) : null}</Roll>
               </li>
             );
           })}
@@ -259,19 +293,12 @@ export function UseCases() {
         </p>
       </div>
 
-      <Roll k={`${c.key}-${locale}-caption`} className="uc-caption">
-        <span className="uc-caption-body" data-testid="use-case-caption">
-          <span className="uc-title">{title}</span>
-          <span className="hint">{t(`${k}.body`)}</span>
-        </span>
-      </Roll>
-
       <div className="uc-controls">
         <div className="uc-chips" role="group" aria-label={t("landing.uses.pick")}>
-          {CASES.map((x, i) => (
-            <button type="button" key={x.key} className="tag-chip uc-chip" aria-pressed={i === idx} aria-controls="uc-stage" onClick={() => pick(i)} data-testid={`use-case-${x.key}`}>
+          {STEPS.map((x, i) => (
+            <button type="button" key={x.key} className={`tag-chip uc-chip${x.key === "all" ? " uc-chip-all" : ""}`} aria-pressed={i === idx} aria-controls="uc-stage" onClick={() => pick(i)} data-testid={`use-case-${x.key}`}>
               {t(`landing.uses.cases.${x.key}.chip`)}
-              {i === idx && running && !reduced ? <span key={idx} className="uc-progress" style={{ animationDuration: `${STEP_MS}ms` }} aria-hidden="true" /> : null}
+              {i === idx && running && !reduced ? <span key={idx} className="uc-progress" style={{ animationDuration: `${x.ms}ms` }} aria-hidden="true" /> : null}
             </button>
           ))}
         </div>

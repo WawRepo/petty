@@ -1009,6 +1009,11 @@
               "note": "roter Anhänger"
             }
           }
+        },
+        "all": {
+          "chip": "Alles zusammen",
+          "title": "Alles an einem Ort",
+          "body": "Werkzeug, Reisen, Konten, Bargeld, Verliehenes und Familienpapiere: jede Schublade an ihrem Platz, jede nur mit den Menschen geteilt, die du auswählst."
         }
       }
     },

@@ -1009,6 +1009,11 @@
               "note": "porte-clé rouge"
             }
           }
+        },
+        "all": {
+          "chip": "Tout ensemble",
+          "title": "Tout au même endroit",
+          "body": "Outils, voyages, comptes, espèces, objets prêtés et papiers de famille : chaque tiroir à sa place, chacun partagé uniquement avec les personnes que vous choisissez."
         }
       }
     },
