@@ -15,8 +15,9 @@ import { HomeSkeleton } from "../components/Skeleton.js";
 import { PinsWarning } from "../components/PinsWarning.js";
 import { excludedFromTotal, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TagChip } from "../components/TagChip.js";
-import { DEFAULT_DRAWER_ICON, PIcon } from "../lib/icons.js";
-import { Coins, List, ListTree, Wallet } from "lucide-react";
+import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon } from "../lib/icons.js";
+import { Coins, ListTree, MapPin } from "lucide-react";
+import { HomeArt } from "../components/DrawerArt.js";
 import { PlacePicker } from "../components/PlacePicker.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
@@ -65,10 +66,10 @@ function SearchHits({ view, lines }: { view: DrawerView; lines: readonly Line[] 
 
 /** Small line icons for the cards (PETTY-63/64, Lucide). Decorative: every one is aria-hidden. */
 const Icon = {
-  wallet: <Wallet size={22} strokeWidth={1.8} aria-hidden="true" />,
-  list: <List size={14} strokeWidth={2} aria-hidden="true" />,
   coins: <Coins size={14} strokeWidth={2} aria-hidden="true" />,
+  pin: <MapPin size={11} strokeWidth={2.4} aria-hidden="true" />,
 };
+const drawerIcon = (v: DrawerView | undefined) => (v?.doc ? iconOf(v.doc) ?? DEFAULT_DRAWER_ICON : DEFAULT_DRAWER_ICON);
 
 function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-place" }: { view: DrawerView; counted: boolean; dim?: boolean; place?: string; placeTestId?: string }) {
   const { t, i18n } = useTranslation();
@@ -90,9 +91,9 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const head = subtotals[0];
   return (
     <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} aria-label={t("drawer.open", { name })} data-testid="drawer-row">
-      {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className="tile" aria-hidden="true" data-icon={view.doc ? iconOf(view.doc) ?? DEFAULT_DRAWER_ICON : DEFAULT_DRAWER_ICON}><PIcon name={view.doc ? iconOf(view.doc) ?? DEFAULT_DRAWER_ICON : DEFAULT_DRAWER_ICON} /></span>}
+      {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className="tile" aria-hidden="true" data-icon={drawerIcon(view)}><PIcon name={drawerIcon(view)} /></span>}
       <span className="rowmain">
-        <span className="rowtitle">{name}{place ? <span className="row-sub" data-testid={placeTestId}>{place}</span> : null}</span>
+        <span className="rowtitle">{name}{place ? <span className="row-sub" data-testid={placeTestId}>{Icon.pin}{place}</span> : null}</span>
         {view.error ? <span className="degraded" role="status">{t(`home.degradedReason.${view.error}`)}</span> : (
           <>
             {/* Every currency on the card (PETTY-120, audit F13): the first as the headline, the others under it. */}
@@ -103,7 +104,8 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
               </span>
             ) : null}
             <span className="rowmeta">
-              <span>{Icon.list}{t("home.items", { count: view.doc?.lines.length ?? 0 })}</span>
+              {/* PETTY-250: one dot per line in its kind's colour — money, things, notes — as on the landing page */}
+              <span>{view.doc?.lines.length ? <span className="kind-dots" aria-hidden="true">{view.doc.lines.slice(0, 8).map((l) => <i key={l.id} className={`kd ${KIND_CLASS[l.kind]}`} />)}</span> : null}{t("home.items", { count: view.doc?.lines.length ?? 0 })}</span>
             </span>
           </>
         )}
@@ -249,13 +251,12 @@ export function HomeScreen() {
         {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}
         {state.status === "ready" && !active && showTotals && counted && (tot.byCurrency.length > 0 || tot.incomplete) ? (
           <section className="total-card" data-testid="home-totals">
-            <span className="tile" aria-hidden="true">{Icon.wallet}</span>
             <div className="tmain">
               <h2 className="label">{filtering ? t("home.totalsIn", { tag: selectedLabels }) : t("home.totals")}</h2>
               {tot.byCurrency.length ? (
                 <ul className={`totals-list${tot.byCurrency.length === 1 ? " single" : " multi"}`} aria-label={t("home.totalsCount", { count: tot.byCurrency.length })}>
                   {tot.byCurrency.map((c) => (
-                    <li key={c.code} className={c.amount < 0 ? "negative" : undefined}>
+                    <li key={`${c.code}:${c.amount}`} className={`val-in${c.amount < 0 ? " negative" : ""}`}>
                       <span className="num">{formatAmount(c.amount, c.exponent, i18n.language)}</span> <span className="cur">{normalizeCurrencyCode(c.code)}</span>
                     </li>
                   ))}
@@ -264,6 +265,8 @@ export function HomeScreen() {
               <p className="tsub m0" data-testid="totals-across">{t("home.across", { count: visibleIds.filter((id) => !excluded.has(id)).length })}</p>
               {tot.incomplete ? <div className="warn" role="status" data-testid="totals-incomplete">{t("home.incomplete")}</div> : null}
             </div>
+            {/* PETTY-250: the home with the drawers of this view around it, as on the landing page */}
+            <HomeArt drawers={visibleIds.map((id) => ({ id, icon: drawerIcon(state.drawers.get(id)) }))} />
           </section>
         ) : null}
         {active || state.status !== "ready" ? null : <Nudges />}
@@ -286,13 +289,13 @@ export function HomeScreen() {
                     <h2 className="m0" aria-label={`${g.label}, ${t("home.count", { count: g.ids.length })}`}>{g.key ? <TagChip label={g.label} /> : <span className="tag-chip tag-none">{g.label}</span>} <span className="hint m0">{t("home.count", { count: g.ids.length })}</span></h2>
                     {showTotals ? <GroupTotals tot={groupTotals(g.ids)} lang={i18n.language} /> : null}
                   </header>
-                  <div className="stack">{placedRows(g.ids, 1)}</div>
+                  <div className="stack enter">{placedRows(g.ids, 1)}</div>
                 </section>
               );
             })}
           </div>
         ) : (
-        <div className="stack">
+        <div className="stack enter">
           {state.status === "ready" && !active && state.order.length > 0 ? (
             <header className="group-h" data-testid="drawers-header">
               <h2 className="m0">{filtering ? <TagChip label={selectedLabels} /> : t("home.drawersTitle")}</h2>

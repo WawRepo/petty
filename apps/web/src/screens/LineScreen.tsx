@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
 import { useBack } from "../lib/nav.js";
+import { KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
 import { decimalSeparator, formatAmount, formatCount, negativeWarning, newEntryAmount, parseAmount, LedgerError, type LedgerEntry, type Line } from "@petty/ledger";
 import type { EntryOp } from "@petty/crypto";
 import { Button } from "../components/Button.js";
@@ -190,6 +191,7 @@ export function LineScreen() {
         <main>
           <OfflineBanner />
           <SyncReport />
+          <span className={`hero-bubble ${KIND_CLASS[line.kind]}`} aria-hidden="true"><PIcon name={lineIcon(line)} size={26} /></span>
           <ReadOnlyHint view={view} />
           <section className="card single-text" data-testid="single-text">{line.text ? <p className="m0">{line.text}</p> : <p className="empty m0">{t("line.noText")}</p>}</section>
           {canWrite ? <div className="mt8"><Button variant="secondary" onClick={() => setOpts("text")}>{t("drawer.line.editText")}</Button></div> : null}
@@ -223,7 +225,9 @@ export function LineScreen() {
         <OfflineBanner />
         <SyncReport />
         <div className="balance-hero">
-          <div className={`amt${f.negative ? " negative" : ""}`} data-testid="line-balance">{fmt(line, f.balance, locale)}</div>
+          {/* PETTY-250: the line's icon in its kind's colour, as on the landing page; a new balance fades in */}
+          <span className={`hero-bubble ${KIND_CLASS[line.kind]}`} aria-hidden="true"><PIcon name={lineIcon(line)} size={26} /></span>
+          <div className={`amt${f.negative ? " negative" : ""}`} data-testid="line-balance"><span key={f.balance} className="val-in">{fmt(line, f.balance, locale)}</span></div>
           <div className="unit">{unit}</div>
         </div>
         <ReadOnlyHint view={view} />

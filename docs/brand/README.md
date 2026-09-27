@@ -22,8 +22,14 @@ drawn in `--accent` on a tinted tile) and any mockup should use these and nothin
 | `--accent-text` | `#ffffff` | `#0b1210` | text on accent |
 | `--danger` / `--withdraw` | `#b3432b` | `#e0725a` | delete, negative amounts, withdraw |
 | `--adjust` | `#8a6d1f` | `#d4ac3f` | "needs verification", adjust entries |
+| `--k-money` | `#2e7a4f` | `#5fb88a` | a money line's tile and dot |
+| `--k-things` | `#2f63a8` | `#7fa9e8` | a counted line's tile and dot |
+| `--k-notes` | `#9a5f12` | `#e0a95a` | a single item's tile and dot |
 
-Tinted grounds (total card, icon tiles) are `color-mix(in srgb, var(--accent) 9–14%, var(--card))`.
+Tinted grounds (total card, icon tiles) are `color-mix(in srgb, var(--accent) 9–14%, var(--card))`;
+a line's tile uses its kind's colour instead (`--k-*` at 15%, PETTY-250), as the landing page does.
+Pictures (the landing examples, a drawer's header, the home beside the total) are bubbles round a
+middle, joined by dashed spokes: the middle in `--accent`, the bubbles tinted by kind.
 
 In Markdown, switch by the viewer's colour scheme:
 

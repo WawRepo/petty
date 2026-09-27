@@ -338,8 +338,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @property --uc-rx { syntax: "<number>"; inherits: false; initial-value: 0; }
 @property --uc-ry { syntax: "<number>"; inherits: false; initial-value: 0; }
 @property --uc-sz { syntax: "<length>"; inherits: true; initial-value: 0px; }
-.usecases { --glide: cubic-bezier(0.65, 0, 0.35, 1); --ease: cubic-bezier(0.22, 1, 0.36, 1); --pop: cubic-bezier(0.34, 1.45, 0.64, 1);
-  display: grid; grid-template-areas: "intro" "art" "dock" "caption" "stage"; gap: 16px; justify-items: center; }
+:root { --glide: cubic-bezier(0.65, 0, 0.35, 1); --ease: cubic-bezier(0.22, 1, 0.36, 1); --pop: cubic-bezier(0.34, 1.45, 0.64, 1); }
+.usecases { display: grid; grid-template-areas: "intro" "art" "dock" "caption" "stage"; gap: 16px; justify-items: center; }
 .uc-intro { grid-area: intro; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .uc-intro .landing-h2 { margin: 0; }
 /* the idea in one line: a plain place › the drawer › items in their colours */
@@ -503,9 +503,65 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .uc-caption { justify-self: center; }
 }
 
+/* The landing page's look in the app (PETTY-250). The pictures reuse the landing's bubbles (".uc-art"
+   above) without its floating — an app screen does not move on its own — and pop their bubbles in
+   once, in turn. Line tiles take their kind's colour (.tile.k-money / k-things / k-notes above). */
+.app-art .uc-bub-float { animation: none; }
+.app-art .uc-bub.sat .uc-bub-disc { animation: uc-bub-in 0.5s var(--pop) both; animation-delay: calc(var(--i, 0) * 55ms + 80ms); }
+.app-art .uc-spoke { animation: uc-spoke-in 0.45s ease both; animation-delay: calc(var(--i, 0) * 55ms + 200ms); }
+.app-art .uc-bub .uc-bub-disc svg { width: calc(var(--uc-sz) * 0.46); height: calc(var(--uc-sz) * 0.46); }
+.app-art .uc-more { font-size: calc(var(--uc-sz) * 0.32); font-weight: 800; color: var(--muted); }
+@keyframes uc-bub-in { from { opacity: 0; scale: 0.3; } to { opacity: 1; scale: 1; } }
+@keyframes uc-spoke-in { from { opacity: 0; } to { opacity: 1; } }
+/* the drawer: a band across the top of its screen, the name stays in the top bar */
+.drawer-art { width: 100%; height: clamp(132px, 34vw, 170px); aspect-ratio: auto; max-width: none; }
+.drawer-art .uc-bub.sat { --uc-sz: min(10.5cqw, 46px); }
+.drawer-art .uc-bub.center { --uc-sz: min(17cqw, 78px); }
+.drawer-art .uc-bub .uc-bub-disc { width: var(--uc-sz); height: var(--uc-sz); border-radius: 50%; display: grid; place-items: center; }
+.drawer-art .uc-bub.center .uc-bub-disc { animation: uc-bub-in 0.45s var(--pop) both; }
+.drawer-art .uc-bub-photo { object-fit: cover; padding: 0; background-color: var(--card); }
+.drawer-head .rowmain { align-items: center; text-align: center; }
+/* the home: the drawers of the view on one ring round the home, beside the total */
+.total-card { align-items: center; }
+.home-art { flex-shrink: 0; width: 112px; height: 112px; aspect-ratio: auto; max-width: none; }
+.home-art .uc-orbit { opacity: 1; scale: 1; border-width: 1.5px; }
+.home-art .uc-spoke { border-top-width: 1.5px; border-top-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.home-art .uc-bub.sat { --uc-sz: 30px; }
+.home-art .uc-bub.center { --uc-sz: 44px; }
+.home-art .uc-bub .uc-bub-disc { border-width: 1.5px; box-shadow: 0 3px 8px rgba(0,0,0,0.10); }
+/* one dot per line on a drawer card, in the line's kind's colour */
+.kind-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; }
+.kind-dots .kd { width: 7px; height: 7px; border-radius: 2px; background: var(--muted); }
+.kd.k-money { background: var(--k-money); }
+.kd.k-things { background: var(--k-things); }
+.kd.k-notes { background: var(--k-notes); }
+.row .row-sub svg { color: var(--accent); vertical-align: -1px; margin-right: 3px; }
+/* a line's own screen: its icon in its kind's colour above the balance */
+.hero-bubble { --kc: var(--accent); display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 10px; border-radius: 50%;
+  background: color-mix(in srgb, var(--kc) 15%, var(--card)); color: var(--kc); border: 2px solid color-mix(in srgb, var(--kc) 36%, var(--card)); box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+  animation: uc-bub-in 0.5s var(--pop) both; }
+.hero-bubble.k-money { --kc: var(--k-money); }
+.hero-bubble.k-things { --kc: var(--k-things); }
+.hero-bubble.k-notes { --kc: var(--k-notes); }
+.card.single-text { margin-top: 4px; }
+/* lists come in in turn when a screen opens; a changed amount fades in (its element is keyed by value) */
+.enter > * { animation: app-in 0.42s var(--ease) both; }
+.enter > :nth-child(2) { animation-delay: 35ms; }
+.enter > :nth-child(3) { animation-delay: 70ms; }
+.enter > :nth-child(4) { animation-delay: 105ms; }
+.enter > :nth-child(5) { animation-delay: 140ms; }
+.enter > :nth-child(6) { animation-delay: 175ms; }
+.enter > :nth-child(n+7) { animation-delay: 210ms; }
+.val-in { animation: val-in 0.45s var(--ease) both; }
+@keyframes app-in { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: none; } }
+@keyframes val-in { from { opacity: 0.15; translate: 0 5px; } to { opacity: 1; translate: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .app-art .uc-bub .uc-bub-disc, .app-art .uc-spoke, .hero-bubble, .enter > *, .val-in { animation: none; }
+}
+
 /* Drawer screen after the mockup (PETTY-64). */
 .tile.small { width: 40px; height: 40px; border-radius: 10px; }
-.drawer-head { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; }
+.drawer-head { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0 0 10px; } /* PETTY-250: the picture, then who edited it */
 .drawer-head .tile { width: 40px; height: 40px; border-radius: 10px; }
 .drawer-head .rowtitle { font-size: 17px; font-weight: 700; display: block; }
 .drawer-head .rowsub { font-size: 13px; color: var(--muted); }
@@ -590,7 +646,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .drawer-totals .tlist.multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 2px; margin: 3px 0 4px; }
 .drawer-totals .tlist.multi li { font-size: 18px; font-weight: 700; letter-spacing: 0; line-height: 1.35; min-width: 0; }
 .drawer-totals .tlist.multi li .cur { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; margin-left: 2px; }
-.total-card .totals-list.multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 2px; margin: 3px 0 4px; }
+.total-card .totals-list.multi { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 12px; row-gap: 2px; margin: 3px 0 4px; } /* PETTY-250: beside the home picture, one currency per line */
 .total-card .totals-list.multi li { display: block; font-size: 18px; font-weight: 700; letter-spacing: 0; line-height: 1.35; min-width: 0; }
 .total-card .totals-list.multi li .cur { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; margin-left: 2px; }
 

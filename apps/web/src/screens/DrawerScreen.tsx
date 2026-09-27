@@ -21,7 +21,8 @@ import { useToast } from "../components/Toast.js";
 import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
 import { appendEntry, deleteDrawer, lineBalance, loadAll, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
-import { DEFAULT_DRAWER_ICON, DEFAULT_LINE_ICON, IconPicker, PIcon } from "../lib/icons.js";
+import { DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
+import { DrawerArt } from "../components/DrawerArt.js";
 import { TagChip } from "../components/TagChip.js";
 import { Coins, Tags } from "lucide-react";
 import { PlacePicker } from "../components/PlacePicker.js";
@@ -199,8 +200,9 @@ export function DrawerScreen() {
   const tagSel = lineTag && lineTagIndex.has(lineTag) ? lineTag : null;
   const filtered = status !== "all" || tagSel !== null;
   const shown = lines.filter((l) => (!showTotals || status === "all" || (status === "in") === lineCounted(l)) && (!tagSel || lineTagsOf(l).some((x) => foldText(x) === tagSel)));
+  // a changed amount fades in (PETTY-250): its element is keyed by the value, so a new value is a new element
   const amounts = (tot: Totals, small = false) => tot.byCurrency.length ? (
-    <ul className={`tlist${tot.byCurrency.length > 1 ? " multi" : ""}${small ? " small" : ""}`}>{tot.byCurrency.map((c) => <li key={c.code} className={c.amount < 0 ? "negative" : undefined}>{formatAmount(c.amount, c.exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(c.code)}</span></li>)}</ul>
+    <ul className={`tlist${tot.byCurrency.length > 1 ? " multi" : ""}${small ? " small" : ""}`}>{tot.byCurrency.map((c) => <li key={`${c.code}:${c.amount}`} className={`val-in${c.amount < 0 ? " negative" : ""}`}>{formatAmount(c.amount, c.exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(c.code)}</span></li>)}</ul>
   ) : <span className="tnone">{t("drawer.totals.none")}</span>;
   const st = staleness(doc, view.summary);
   const when = view.summary.last_verified_at ? relativeTime(view.summary.last_verified_at, i18n.language, t) : "";
@@ -320,7 +322,10 @@ export function DrawerScreen() {
         <OfflineBanner />
         <SyncReport />
         <section className="drawer-head" data-testid="drawer-head">
-          {view.photo ? <img className="row-thumb" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" /> : <span className="tile" aria-hidden="true" data-icon={iconOf(doc) ?? DEFAULT_DRAWER_ICON}><PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} /></span>}
+          {/* PETTY-250: the drawer's picture — its photo or icon in the middle, its lines around it in their kinds' colours */}
+          <DrawerArt lines={lines} testId="drawer-art" center={view.photo
+            ? <img className="uc-bub-disc uc-bub-photo" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" />
+            : <span className="uc-bub-disc tile" aria-hidden="true" data-icon={iconOf(doc) ?? DEFAULT_DRAWER_ICON}><PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} /></span>} />
           {/* The name is the sticky top bar's title; the card shows only who edited it last (PETTY-81). */}
           <div className="rowmain">
             <span className="rowsub">{t("drawer.editedAt", { name: memberName(view, view.docAuthor), when: relativeTime(view.summary.last_write_at, i18n.language, t) })}</span>
@@ -395,7 +400,7 @@ export function DrawerScreen() {
             {canWrite ? <button type="button" className="tag-chip tag-edit" onClick={() => setSheet("lineTags")} data-testid="tag-bar-manage"><Tags size={15} aria-hidden="true" />{t("drawer.tagsManage")}</button> : null}
           </div>
         ) : null}
-        <div className="stack" data-testid="lines">
+        <div className="stack enter" data-testid="lines">
           {shown.map((l) => {
             const bal = l.kind === "single" ? 0 : lineBalance(view, l.id);
             const label = quantityLabel(l, bal, i18n.language, t);
@@ -405,11 +410,11 @@ export function DrawerScreen() {
               <div className={`line-block${dragId === l.id ? " dragging" : ""}`} key={l.id} data-line-id={l.id} data-testid="line-row">
                 {canWrite && !filtered ? <button type="button" className="drag-handle" aria-label={t("drawer.dragHandle", { name: l.name })} onPointerDown={(e) => onHandleDown(e, l.id)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp} onKeyDown={(e) => onHandleKey(e, l.id, l.name)}>⠿</button> : null}
                 <button type="button" className="row" onClick={() => nav(`/drawers/${id}/lines/${l.id}`)} aria-label={t("drawer.open", { name: l.name })}>
-                  <span className="tile small" aria-hidden="true" data-icon={l.icon ?? DEFAULT_LINE_ICON[l.kind]}><PIcon name={l.icon ?? DEFAULT_LINE_ICON[l.kind]} size={20} /></span>
+                  <span className={`tile small ${KIND_CLASS[l.kind]}`} aria-hidden="true" data-icon={lineIcon(l)}><PIcon name={lineIcon(l)} size={20} /></span>
                   <span className="rowmain">
                     <span className="rowhead">
                       <span className="rowtitle" data-testid="line-name">{l.name}</span>
-                      {label ? <span className={`rowbalance${bal < 0 ? " negative" : ""}${lineCounted(l) ? "" : " excluded"}`}>{l.kind === "money" ? <>{formatAmount(bal, l.exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(l.currency)}</span></> : label}</span> : null}
+                      {label ? <span key={bal} className={`rowbalance val-in${bal < 0 ? " negative" : ""}${lineCounted(l) ? "" : " excluded"}`}>{l.kind === "money" ? <>{formatAmount(bal, l.exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(l.currency)}</span></> : label}</span> : null}
                     </span>
                     {lineTagsOf(l).length ? <span className="row-tags" data-testid="line-tags">{lineTagsOf(l).map((tg) => <TagChip key={tg} label={tg} />)}</span> : null}
                     {l.kind !== "money" || !showTotals ? <span className="rowsub">{sub}</span>

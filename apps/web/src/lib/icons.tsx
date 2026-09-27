@@ -7,7 +7,9 @@ import type { LineKind } from "@petty/ledger";
 
 /**
  * The icon set (PETTY-64): Lucide (ISC), a fixed list so the slug stored in the encrypted document
- * always maps to a drawing. Colour comes from the tile (accent on a tinted ground), never per icon.
+ * always maps to a drawing. Colour comes from the tile, never per icon: a drawer's is the accent, a
+ * line's is its kind (PETTY-250, as on the landing page) — money green, counted things blue, single
+ * notes amber (KIND_CLASS; tokens --k-money, --k-things, --k-notes).
  */
 export const ICONS: Record<string, LucideIcon> = {
   home: House, bed: BedDouble, kitchen: CookingPot, sofa: Sofa, car: Car, bike: Bike, briefcase: Briefcase, backpack: Backpack,
@@ -18,6 +20,9 @@ export const ICONS: Record<string, LucideIcon> = {
 export const ICON_NAMES = Object.keys(ICONS);
 export const DEFAULT_DRAWER_ICON = "archive";
 export const DEFAULT_LINE_ICON: Record<LineKind, string> = { money: "banknote", countable: "box", single: "note" };
+export const KIND_CLASS: Record<LineKind, string> = { money: "k-money", countable: "k-things", single: "k-notes" };
+/** A line's icon slug: its own, else its kind's. */
+export const lineIcon = (l: { readonly kind: LineKind; readonly icon?: string | undefined }): string => l.icon ?? DEFAULT_LINE_ICON[l.kind];
 
 /** One icon by slug; an unknown slug (a newer build wrote it) falls back to the default drawer icon. */
 export function PIcon({ name, size = 22 }: { name: string; size?: number }) {

@@ -69,14 +69,20 @@ export function finaleScene(label: (key: string) => string): Scene {
 
 const SATS = 6; // the most any picture has
 
+/**
+ * Where bubble `i` of `n` sits: an angle and a distance from the middle, as CSS properties that
+ * base.css animates (so a bubble travels round the middle and its spoke stays attached). A bubble that
+ * is not `on` folds into the middle. Also drives the app's own pictures (DrawerArt, PETTY-250).
+ */
+export function orbit(o: { readonly rot: number; readonly rx: number; readonly ry: number; readonly wobble?: number }, n: number, i: number, on = true): CSSProperties {
+  const r = on && i < n ? 1 - (o.wobble ?? 0) * (i % 2) : 0;
+  return { "--uc-a": `${o.rot + (360 / Math.max(n, 1)) * i}deg`, "--uc-rx": o.rx * r, "--uc-ry": o.ry * r, "--i": i } as CSSProperties;
+}
+
 export function UseCaseArt({ scene, sceneKey, seen, ref }: { scene: Scene; sceneKey: string; seen: boolean; ref?: Ref<HTMLDivElement> }) {
   const n = scene.sats.length;
   const Center = scene.center;
-  const at = (i: number): CSSProperties => {
-    const on = seen && i < n;
-    const r = on ? 1 - (scene.wobble ?? 0) * (i % 2) : 0;
-    return { "--uc-a": `${scene.rot + (360 / n) * i}deg`, "--uc-rx": scene.rx * r, "--uc-ry": scene.ry * r, "--i": i } as CSSProperties;
-  };
+  const at = (i: number): CSSProperties => orbit(scene, n, i, seen);
   return (
     <div ref={ref} className={`uc-art${scene.finale ? " finale" : ""}${seen ? "" : " unseen"}`} aria-hidden="true" data-testid="use-case-art" data-scene={sceneKey}>
       <span className="uc-halo" />

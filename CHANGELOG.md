@@ -22,6 +22,13 @@ All notable, user-visible changes to Petty. The format follows
   reduced motion.
 
 ### Changed
+- The app takes the landing page's look. A line's tile has its kind's colour — money green, counted
+  things blue, single items amber — and each drawer card shows one dot per line in those colours, with
+  a pin by its place. A drawer's screen opens with its picture: the drawer (its photo or icon) in the
+  middle and its lines around it, which glide to their new places when the lines change. The Home total
+  sits beside the home with its drawers on a ring. A line's screen shows its icon in its kind's colour.
+  Lists come in in turn when a screen opens and a changed amount fades in; reduced motion turns all of
+  it off.
 - Landing page: a headline about everything you keep, not only cash; the English page no longer talks
   about złoty.
 

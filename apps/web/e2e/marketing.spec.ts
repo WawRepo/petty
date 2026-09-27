@@ -167,7 +167,8 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     // capture in both themes; any language but English is switched on via localStorage before reload
     const U = ui(loc);
     for (const theme of ["light", "dark"] as const) {
-      const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme });
+      // reduced motion: every picture and list is captured in its final place, not mid-animation (PETTY-250)
+      const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme, reducedMotion: "reduce" });
       const page = await ctx.newPage();
       await loginAndUnlock(page, user);
       await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
