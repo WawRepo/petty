@@ -322,40 +322,59 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .landing-features .feature-grid { grid-template-columns: 1fr 1fr 1fr; }
 }
 
-/* Landing: "One idea, many uses" (PETTY-248). A live mini app — place › drawer › items — in which one
-   example turns into the next slot by slot. Every example has the same shape, so nothing moves on the page. */
+/* Landing: "One idea, many uses" (PETTY-248). A live mini app: one list of lines — places, drawer
+   cards, items — that reshapes from one example to the next. The stage keeps one height, so nothing
+   below it moves. */
 .usecases { display: grid; grid-template-areas: "intro" "stage" "caption" "controls"; gap: 16px; justify-items: center; }
 .uc-intro { grid-area: intro; text-align: center; }
 .uc-intro .landing-h2 { margin-bottom: 6px; }
-.uc-stage { grid-area: stage; width: 100%; max-width: 400px; background: var(--bg); border: 5px solid #1c1a17; outline: 1px solid var(--border); border-radius: 26px; box-shadow: 0 12px 28px rgba(0,0,0,0.25); padding: 12px 10px 14px; overflow: hidden; }
+.uc-stage { grid-area: stage; width: 100%; max-width: 400px; height: 492px; display: flex; flex-direction: column; background: var(--bg); border: 5px solid #1c1a17; outline: 1px solid var(--border); border-radius: 26px; box-shadow: 0 12px 28px rgba(0,0,0,0.25); padding: 12px 10px 12px; overflow: hidden; }
 .uc-legend { display: flex; gap: 6px; margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .uc-legend .sep { opacity: 0.5; }
-.uc-tree { list-style: none; margin: 0; padding: 0; }
-.uc-node { --step: 14px; position: relative; display: flex; align-items: center; gap: 6px; height: 30px; margin-left: calc(var(--lvl) * var(--step)); font-size: 15px; font-weight: 600; white-space: nowrap; min-width: 0; }
-.uc-node > svg { color: var(--muted); flex-shrink: 0; }
-.uc-node-name { max-width: 100%; }
-.uc-node.leaf .uc-node-name { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); padding: 1px 10px; border-radius: 999px; }
-/* the L-shaped guide from the parent, as on the Places screen */
-.uc-node + .uc-node::before, .uc-drawer::before { content: ""; position: absolute; left: -7px; width: 6px; border-left: 1.5px solid var(--border); border-bottom: 1.5px solid var(--border); border-bottom-left-radius: 6px; }
-.uc-node + .uc-node::before { top: -8px; height: 23px; }
-.uc-drawer { --step: 14px; position: relative; margin: 6px 0 0 calc(var(--lvl) * var(--step)); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 10px 4px; }
-.uc-drawer::before { top: -14px; height: 44px; }
-.uc-drawer-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); min-width: 0; }
-.uc-drawer-head .tile { width: 40px; height: 40px; border-radius: 10px; }
-.uc-drawer-text { flex: 1; min-width: 0; }
-.uc-drawer-text > span { display: flex; flex-direction: column; min-width: 0; }
-.uc-drawer-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.uc-drawer-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.uc-items { list-style: none; margin: 0; padding: 0; }
-.uc-item { display: flex; align-items: center; gap: 8px; height: 50px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); min-width: 0; }
-.uc-item:last-child { border-bottom: 0; }
-.uc-item .tile { width: 30px; height: 30px; border-radius: 9px; }
-.uc-item-main { flex: 1; min-width: 0; }
-.uc-item-main > span { display: flex; flex-direction: column; min-width: 0; }
-.uc-item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.uc-item-note { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.uc-item-value { justify-items: end; font-size: 14px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.uc-item-value .cur { font-size: 10px; font-weight: 700; color: var(--muted); }
+.uc-lines { list-style: none; margin: 0; padding: 0; }
+/* a line reshapes in place: its height, indent and card edges ease to the new example's */
+.uc-line { --ease: cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; height: 0; margin: 0 0 0 calc(var(--lvl) * 14px); border: 1px solid transparent; border-radius: 0; background-color: transparent;
+  transition: height 0.42s var(--ease) var(--d, 0ms), margin 0.42s var(--ease) var(--d, 0ms), background-color 0.3s ease var(--d, 0ms), border-color 0.3s ease var(--d, 0ms), border-radius 0.42s var(--ease) var(--d, 0ms); }
+.uc-line.t-place { height: 28px; }
+.uc-line.t-drawer { height: 52px; margin-top: 8px; background-color: var(--card); border-color: var(--border); border-bottom-color: transparent; border-radius: 14px 14px 0 0; }
+.uc-line.t-drawer.solo { border-bottom-color: var(--border); border-radius: 14px; }
+.uc-line.t-item { height: 40px; background-color: var(--card); border-color: var(--border); border-top-color: transparent; border-bottom-color: transparent; }
+.uc-line.t-item.last { height: 44px; border-bottom-color: var(--border); border-radius: 0 0 14px 14px; }
+.uc-line.t-item::after { content: ""; position: absolute; left: 10px; right: 10px; top: 0; border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent); }
+/* the L-shaped guide from the parent place, as on the Places screen */
+.uc-line.nested::before { content: ""; position: absolute; left: -9px; width: 7px; top: -10px; height: calc(50% + 10px); border-left: 1.5px solid var(--border); border-bottom: 1.5px solid var(--border); border-bottom-left-radius: 6px; }
+.uc-line.t-drawer.nested::before { top: -22px; height: calc(50% + 22px); }
+.uc-line-body.morph { position: absolute; inset: 0; display: grid; align-items: center; overflow: hidden; }
+.uc-line-body > * { display: flex; align-items: center; min-width: 0; }
+.t-drawer .uc-line-body > *, .t-item .uc-line-body > * { padding: 0 10px; }
+.uc-place { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.uc-place > svg { color: var(--muted); flex-shrink: 0; }
+.uc-place-name { overflow: hidden; text-overflow: ellipsis; }
+.t-place.leaf .uc-place-name { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); padding: 1px 9px; border-radius: 999px; }
+.uc-row { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; }
+.uc-row .tile { width: 30px; height: 30px; border-radius: 9px; }
+.t-drawer .uc-row .tile { width: 36px; height: 36px; border-radius: 10px; }
+.tile.k-drawer { background: color-mix(in srgb, var(--text) 8%, var(--card)); color: var(--text); }
+.tile.k-money { background: color-mix(in srgb, var(--k-money) 15%, var(--card)); color: var(--k-money); }
+.tile.k-things { background: color-mix(in srgb, var(--k-things) 15%, var(--card)); color: var(--k-things); }
+.tile.k-notes { background: color-mix(in srgb, var(--k-notes) 15%, var(--card)); color: var(--k-notes); }
+.uc-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.uc-dname { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uc-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.uc-meta svg { flex-shrink: 0; }
+.uc-meta.b-confirmed svg { color: var(--k-money); }
+.uc-meta.b-shared svg { color: var(--k-things); }
+.uc-meta.b-readonly svg { color: var(--k-notes); }
+.uc-iname { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uc-note { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uc-val { font-size: 14px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.uc-val .cur { font-size: 10px; font-weight: 700; color: var(--muted); }
+.uc-kinds { display: flex; gap: 14px; margin: auto 0 0; padding-top: 10px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.uc-kinds span { display: inline-flex; align-items: center; gap: 5px; }
+.uc-kinds span::before { content: ""; width: 9px; height: 9px; border-radius: 3px; }
+.uc-kinds .k-money::before { background: var(--k-money); }
+.uc-kinds .k-things::before { background: var(--k-things); }
+.uc-kinds .k-notes::before { background: var(--k-notes); }
 .uc-caption { grid-area: caption; display: grid; text-align: center; min-height: 92px; max-width: 420px; }
 .uc-caption-body { display: flex; flex-direction: column; gap: 4px; }
 .uc-caption .uc-title { font-size: 18px; font-weight: 700; }
@@ -366,17 +385,17 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .uc-progress { position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: var(--accent); transform-origin: left; animation: uc-progress linear both; }
 .uc-chip[aria-pressed="true"] .uc-progress { background: var(--accent-text); opacity: 0.55; }
 .uc-toggle { display: inline-flex; align-items: center; gap: 6px; }
-/* A slot rolls: the old words slide up and out while the new slide up and in (components/UseCases.tsx Roll). */
+/* A line's words roll: the old slide up and out while the new slide up and in (components/UseCases.tsx Roll). */
 .morph { display: inline-grid; overflow: hidden; vertical-align: middle; min-width: 0; }
 .morph > * { grid-area: 1 / 1; min-width: 0; }
-.uc-drawer-text.morph, .uc-item-main.morph { display: grid; }
-.tile > .morph { justify-items: center; align-items: center; }
-.morph-in { animation: uc-roll-in 0.46s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--d, 0ms); }
-.morph-out { animation: uc-roll-out 0.46s cubic-bezier(0.4, 0, 0.2, 1) both; animation-delay: var(--d, 0ms); pointer-events: none; }
+/* the old words leave quickly, the new arrive a beat later, so the two barely overlap */
+.morph-in { animation: uc-roll-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--d, 0ms) + 90ms); }
+.morph-out { animation: uc-roll-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; animation-delay: var(--d, 0ms); pointer-events: none; }
 @keyframes uc-roll-in { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 @keyframes uc-roll-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-100%); } }
 @keyframes uc-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (prefers-reduced-motion: reduce) {
+  .uc-line { transition: none; }
   .morph-in { animation: none; }
   .morph-out { display: none; }
 }

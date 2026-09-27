@@ -1,43 +1,96 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Pause, Play } from "lucide-react";
+import { ChevronDown, CircleCheck, Eye, Pause, Play, Users } from "lucide-react";
 import { formatAmount } from "@petty/ledger";
 import { PIcon } from "../lib/icons.js";
 
 /**
- * "One idea, many uses" on the landing page (PETTY-248). Every example has the same shape — three
- * levels of places, a drawer in the last one, four items in the drawer — which is all the app is.
- * One example turns into the next slot by slot: each place, the drawer and each item roll from the
- * old words to the new, top to bottom, so nothing is ever blank. Nothing here is a feature the app
- * lacks. Words come from the i18n dictionaries; amounts and currency codes are data, and the examples
- * use no local names or currency.
+ * "One idea, many uses" on the landing page (PETTY-248). Every example is built from the three pieces
+ * the app is made of — places in a tree, drawers in places, items in drawers — but each has its own
+ * shape: a deep tree or a wide one, one drawer with many items or many drawers with one each. One
+ * example turns into the next line by line: each line of the stage reshapes (a place becomes a drawer
+ * card, a card splits in two) and its words roll to the new ones, top to bottom.
  *
- * Autoplay (WCAG 2.2.2): a Pause button; it also holds while the pointer or keyboard focus is in the
- * section, while the demo is off screen or the tab is hidden; it never starts under reduced motion;
- * and picking an example stops it for good.
+ * Item colours mean something: money, things (counted) and notes (single items) — the app's three
+ * kinds of line. Badges show sharing, a confirmed count and read-only access. Nothing here is a
+ * feature the app lacks. Words come from the i18n dictionaries; amounts and currency codes are data,
+ * and the examples use no local names or currency.
+ *
+ * Autoplay (WCAG 2.2.2): a Pause button; it also holds while a mouse is over the section or keyboard
+ * focus is in it, while the demo is off screen or the tab is hidden; it never starts under reduced
+ * motion; and picking an example stops it for good.
  */
 
-type Item = { readonly key: string; readonly icon: string; readonly money?: readonly [minor: number, exponent: number, currency: string] };
-interface UseCase { readonly key: string; readonly icon: string; readonly items: readonly [Item, Item, Item, Item] }
+type Kind = "money" | "things" | "notes";
+type Badge = "shared" | "confirmed" | "readonly";
+interface Item { readonly key: string; readonly kind: Kind; readonly icon: string; readonly money?: readonly [minor: number, exponent: number, currency: string] }
+interface Drawer { readonly key: string; readonly icon: string; readonly badge?: Badge; readonly items: readonly Item[] }
+interface Place { readonly key: string; readonly drawers?: readonly Drawer[]; readonly kids?: readonly Place[] }
+interface UseCase { readonly key: string; readonly root: Place }
+
+const cash = (key: string, icon: string, minor: number, currency: string): Item => ({ key, kind: "money", icon, money: [minor, 2, currency] });
+const thing = (key: string, icon: string): Item => ({ key, kind: "things", icon });
+const note = (key: string, icon: string): Item => ({ key, kind: "notes", icon });
 
 const CASES: readonly UseCase[] = [
-  { key: "workshop", icon: "wrench", items: [{ key: "hammer", icon: "wrench" }, { key: "zipties", icon: "box" }, { key: "tape", icon: "box" }, { key: "screws", icon: "box" }] },
-  { key: "trip", icon: "plane", items: [{ key: "anna", icon: "wallet", money: [60000, 2, "MYR"] }, { key: "ben", icon: "wallet", money: [15000, 2, "MYR"] }, { key: "cara", icon: "wallet", money: [4500, 2, "MYR"] }, { key: "dan", icon: "wallet", money: [12000, 2, "MYR"] }] },
-  { key: "accounts", icon: "bank", items: [{ key: "pension", icon: "bank", money: [4820000, 2, "EUR"] }, { key: "brokerage", icon: "briefcase", money: [315000, 2, "USD"] }, { key: "savings", icon: "piggy-bank", money: [1240000, 2, "EUR"] }, { key: "gold", icon: "coins" }] },
-  { key: "cash", icon: "coins", items: [{ key: "groceries", icon: "banknote", money: [124000, 2, "EUR"] }, { key: "holiday", icon: "plane", money: [15000, 2, "USD"] }, { key: "jar", icon: "coins", money: [3650, 2, "EUR"] }, { key: "emergency", icon: "banknote", money: [50000, 2, "EUR"] }] },
-  { key: "lent", icon: "tag", items: [{ key: "drill", icon: "wrench" }, { key: "book", icon: "book" }, { key: "chairs", icon: "box" }, { key: "ladder", icon: "box" }] },
-  { key: "family", icon: "archive", items: [{ key: "passports", icon: "note" }, { key: "ring", icon: "gem" }, { key: "carkey", icon: "key" }, { key: "insurance", icon: "note" }] },
+  { key: "workshop", root: { key: "home", kids: [{ key: "basement", kids: [{ key: "workshop", drawers: [
+    { key: "desk", icon: "box", items: [thing("zipties", "box"), thing("tape", "box")] },
+    { key: "pegboard", icon: "wrench", items: [note("hammer", "wrench"), note("drill", "wrench")] },
+  ] }] }] } },
+  { key: "trip", root: { key: "trips", kids: [
+    { key: "malaysia", drawers: [{ key: "kitty", icon: "plane", badge: "shared", items: [cash("anna", "wallet", 60000, "MYR"), cash("ben", "wallet", 15000, "MYR"), cash("cara", "wallet", 4500, "MYR")] }] },
+    { key: "thailand", drawers: [{ key: "next", icon: "plane", items: [thing("passes", "card")] }] },
+  ] } },
+  { key: "accounts", root: { key: "paperwork", drawers: [
+    { key: "pension", icon: "bank", badge: "confirmed", items: [cash("fund", "bank", 4820000, "EUR")] },
+    { key: "brokerage", icon: "briefcase", badge: "confirmed", items: [cash("shares", "briefcase", 315000, "USD"), cash("cash", "wallet", 42000, "USD")] },
+    { key: "savings", icon: "piggy-bank", badge: "confirmed", items: [cash("deposit", "piggy-bank", 1240000, "EUR")] },
+  ] } },
+  { key: "cash", root: { key: "home", kids: [
+    { key: "kitchen", drawers: [{ key: "tin", icon: "coins", badge: "confirmed", items: [cash("groceries", "banknote", 24000, "EUR"), cash("coins", "coins", 3650, "EUR")] }] },
+    { key: "bedroom", drawers: [{ key: "envelope", icon: "archive", items: [cash("emergency", "banknote", 50000, "EUR"), cash("holiday", "plane", 15000, "USD")] }] },
+  ] } },
+  { key: "lent", root: { key: "home", kids: [{ key: "garage", drawers: [
+    { key: "lent", icon: "tag", badge: "shared", items: [note("drill", "wrench"), note("ladder", "box"), thing("chairs", "box")] },
+    { key: "borrowed", icon: "gift", items: [note("tent", "backpack")] },
+  ] }] } },
+  { key: "family", root: { key: "home", kids: [{ key: "bedroom", kids: [{ key: "wardrobe", kids: [{ key: "safe", drawers: [
+    { key: "documents", icon: "note", badge: "readonly", items: [thing("passports", "note"), thing("certificates", "note")] },
+    { key: "valuables", icon: "gem", badge: "readonly", items: [note("ring", "gem"), note("carkey", "key")] },
+  ] }] }] }] } },
 ];
-const LEVELS = 3;
 
-const STEP_MS = 5000;   // how long one example stays
-const ROLL_MS = 460;    // one slot rolling from the old words to the new (matches .morph-in/.morph-out in base.css)
-const STAGGER_MS = 60;  // each slot starts a beat after the one above it
+/** The stage is one list of lines: a place, a drawer card's head, or an item inside the card above it. */
+type Line =
+  | { readonly t: "place"; readonly lvl: number; readonly key: string; readonly leaf: boolean }
+  | { readonly t: "drawer"; readonly lvl: number; readonly key: string; readonly icon: string; readonly badge?: Badge; readonly solo: boolean }
+  | { readonly t: "item"; readonly lvl: number; readonly item: Item; readonly last: boolean };
+function flatten(p: Place, lvl = 0, out: Line[] = []): Line[] {
+  out.push({ t: "place", lvl, key: p.key, leaf: !!p.drawers?.length });
+  for (const d of p.drawers ?? []) {
+    out.push({ t: "drawer", lvl: lvl + 1, key: d.key, icon: d.icon, ...(d.badge ? { badge: d.badge } : {}), solo: d.items.length === 0 });
+    d.items.forEach((item, i) => out.push({ t: "item", lvl: lvl + 1, item, last: i === d.items.length - 1 }));
+  }
+  for (const k of p.kids ?? []) flatten(k, lvl + 1, out);
+  return out;
+}
+const LINES = CASES.map((c) => flatten(c.root));
+const SLOTS = Math.max(...LINES.map((l) => l.length));
+export const USE_CASE_KEYS = CASES.map((c) => c.key);
+
+const STEP_MS = 5500;   // how long one example stays
+const ROLL_MS = 470;    // the new words finish rolling in by then (90 ms offset + 380 ms, .morph-in in base.css)
+const STAGGER_MS = 45;  // each line starts a beat after the one above it
+const BADGE_ICON: Record<Badge, ReactNode> = {
+  shared: <Users size={13} strokeWidth={2.2} aria-hidden="true" />,
+  confirmed: <CircleCheck size={13} strokeWidth={2.2} aria-hidden="true" />,
+  readonly: <Eye size={13} strokeWidth={2.2} aria-hidden="true" />,
+};
 
 const reducedQuery = () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null);
 
 /**
- * One slot of the demo. When `k` changes, the previous content rolls up and out while the new rolls
+ * One line of the demo. When `k` changes, the previous content rolls up and out while the new rolls
  * in, after `delay` ms. Only the current content is live; the leaving copy is hidden from assistive tech.
  */
 function Roll({ k, delay = 0, className = "", children }: { k: string; delay?: number; className?: string; children: ReactNode }) {
@@ -124,12 +177,48 @@ export function UseCases() {
   const pick = (i: number) => { setPlaying(false); setIdx(i); };
 
   const c = CASES[idx]!;
+  const lines = LINES[idx]!;
   const k = `landing.uses.cases.${c.key}`;
-  const place = t(`${k}.place`, { returnObjects: true }) as string[];
   const title = t(`${k}.title`);
-  // top to bottom: the three places, the drawer, then the four items
   const at = (slot: number) => (reduced ? 0 : slot * STAGGER_MS);
-  const slotKey = (slot: number | string) => `${c.key}-${slot}-${locale}`;
+
+  const content = (l: Line): ReactNode => {
+    if (l.t === "place") {
+      return (
+        <span className="uc-place">
+          <ChevronDown size={14} strokeWidth={2} aria-hidden="true" />
+          <span className="uc-place-name">{t(`${k}.places.${l.key}`)}</span>
+        </span>
+      );
+    }
+    if (l.t === "drawer") {
+      return (
+        <span className="uc-row">
+          <span className="tile k-drawer" aria-hidden="true"><PIcon name={l.icon} size={18} /></span>
+          <span className="uc-txt">
+            <span className="uc-dname" data-testid="use-case-drawer">{t(`${k}.drawers.${l.key}.name`)}</span>
+            <span className={`uc-meta${l.badge ? ` b-${l.badge}` : ""}`}>{l.badge ? BADGE_ICON[l.badge] : null}{t(`${k}.drawers.${l.key}.meta`)}</span>
+          </span>
+        </span>
+      );
+    }
+    const it = l.item;
+    const ik = `${k}.items.${it.key}`;
+    const itemNote = i18n.exists(`${ik}.note`) ? t(`${ik}.note`) : null;
+    const value = it.money
+      ? <>{formatAmount(it.money[0], it.money[1], locale)} <span className="cur">{it.money[2]}</span></>
+      : i18n.exists(`${ik}.value`) ? t(`${ik}.value`) : null;
+    return (
+      <span className="uc-row">
+        <span className={`tile k-${it.kind}`} aria-hidden="true"><PIcon name={it.icon} size={15} /></span>
+        <span className="uc-txt">
+          <span className="uc-iname">{t(`${ik}.name`)}</span>
+          {itemNote ? <span className="uc-note">{itemNote}</span> : null}
+        </span>
+        {value ? <span className="uc-val">{value}</span> : null}
+      </span>
+    );
+  };
 
   return (
     <section ref={sectionRef} className="usecases" aria-labelledby="uses-title" data-testid="use-cases">
@@ -151,46 +240,26 @@ export function UseCases() {
         <p className="uc-legend" aria-hidden="true">
           <span>{t("landing.uses.legend.place")}</span><span className="sep">›</span><span>{t("landing.uses.legend.drawer")}</span><span className="sep">›</span><span>{t("landing.uses.legend.items")}</span>
         </p>
-        <ol className="uc-tree" aria-label={t("landing.uses.legend.place")} data-testid="use-case-place">
-          {Array.from({ length: LEVELS }, (_, i) => (
-            <li key={i} className={`uc-node${i === LEVELS - 1 ? " leaf" : ""}`} style={{ "--lvl": i } as CSSProperties}>
-              <ChevronDown size={15} strokeWidth={2} aria-hidden="true" />
-              <Roll k={slotKey(`p${i}`)} delay={at(i)} className="uc-node-name"><span>{place[i]}</span></Roll>
-            </li>
-          ))}
-        </ol>
-        <div className="uc-drawer" style={{ "--lvl": LEVELS } as CSSProperties}>
-          <div className="uc-drawer-head">
-            <span className="tile"><Roll k={slotKey("icon")} delay={at(LEVELS)}><PIcon name={c.icon} size={20} /></Roll></span>
-            <Roll k={slotKey("drawer")} delay={at(LEVELS)} className="uc-drawer-text">
-              <span className="uc-drawer-name" data-testid="use-case-drawer">{t(`${k}.drawer`)}</span>
-              <span className="uc-drawer-meta">{t(`${k}.meta`)}</span>
-            </Roll>
-          </div>
-          <ul className="uc-items" aria-label={t("landing.uses.legend.items")} data-testid="use-case-items">
-            {c.items.map((it, i) => {
-              const ik = `${k}.items.${it.key}`;
-              const note = i18n.exists(`${ik}.note`) ? t(`${ik}.note`) : null;
-              const value = it.money
-                ? <>{formatAmount(it.money[0], it.money[1], locale)} <span className="cur">{it.money[2]}</span></>
-                : i18n.exists(`${ik}.value`) ? t(`${ik}.value`) : null;
-              const d = at(LEVELS + 1 + i);
-              return (
-                <li key={i} className="uc-item">
-                  <span className="tile" aria-hidden="true"><Roll k={slotKey(`i${i}-icon`)} delay={d}><PIcon name={it.icon} size={17} /></Roll></span>
-                  <Roll k={slotKey(`i${i}`)} delay={d} className="uc-item-main">
-                    <span className="uc-item-name">{t(`${ik}.name`)}</span>
-                    {note ? <span className="uc-item-note">{note}</span> : null}
-                  </Roll>
-                  <Roll k={slotKey(`i${i}-v`)} delay={d} className="uc-item-value">{value ? <span>{value}</span> : null}</Roll>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="uc-lines" aria-label={t("landing.uses.legend.all")}>
+          {Array.from({ length: SLOTS }, (_, i) => {
+            const l = lines[i];
+            const cls = !l ? "t-none"
+              : `t-${l.t}${l.lvl > 0 && l.t !== "item" ? " nested" : ""}${l.t === "place" && l.leaf ? " leaf" : ""}${l.t === "drawer" && l.solo ? " solo" : ""}${l.t === "item" && l.last ? " last" : ""}`;
+            return (
+              <li key={i} className={`uc-line ${cls}`} style={{ "--lvl": l?.lvl ?? 0, "--d": `${at(i)}ms` } as CSSProperties} aria-hidden={l ? undefined : true}>
+                <Roll k={l ? `${c.key}-${locale}-${i}` : `none-${i}`} delay={at(i)} className="uc-line-body">{l ? content(l) : null}</Roll>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="uc-kinds">
+          <span className="k-money">{t("landing.uses.legend.money")}</span>
+          <span className="k-things">{t("landing.uses.legend.things")}</span>
+          <span className="k-notes">{t("landing.uses.legend.notes")}</span>
+        </p>
       </div>
 
-      <Roll k={slotKey("caption")} className="uc-caption">
+      <Roll k={`${c.key}-${locale}-caption`} className="uc-caption">
         <span className="uc-caption-body" data-testid="use-case-caption">
           <span className="uc-title">{title}</span>
           <span className="hint">{t(`${k}.body`)}</span>

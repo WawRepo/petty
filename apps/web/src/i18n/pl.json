@@ -771,11 +771,15 @@
     "how": "Jak to szyfruje",
     "uses": {
       "title": "Jeden pomysł, wiele zastosowań",
-      "sub": "Miejsca mieszczą szuflady, a szuflady pozycje — pieniądze, rzeczy albo notatki. Te same trzy elementy pasują do wszystkiego, co przechowujesz.",
+      "sub": "Miejsca mieszczą szuflady, a szuflady pozycje — pieniądze, rzeczy albo notatki. Ułóż je, jak chcesz; te same trzy elementy pasują do wszystkiego, co przechowujesz.",
       "legend": {
         "place": "Miejsce",
         "drawer": "Szuflada",
-        "items": "Pozycje"
+        "items": "Pozycje",
+        "all": "Miejsca, szuflady i pozycje",
+        "money": "Pieniądze",
+        "things": "Rzeczy",
+        "notes": "Notatki"
       },
       "pick": "Przykłady",
       "demo": "Przykład: {title}",
@@ -785,31 +789,38 @@
         "workshop": {
           "chip": "Warsztat",
           "title": "Znajdź wszystko w kilka sekund",
-          "body": "Narzędzia i części, każda szuflada na swoim miejscu: opaski zawsze leżą w Piwnica › Warsztat › Biurko.",
-          "place": [
-            "Piwnica",
-            "Warsztat",
-            "Biurko, prawa strona"
-          ],
-          "drawer": "Szuflada 1",
-          "meta": "4 pozycje",
-          "items": {
-            "hammer": {
-              "name": "Młotek",
-              "note": "ciesielski, 450 g"
+          "body": "Każda szuflada ma swoje miejsce: opaski leżą w Dom › Piwnica › Warsztat, w szufladzie biurka.",
+          "places": {
+            "home": "Dom",
+            "basement": "Piwnica",
+            "workshop": "Warsztat"
+          },
+          "drawers": {
+            "desk": {
+              "name": "Szuflada biurka",
+              "meta": "2 pozycje"
             },
+            "pegboard": {
+              "name": "Tablica narzędziowa",
+              "meta": "2 pozycje"
+            }
+          },
+          "items": {
             "zipties": {
               "name": "Opaski zaciskowe",
               "value": "50 szt."
             },
             "tape": {
               "name": "Taśma naprawcza",
-              "note": "srebrna",
               "value": "2 rolki"
             },
-            "screws": {
-              "name": "Wkręty 4×30",
-              "value": "120 szt."
+            "hammer": {
+              "name": "Młotek",
+              "note": "ciesielski, 450 g"
+            },
+            "drill": {
+              "name": "Wiertarka",
+              "note": "naładowana"
             }
           }
         },
@@ -817,13 +828,21 @@
           "chip": "Wspólny wyjazd",
           "title": "Wyjazd ze znajomymi",
           "body": "Jedna szuflada na wyjazd, jedna pozycja na osobę. Każdy dopisuje, ile zapłacił, i nikt nie zmieni tego po cichu.",
-          "place": [
-            "Wyjazdy",
-            "2026",
-            "Malezja"
-          ],
-          "drawer": "George Town, maj",
-          "meta": "Wspólna z Benem, Carą i Danem",
+          "places": {
+            "trips": "Wyjazdy",
+            "malaysia": "Malezja",
+            "thailand": "Tajlandia"
+          },
+          "drawers": {
+            "kitty": {
+              "name": "Kasa: George Town",
+              "meta": "Wspólna · 3 osoby"
+            },
+            "next": {
+              "name": "Następny: Bangkok",
+              "meta": "Planowany"
+            }
+          },
           "items": {
             "anna": {
               "name": "Anna",
@@ -831,106 +850,128 @@
             },
             "ben": {
               "name": "Ben",
-              "note": "targ, taksówka"
+              "note": "nocny targ"
             },
             "cara": {
               "name": "Cara",
               "note": "prom"
             },
-            "dan": {
-              "name": "Dan",
-              "note": "skutery"
+            "passes": {
+              "name": "Bilety kolejowe",
+              "note": "kupione",
+              "value": "3 szt."
             }
           }
         },
         "accounts": {
           "chip": "Konta raz w roku",
           "title": "Pieniądze, o których łatwo zapomnieć",
-          "body": "Emerytura, stare konto maklerskie, oszczędności: po jednej pozycji, sprawdzane raz w roku.",
-          "place": [
-            "Dom",
-            "Gabinet",
-            "Szafka na dokumenty"
-          ],
-          "drawer": "Konta",
-          "meta": "Potwierdzone 2 stycznia",
-          "items": {
+          "body": "Szuflada na każde konto, sprawdzana raz w roku: potwierdzasz saldo, a data zostaje przy nim.",
+          "places": {
+            "paperwork": "Dokumenty"
+          },
+          "drawers": {
             "pension": {
               "name": "Emerytura",
-              "note": "wyciąg"
+              "meta": "Potwierdzone 2 stycznia"
             },
             "brokerage": {
-              "name": "Akcje",
-              "note": "niebieska teczka"
+              "name": "Konto maklerskie",
+              "meta": "Potwierdzone 2 stycznia"
             },
             "savings": {
+              "name": "Oszczędności",
+              "meta": "Potwierdzone 2 stycznia"
+            }
+          },
+          "items": {
+            "fund": {
+              "name": "Fundusz",
+              "note": "wyciąg roczny"
+            },
+            "shares": {
+              "name": "Akcje",
+              "note": "fundusz indeksowy"
+            },
+            "cash": {
+              "name": "Gotówka"
+            },
+            "deposit": {
               "name": "Lokata",
               "note": "3,1% rocznie"
-            },
-            "gold": {
-              "name": "Złote monety",
-              "note": "poza sumą",
-              "value": "4 szt."
             }
           }
         },
         "cash": {
           "chip": "Gotówka w domu",
           "title": "Każdy banknot na swoim miejscu",
-          "body": "Od tego zaczęło się Petty: puszka z gotówką na półce w kuchni, policzona i potwierdzona.",
-          "place": [
-            "Dom",
-            "Kuchnia",
-            "Górna półka"
-          ],
-          "drawer": "Puszka na gotówkę",
-          "meta": "Potwierdzone dziś",
+          "body": "Od tego zaczęło się Petty: gotówka w całym domu, każda puszka i koperta w swoim pokoju, policzona i potwierdzona.",
+          "places": {
+            "home": "Dom",
+            "kitchen": "Kuchnia",
+            "bedroom": "Sypialnia"
+          },
+          "drawers": {
+            "tin": {
+              "name": "Puszka na gotówkę",
+              "meta": "Potwierdzone dziś"
+            },
+            "envelope": {
+              "name": "Koperta",
+              "meta": "Zaklejona"
+            }
+          },
           "items": {
             "groceries": {
               "name": "Na zakupy",
-              "note": "na tydzień"
+              "note": "na ten tydzień"
             },
-            "holiday": {
-              "name": "Na wakacje",
-              "note": "na wyjazd"
-            },
-            "jar": {
+            "coins": {
               "name": "Monety"
             },
             "emergency": {
-              "name": "Rezerwa",
-              "note": "zaklejona koperta"
+              "name": "Rezerwa"
+            },
+            "holiday": {
+              "name": "Na wakacje"
             }
           }
         },
         "lent": {
           "chip": "Pożyczone",
           "title": "Pamiętaj, kto ma Twoją wiertarkę",
-          "body": "Pożyczone rzeczy mają swoją szufladę: każda pozycja mówi, kto ją ma i od kiedy.",
-          "place": [
-            "Dom",
-            "Garaż",
-            "Regał"
-          ],
-          "drawer": "Pożyczone",
-          "meta": "Wspólna z Tomem",
+          "body": "Rzeczy pożyczone komuś i od kogoś mają swoje szuflady: każda pozycja mówi, kto ją ma i od kiedy.",
+          "places": {
+            "home": "Dom",
+            "garage": "Garaż"
+          },
+          "drawers": {
+            "lent": {
+              "name": "Pożyczone komuś",
+              "meta": "Wspólna z Tomem"
+            },
+            "borrowed": {
+              "name": "Pożyczone od kogoś",
+              "meta": "Do oddania"
+            }
+          },
           "items": {
             "drill": {
               "name": "Wiertarka",
               "note": "Tom · od maja"
             },
-            "book": {
-              "name": "„Diuna”",
-              "note": "Kate · od czerwca"
+            "ladder": {
+              "name": "Drabina",
+              "note": "Leo · od niedzieli"
             },
             "chairs": {
               "name": "Krzesła turystyczne",
               "note": "Maya",
               "value": "4 szt."
             },
-            "ladder": {
-              "name": "Drabina",
-              "note": "Leo · od niedzieli"
+            "tent": {
+              "name": "Namiot",
+              "note": "od Sama · do 1 lipca"
             }
           }
         },
@@ -938,29 +979,38 @@
           "chip": "Domowy sejf",
           "title": "Zostaw mapę, nie bałagan",
           "body": "Gdzie są paszporty, klucze i dokumenty — udostępnione do odczytu osobom, które kiedyś mogą ich potrzebować.",
-          "place": [
-            "Sypialnia",
-            "Szafa",
-            "Sejf"
-          ],
-          "drawer": "Dokumenty",
-          "meta": "Anna: tylko odczyt",
+          "places": {
+            "home": "Dom",
+            "bedroom": "Sypialnia",
+            "wardrobe": "Szafa",
+            "safe": "Sejf"
+          },
+          "drawers": {
+            "documents": {
+              "name": "Dokumenty",
+              "meta": "Anna: tylko odczyt"
+            },
+            "valuables": {
+              "name": "Kosztowności",
+              "meta": "Anna: tylko odczyt"
+            }
+          },
           "items": {
             "passports": {
               "name": "Paszporty",
               "value": "3 szt."
             },
+            "certificates": {
+              "name": "Akty urodzenia",
+              "value": "2 szt."
+            },
             "ring": {
               "name": "Pierścionek babci",
-              "note": "w niebieskim pudełku"
+              "note": "niebieskie pudełko"
             },
             "carkey": {
               "name": "Zapasowy kluczyk",
               "note": "czerwona zawieszka"
-            },
-            "insurance": {
-              "name": "Polisy",
-              "note": "zielona teczka"
             }
           }
         }

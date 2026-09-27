@@ -4,9 +4,10 @@ import { expect, test } from "./fixtures.js";
 
 /**
  * PETTY-248: the "One idea, many uses" demo on the landing page. Every example is the app's one
- * pattern — three places, a drawer in the last, four items in the drawer — and each turns into the
- * next. Timers run on Playwright's clock, so the 5 s steps take no real time.
+ * pattern — places in a tree, drawers in places, items in drawers — each in its own shape, and each
+ * turns into the next. Timers run on Playwright's clock, so the 5.5 s steps take no real time.
  */
+const STEP = 5600;
 const EXAMPLES = ["workshop", "trip", "accounts", "cash", "lent", "family"] as const;
 
 async function openDemo(page: Page): Promise<Locator> {
@@ -33,18 +34,18 @@ test("every example is place › drawer › items; it moves on by itself, Pause 
   const toggle = page.getByTestId("use-case-toggle");
   await expect(stage).toHaveAttribute("data-case", "workshop");
   await expect(stage).toContainText("Basement");
-  await expect(stage).toContainText("Desk, right");
-  await expect(page.getByTestId("use-case-drawer")).toHaveText("Drawer 1");
+  await expect(stage).toContainText("Workshop");
+  await expect(page.getByTestId("use-case-drawer").first()).toHaveText("Desk drawer");
   await expect(stage).toContainText("Zip ties");
   await expect(stage).toContainText("50 pcs");
   await expect(page.getByTestId("use-case-workshop")).toHaveAttribute("aria-pressed", "true");
   await expect(toggle).toHaveText("Pause");
 
-  // it moves on by itself, one example every 5 s
-  await page.clock.runFor(5100);
+  // it moves on by itself, one example every 5.5 s
+  await page.clock.runFor(STEP);
   await expect(stage).toHaveAttribute("data-case", "trip");
   await settle(page, stage);
-  await expect(page.getByTestId("use-case-drawer")).toHaveText("George Town, May");
+  await expect(page.getByTestId("use-case-drawer").first()).toHaveText("George Town kitty");
   await expect(stage).toContainText("600.00");
   await expect(stage).toContainText("MYR");
   await expect(page.getByTestId("use-case-trip")).toHaveAttribute("aria-pressed", "true");
@@ -58,21 +59,27 @@ test("every example is place › drawer › items; it moves on by itself, Pause 
   await toggle.click();
   await expect(toggle).toHaveText("Pause");
   await leave(page);
-  await page.clock.runFor(5100);
+  await page.clock.runFor(STEP);
   await expect(stage).toHaveAttribute("data-case", "accounts");
 
-  // every example has the same shape: three places, a drawer, four items, all with words in them
+  // every example is places, drawers and items, all with words in them — each in its own shape —
+  // and every item wears the colour of its kind: money, things or notes
+  const shapes = new Set<string>();
   for (const key of EXAMPLES) {
     await page.getByTestId(`use-case-${key}`).click();
     await expect(stage).toHaveAttribute("data-case", key);
     await settle(page, stage);
-    await expect(stage.locator(".uc-node")).toHaveCount(3);
-    for (const node of await stage.locator(".uc-node").all()) await expect(node).not.toHaveText("");
-    await expect(page.getByTestId("use-case-drawer")).not.toHaveText("");
-    await expect(stage.locator(".uc-item")).toHaveCount(4);
-    for (const item of await stage.locator(".uc-item .uc-item-name").all()) await expect(item).not.toHaveText("");
+    const places = stage.locator(".uc-line.t-place");
+    const drawers = stage.locator(".uc-line.t-drawer");
+    const items = stage.locator(".uc-line.t-item");
+    for (const l of [places, drawers, items]) expect(await l.count()).toBeGreaterThan(0);
+    for (const l of [...(await places.all()), ...(await drawers.all()), ...(await items.all())]) await expect(l).not.toHaveText("");
+    expect(await stage.locator(".uc-line.t-item .tile:is(.k-money, .k-things, .k-notes)").count()).toBe(await items.count());
+    const depth = Math.max(...await places.evaluateAll((els) => els.map((e) => Number(getComputedStyle(e).getPropertyValue("--lvl")))));
+    shapes.add(`${await places.count()}/${depth}/${await drawers.count()}/${await items.count()}`);
     await expect(page.getByTestId(`use-case-${key}`)).toHaveAttribute("aria-pressed", "true");
   }
+  expect(shapes.size, [...shapes].join(" ")).toBeGreaterThanOrEqual(5);
   // picking an example stopped the autoplay for good
   await expect(toggle).toHaveText("Play");
   await leave(page);
@@ -88,7 +95,7 @@ test("reduced motion: the demo never moves on its own, and a picked example show
   await expect(stage).toHaveAttribute("data-case", "workshop");
   await page.getByTestId("use-case-cash").click();
   await expect(stage.getByText("Cash tin")).toBeVisible();
-  await expect(stage.getByText("Drawer 1")).toBeHidden(); // no rolling copy of the old words
+  await expect(stage.getByText("Desk drawer")).toBeHidden(); // no rolling copy of the old words
 });
 
 test("the Polish page shows the same examples in Polish, with no local names or currency", async ({ page }) => {
@@ -97,7 +104,7 @@ test("the Polish page shows the same examples in Polish, with no local names or 
   await expect(page.getByRole("heading", { name: "Jeden pomysł, wiele zastosowań" })).toBeVisible();
   await settle(page, stage);
   await expect(stage).toContainText("Piwnica");
-  await expect(page.getByTestId("use-case-drawer")).toHaveText("Szuflada 1");
+  await expect(page.getByTestId("use-case-drawer").first()).toHaveText("Szuflada biurka");
   for (const key of EXAMPLES) {
     await page.getByTestId(`use-case-${key}`).click();
     await settle(page, stage);

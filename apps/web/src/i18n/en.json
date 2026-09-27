@@ -771,11 +771,15 @@
     "how": "How it's encrypted",
     "uses": {
       "title": "One idea, many uses",
-      "sub": "Places hold drawers, drawers hold items — money, things or notes. The same three pieces fit everything you keep.",
+      "sub": "Places hold drawers, drawers hold items — money, things or notes. Arrange them any way you like; the same three pieces fit everything you keep.",
       "legend": {
         "place": "Place",
         "drawer": "Drawer",
-        "items": "Items"
+        "items": "Items",
+        "all": "Places, drawers and items",
+        "money": "Money",
+        "things": "Things",
+        "notes": "Notes"
       },
       "pick": "Examples",
       "demo": "Example: {title}",
@@ -785,45 +789,60 @@
         "workshop": {
           "chip": "Workshop",
           "title": "Find anything in seconds",
-          "body": "Tools and spare parts, every drawer in its place: the zip ties are always in Basement › Workshop › Desk.",
-          "place": [
-            "Basement",
-            "Workshop",
-            "Desk, right"
-          ],
-          "drawer": "Drawer 1",
-          "meta": "4 items",
-          "items": {
-            "hammer": {
-              "name": "Hammer",
-              "note": "claw, 16 oz"
+          "body": "Every drawer has its place: the zip ties are in Home › Basement › Workshop, in the desk drawer.",
+          "places": {
+            "home": "Home",
+            "basement": "Basement",
+            "workshop": "Workshop"
+          },
+          "drawers": {
+            "desk": {
+              "name": "Desk drawer",
+              "meta": "2 items"
             },
+            "pegboard": {
+              "name": "Pegboard",
+              "meta": "2 items"
+            }
+          },
+          "items": {
             "zipties": {
               "name": "Zip ties",
               "value": "50 pcs"
             },
             "tape": {
               "name": "Duct tape",
-              "note": "silver",
               "value": "2 rolls"
             },
-            "screws": {
-              "name": "Screws 4×30",
-              "value": "120 pcs"
+            "hammer": {
+              "name": "Hammer",
+              "note": "claw, 16 oz"
+            },
+            "drill": {
+              "name": "Drill",
+              "note": "battery charged"
             }
           }
         },
         "trip": {
           "chip": "Trip kitty",
           "title": "Share a trip with friends",
-          "body": "One drawer for the trip, one item per person. Everyone adds what they paid, and nobody can quietly change it.",
-          "place": [
-            "Trips",
-            "2026",
-            "Malaysia"
-          ],
-          "drawer": "George Town, May",
-          "meta": "Shared with Ben, Cara and Dan",
+          "body": "One drawer per trip, one row per person. Everyone adds what they paid, and nobody can quietly change it.",
+          "places": {
+            "trips": "Trips",
+            "malaysia": "Malaysia",
+            "thailand": "Thailand"
+          },
+          "drawers": {
+            "kitty": {
+              "name": "George Town kitty",
+              "meta": "Shared · 3 people"
+            },
+            "next": {
+              "name": "Next: Bangkok",
+              "meta": "Planned"
+            }
+          },
           "items": {
             "anna": {
               "name": "Anna",
@@ -831,106 +850,128 @@
             },
             "ben": {
               "name": "Ben",
-              "note": "night market, taxi"
+              "note": "night market"
             },
             "cara": {
               "name": "Cara",
               "note": "ferry"
             },
-            "dan": {
-              "name": "Dan",
-              "note": "scooters"
+            "passes": {
+              "name": "Rail passes",
+              "note": "bought",
+              "value": "3 pcs"
             }
           }
         },
         "accounts": {
           "chip": "Yearly accounts",
           "title": "The money you forgot you had",
-          "body": "A pension, an old brokerage account, savings: one item each, checked once a year.",
-          "place": [
-            "Home",
-            "Study",
-            "Filing cabinet"
-          ],
-          "drawer": "Accounts",
-          "meta": "Confirmed on 2 January",
-          "items": {
+          "body": "A drawer per account, checked once a year: confirm the balance and the date stays with it.",
+          "places": {
+            "paperwork": "Paperwork"
+          },
+          "drawers": {
             "pension": {
               "name": "Pension",
-              "note": "statement"
+              "meta": "Confirmed 2 Jan"
             },
             "brokerage": {
               "name": "Brokerage",
-              "note": "blue folder"
+              "meta": "Confirmed 2 Jan"
             },
             "savings": {
               "name": "Savings",
-              "note": "3.1% interest"
+              "meta": "Confirmed 2 Jan"
+            }
+          },
+          "items": {
+            "fund": {
+              "name": "Pension fund",
+              "note": "yearly statement"
             },
-            "gold": {
-              "name": "Gold coins",
-              "note": "not in total",
-              "value": "4 pcs"
+            "shares": {
+              "name": "Shares",
+              "note": "index fund"
+            },
+            "cash": {
+              "name": "Cash"
+            },
+            "deposit": {
+              "name": "Deposit",
+              "note": "3.1% a year"
             }
           }
         },
         "cash": {
           "chip": "Cash at home",
           "title": "Every note in its place",
-          "body": "Where Petty started: the cash tin on the kitchen shelf, counted and confirmed.",
-          "place": [
-            "Home",
-            "Kitchen",
-            "Top shelf"
-          ],
-          "drawer": "Cash tin",
-          "meta": "Confirmed today",
+          "body": "Where Petty started: cash around the house, each tin and envelope in its room, counted and confirmed.",
+          "places": {
+            "home": "Home",
+            "kitchen": "Kitchen",
+            "bedroom": "Bedroom"
+          },
+          "drawers": {
+            "tin": {
+              "name": "Cash tin",
+              "meta": "Confirmed today"
+            },
+            "envelope": {
+              "name": "Envelope",
+              "meta": "Sealed"
+            }
+          },
           "items": {
             "groceries": {
               "name": "Groceries",
-              "note": "for the week"
+              "note": "this week"
             },
-            "holiday": {
-              "name": "Holiday money",
-              "note": "for the trip"
-            },
-            "jar": {
-              "name": "Coin jar"
+            "coins": {
+              "name": "Coins"
             },
             "emergency": {
-              "name": "Emergency",
-              "note": "sealed envelope"
+              "name": "Emergency"
+            },
+            "holiday": {
+              "name": "Holiday"
             }
           }
         },
         "lent": {
           "chip": "Lent out",
           "title": "Remember who has your drill",
-          "body": "Things you lent have their own drawer: each item says who has it and since when.",
-          "place": [
-            "Home",
-            "Garage",
-            "Shelf"
-          ],
-          "drawer": "Lent out",
-          "meta": "Shared with Tom",
+          "body": "Things you lent or borrowed get their own drawers: each row says who has it and since when.",
+          "places": {
+            "home": "Home",
+            "garage": "Garage"
+          },
+          "drawers": {
+            "lent": {
+              "name": "Lent out",
+              "meta": "Shared with Tom"
+            },
+            "borrowed": {
+              "name": "Borrowed",
+              "meta": "To give back"
+            }
+          },
           "items": {
             "drill": {
               "name": "Drill",
               "note": "Tom · since May"
             },
-            "book": {
-              "name": "“Dune”",
-              "note": "Kate · since June"
+            "ladder": {
+              "name": "Ladder",
+              "note": "Leo · since Sunday"
             },
             "chairs": {
               "name": "Camping chairs",
               "note": "Maya",
               "value": "4 pcs"
             },
-            "ladder": {
-              "name": "Ladder",
-              "note": "Leo · since Sunday"
+            "tent": {
+              "name": "Tent",
+              "note": "from Sam · by 1 July"
             }
           }
         },
@@ -938,29 +979,38 @@
           "chip": "Family safe",
           "title": "Leave a map, not a mess",
           "body": "Where the passports, keys and papers are — shared read-only with the people who may one day need it.",
-          "place": [
-            "Bedroom",
-            "Wardrobe",
-            "Safe"
-          ],
-          "drawer": "Documents",
-          "meta": "Read-only for Anna",
+          "places": {
+            "home": "Home",
+            "bedroom": "Bedroom",
+            "wardrobe": "Wardrobe",
+            "safe": "Safe"
+          },
+          "drawers": {
+            "documents": {
+              "name": "Documents",
+              "meta": "Read-only for Anna"
+            },
+            "valuables": {
+              "name": "Valuables",
+              "meta": "Read-only for Anna"
+            }
+          },
           "items": {
             "passports": {
               "name": "Passports",
               "value": "3 pcs"
             },
+            "certificates": {
+              "name": "Birth certificates",
+              "value": "2 pcs"
+            },
             "ring": {
               "name": "Grandma's ring",
-              "note": "in the blue box"
+              "note": "blue box"
             },
             "carkey": {
               "name": "Spare car key",
               "note": "red tag"
-            },
-            "insurance": {
-              "name": "Insurance papers",
-              "note": "green folder"
             }
           }
         }
