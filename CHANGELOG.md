@@ -26,9 +26,11 @@ All notable, user-visible changes to Petty. The format follows
   things blue, single items amber — and each drawer card shows one dot per line in those colours, with
   a pin by its place. A drawer's screen opens with its picture: the drawer (its photo or icon) in the
   middle and its lines around it, which glide to their new places when the lines change. The Home total
-  sits beside the home with its drawers on a ring. A line's screen shows its icon in its kind's colour.
-  Lists come in in turn when a screen opens and a changed amount fades in; reduced motion turns all of
-  it off.
+  sits beside the home with its drawers on a ring (on its own when there is no total). A line's screen
+  shows its icon in its kind's colour. The pictures work like the landing page's: a bubble opens what it
+  shows — a drawer from Home, a line from its drawer — and grows into the next screen's picture; a
+  drawer's middle opens its options, and the home clears a picked place. Lists come in in turn when a
+  screen opens and a changed amount fades in; reduced motion turns all of it off.
 - Landing page: a headline about everything you keep, not only cash; the English page no longer talks
   about złoty.
 

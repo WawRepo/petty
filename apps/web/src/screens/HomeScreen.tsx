@@ -17,7 +17,8 @@ import { excludedFromTotal, placesShown, totalsShown, usePins, verificationShown
 import { TagChip } from "../components/TagChip.js";
 import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon } from "../lib/icons.js";
 import { Coins, ListTree, MapPin } from "lucide-react";
-import { HomeArt } from "../components/DrawerArt.js";
+import { HomeArt, vtName } from "../components/DrawerArt.js";
+import { useMorph } from "../lib/nav.js";
 import { PlacePicker } from "../components/PlacePicker.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
@@ -150,6 +151,7 @@ function AddDrawerSheet({ open, tree, onClose, onCreate }: { open: boolean; tree
 export function HomeScreen() {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
+  const morph = useMorph();
   const state = useDrawers();
   const [adding, setAdding] = useState(false);
   // Search (PETTY-47): the field shows on demand; matching waits ~300 ms after the last keystroke.
@@ -223,8 +225,16 @@ export function HomeScreen() {
       return <Fragment key={id}><div className="flip-item" data-flip-id={id}><DrawerRow view={v} counted={!excluded.has(id)} dim={dim} place={sub.length ? placeLabel(sub.map(labelOf)) : ""} placeTestId="sub-place" /></div></Fragment>;
     });
   };
+  // PETTY-250: the home with the drawers of this view around it, as on the landing page — beside the total
+  // when there is one; each bubble opens its drawer, the home clears a picked place
+  const homeArt = (
+    <HomeArt drawers={visibleIds.map((id) => ({ id, icon: drawerIcon(state.drawers.get(id)), name: state.drawers.get(id)?.doc?.name ?? "…" }))}
+      onDrawer={(id) => morph(`/drawers/${id}`, `.drawer-art [data-vt="${vtName("d", id)}"]`)}
+      onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")} />
+  );
   const result = searchDrawers(visibleIds.map((id) => state.drawers.get(id)).filter((v): v is DrawerView => !!v), searching ? debounced : "");
   const active = searching && debounced.trim() !== "";
+  const totalCard = state.status === "ready" && !active && showTotals && counted && (tot.byCurrency.length > 0 || tot.incomplete);
   return (
     <>
       <TopBar title={t("app.name")} brand actions={
@@ -249,7 +259,7 @@ export function HomeScreen() {
         {state.status === "ready" ? <PendingArea /> : null}
         {state.status === "ready" && state.order.length === 0 ? <div className="empty" data-testid="home-empty">{t("home.empty")}<br />{t("home.emptyHint")}</div> : null}
         {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}
-        {state.status === "ready" && !active && showTotals && counted && (tot.byCurrency.length > 0 || tot.incomplete) ? (
+        {totalCard ? (
           <section className="total-card" data-testid="home-totals">
             <div className="tmain">
               <h2 className="label">{filtering ? t("home.totalsIn", { tag: selectedLabels }) : t("home.totals")}</h2>
@@ -265,10 +275,11 @@ export function HomeScreen() {
               <p className="tsub m0" data-testid="totals-across">{t("home.across", { count: visibleIds.filter((id) => !excluded.has(id)).length })}</p>
               {tot.incomplete ? <div className="warn" role="status" data-testid="totals-incomplete">{t("home.incomplete")}</div> : null}
             </div>
-            {/* PETTY-250: the home with the drawers of this view around it, as on the landing page */}
-            <HomeArt drawers={visibleIds.map((id) => ({ id, icon: drawerIcon(state.drawers.get(id)) }))} />
+            {homeArt}
           </section>
         ) : null}
+        {/* no total to show (no money yet, or totals switched off): the picture stands on its own */}
+        {!totalCard && state.status === "ready" && !active && visibleIds.length > 0 ? <section className="home-picture">{homeArt}</section> : null}
         {active || state.status !== "ready" ? null : <Nudges />}
         {state.status === "ready" && !active && showPlaces && labels.size > 0 ? (
           <div className="tag-bar" role="group" aria-label={t("home.tags.label")} data-testid="tag-bar">

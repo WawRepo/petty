@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { useBack } from "../lib/nav.js";
+import { useBack, useMorph } from "../lib/nav.js";
 import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent, staleness, LedgerError, type Line, type Verification, placeLabel, tagsOf, foldText, formatAmount, iconOf, lineCounted, lineTagsOf, normalizeCurrencyCode, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { ConfirmStateSheet } from "../components/ConfirmStateSheet.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
@@ -22,7 +22,7 @@ import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
 import { appendEntry, deleteDrawer, lineBalance, loadAll, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
 import { DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
-import { DrawerArt } from "../components/DrawerArt.js";
+import { DrawerArt, vtName } from "../components/DrawerArt.js";
 import { TagChip } from "../components/TagChip.js";
 import { Coins, Tags } from "lucide-react";
 import { PlacePicker } from "../components/PlacePicker.js";
@@ -136,6 +136,7 @@ export function DrawerScreen() {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
   const back = useBack("/");
+  const morph = useMorph();
   const toast = useToast();
   const { id = "" } = useParams();
   const pinsDoc = usePins().doc;
@@ -323,9 +324,11 @@ export function DrawerScreen() {
         <SyncReport />
         <section className="drawer-head" data-testid="drawer-head">
           {/* PETTY-250: the drawer's picture — its photo or icon in the middle, its lines around it in their kinds' colours */}
-          <DrawerArt lines={lines} testId="drawer-art" center={view.photo
-            ? <img className="uc-bub-disc uc-bub-photo" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" />
-            : <span className="uc-bub-disc tile" aria-hidden="true" data-icon={iconOf(doc) ?? DEFAULT_DRAWER_ICON}><PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} /></span>} />
+          {/* its bubbles are shortcuts: a line's opens the line (growing into its picture), the middle opens the options */}
+          <DrawerArt drawerId={id} lines={lines} testId="drawer-art" icon={view.photo ? null : iconOf(doc) ?? DEFAULT_DRAWER_ICON}
+            center={view.photo ? <img className="uc-bub-photo" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" /> : <PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} />}
+            centerName={t("drawer.options")} onCenter={() => setSheet("options")}
+            onLine={(l) => morph(`/drawers/${id}/lines/${l.id}`, `.hero-bubble[data-vt="${vtName("l", l.id)}"]`)} />
           {/* The name is the sticky top bar's title; the card shows only who edited it last (PETTY-81). */}
           <div className="rowmain">
             <span className="rowsub">{t("drawer.editedAt", { name: memberName(view, view.docAuthor), when: relativeTime(view.summary.last_write_at, i18n.language, t) })}</span>
