@@ -268,8 +268,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       );
     });
     for (const t of toTransfer) {
-      const r = (await apiPool.query<{ email: string }>("select email from users where id = $1", [t.to])).rows[0];
-      if (r) mails.handedOver(r.email, me.display_name);
+      const r = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [t.to])).rows[0];
+      if (r) mails.handedOver(r.email, me.display_name, r.locale);
     }
     await destroySession(reply, null);
     // Clerk mode (PETTY-88): the identity goes too; a failure here leaves a Clerk user with no vault, which the next sign-in reports as NoVault.

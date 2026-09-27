@@ -1,5 +1,7 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/clerk-react";
+import { currentLocale, type Locale } from "./i18n/index.js";
 import { Clerk } from "@clerk/clerk-js";
 import { authConfig } from "./lib/authConfig.js";
 import { setTokenProvider } from "./lib/api.js";
@@ -14,6 +16,26 @@ import { useClerkAppearance } from "./lib/clerkAppearance.js";
 let clerkInstance: Clerk | null = null;
 const clerkJs = (publishableKey: string): Clerk => (clerkInstance ??= new Clerk(publishableKey));
 
+type ClerkLocalization = NonNullable<ComponentProps<typeof ClerkProvider>["localization"]>;
+/** PETTY-249: Clerk's own texts (the sign-in and sign-up forms) in the app's language, each loaded on demand. */
+const CLERK_LOCALES: Record<Locale, () => Promise<ClerkLocalization>> = {
+  en: () => import("@clerk/localizations/en-US").then((m) => m.enUS),
+  pl: () => import("@clerk/localizations/pl-PL").then((m) => m.plPL),
+  de: () => import("@clerk/localizations/de-DE").then((m) => m.deDE),
+  es: () => import("@clerk/localizations/es-ES").then((m) => m.esES),
+  fr: () => import("@clerk/localizations/fr-FR").then((m) => m.frFR),
+};
+function useClerkLocalization(): ClerkLocalization | undefined {
+  const { i18n } = useTranslation();
+  const [localization, setLocalization] = useState<ClerkLocalization | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    void CLERK_LOCALES[currentLocale()]().then((l) => { if (live) setLocalization(l); }).catch(() => undefined);
+    return () => { live = false; };
+  }, [i18n.language]);
+  return localization;
+}
+
 /**
  * The Clerk side of the gate (PETTY-88), its own chunk, loaded only in clerk mode. Once Clerk
  * reports a session, every API call carries its token and the app boots; when it reports none,
@@ -21,9 +43,10 @@ const clerkJs = (publishableKey: string): Clerk => (clerkInstance ??= new Clerk(
  */
 export function ClerkShell({ children }: { children: ReactNode }) {
   const appearance = useClerkAppearance();
+  const localization = useClerkLocalization();
   const publishableKey = authConfig().clerk_publishable_key ?? "";
   return (
-    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join">
+    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join">
       <Bridge>{children}</Bridge>
     </ClerkProvider>
   );

@@ -80,7 +80,7 @@ async function relinkByVerifiedEmail(sub: string): Promise<SessionUser | null> {
     [found.id, sub, found.clerk_user_id],
   );
   const u = rows[0] ?? null;
-  if (u) mails.relinked(u.email);
+  if (u) mails.relinked(u.email, u.locale);
   return u;
 }
 

@@ -20,7 +20,8 @@ a handful of users, not a multi-tenant product.
 ## Stack
 
 Vite + React + React Router (static SPA) · thin backend API · Postgres ·
-Argon2id + AES-256-GCM + ECDH P-256 · English and Polish from day one.
+Argon2id + AES-256-GCM + ECDH P-256 · English and Polish from day one; German, Spanish
+and French since PETTY-249 (every dictionary must pass `pnpm i18n:check`).
 
 Next.js was considered and rejected: with E2EE the server can never render user
 content, so its server half is inert.

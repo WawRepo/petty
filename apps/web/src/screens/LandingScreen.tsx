@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "../components/Button.js";
 import { UseCases } from "../components/UseCases.js";
-import { setLocale } from "../i18n/index.js";
+import { currentLocale, LOCALE_NAMES, LOCALES, setLocale } from "../i18n/index.js";
+import { LanguagePicker } from "../components/LanguagePicker.js";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { appVersion, contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
@@ -15,9 +16,10 @@ import { SOURCE_URL } from "../lib/links.js";
  * Screenshots are real app captures (e2e/marketing.spec.ts) per locale and theme.
  */
 export function LandingScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
-  const loc = i18n.language === "pl" ? "pl" : "en";
+  const loc = currentLocale();
+  const shotLoc = loc; // captures exist for every language (e2e/marketing.spec.ts, PETTY-249)
   // PETTY-108 (audit F1): a visitor needs a way in. With Clerk, sign-up is self-serve; in local mode Petty is invite-only.
   const open = isClerk() || openSignup(); // PETTY-215: local open-signup also gets the self-serve CTA
   const contact = contactEmail();
@@ -30,14 +32,16 @@ export function LandingScreen() {
   );
   const [big, setBig] = useState<number | null>(null);
   const shots = (["home", "drawer", "items", "places", "entry"] as const).map((n) => ({
-    light: `/landing/${n}-${loc}-light.webp`,
-    dark: `/landing/${n}-${loc}-dark.webp`,
+    light: `/landing/${n}-${shotLoc}-light.webp`,
+    dark: `/landing/${n}-${shotLoc}-dark.webp`,
     alt: t(`landing.shots.${n}`),
   }));
   const features = ["private", "shared", "places", "currencies", "verify", "passkey"] as const; // PETTY-135 (audit F28): one grid of six, the pillars folded in
   const faqs = ["see", "places", "lost", "undo", "cost", "phone"] as const;
   return (
     <main className="landing">
+      {/* PETTY-249: the language switch at the top, where a visitor looks first */}
+      <div className="landing-lang"><LanguagePicker compact testId="landing-language" /></div>
       <section className="landing-hero">
         <div className="landing-brand">
           <img src="/icon.svg" alt="" width="64" height="64" className="landing-logo" />
@@ -117,9 +121,8 @@ export function LandingScreen() {
       </section>
 
       <footer className="landing-footer">
-        <div className="actions m0">
-          <Button variant="ghost" onClick={() => setLocale("en")} aria-pressed={loc === "en"}>English</Button>
-          <Button variant="ghost" onClick={() => setLocale("pl")} aria-pressed={loc === "pl"}>Polski</Button>
+        <div className="actions m0 landing-langs" role="group" aria-label={t("settings.language")}>
+          {LOCALES.map((l) => <Button key={l} variant="ghost" onClick={() => { void setLocale(l); }} aria-pressed={loc === l} lang={l}>{LOCALE_NAMES[l]}</Button>)}
         </div>
         <Button variant="ghost" onClick={() => nav("/login")}>{t("auth.login.title")}</Button>
         <Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>

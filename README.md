@@ -29,7 +29,7 @@ choose. Everything is encrypted on your device before it is sent.
   [docs/agent.md](docs/agent.md).
 - **Passkey first, works offline.** Face ID, Touch ID or Windows Hello opens your vault. It
   installs like an app and keeps working without a network.
-- **English and Polish.**
+- **English, Polish, German, Spanish and French** — the app, its emails and the sign-in pages.
 
 ## Documentation
 

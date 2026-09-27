@@ -95,6 +95,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Contributions (2026-09-25).** AGPL inbound = outbound with a DCO `Signed-off-by` per commit; no CLA.
 - **History (2026-09-25).** Deleted hosting files and private repository names in git history are
   accepted as public (no credentials); no history rewrite.
+- **Languages (PETTY-249).** English, Polish, German, Spanish and French: the app, the Clerk sign-in
+  forms and every email. English is built in; the others load on demand. A first visit follows the
+  browser's language; a choice is kept on the device and, signed in, on the account (so emails follow
+  it). A join link goes out in the inviter's language. Informal address in German and Spanish (du, tú),
+  formal in French (vous). `i18n:check` fails on a missing key, a broken ICU message, a changed
+  placeholder or a plural category the language does not have.
 - **Storage limits (PETTY-243).** The server counts only ciphertext bytes; it never needs to read
   anything to enforce a limit. A photo is at most 300 KB before sealing, enforced by the API as well
   as the client; an entry at most 16 KiB sealed. An optional per-person quota (`STORAGE_QUOTA_MB`,

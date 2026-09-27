@@ -24,7 +24,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     const body = InviteBody.parse(req.body);
     if (body.invitee_id === me.id) throw badRequest("SelfInvite", "you already own this drawer");
     if (body.wrap.drawer_id !== drawer.id || body.wrap.key_version !== drawer.key_version) throw badRequest("WrapMismatch", "wrap must be for this drawer at the current key version", { key_version: drawer.key_version });
-    const invitee = (await apiPool.query("select u.id, u.email, k.id as key_id from users u left join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1 and u.deleted_at is null", [body.invitee_id])).rows[0];
+    const invitee = (await apiPool.query("select u.id, u.email, u.locale, k.id as key_id from users u left join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1 and u.deleted_at is null", [body.invitee_id])).rows[0];
     if (!invitee) throw notFound("UserNotFound");
     if (!invitee.key_id) throw badRequest("InviteeHasNoKeys", "invitee has not finished onboarding");
     const member = await apiPool.query("select 1 from drawer_members where drawer_id = $1 and user_id = $2", [drawer.id, body.invitee_id]);
@@ -34,7 +34,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
         "insert into invitations (drawer_id, inviter_id, invitee_id, role, key_version, wrap) values ($1, $2, $3, $4, $5, $6) returning id, created_at",
         [drawer.id, me.id, body.invitee_id, body.role, drawer.key_version, JSON.stringify({ ...body.wrap, sender_id: me.id })],
       );
-      mails.invitation(invitee.email, me.display_name, body.role);
+      mails.invitation(invitee.email, me.display_name, body.role, invitee.locale);
       return reply.code(201).send({ id: rows[0]!.id, created_at: iso(rows[0]!.created_at) });
     } catch (e) {
       if ((e as { code?: string }).code === "23505") throw conflict("InvitationPending", "an invitation is already pending");
@@ -102,8 +102,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "owner");
     await removeMember(req.params.id, req.params.userId);
-    const u = (await apiPool.query<{ email: string }>("select email from users where id = $1", [req.params.userId])).rows[0];
-    if (u) mails.revoked(u.email, me.display_name);
+    const u = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [req.params.userId])).rows[0];
+    if (u) mails.revoked(u.email, me.display_name, u.locale);
     return reply.code(204).send();
   });
 
@@ -126,8 +126,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       "insert into ownership_transfers (drawer_id, from_user_id, to_user_id) values ($1, $2, $3) on conflict (drawer_id) do update set from_user_id = excluded.from_user_id, to_user_id = excluded.to_user_id, created_at = now()",
       [req.params.id, me.id, body.to_user_id],
     );
-    const u = (await apiPool.query<{ email: string }>("select email from users where id = $1", [body.to_user_id])).rows[0];
-    if (u) mails.transferOffered(u.email, me.display_name);
+    const u = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [body.to_user_id])).rows[0];
+    if (u) mails.transferOffered(u.email, me.display_name, u.locale);
     return reply.code(201).send({ drawer_id: req.params.id, to_user_id: body.to_user_id });
   });
 
@@ -140,8 +140,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [req.params.id, me.id]);
       await db.query("insert into drawer_members (drawer_id, user_id, role) values ($1, $2, 'write') on conflict do nothing", [req.params.id, t.from_user_id]);
       await db.query("delete from ownership_transfers where drawer_id = $1", [req.params.id]);
-      const u = (await db.query<{ email: string }>("select email from users where id = $1", [t.from_user_id])).rows[0];
-      if (u) mails.transferDone(u.email, me.display_name);
+      const u = (await db.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [t.from_user_id])).rows[0];
+      if (u) mails.transferDone(u.email, me.display_name, u.locale);
     });
     return reply.code(204).send();
   });

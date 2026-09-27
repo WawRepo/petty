@@ -208,10 +208,6 @@
       "totalsHint": "The Total value card and the subtotals on the home screen, the totals card and the “in total” chips on a drawer. Turn off to see only what each drawer and line holds."
     },
     "language": "Language",
-    "languages": {
-      "en": "English",
-      "pl": "Polski"
-    },
     "account": "Account",
     "signedInAs": "Signed in as {email}",
     "safetyNumber": "Your safety number",
@@ -329,7 +325,7 @@
       "type": "Type",
       "name": "Name",
       "currency": "Currency",
-      "currencyHint": "Three letters, for example PLN, EUR or USD.",
+      "currencyHint": "Three letters, for example EUR, USD or GBP.",
       "unit": "Unit (optional)",
       "unitPlaceholder": "e.g. glass balls",
       "startingBalance": "Starting balance",
@@ -420,7 +416,7 @@
       "lines": "{count, plural, one {# item} other {# items}}",
       "byTool": "changed by a tool",
       "restore": "Restore",
-      "restoreNamed": "Restore the version from {{when}}",
+      "restoreNamed": "Restore the version from {when}",
       "restored": "Earlier version restored."
     }
   },
@@ -766,8 +762,8 @@
   },
   "landing": {
     "slogan": "Small amounts. Big peace of mind.",
-    "tagline": "A shared ledger for the cash in your drawers — encrypted so only you can read it.",
-    "sub": "Cash in the kitchen drawer, euros for the holiday, the club's cash box: count it once, give each drawer its place, share it with the people who use it.",
+    "tagline": "Everything you keep, in its place — shared with the people you choose, encrypted end to end.",
+    "sub": "Cash in the kitchen tin, tools in the basement, passports in the safe: give every drawer its place, list what is inside, and share it with the people who use it.",
     "how": "How it's encrypted",
     "uses": {
       "title": "One idea, many uses",
@@ -1041,7 +1037,7 @@
       },
       "currencies": {
         "title": "Currencies and things",
-        "body": "Zloty and euro side by side — plus countable things like keys or documents. Tag any line and filter by tag."
+        "body": "Euro and dollar side by side — plus countable things like keys or documents. Tag any line and filter by tag."
       },
       "verify": {
         "title": "Count, confirm, never erase",
@@ -1062,7 +1058,7 @@
     },
     "stepsTitle": "How it works",
     "steps": {
-      "one": "Make a drawer for each place you keep cash, put it in its room or shelf, and put in what is there now.",
+      "one": "Make a drawer for each place you keep cash or things, put it in its room or shelf, and list what is there now.",
       "two": "Add or withdraw with two taps whenever money moves. Reverse mistakes.",
       "three": "Count the drawer now and then and confirm it. Share it with the people who use it."
     },
@@ -1244,7 +1240,7 @@
     "askTitle": "3. Ask",
     "ask": [
       "What is in my kitchen drawer?",
-      "Add 10 zł to kitchen cash, from groceries.",
+      "Add €10 to kitchen cash, from groceries.",
       "I counted 37.50 in the tin. Set it.",
       "What did I take from the shed this week?",
       "Which drawers hold euros?"

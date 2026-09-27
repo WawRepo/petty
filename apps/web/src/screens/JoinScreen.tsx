@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { currentLocale } from "../i18n/index.js";
 import { useNavigate, useParams } from "react-router";
 import { openSignup } from "../lib/authConfig.js";
 import type { Me } from "@petty/protocol";
@@ -20,7 +21,7 @@ type Step = { kind: "form" } | { kind: "recovery"; code: string };
 
 /** Two screens: the form (keys are generated and wrapped in the browser — under a passkey first, PETTY-102), then the recovery code that must be typed back once. */
 export function JoinScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { token: pathToken } = useParams();
   const [token] = useState(() => pathToken ?? location.hash.replace(/^#/, ""));
@@ -51,7 +52,7 @@ export function JoinScreen() {
       const m = await createVaultMaterial(door.method === "passkey"
         ? { kind: "passkey", email, displayName: name, label: door.label || t("settings.passkey.thisDevice") }
         : { kind: "passphrase", passphrase: door.passphrase });
-      const me = await api<Me>("POST", "/auth/signup", { ...(token ? { join_token: token } : {}), email, password, display_name: name, locale: i18n.language === "pl" ? "pl" : "en", ...m.body });
+      const me = await api<Me>("POST", "/auth/signup", { ...(token ? { join_token: token } : {}), email, password, display_name: name, locale: currentLocale(), ...m.body });
       if (m.body.passkey) rememberPasskey(m.body.passkey.credential_id);
       await afterLogin(me);
       await unlockWithKeys(m.keys);

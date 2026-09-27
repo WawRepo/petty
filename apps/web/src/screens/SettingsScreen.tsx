@@ -6,7 +6,7 @@ import { Button } from "../components/Button.js";
 import { TopBar } from "../components/TopBar.js";
 import { TagManager } from "../components/TagManager.js";
 import { useToast } from "../components/Toast.js";
-import { LOCALES, setLocale, type Locale } from "../i18n/index.js";
+import { LanguagePicker } from "../components/LanguagePicker.js";
 import { lockNow, mySafetyNumber, signOut, useAuth } from "../lib/session.js";
 import { api } from "../lib/api.js";
 import { BackupSection } from "../components/BackupSection.js";
@@ -170,12 +170,8 @@ export function SettingsScreen() {
       <TopBar title={t("settings.title")} onBack={back} />
       <main className="stack">
         <section className="card">
-          <div className="field">
-            <label htmlFor="locale">{t("settings.language")}</label>
-            <select id="locale" value={i18n.language} onChange={(e) => setLocale(e.target.value as Locale)}>
-              {LOCALES.map((l) => <option key={l} value={l}>{t(`settings.languages.${l}`)}</option>)}
-            </select>
-          </div>
+          {/* PETTY-249: the choice is also stored on the account, so emails come in this language */}
+          <LanguagePicker testId="settings-language" onPick={(l) => { void api("PATCH", "/me", { locale: l }).then(() => updateMe({ locale: l })).catch(() => undefined); }} />
         </section>
         <section className="card" data-testid="home-section">
           <h2 className="h-card">{t("settings.home.title")}</h2>

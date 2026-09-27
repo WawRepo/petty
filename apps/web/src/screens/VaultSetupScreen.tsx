@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { currentLocale } from "../i18n/index.js";
 import { Navigate, useNavigate } from "react-router";
 import type { Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
@@ -20,7 +21,7 @@ type Step = { kind: "form" } | { kind: "recovery"; code: string };
  * back once.
  */
 export function VaultSetupScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [step, setStep] = useState<Step>({ kind: "form" });
   const [name, setName] = useState("");
@@ -39,7 +40,7 @@ export function VaultSetupScreen() {
       const m = await createVaultMaterial(door.method === "passkey"
         ? { kind: "passkey", email: t("auth.setup.passkeyAccount"), displayName: name.trim() || t("auth.setup.passkeyAccount"), label: door.label || t("settings.passkey.thisDevice") }
         : { kind: "passphrase", passphrase: door.passphrase });
-      const me = await api<Me>("POST", "/auth/provision", { ...(name.trim() ? { display_name: name.trim() } : {}), locale: i18n.language === "pl" ? "pl" : "en", ...m.body });
+      const me = await api<Me>("POST", "/auth/provision", { ...(name.trim() ? { display_name: name.trim() } : {}), locale: currentLocale(), ...m.body });
       if (m.body.passkey) rememberPasskey(m.body.passkey.credential_id);
       await afterLogin(me);
       await unlockWithKeys(m.keys);

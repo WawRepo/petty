@@ -1,0 +1,1279 @@
+{
+  "app": {
+    "name": "Petty",
+    "loading": "Cargando…",
+    "back": "Atrás",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "done": "Listo",
+    "continue": "Continuar",
+    "retry": "Reintentar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "crashed": "No se pudo cargar esta página. Recarga para obtener la versión actual de Petty.",
+    "reload": "Recargar",
+    "offline": "Estás sin conexión.",
+    "yes": "Sí",
+    "no": "No",
+    "sourceCode": "Código fuente",
+    "thirdPartyNotices": "Avisos de terceros"
+  },
+  "nav": {
+    "settings": "Ajustes",
+    "home": "Cajones",
+    "account": "Cuenta"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "email": "Correo electrónico",
+      "password": "Contraseña de acceso",
+      "submit": "Iniciar sesión",
+      "failed": "Correo o contraseña incorrectos.",
+      "tooMany": "Demasiados intentos. Espera unos minutos.",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "noAccount": "¿Aún no tienes cuenta? Por ahora, Petty funciona solo con invitación.",
+      "about": "¿Qué es Petty?"
+    },
+    "reset": {
+      "title": "Restablecer la contraseña de acceso",
+      "body": "Esto solo restablece la contraseña de acceso. Nunca toca la bóveda: solo tu frase de contraseña de la bóveda o tu código de recuperación abren tus datos. Si pierdes ambos, pide a otro miembro de un cajón compartido que vuelva a compartirlo contigo.",
+      "send": "Enviar enlace",
+      "sent": "Si esa dirección tiene una cuenta, le llegará un enlace para restablecer la contraseña. Funciona una sola vez, durante una hora.",
+      "ok": "Entendido",
+      "emailInvalid": "Escribe tu dirección de correo electrónico.",
+      "newTitle": "Nueva contraseña de acceso",
+      "newHint": "Elige una nueva contraseña de acceso. Tu frase de contraseña de la bóveda no cambia.",
+      "newPassword": "Nueva contraseña de acceso",
+      "repeat": "Repite la nueva contraseña",
+      "mismatch": "Las dos contraseñas no coinciden.",
+      "submit": "Establecer contraseña",
+      "done": "Contraseña de acceso cambiada. Inicia sesión con la nueva.",
+      "invalid": "Este enlace no es válido, ya se usó o tiene más de una hora. Pide uno nuevo.",
+      "toLogin": "Volver al inicio de sesión"
+    },
+    "join": {
+      "title": "Crea tu cuenta",
+      "invalid": "Este enlace de invitación no es válido o ya se usó.",
+      "invitedBy": "Invitación de {name}",
+      "displayName": "Tu nombre",
+      "email": "Correo electrónico",
+      "password": "Contraseña de acceso",
+      "passwordHint": "Al menos 8 caracteres. Solo sirve para iniciar sesión.",
+      "passphrase": "Frase de contraseña de la bóveda",
+      "passphraseHint": "Al menos 12 caracteres y distinta de la contraseña de acceso. Abre tu bóveda cifrada y nadie puede restablecerla.",
+      "passphraseRepeat": "Repite la frase de contraseña de la bóveda",
+      "submit": "Crear cuenta",
+      "working": "Creando tus claves…",
+      "errors": {
+        "passwordShort": "La contraseña de acceso necesita al menos 8 caracteres.",
+        "passphraseShort": "La frase de contraseña de la bóveda necesita al menos 12 caracteres.",
+        "passphraseSame": "La frase de contraseña de la bóveda debe ser distinta de la contraseña de acceso.",
+        "passphraseWeak": "Esta frase de contraseña es demasiado fácil de adivinar. Usa más palabras.",
+        "passphraseMismatch": "Las frases de contraseña no coinciden.",
+        "emailTaken": "Este correo ya tiene una cuenta.",
+        "linkMismatch": "Este enlace de invitación es para otra dirección de correo."
+      },
+      "explainer": {
+        "title": "Cómo funciona la bóveda, en un minuto",
+        "password": "La contraseña de acceso sirve para iniciar sesión. Si la olvidas, podemos restablecerla por correo.",
+        "passphrase": "La frase de contraseña de la bóveda cifra tus registros de efectivo en tu teléfono. Nunca la vemos y no podemos restablecerla. Deja que tu gestor de contraseñas la guarde cuando te lo pida.",
+        "recovery": "Después recibirás un código de recuperación. Escríbelo en papel. Es la única otra forma de entrar si pierdes todas tus llaves de acceso u olvidas la frase de contraseña.",
+        "passkey": "Una llave de acceso en este dispositivo (Face ID, Touch ID, Windows Hello) abre tus registros de efectivo. Nunca la vemos. En un dispositivo nuevo, tu teléfono puede dar el visto bueno una vez, o puedes añadir allí una llave de acceso."
+      },
+      "passkeyHint": "Tu dispositivo te pedirá Face ID, Touch ID, Windows Hello o un PIN. No tienes que recordar nada.",
+      "usePassphrase": "Usar una frase de contraseña",
+      "usePasskey": "Usar una llave de acceso",
+      "submitPasskey": "Crear bóveda con llave de acceso",
+      "invalidHint": "Los enlaces de invitación funcionan una sola vez y caducan a los 7 días. Pide uno nuevo a la persona que te invitó.",
+      "haveAccount": "¿Ya tienes una cuenta?"
+    },
+    "recovery": {
+      "title": "Tu código de recuperación",
+      "body": "Anota este código y guárdalo en un lugar seguro. Es la única forma de volver a tu bóveda si pierdes tus llaves de acceso u olvidas la frase de contraseña. No se volverá a mostrar.",
+      "confirmLabel": "Escribe el código para confirmar que lo guardaste",
+      "mismatch": "No coincide. Revisa cada grupo.",
+      "done": "Ya lo guardé"
+    },
+    "unlock": {
+      "title": "Desbloquea tu bóveda",
+      "passphrase": "Frase de contraseña de la bóveda",
+      "submit": "Desbloquear",
+      "wrong": "Esa frase de contraseña no abrió la bóveda.",
+      "working": "Desbloqueando…",
+      "signOut": "Cerrar sesión",
+      "useRecovery": "¿Olvidaste la frase de contraseña? Usa tu código de recuperación",
+      "recoveryTitle": "Recupera el acceso con tu código",
+      "recoveryCode": "Código de recuperación",
+      "newPassphrase": "Nueva frase de contraseña de la bóveda",
+      "newPassphraseRepeat": "Repite la nueva frase de contraseña",
+      "recover": "Establecer nueva frase de contraseña",
+      "recoverWrong": "Ese código no abrió la bóveda.",
+      "recoverDone": "Frase de contraseña de la bóveda cambiada. Desbloquea con la nueva.",
+      "loginPassword": "Tu contraseña de acceso",
+      "managerHint": "Tu gestor de contraseñas puede guardar esta frase de contraseña. Queda cifrada en tu dispositivo, como tus contraseñas guardadas.",
+      "passkey": "Desbloquear con llave de acceso",
+      "passkeyWrong": "La llave de acceso no abrió la bóveda.",
+      "passkeyNoPrf": "Este navegador no puede usar aquí la llave de acceso. Usa tu frase de contraseña.",
+      "passkeyHint": "Face ID, Touch ID, Windows Hello o una llave de seguridad. Si tu llave de acceso está en tu teléfono, el navegador muestra un código QR para escanear.",
+      "passkeyUnsupported": "Este navegador no puede usar llaves de acceso como Petty necesita. Usa tu frase de contraseña o el código de recuperación, o abre Petty en Safari, Chrome o Edge.",
+      "orPassphrase": "O escribe la frase de contraseña",
+      "useRecoveryNoPassphrase": "¿No tienes a mano tu llave de acceso? Usa tu código de recuperación",
+      "recoverSetsPassphrase": "El código abre la bóveda una sola vez. Elige ahora una frase de contraseña: será una segunda forma de entrar, además de tus llaves de acceso.",
+      "recoverSet": "Frase de contraseña establecida. Desbloquea con ella o con una llave de acceso.",
+      "passkeyNoPrfNoPassphrase": "Este navegador no puede usar aquí la llave de acceso. Prueba Safari, Chrome o Edge, o usa tu código de recuperación.",
+      "addHereTitle": "¿Añadir una llave de acceso para este dispositivo?",
+      "addHereBody": "Desbloqueaste con una llave de acceso de otro dispositivo. Añade una aquí y la próxima vez este dispositivo abrirá la bóveda por sí solo.",
+      "addHere": "Añadir llave de acceso",
+      "notNow": "Ahora no"
+    },
+    "lock": {
+      "now": "Bloquear ahora",
+      "locked": "Bóveda bloqueada."
+    },
+    "signOut": "Cerrar sesión",
+    "setup": {
+      "title": "Configura tu bóveda",
+      "submit": "Crear bóveda",
+      "displayName": "Nombre (opcional)",
+      "displayNameHint": "Así te ven las personas con las que compartes cajones. Si lo dejas vacío, se usa tu nombre de Clerk.",
+      "already": "Esta cuenta ya tiene una bóveda. Recarga la aplicación.",
+      "explainer": {
+        "identity": "Ya iniciaste sesión. La bóveda es una segunda cerradura, independiente: abre tus cajones en este dispositivo y nunca sale de él."
+      },
+      "passkeyAccount": "Bóveda de Petty"
+    }
+  },
+  "home": {
+    "signOutTitle": "¿Cerrar sesión?",
+    "signOutBody": "Para volver a entrar necesitarás tu contraseña de acceso y tu frase de contraseña de la bóveda.",
+    "empty": "Aún no hay cajones.",
+    "emptyHint": "Añade uno para empezar a controlar tu efectivo.",
+    "count": "{count, plural, one {# cajón} other {# cajones}}",
+    "addDrawer": "Añadir cajón",
+    "comingSoon": "Los cajones llegan en el próximo paso.",
+    "totals": "Valor total",
+    "totalsIn": "Valor total · {tag}",
+    "across": "{count, plural, one {En # cajón} other {En # cajones}}",
+    "drawersTitle": "Cajones",
+    "items": "{count, plural, one {# elemento} other {# elementos}}",
+    "currencies": "{count, plural, one {# divisa} other {# divisas}}",
+    "tags": {
+      "label": "Filtrar por lugar",
+      "all": "Todos",
+      "elsewhere": "En otro lugar"
+    },
+    "notInTotal": "Fuera de tu total",
+    "search": {
+      "open": "Buscar en todos los cajones",
+      "close": "Cerrar la búsqueda",
+      "label": "Buscar elementos y etiquetas en todos los cajones",
+      "placeholder": "Busca nombres o etiquetas, p. ej. pasaporte",
+      "count": "{lines, plural, one {# elemento} other {# elementos}} en {drawers, plural, one {# cajón} other {# cajones}}",
+      "none": "No hay coincidencias.",
+      "hitsIn": "Coincidencias en {name}",
+      "unavailable": "No se pudo leer este cajón, así que no se puede buscar en él."
+    },
+    "totalsCount": "{count, plural, one {Total en # divisa} other {Total en # divisas}}",
+    "incomplete": "No se pudieron leer algunos cajones. El total está incompleto.",
+    "addDrawerTitle": "Añadir cajón",
+    "drawerName": "Nombre",
+    "drawerNamePlaceholder": "p. ej. Cocina",
+    "add": "Añadir",
+    "lines": "{count, plural, one {# línea} other {# líneas}}",
+    "degraded": "No se pudo descifrar este cajón.",
+    "loadFailed": "No se pudieron cargar tus cajones.",
+    "warn": "Requiere atención",
+    "degradedReason": {
+      "no_key": "Aún no tienes la clave de este cajón.",
+      "sender_unknown": "La clave la compartió alguien a quien no habías visto antes.",
+      "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
+      "unwrap_failed": "No se pudo abrir la clave del cajón.",
+      "decrypt_failed": "No se pudo descifrar este cajón.",
+      "bad_document": "El documento del cajón no es válido.",
+      "unknown_schema": "Este cajón lo escribió una versión más reciente de Petty."
+    },
+    "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "home": {
+      "title": "Pantalla de inicio",
+      "places": "Mostrar lugares",
+      "placesHint": "Agrupa los cajones por habitación y muestra los filtros de lugar. Desactivado: una sola lista.",
+      "verification": "Mostrar confirmaciones",
+      "verificationHint": "La barra «Confirmar estado» de los cajones, su historial y las insignias de confirmado. Desactívalo si nunca cuentas ni confirmas.",
+      "totals": "Mostrar totales",
+      "totalsHint": "La tarjeta Valor total y los subtotales de la pantalla de inicio, y en cada cajón la tarjeta de totales y las marcas «En el total». Desactívalo para ver solo lo que contiene cada cajón y cada línea."
+    },
+    "language": "Idioma",
+    "account": "Cuenta",
+    "signedInAs": "Sesión iniciada como {email}",
+    "safetyNumber": "Tu número de seguridad",
+    "safetyNumberHint": "Compáralo en persona con quien compartas un cajón.",
+    "joinLink": "Invitar a alguien a Petty",
+    "joinLinkHint": "Crea un enlace de un solo uso (válido 7 días). Envíaselo tú a esa persona y, cuando tenga cuenta, comparte un cajón con ella.",
+    "joinLinkCreate": "Crear enlace de invitación",
+    "joinLinkCopy": "Copiar",
+    "joinLinkCopied": "Enlace copiado",
+    "deleteAccount": "Eliminar cuenta",
+    "changePassphrase": "Cambiar la frase de contraseña de la bóveda",
+    "currentPassphrase": "Frase de contraseña actual de la bóveda",
+    "passphraseChanged": "Frase de contraseña de la bóveda cambiada.",
+    "passkey": {
+      "title": "Llaves de acceso",
+      "offHint": "Una llave de acceso (Face ID, Touch ID, Windows Hello o una llave de seguridad) abre la bóveda en el dispositivo donde la añades. Añade una en cada dispositivo que uses.",
+      "add": "Añadir llave de acceso",
+      "remove": "Eliminar",
+      "unsupported": "Este navegador no admite llaves de acceso como Petty necesita (Firefox aún no). Prueba Safari, Chrome o Edge.",
+      "addHint": "Escribe la frase de contraseña de la bóveda. Después tu dispositivo te pedirá Face ID, Touch ID, un PIN o una llave de seguridad.",
+      "removeHint": "La llave de acceso «{name}» dejará de abrir la bóveda. Tus otras llaves de acceso, la frase de contraseña y el código de recuperación siguen funcionando.",
+      "added": "Llave de acceso configurada. Desde ahora puedes desbloquear con ella.",
+      "removed": "Llave de acceso eliminada.",
+      "cancelled": "Se canceló la solicitud de la llave de acceso.",
+      "noPrf": "Esta llave de acceso no puede guardar una clave de bóveda en este navegador. Prueba otro navegador o una llave de seguridad.",
+      "nudge": "Añade una llave de acceso para este dispositivo: Face ID, Touch ID o Windows Hello podrán abrir la bóveda la próxima vez.",
+      "nudgeGo": "Añadir llave de acceso",
+      "nudgeLater": "Ahora no",
+      "removeClerk": "Aquí no hace falta contraseña para eliminar la llave de acceso: ya iniciaste sesión con tu cuenta.",
+      "listHint": "Estas llaves de acceso abren tu bóveda. Elimina las de los dispositivos que ya no tengas.",
+      "removeTitle": "Eliminar llave de acceso",
+      "removeNamed": "Eliminar la llave de acceso {name}",
+      "label": "Nombre de esta llave de acceso",
+      "labelHint": "El dispositivo donde está, por ejemplo iPhone o portátil del trabajo.",
+      "thisDevice": "Este dispositivo",
+      "unnamed": "Llave de acceso",
+      "addedOn": "Añadida el {date}",
+      "addHintPasskey": "Primero lo confirma tu llave de acceso actual (si está en tu teléfono, escanea el código QR). Después este dispositivo te pedirá Face ID, Touch ID, un PIN o una llave de seguridad.",
+      "lastDoor": "Es tu última llave de acceso y no tienes frase de contraseña. Primero establece una frase de contraseña de respaldo.",
+      "exists": "Este dispositivo ya tiene una llave de acceso para esta bóveda."
+    },
+    "setPassphrase": "Establecer una frase de contraseña de respaldo",
+    "setPassphraseHint": "Una frase de contraseña abre la bóveda donde las llaves de acceso no pueden. Primero lo confirma tu llave de acceso actual.",
+    "passphraseSet": "Frase de contraseña de respaldo establecida.",
+    "recovery": {
+      "new": "Crear un nuevo código de recuperación",
+      "hint": "Tu código de recuperación actual deja de funcionar en cuanto guardes el nuevo. Escribe tu frase de contraseña de la bóveda para crearlo.",
+      "hintPasskey": "Tu código de recuperación actual deja de funcionar en cuanto guardes el nuevo. Tu llave de acceso confirma que eres tú.",
+      "make": "Crear el código",
+      "saved": "Nuevo código de recuperación guardado. El anterior ya no funciona."
+    },
+    "storage": {
+      "title": "Almacenamiento",
+      "used": "{used} de {quota} en uso",
+      "hint": "Cuenta todo lo que hay en los cajones de tu propiedad, incluido lo que añaden las personas con las que los compartes. Las fotos son lo que más espacio ocupa."
+    }
+  },
+  "keypad": {
+    "delete": "Borrar el último dígito",
+    "decimal": "Separador decimal"
+  },
+  "errors": {
+    "network": "No se pudo conectar con el servidor.",
+    "unknown": "Algo salió mal.",
+    "sessionExpired": "Tu sesión terminó. Vuelve a iniciar sesión.",
+    "storageFull": "Tu almacenamiento está lleno. Quita fotos o cajones que ya no necesites. En Ajustes puedes ver cuánto usas.",
+    "ownerStorageFull": "El propietario de este cajón no tiene espacio libre, así que el cambio no se guardó. Pídele que libere espacio.",
+    "photoTooLarge": "Esta foto es demasiado grande. Elige una más pequeña."
+  },
+  "drawer": {
+    "options": "Opciones del cajón",
+    "icon": "Icono",
+    "editedAt": "Última edición: {name} · {when}",
+    "totals": {
+      "title": "Total",
+      "all": "Todos los elementos",
+      "notInTotal": "Fuera del total",
+      "countsToward": "{included, plural, one {# de {total} elementos cuenta para este total} other {# de {total} elementos cuentan para este total}}",
+      "none": "Aún no hay líneas de dinero"
+    },
+    "filter": {
+      "all": "Todos los elementos",
+      "included": "En el total",
+      "excluded": "Fuera del total",
+      "allTags": "Todas las etiquetas"
+    },
+    "counted": "Incluir en mi total",
+    "countedHint": "Desactívalo para el efectivo que solo guardas para otros, como la caja de un club. Solo cambia tu vista.",
+    "rename": "Cambiar nombre del cajón",
+    "tags": "Lugar",
+    "tagsPlaceholder": "cocina estante",
+    "tagsHint": "Palabras separadas por espacios, de la habitación a la caja, p. ej. «cocina estante». Hasta 5 palabras. Lo ven todos los que comparten el cajón.",
+    "delete": "Eliminar cajón",
+    "deleteConfirm": "¿Eliminar «{name}» con todas sus líneas y su historial? Esto no se puede deshacer.",
+    "deleteBtn": "Eliminar",
+    "deleteType": "Escribe el nombre del cajón para confirmar",
+    "photoAdd": "Añadir foto",
+    "photoChange": "Cambiar foto",
+    "photoRemove": "Quitar foto",
+    "photoAlt": "Foto de {name}",
+    "photoProcessing": "Preparando la foto…",
+    "photoFailed": "No se pudo leer esa imagen. Prueba con otra foto.",
+    "addLine": "Añadir línea",
+    "noLines": "Este cajón aún no tiene líneas.",
+    "editedBy": "Última edición: {name}",
+    "dragHandle": "Mover {name}: arrastra o usa las teclas de flecha",
+    "lineOptions": "Opciones de {name}",
+    "open": "Abrir {name}",
+    "kind": {
+      "money": "Dinero",
+      "countable": "Por unidades",
+      "single": "Objeto individual"
+    },
+    "fields": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "currency": "Divisa",
+      "currencyHint": "Tres letras, por ejemplo EUR, USD o GBP.",
+      "unit": "Unidad (opcional)",
+      "unitPlaceholder": "p. ej. canicas",
+      "startingBalance": "Saldo inicial",
+      "startingCount": "Cantidad inicial",
+      "text": "Texto (opcional)",
+      "textPlaceholder": "p. ej. número, vencimiento, ubicación…",
+      "namePlaceholder": {
+        "money": "p. ej. USD cocina",
+        "countable": "p. ej. Canicas",
+        "single": "p. ej. Pasaporte"
+      },
+      "currencyQuick": "Divisas habituales"
+    },
+    "line": {
+      "icon": "Icono",
+      "tags": "Etiquetas",
+      "counted": "Incluir en el total",
+      "countedHint": "Desactívalo para lo que no es efectivo, como monedas de oro. Cambia para todos los que comparten el cajón.",
+      "included": "En el total",
+      "excluded": "Fuera del total",
+      "rename": "Cambiar nombre",
+      "changeCurrency": "Cambiar divisa",
+      "changeUnit": "Cambiar unidad",
+      "changeKind": "Cambiar tipo",
+      "editText": "Editar texto",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "delete": "Eliminar línea",
+      "deleteConfirm": "¿Eliminar «{name}»?",
+      "deleteHistory": "{count, plural, one {También se borrará # movimiento del historial.} other {También se borrarán # movimientos del historial.}} Esto no se puede deshacer.",
+      "deleteNoHistory": "Esto no se puede deshacer.",
+      "kindLocked": "El tipo solo se puede cambiar mientras la línea no tenga movimientos.",
+      "countable": "Por unidades",
+      "items": "uds.",
+      "lastEntry": "Último movimiento: {when}",
+      "noEntries": "Sin movimientos",
+      "tagsKnown": "Etiquetas de este cajón",
+      "tagsNone": "Aún no hay etiquetas. Escribe una abajo.",
+      "tagsNew": "Nueva etiqueta",
+      "tagsAdd": "Añadir etiqueta",
+      "tagsCount": "{count} de {max} etiquetas",
+      "tagsFull": "Esta línea ya tiene {max} etiquetas, el máximo posible."
+    },
+    "errors": {
+      "opsDropped": "Alguien cambió este cajón mientras tanto. No se pudo aplicar tu cambio.",
+      "amountInvalid": "Indica una cantidad válida.",
+      "countInteger": "Las cantidades son números enteros.",
+      "nameRequired": "El nombre es obligatorio.",
+      "currencyRequired": "El código de divisa es obligatorio."
+    },
+    "readOnly": "Puedes ver este cajón, pero no cambiarlo. Pídele permiso de escritura a {owner}.",
+    "movedTo": "{name} pasó a la posición {pos} de {count}",
+    "tagNoItemsYet": "Aún sin elementos",
+    "tagNoItemsYetLong": "Ningún elemento tiene aún esta etiqueta. Usa Elegir elementos para añadirla.",
+    "tagMore": "+{count} más",
+    "tagRowName": "{tag}, {count, plural, one {# elemento} other {# elementos}}",
+    "tagDetailReadOnly": "solo lectura",
+    "tagChooseItems": "Elegir elementos",
+    "tagMergeTitle": "¿Combinar etiquetas?",
+    "tagMergeConfirm": "«{to}» ya existe. ¿Combinar «{from}» con ella?",
+    "tagMerge": "Combinar",
+    "tagOpenItem": "Abrir {item} en {drawer}",
+    "tagHiddenReadOnly": "No aparecen los cajones compartidos que solo puedes leer.",
+    "tagNew": "Nueva etiqueta",
+    "tagName": "Nombre de la etiqueta",
+    "tagItemsTitle": "Elementos con la etiqueta {tag}",
+    "tagPickItems": "Elementos con esta etiqueta",
+    "tagPickOne": "Elige al menos un elemento.",
+    "tagItemFull": "ya tiene {max} etiquetas",
+    "tagNoItems": "Este cajón aún no tiene elementos. Añade uno primero.",
+    "tagsManageHint": "Una sola lista de etiquetas para todos tus cajones.",
+    "tagPickItemsOptional": "Elementos con esta etiqueta (puedes elegirlos más tarde)",
+    "tagItemIn": "{item} en {drawer}",
+    "tagRewriteFailed": "{count, plural, one {No se actualizó # cajón. Inténtalo de nuevo.} other {No se actualizaron # cajones. Inténtalo de nuevo.}}",
+    "tagRewriteReadOnly": "{count, plural, one {# cajón compartido es de solo lectura y conserva la etiqueta anterior.} other {# cajones compartidos son de solo lectura y conservan la etiqueta anterior.}}",
+    "tagsEmpty": "Aún no tienes etiquetas. Toca Nueva etiqueta para crear una.",
+    "tagsManage": "Gestionar etiquetas",
+    "tagRename": "Cambiar nombre",
+    "tagRemove": "Quitar etiqueta",
+    "tagNewName": "Nuevo nombre",
+    "tagNameRequired": "La etiqueta necesita un nombre.",
+    "tagRemoveConfirm": "¿Quitar «{tag}» de {count, plural, one {# elemento} other {# elementos}}? Los elementos se conservan.",
+    "history": {
+      "title": "Versiones anteriores",
+      "hint": "Nombres, elementos, etiquetas y lugares tal como estaban antes de cada cambio, guardados durante 30 días. Si restauras una versión, la actual también se guarda aquí. Los movimientos y los saldos no cambian.",
+      "empty": "No hay versiones anteriores de los últimos 30 días.",
+      "unreadable": "No se puede abrir en este dispositivo",
+      "lines": "{count, plural, one {# elemento} other {# elementos}}",
+      "byTool": "cambiado por una herramienta",
+      "restore": "Restaurar",
+      "restoreNamed": "Restaurar la versión del {when}",
+      "restored": "Versión anterior restaurada."
+    }
+  },
+  "line": {
+    "noText": "Sin texto.",
+    "balance": "Saldo",
+    "count": "Cantidad",
+    "comingSoon": "Añadir, Retirar y Ajustar llegan en el próximo paso.",
+    "history": "Historial",
+    "noEntries": "Aún no hay movimientos.",
+    "loadOlder": "Cargar anteriores",
+    "olderLoaded": "Historial anterior",
+    "sinceCount": "Desde el último recuento",
+    "ops": {
+      "add": "Añadir",
+      "withdraw": "Retirar",
+      "adjust": "Ajustar",
+      "reverse": "Revertir"
+    },
+    "entry": {
+      "title": {
+        "add": "Añadir",
+        "withdraw": "Retirar",
+        "adjust": "Ajustar — {noun, select, saldo {indica el saldo contado} cantidad {indica la cantidad contada} other {indica el valor contado}}"
+      },
+      "amount": "Cantidad ({unit})",
+      "real": "{noun, select, saldo {Saldo real} cantidad {Cantidad real} other {Valor real}} ({unit})",
+      "noun": {
+        "balance": "saldo",
+        "count": "cantidad"
+      },
+      "comment": "Comentario (opcional)",
+      "commentPlaceholder": "p. ej. regalo de cumpleaños",
+      "review": "Revisar",
+      "confirmTitle": "Confirmar",
+      "operation": "Operación",
+      "current": "{noun, select, saldo {Saldo actual} cantidad {Cantidad actual} other {Valor actual}}",
+      "change": "Cambio",
+      "new": "{noun, select, saldo {Nuevo saldo} cantidad {Nueva cantidad} other {Nuevo valor}}",
+      "confirm": "Confirmar",
+      "saved": "Guardado",
+      "negativeWarning": "Con esto el saldo queda en {amount}. Puede que aquí haya más efectivo del registrado, o que la cantidad sea incorrecta.",
+      "zero": "Indica una cantidad.",
+      "invalid": "Indica una cantidad válida."
+    },
+    "row": {
+      "reversed": "revertido",
+      "cancels": "anula un movimiento anterior",
+      "adjustHint": "({delta})",
+      "by": "por {name}",
+      "options": "Opciones del movimiento"
+    },
+    "reverse": {
+      "action": "Revertir este movimiento",
+      "title": "¿Revertir este movimiento?",
+      "body": "Se añadirá un movimiento nuevo con la cantidad opuesta. Los dos se quedan en el historial.",
+      "refused": {
+        "adjust_not_reversible": "Un ajuste no se puede revertir. Si el recuento estaba mal, vuelve a contar.",
+        "reverse_not_reversible": "Una reversión no se puede revertir.",
+        "already_reversed": "Este movimiento ya se revirtió.",
+        "before_checkpoint": "Un recuento posterior ya lo tiene en cuenta."
+      }
+    },
+    "recount": {
+      "title": "La línea cambió",
+      "body": "Alguien añadió un movimiento después de que contaras. Vuelve a contar e indica el nuevo valor.",
+      "ok": "Aceptar"
+    },
+    "warn": {
+      "problems": "{count, plural, one {No se pudo leer o verificar # movimiento. Su cantidad no está en el saldo.} other {No se pudieron leer o verificar # movimientos. Sus cantidades no están en el saldo.}}",
+      "broken": "Los enlaces del historial no coinciden. Puede que se hayan eliminado o cambiado algunos movimientos.",
+      "truncated": "El historial es más corto que la última vez que lo viste. Puede que se hayan eliminado movimientos.",
+      "acknowledge": "Aceptar tal cual",
+      "skipped": "{count, plural, one {El saldo ignora # movimiento porque incumple las reglas.} other {El saldo ignora # movimientos porque incumplen las reglas.}}",
+      "negative": "Saldo negativo. Cuenta esta línea y ajústala."
+    }
+  },
+  "time": {
+    "justNow": "ahora mismo"
+  },
+  "verify": {
+    "notYet": "Aún sin contar",
+    "verified": "Confirmado · {when}",
+    "changed": "Por confirmar · Cambió {when}",
+    "bar": {
+      "never": "¿Contaste el efectivo? Confirma lo que hay dentro y todos verán cuándo se revisó por última vez.",
+      "verified": "Confirmado {when}",
+      "stale": "Confirmado {when}, pero algo cambió desde entonces.",
+      "withComment": " — {comment}"
+    },
+    "confirm": "Confirmar estado",
+    "history": "Historial ({count})",
+    "hide": "Ocultar",
+    "historyTitle": "Historial de confirmaciones",
+    "sheet": {
+      "title": "Confirmar estado del cajón",
+      "hint": "Confirmar significa que revisaste físicamente este cajón: cada saldo de abajo coincide con el efectivo real y cada objeto está en su sitio. Esto no cambia ningún saldo: si una línea no cuadra, cierra esto y usa primero Ajustar en esa línea.",
+      "lines": "Líneas",
+      "none": "ninguna",
+      "items": "Objetos",
+      "present": "{name} está presente",
+      "comment": "Comentario (opcional)",
+      "commentPlaceholder": "p. ej. contado con Alex",
+      "confirm": "Confirmar"
+    },
+    "toast": "Cajón confirmado",
+    "row": {
+      "title": "Confirmado",
+      "by": "por {name}",
+      "missing": "Faltan: {names}",
+      "present": "presente",
+      "absent": "ausente"
+    }
+  },
+  "pending": {
+    "title": "Esperando tu respuesta",
+    "invitation": "{name} te invitó a un cajón como {role}.",
+    "role": {
+      "write": "editor",
+      "read": "lector"
+    },
+    "safety": "Su número de seguridad",
+    "compare": "Comparé este número con {name} en persona o por teléfono",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "transferOffer": "{name} quiere cederte un cajón.",
+    "transferAccept": "Aceptar la propiedad",
+    "transferDecline": "Rechazar",
+    "transferWaiting": "Esperando a que {name} acepte la propiedad de «{drawer}».",
+    "cancel": "Cancelar oferta"
+  },
+  "members": {
+    "title": "Miembros",
+    "open": "Miembros",
+    "you": "tú",
+    "role": {
+      "owner": "Propietario",
+      "write": "Editor",
+      "read": "Lector"
+    },
+    "safety": "Número de seguridad",
+    "status": {
+      "confirmed": "Confirmado",
+      "unconfirmed": "Aún sin comparar",
+      "changed": "LA CLAVE CAMBIÓ — vuelve a compararla antes de compartir nada",
+      "unpinned": "Sin clave"
+    },
+    "confirm": "Comparé este número",
+    "acceptNew": "Aceptar la nueva clave",
+    "remove": "Quitar",
+    "removeConfirm": "¿Quitar a {name} de este cajón? Conservará lo que ya vio; la clave se sustituirá para que no pueda leer nada nuevo.",
+    "makeOwner": "Hacer propietario",
+    "leave": "Salir del cajón",
+    "leaveConfirm": "¿Salir de este cajón? Necesitarás una nueva invitación para volver.",
+    "invite": "Invitar a alguien",
+    "transferPending": "Propiedad ofrecida a {name}",
+    "honest": "Cualquier persona que invites puede leer y copiar todo lo que hay en este cajón. Quitarla después solo le impide el acceso futuro."
+  },
+  "invite": {
+    "title": "Invitar a este cajón",
+    "email": "Su correo electrónico",
+    "lookup": "Buscar",
+    "notFound": "No hay ninguna cuenta de Petty con ese correo. Primero envíale un enlace de invitación.",
+    "noKeys": "Esta persona aún no ha terminado de configurar su cuenta.",
+    "found": "{name}",
+    "role": "Rol",
+    "roleWrite": "Editor — puede registrar operaciones, editar líneas y confirmar el estado",
+    "roleRead": "Lector — puede verlo todo, pero no puede cambiar nada ni exportar",
+    "compare": "Comparé este número de seguridad con {name} en persona o por teléfono",
+    "blockedChanged": "La clave de esta persona cambió desde la última vez que la confirmaste. Primero acepta la nueva clave en Miembros.",
+    "send": "Invitar",
+    "sent": "Invitación enviada",
+    "joinLink": "Enviar un enlace de invitación",
+    "joinLinkHint": "Para alguien que aún no usa Petty. Recibirá un correo con un enlace de un solo uso.",
+    "joinLinkSent": "Enlace de invitación enviado a {email}",
+    "alreadyMember": "Ya es miembro."
+  },
+  "rotation": {
+    "running": "Sustituyendo la clave del cajón… {done} de {total} movimientos cifrados de nuevo.",
+    "needed": "Se quitó a un miembro. La clave del cajón se sustituirá la próxima vez que un editor abra este cajón.",
+    "keyChanged": "La clave de {names} ha cambiado. Comprueba su número de seguridad en Miembros antes de compartir nada.",
+    "cannot": "No se puede sustituir la clave: primero confirma la clave de cada miembro en Miembros."
+  },
+  "offline": {
+    "banner": "Estás sin conexión. Los cambios se guardan en este dispositivo y se envían cuando vuelvas a conectarte.",
+    "cached": "Se muestra lo que se cargó la última vez.",
+    "pending": "{count, plural, one {# cambio pendiente de enviar} other {# cambios pendientes de enviar}}",
+    "pendingEntry": "pendiente",
+    "old": "Algunos cambios llevan más de un día esperando para enviarse. Conéctate a internet para sincronizarlos.",
+    "report": {
+      "title": "Mientras no estabas",
+      "foreign": "{amount} por {name} en {line}",
+      "recount": "Tu recuento de {line} no se guardó: la línea cambió mientras tanto. Vuelve a contar.",
+      "reverseRefused": "Tu reversión en {line} no se guardó: {reason}",
+      "opsDropped": "No se pudo aplicar un cambio en «{drawer}»: alguien lo modificó mientras tanto.",
+      "failed": "No se pudo enviar un cambio en «{drawer}».",
+      "storageFull": "Un cambio en «{drawer}» no se guardó: tu almacenamiento está lleno.",
+      "ownerStorageFull": "Un cambio en «{drawer}» no se guardó: su propietario no tiene espacio libre.",
+      "dismiss": "Aceptar"
+    }
+  },
+  "install": {
+    "title": "Añadir a la pantalla de inicio",
+    "why": "Si instalas Petty, se abre como una aplicación, conserva sus claves y sus datos sin conexión, y funciona sin red.",
+    "nudge": "Añade Petty a tu pantalla de inicio para que siga funcionando sin conexión.",
+    "ios": "Añade Petty a tu pantalla de inicio para que siga funcionando sin conexión: Compartir → Añadir a pantalla de inicio.",
+    "manual": "Usa el menú de tu navegador: «Instalar aplicación» o «Añadir a pantalla de inicio».",
+    "installed": "Petty está instalado en este dispositivo.",
+    "dismissedHint": "Puedes instalarlo más tarde desde esta pantalla. Primero recarga la página.",
+    "button": "Instalar Petty",
+    "dismiss": "Ahora no"
+  },
+  "backup": {
+    "title": "Copia de seguridad",
+    "hint": "Una exportación contiene todos los cajones que son tuyos o en los que puedes escribir, con fotos e historial completo. Guarda el archivo en un lugar de confianza.",
+    "exportEncrypted": "Exportar (cifrado)",
+    "exportPlain": "Exportar como texto plano…",
+    "import": "Importar desde archivo",
+    "password": "Contraseña de exportación",
+    "passwordHint": "Al menos 12 caracteres. Independiente de tu frase de contraseña de la bóveda; hace falta para abrir este archivo en cualquier sitio, incluso sin cuenta.",
+    "passwordRepeat": "Repite la contraseña de exportación",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "passwordShort": "Al menos 12 caracteres.",
+    "download": "Descargar",
+    "exporting": "Preparando…",
+    "exported": "Exportación lista",
+    "skipped": "{count, plural, one {Se omitió # cajón de solo lectura} other {Se omitieron # cajones de solo lectura}}.",
+    "plainTitle": "¿Exportar como texto plano?",
+    "plainWarning": "Este archivo contendrá todos los saldos, movimientos, comentarios y fotos sin cifrar. Cualquiera que consiga el archivo podrá leerlo todo. Mejor usa la exportación cifrada, salvo que sepas por qué necesitas esta.",
+    "plainConfirm": "Exportar sin cifrar",
+    "importTitle": "Importar",
+    "importHint": "Crea cajones nuevos a partir del archivo, de tu propiedad. Los nombres de los autores originales se conservan como texto; cada movimiento importado lo firmas tú y queda marcado como [imported].",
+    "importPassword": "Contraseña del archivo",
+    "importFile": "Elegir archivo",
+    "importing": "Importando {drawer}: {done} de {total} movimientos…",
+    "imported": "{count, plural, one {# cajón importado} other {# cajones importados}}",
+    "importInvalid": "Ese archivo no es una exportación de Petty.",
+    "importWrongPassword": "Esa contraseña no abrió el archivo.",
+    "plainLead": "Sin cifrar: cualquiera que consiga el archivo puede leer todo su contenido."
+  },
+  "delete": {
+    "title": "Eliminar cuenta",
+    "intro": "Esto no se puede deshacer. Decide qué pasa con cada cajón tuyo que usan otras personas.",
+    "erased": "Qué se borra: tus claves privadas, tus sesiones, tu correo y tu nombre, y todos los cajones que solo son tuyos.",
+    "kept": "Qué se conserva: los movimientos que escribiste en cajones que conservan otros miembros; son el registro de esos miembros, cifrado con una clave que tienen ellos. Tu nombre en ellos pasa a ser «Usuario eliminado». Tus claves públicas se conservan para que esos movimientos se puedan seguir verificando.",
+    "sharedTitle": "Cajones compartidos de tu propiedad",
+    "sole": "{count, plural, one {Se eliminará # cajón que solo es tuyo.} other {Se eliminarán # cajones que solo son tuyos.}}",
+    "memberships": "Saldrás de {count, plural, one {# cajón del que eres miembro} other {# cajones de los que eres miembro}}.",
+    "giveTo": "Ceder a",
+    "deleteForAll": "Eliminar para todos",
+    "nobody": "Elige un miembro…",
+    "password": "Tu contraseña de acceso",
+    "confirm": "Eliminar mi cuenta",
+    "working": "Eliminando…",
+    "done": "Tu cuenta se eliminó.",
+    "decide": "Primero decide qué pasa con cada cajón compartido.",
+    "wrongPassword": "Contraseña incorrecta.",
+    "none": "No tienes cajones que usen otras personas.",
+    "summaryTitle": "Qué va a pasar",
+    "summaryGive": "{drawer} → {name}",
+    "summaryDelete": "{drawer}: se elimina para todos",
+    "summaryUndecided": "{drawer}: sin decidir"
+  },
+  "pins": {
+    "rolledBackTitle": "Tu lista de claves de confianza desapareció del servidor",
+    "rolledBack": "Este dispositivo vio por última vez la versión {seen} de tu lista de claves de confianza; ahora el servidor tiene la versión {server}. Puede ser una copia de seguridad restaurada, o alguien que intenta que confíes en claves nuevas. Hasta que empieces de nuevo, ninguna clave nueva será de confianza automáticamente y no podrás compartir cajones.",
+    "startOver": "Entendido, empezar de nuevo"
+  },
+  "privacy": {
+    "link": "Privacidad y seguridad",
+    "title": "Privacidad y seguridad",
+    "intro": "Petty cifra tus cajones en tu dispositivo. El servidor guarda datos cifrados que no puede abrir. Esto es exactamente lo que puede ver y lo que no.",
+    "seesTitle": "Qué puede ver el servidor",
+    "sees": [
+      "Tu correo y tu nombre visible, y los de las personas con quienes compartes.",
+      "Cuántos cajones tienes y cuántas líneas tiene cada uno.",
+      "Quién comparte qué cajón con quién, y con qué rol.",
+      "Cuándo se escribió cada movimiento, quién lo escribió, en qué línea y si fue un recuento o una reversión; nunca la cantidad, el comentario ni el nombre de la línea.",
+      "El tamaño de cada registro cifrado, redondeado hacia arriba en pasos de 256 bytes.",
+      "Las copias de seguridad dependen de quien opera el servidor: esta aplicación no incluye ninguna. Si el operador hace copias de la base de datos, cada copia contiene los mismos datos cifrados, tu correo y tu bóveda cifrada; pregúntale cuánto tiempo se guardan las copias, también después de eliminar una cuenta.",
+      "Si dejas que el gestor de contraseñas de tu navegador guarde la frase de contraseña de la bóveda, ese gestor (y su sincronización en la nube) también la tiene. Es tu decisión, no la del servidor."
+    ],
+    "defendsTitle": "Contra qué te protege Petty",
+    "defends": [
+      "Quien lea la base de datos o una copia de seguridad: el contenido de los cajones, las fotos y las bóvedas son solo datos cifrados. Aun así, ve los datos de cuenta y de actividad indicados arriba.",
+      "Quien modifique la base de datos: se detectan los movimientos trasladados, intercambiados o eliminados.",
+      "Un servidor comprometido: no tiene claves y no puede leer el contenido de los cajones.",
+      "Un teléfono perdido: la bóveda sigue bloqueada sin la frase de contraseña y se bloquea sola a las 24 horas.",
+      "Un miembro al que quitas: después, la clave del cajón se sustituye y no puede leer nada de lo que se escriba luego."
+    ],
+    "notTitle": "Contra qué no puede protegerte Petty",
+    "not": [
+      "Quien sirve este sitio web podría servir una versión que robe tu frase de contraseña. Las reglas estrictas del navegador reducen este riesgo, pero no lo eliminan.",
+      "Cuando el inicio de sesión pasa por Clerk, Clerk decide quién puede iniciar sesión. Quien controle Clerk podría iniciar sesión como tú, pero aun así necesitaría tu frase de contraseña o tu llave de acceso para abrir tus cajones. Su código va integrado en esta aplicación en una versión fija y nunca se carga desde otro lugar.",
+      "Un token de acceso que creas para una herramienta (Ajustes → Tokens de acceso) lee todos los cajones que puedes abrir, incluidos los que se compartan contigo más adelante, y un token con permiso de escritura puede añadir movimientos y editar etiquetas y lugares. Quien tenga la cadena del token tiene ese acceso hasta que caduque o lo revoques. Trátalo como una llave.",
+      "Cualquier persona con quien compartas un cajón puede leer y copiar todo su contenido. Quitarla solo le impide el acceso futuro.",
+      "Un miembro con permiso de escritura también puede dañar el historial de un cajón (la aplicación muestra entonces esos registros como manipulados, pero su contenido se pierde). Comparte con personas de confianza.",
+      "Un fallo de seguridad en la propia aplicación.",
+      "Una frase de contraseña olvidada sin código de recuperación: nadie puede ayudarte, por diseño."
+    ],
+    "source": "Petty es software libre (AGPL-3.0). Lee el código fuente o ejecútalo por tu cuenta:"
+  },
+  "admin": {
+    "title": "Administración",
+    "link": "Administración: cuentas",
+    "forbidden": "Solo para administradores.",
+    "inviteTitle": "Invitar por correo",
+    "inviteEmail": "Correo electrónico",
+    "inviteSend": "Enviar enlace de invitación",
+    "badgeAdmin": "admin",
+    "badgeBlocked": "cuenta bloqueada",
+    "badgeDeleted": "cuenta eliminada",
+    "meta": "{owned, plural, one {# cajón propio} other {# cajones propios}} · última actividad: {seen} · llave de acceso: {passkey}",
+    "never": "nunca",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "revoke": "Cerrar sesión en todas partes",
+    "makeAdmin": "Hacer admin",
+    "removeAdmin": "Quitar admin",
+    "done": {
+      "block": "Cuenta bloqueada. Sus sesiones se cerraron.",
+      "unblock": "Cuenta desbloqueada.",
+      "revoke": "Sesión cerrada en todos los dispositivos.",
+      "admin": "Rol de administrador cambiado."
+    },
+    "confirm": {
+      "block": {
+        "title": "¿Bloquear a {name}?",
+        "body": "No podrá iniciar sesión y todas sus sesiones abiertas terminan ahora. Sus datos se conservan; al desbloquear, se restaura todo.",
+        "ok": "Bloquear"
+      },
+      "revoke": {
+        "title": "¿Cerrar la sesión de {name} en todas partes?",
+        "body": "Todos los dispositivos tendrán que volver a iniciar sesión. Nada más cambia.",
+        "ok": "Cerrar sesión"
+      },
+      "admin": {
+        "title": "¿Cambiar el rol de administrador de {name}?",
+        "body": "Los administradores pueden bloquear cuentas y enviar invitaciones. Aun así, no pueden leer los cajones de nadie.",
+        "ok": "Cambiar"
+      }
+    }
+  },
+  "landing": {
+    "slogan": "Pequeñas cantidades. Gran tranquilidad.",
+    "tagline": "Todo lo que guardas, en su lugar — compartido con quien tú elijas y cifrado de extremo a extremo.",
+    "sub": "Efectivo en la lata de la cocina, herramientas en el sótano, pasaportes en la caja fuerte: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
+    "how": "Cómo se cifra",
+    "uses": {
+      "title": "Una idea, muchos usos",
+      "sub": "Los lugares contienen cajones y los cajones contienen elementos: dinero, cosas o notas. Organízalos como quieras; las mismas tres piezas sirven para todo lo que guardas.",
+      "legend": {
+        "place": "Lugar",
+        "drawer": "Cajón",
+        "items": "Elementos",
+        "all": "Lugares, cajones y elementos",
+        "money": "Dinero",
+        "things": "Cosas",
+        "notes": "Notas"
+      },
+      "pick": "Ejemplos",
+      "demo": "Ejemplo: {title}",
+      "pause": "Pausar",
+      "play": "Reproducir",
+      "cases": {
+        "workshop": {
+          "chip": "Taller",
+          "title": "Encuentra cualquier cosa en segundos",
+          "body": "Cada cajón tiene su lugar: los sujetacables están en Casa › Sótano › Taller, en el cajón del escritorio.",
+          "places": {
+            "home": "Casa",
+            "basement": "Sótano",
+            "workshop": "Taller"
+          },
+          "drawers": {
+            "desk": {
+              "name": "Cajón del escritorio",
+              "meta": "2 elementos"
+            },
+            "pegboard": {
+              "name": "Panel de herramientas",
+              "meta": "2 elementos"
+            }
+          },
+          "items": {
+            "zipties": {
+              "name": "Sujetacables",
+              "value": "50 uds."
+            },
+            "tape": {
+              "name": "Cinta adhesiva",
+              "value": "2 rollos"
+            },
+            "hammer": {
+              "name": "Martillo",
+              "note": "de uña, 450 g"
+            },
+            "drill": {
+              "name": "Taladro",
+              "note": "batería cargada"
+            }
+          }
+        },
+        "trip": {
+          "chip": "Fondo de viaje",
+          "title": "Comparte un viaje con amigos",
+          "body": "Un cajón por viaje, una línea por persona. Cada uno añade lo que pagó y nadie puede cambiarlo a escondidas.",
+          "places": {
+            "trips": "Viajes",
+            "malaysia": "Malasia",
+            "thailand": "Tailandia"
+          },
+          "drawers": {
+            "kitty": {
+              "name": "Fondo de George Town",
+              "meta": "Compartido · 3 personas"
+            },
+            "next": {
+              "name": "Próximo: Bangkok",
+              "meta": "Previsto"
+            }
+          },
+          "items": {
+            "anna": {
+              "name": "Anna",
+              "note": "hotel"
+            },
+            "ben": {
+              "name": "Ben",
+              "note": "mercado nocturno"
+            },
+            "cara": {
+              "name": "Cara",
+              "note": "ferri"
+            },
+            "passes": {
+              "name": "Pases de tren",
+              "note": "comprados",
+              "value": "3 uds."
+            }
+          }
+        },
+        "accounts": {
+          "chip": "Cuentas anuales",
+          "title": "El dinero que olvidaste que tenías",
+          "body": "Un cajón por cuenta, revisado una vez al año: confirma el saldo y la fecha queda guardada con él.",
+          "places": {
+            "paperwork": "Papeles"
+          },
+          "drawers": {
+            "pension": {
+              "name": "Pensión",
+              "meta": "Confirmado el 2 ene."
+            },
+            "brokerage": {
+              "name": "Cuenta de inversión",
+              "meta": "Confirmado el 2 ene."
+            },
+            "savings": {
+              "name": "Ahorros",
+              "meta": "Confirmado el 2 ene."
+            }
+          },
+          "items": {
+            "fund": {
+              "name": "Fondo de pensiones",
+              "note": "resumen anual"
+            },
+            "shares": {
+              "name": "Acciones",
+              "note": "fondo indexado"
+            },
+            "cash": {
+              "name": "Efectivo"
+            },
+            "deposit": {
+              "name": "Depósito",
+              "note": "3,1 % anual"
+            }
+          }
+        },
+        "cash": {
+          "chip": "Efectivo en casa",
+          "title": "Cada billete en su lugar",
+          "body": "Así empezó Petty: efectivo por toda la casa, cada lata y cada sobre en su habitación, contado y confirmado.",
+          "places": {
+            "home": "Casa",
+            "kitchen": "Cocina",
+            "bedroom": "Dormitorio"
+          },
+          "drawers": {
+            "tin": {
+              "name": "Lata del dinero",
+              "meta": "Confirmado hoy"
+            },
+            "envelope": {
+              "name": "Sobre",
+              "meta": "Cerrado"
+            }
+          },
+          "items": {
+            "groceries": {
+              "name": "Compras",
+              "note": "esta semana"
+            },
+            "coins": {
+              "name": "Monedas"
+            },
+            "emergency": {
+              "name": "Emergencias"
+            },
+            "holiday": {
+              "name": "Vacaciones"
+            }
+          }
+        },
+        "lent": {
+          "chip": "Prestado",
+          "title": "Recuerda quién tiene tu taladro",
+          "body": "Lo que prestas o te prestan tiene sus propios cajones: cada línea dice quién lo tiene y desde cuándo.",
+          "places": {
+            "home": "Casa",
+            "garage": "Garaje"
+          },
+          "drawers": {
+            "lent": {
+              "name": "Prestado",
+              "meta": "Compartido con Tom"
+            },
+            "borrowed": {
+              "name": "Tomado prestado",
+              "meta": "Por devolver"
+            }
+          },
+          "items": {
+            "drill": {
+              "name": "Taladro",
+              "note": "Tom · desde mayo"
+            },
+            "ladder": {
+              "name": "Escalera",
+              "note": "Leo · desde el domingo"
+            },
+            "chairs": {
+              "name": "Sillas de camping",
+              "note": "Maya",
+              "value": "4 uds."
+            },
+            "tent": {
+              "name": "Tienda de campaña",
+              "note": "de Sam · antes del 1 de julio"
+            }
+          }
+        },
+        "family": {
+          "chip": "Caja fuerte familiar",
+          "title": "Deja un mapa, no un caos",
+          "body": "Dónde están los pasaportes, las llaves y los papeles — compartido en solo lectura con quienes algún día puedan necesitarlo.",
+          "places": {
+            "home": "Casa",
+            "bedroom": "Dormitorio",
+            "wardrobe": "Armario",
+            "safe": "Caja fuerte"
+          },
+          "drawers": {
+            "documents": {
+              "name": "Documentos",
+              "meta": "Solo lectura para Anna"
+            },
+            "valuables": {
+              "name": "Objetos de valor",
+              "meta": "Solo lectura para Anna"
+            }
+          },
+          "items": {
+            "passports": {
+              "name": "Pasaportes",
+              "value": "3 uds."
+            },
+            "certificates": {
+              "name": "Certificados de nacimiento",
+              "value": "2 uds."
+            },
+            "ring": {
+              "name": "Anillo de la abuela",
+              "note": "caja azul"
+            },
+            "carkey": {
+              "name": "Llave de repuesto del coche",
+              "note": "etiqueta roja"
+            }
+          }
+        }
+      }
+    },
+    "beta": "¿Tienes una invitación? Inicia sesión arriba.",
+    "shotsTitle": "Capturas de pantalla",
+    "shots": {
+      "home": "Pantalla de inicio: el total y los cajones agrupados por lugar",
+      "drawer": "Un cajón: dos totales, etiquetas y líneas con iconos",
+      "items": "Un cajón de cosas: herramientas contadas por unidades, y llaves y una linterna como objetos individuales",
+      "entry": "Retirar dinero con el teclado numérico",
+      "places": "Lugares: habitaciones, estantes y cajas en un árbol que puedes arrastrar"
+    },
+    "featuresTitle": "Qué hace",
+    "features": {
+      "private": {
+        "title": "Privado por diseño",
+        "body": "Tus cajones se cifran en tu dispositivo. El servidor solo ve datos cifrados."
+      },
+      "shared": {
+        "title": "Comparte con personas de confianza",
+        "body": "Todos los que manejan el efectivo ven el mismo cajón. Los editores añaden movimientos; los lectores solo miran."
+      },
+      "places": {
+        "title": "Lugares, no montones",
+        "body": "Cocina › estante › lata. Pon cada cajón en su lugar; mueve una habitación y sus cajones la siguen."
+      },
+      "currencies": {
+        "title": "Divisas y cosas",
+        "body": "Euros y dólares, uno al lado del otro, y además cosas que se cuentan, como llaves o documentos. Etiqueta cualquier línea y filtra por etiqueta."
+      },
+      "verify": {
+        "title": "Cuenta, confirma, nunca borres",
+        "body": "Tras un recuento real, confirma el estado del cajón. Los errores se revierten, nunca se borran; el historial no miente."
+      },
+      "passkey": {
+        "title": "Llave de acceso y uso sin conexión",
+        "body": "Face ID, Touch ID o Windows Hello abren tu bóveda. Se instala como una aplicación y sigue funcionando sin red."
+      }
+    },
+    "cryptoTitle": "Cómo guarda los secretos",
+    "crypto": {
+      "device": "Todo se cifra en tu dispositivo (AES-256) antes de enviarse. Nombres, cantidades, comentarios, fotos: todo.",
+      "server": "El servidor guarda cajas cerradas que no puede abrir. No podríamos mostrarte tus datos aunque quisiéramos.",
+      "safety": "Cada miembro tiene un número de seguridad. Compáralo una vez en persona y nadie podrá colarse en medio sin que se note.",
+      "recovery": "Una llave de acceso o una frase de contraseña abre tus datos; un código de recuperación de un solo uso es la llave de repuesto. No podemos restablecer ninguno.",
+      "chain": "Los movimientos forman una cadena que delata cualquier manipulación: si alguien borra o cambia el historial, se puede detectar."
+    },
+    "stepsTitle": "Cómo funciona",
+    "steps": {
+      "one": "Crea un cajón para cada lugar donde guardas efectivo o cosas, ponlo en su habitación o estante y apunta lo que hay ahora.",
+      "two": "Añade o retira con dos toques cada vez que se mueve dinero. Revierte los errores.",
+      "three": "Cuenta el cajón de vez en cuando y confírmalo. Compártelo con quienes lo usan."
+    },
+    "faqTitle": "Preguntas",
+    "faq": {
+      "see": {
+        "q": "¿Petty puede ver mi dinero?",
+        "a": "No. Las cantidades y los nombres se cifran en tu dispositivo. El servidor guarda cajas ilegibles, y puedes comprobarlo en el navegador."
+      },
+      "places": {
+        "q": "¿Puedo agrupar los cajones por habitación?",
+        "a": "Sí. Los lugares forman un árbol (casa › cocina › estante) y cada cajón está en uno de ellos. La pantalla de inicio agrupa por habitación, y puedes arrastrar un lugar a otra habitación; sus cajones lo siguen."
+      },
+      "lost": {
+        "q": "¿Y si pierdo mi llave de acceso u olvido la frase de contraseña?",
+        "a": "Otra llave de acceso, la frase de contraseña o el código de recuperación abren la bóveda. Si lo pierdes todo, nadie (ni siquiera nosotros) puede descifrar tus datos; un miembro de un cajón compartido puede volver a compartirlo contigo."
+      },
+      "undo": {
+        "q": "¿Puedo deshacer un cambio en un cajón?",
+        "a": "Sí. Los movimientos nunca se borran: un error se revierte con un movimiento nuevo. Los cambios de nombres, elementos, etiquetas y lugares se guardan 30 días, y el propietario del cajón puede restaurar una versión anterior."
+      },
+      "cost": {
+        "q": "¿Cuánto cuesta?",
+        "a": "Petty es software libre (AGPL-3.0): puedes ejecutar tu propia instancia gratis. Si quien gestiona una instancia alojada llega a cobrar por ella, antes debe decírtelo con claridad."
+      },
+      "phone": {
+        "q": "¿Hay una aplicación para el teléfono?",
+        "a": "Petty se instala desde el navegador (Añadir a pantalla de inicio) y funciona sin conexión como una aplicación nativa, en iPhone y Android."
+      }
+    },
+    "footer": "© 2026 Petty · efectivo doméstico con cifrado de extremo a extremo",
+    "invite": "¿Quieres una invitación? Escríbenos",
+    "made": "Hecho en Polonia",
+    "create": "Crea tu bóveda",
+    "getInvite": "Pide una invitación",
+    "betaOpen": "Sin tarjeta y sin nada que instalar.",
+    "betaInvite": "Este Petty funciona solo con invitación: pídesela a un miembro o escríbenos.",
+    "again": "¿Empezamos? Solo lleva un minuto.",
+    "againInvite": "¿Tienes una invitación? Inicia sesión y configura tu bóveda.",
+    "shotOpen": "Ampliar: {name}",
+    "shotPrev": "Captura anterior",
+    "shotNext": "Captura siguiente"
+  },
+  "icons": {
+    "pick": "Elige un icono",
+    "none": "Sin icono",
+    "home": "Casa",
+    "bed": "Dormitorio",
+    "kitchen": "Cocina",
+    "sofa": "Sala de estar",
+    "car": "Coche",
+    "bike": "Bicicleta",
+    "briefcase": "Maletín",
+    "backpack": "Mochila",
+    "wallet": "Cartera",
+    "piggy-bank": "Alcancía",
+    "banknote": "Billete",
+    "coins": "Monedas",
+    "card": "Tarjeta",
+    "bank": "Banco",
+    "vault": "Caja fuerte",
+    "gem": "Objetos de valor",
+    "watch": "Reloj",
+    "laptop": "Portátil",
+    "phone": "Teléfono",
+    "key": "Llave",
+    "gift": "Regalo",
+    "bag": "Bolsa de compras",
+    "archive": "Cajón",
+    "box": "Caja",
+    "plane": "Viajes",
+    "heart": "Corazón",
+    "star": "Estrella",
+    "wrench": "Herramientas",
+    "book": "Libro",
+    "shirt": "Ropa",
+    "tag": "Etiqueta",
+    "note": "Nota"
+  },
+  "places": {
+    "title": "Lugares",
+    "hint": "Habitaciones, estantes, cajas: un solo árbol. Cada cajón está en un lugar. Si cambias el nombre de un lugar o lo mueves, sus cajones lo siguen.",
+    "empty": "Aún no hay lugares. Añade una habitación para empezar.",
+    "add": "Añadir lugar",
+    "addInside": "Añadir un lugar dentro",
+    "rename": "Cambiar nombre",
+    "move": "Mover a…",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "delete": "Eliminar",
+    "deleteBody": "Los cajones de «{name}» pasan a {parent}. Los lugares que contiene suben un nivel.",
+    "topLevel": "Nivel superior",
+    "none": "Sin lugar",
+    "newHere": "Nuevo lugar dentro de {parent}",
+    "newTop": "Nuevo lugar de nivel superior",
+    "name": "Nombre",
+    "exists": "Ya hay aquí un lugar con este nombre.",
+    "count": "{count, plural, one {# cajón} other {# cajones}}",
+    "manage": "Gestionar lugares",
+    "manageHint": "Habitaciones, estantes y cajas en un árbol. Añádelos, cámbiales el nombre, muévelos y ordénalos; los cajones los siguen.",
+    "choose": "Lugar",
+    "options": "Opciones de {name}",
+    "expand": "Expandir {name}",
+    "collapse": "Contraer {name}",
+    "moved": "{count, plural, one {# cajón actualizado} other {# cajones actualizados}}",
+    "plus": "Añadir un lugar dentro de {name}",
+    "minus": "Eliminar {name}",
+    "drag": "Mover {name}: arrastra o usa las teclas de flecha",
+    "dragHint": "Arrastra una fila por su asa: arriba o abajo para reordenar, a la derecha para meterla dentro de la fila de arriba y a la izquierda para sacarla un nivel.",
+    "rewriteFailed": "{count, plural, one {No se pudo actualizar # cajón} other {No se pudieron actualizar # cajones}}. Vuelve a intentar moverlo.",
+    "rewriteReadOnly": "{count, plural, one {# cajón compartido es de solo lectura y se queda en su lugar anterior} other {# cajones compartidos son de solo lectura y se quedan en su lugar anterior}}.",
+    "movedTo": "{name} pasó a la posición {pos} de {count}"
+  },
+  "notFound": {
+    "title": "Esta página no existe",
+    "body": "Puede que el enlace sea antiguo, esté mal escrito o sea de un cajón al que ya no tienes acceso.",
+    "home": "Ir a la página de inicio",
+    "drawers": "Ir a mis cajones"
+  },
+  "tokens": {
+    "title": "Tokens de acceso",
+    "hint": "Para tus propias herramientas, como un servidor de Claude Desktop. Un token lleva una copia de las claves de tus cajones; el servidor solo ve la mitad que lo identifica y no puede abrirlo.",
+    "new": "Nuevo token",
+    "name": "Nombre",
+    "defaultName": "Mi asistente",
+    "mayWriteSwitch": "Puede añadir movimientos",
+    "mayWriteHint": "Desactivado: el token solo puede leer. Activado: puede añadir movimientos, y quedan a tu nombre.",
+    "expiry": "Caduca",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "never": "Nunca",
+    "create": "Crear token",
+    "madeTitle": "Copia tu token ahora",
+    "madeBody": "Solo se muestra una vez. Pégalo en tu herramienta. Revocarlo impide usarlo en el futuro, pero no deshace lo que ya se haya leído.",
+    "mayWrite": "Puede añadir movimientos",
+    "mayRead": "Solo lectura",
+    "used": "último uso: {when}",
+    "neverUsed": "sin usar",
+    "revoke": "Revocar",
+    "revokeNamed": "Revocar el token {name}",
+    "revokeBody": "¿Revocar «{name}»? La herramienta deja de funcionar al instante. Los datos que ya leyó siguen en su poder.",
+    "passphraseOrPasskey": "Déjalo vacío para usar tu llave de acceso.",
+    "addonTitle": "Úsalo en Claude Desktop",
+    "addonBody": "Descarga el complemento, haz doble clic en él y haz clic en Instalar. Claude Desktop te pedirá dos cosas: la dirección de abajo y el token de arriba.",
+    "addonDownload": "Descargar el complemento para Claude Desktop",
+    "address": "Dirección de Petty"
+  },
+  "ai": {
+    "link": "Usar Petty con IA",
+    "title": "Usar Petty con IA",
+    "intro": "Pregunta a una aplicación de IA por tus cajones o pídele que añada un movimiento por ti. Un pequeño programa en tu propio equipo guarda un token de acceso, abre allí tus claves y le da a la aplicación unas cuantas herramientas. El servidor de Petty sigue viendo solo datos cifrados.",
+    "tokenTitle": "1. Crea un token de acceso",
+    "tokenSteps": [
+      "Abre Ajustes → Tokens de acceso → Nuevo token.",
+      "Ponle un nombre y elige si puede añadir movimientos.",
+      "Confirma con tu llave de acceso o tu frase de contraseña de la bóveda.",
+      "Copia el token. Solo se muestra una vez."
+    ],
+    "desktopTitle": "2a. Claude Desktop",
+    "desktopSteps": [
+      "Instala Claude Desktop desde claude.ai/download e inicia sesión, si aún no lo has hecho.",
+      "Crea un token de acceso (paso 1) y tenlo a la vista.",
+      "Descarga el complemento de abajo. Haz doble clic en petty.mcpb (o arrástralo a la ventana de Claude Desktop) y haz clic en Instalar.",
+      "Claude Desktop te pedirá dos cosas: pega esta dirección de Petty y tu token, y guarda. Puedes cambiarlos más tarde en Claude Desktop → Configuración → Extensiones → Petty.",
+      "Abre un chat nuevo y pregunta: «¿Qué hay en mis cajones?». En un Mac, permite el acceso a la red si te lo pide y luego reinicia Claude Desktop."
+    ],
+    "otherTitle": "2b. Otras aplicaciones de IA (Cursor, VS Code, Windsurf, Claude Code)",
+    "otherSteps": [
+      "Instala Node 20 o posterior.",
+      "Ejecuta los dos comandos de abajo que correspondan a tu equipo. El primero guarda petty-mcp.mjs en una carpeta .petty dentro de tu carpeta personal; el segundo muestra el bloque de configuración con la ruta real de ese archivo.",
+      "Pega el bloque que se muestra en la configuración MCP de la aplicación y pon tu token en lugar de petty_pat_…."
+    ],
+    "download": "Descargar petty-mcp.mjs",
+    "unix": "macOS o Linux (Terminal)",
+    "windows": "Windows (PowerShell)",
+    "manual": "O descarga el archivo y muévelo tú a esa carpeta:",
+    "example": "El bloque que se muestra se parece a este, con tus propias rutas:",
+    "copyConfig": "Copiar el bloque de configuración",
+    "claudeCode": "Para Claude Code, lo mismo en un solo comando:",
+    "askTitle": "3. Pregunta",
+    "ask": [
+      "¿Qué hay en el cajón de la cocina?",
+      "Añade 10 € al efectivo de la cocina, de la compra.",
+      "Conté 37,50 en la lata. Ajústalo.",
+      "¿Qué saqué del cobertizo esta semana?",
+      "¿Qué cajones tienen euros?"
+    ],
+    "toolsTitle": "Las herramientas",
+    "toolsHint": "Un token que solo puede leer no recibe ninguna herramienta de escritura.",
+    "need": {
+      "read": "lectura",
+      "write": "escritura"
+    },
+    "tool": {
+      "list_drawers": "todos los cajones y elementos que el token puede abrir, con sus saldos",
+      "find_item": "busca un elemento por palabras",
+      "history": "movimientos recientes de un elemento",
+      "list_tags": "todas las etiquetas con sus elementos",
+      "list_places": "el árbol de lugares con sus cajones",
+      "add": "añade una cantidad",
+      "withdraw": "retira una cantidad",
+      "adjust": "fija lo que se contó",
+      "tag_item": "pone una etiqueta a un elemento",
+      "untag_item": "quita una etiqueta de un elemento",
+      "rename_tag": "cambia el nombre de una etiqueta en todos los elementos",
+      "remove_tag": "quita una etiqueta de todos los elementos",
+      "move_drawer": "pone un cajón en un lugar"
+    },
+    "honestTitle": "Conviene saber",
+    "honest": [
+      "El token y tus claves se quedan en tu equipo. El servidor nunca ve la mitad secreta del token.",
+      "Todo lo que preguntas llega al modelo de IA, porque se lo preguntaste tú.",
+      "El texto de tus cajones se le muestra al modelo como datos citados, y cualquier cambio es siempre una herramienta aparte que la aplicación puede pedirte que apruebes.",
+      "Para detenerlo, revoca el token en Ajustes → Tokens de acceso.",
+      "Una aplicación del teléfono aún no puede ejecutar este programa."
+    ],
+    "source": "Lee el código fuente en GitHub"
+  }
+}

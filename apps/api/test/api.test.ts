@@ -565,6 +565,24 @@ describe("storage limits (PETTY-243)", () => {
   }, 60_000);
 });
 
+describe("languages (PETTY-249)", () => {
+  it("an account's language can be en/pl/de/es/fr, and the emails it gets follow it", async () => {
+    const { sentMails } = await import("../src/lib/mail.js");
+    expect((await C.call("PATCH", "/me", { locale: "de" })).json().locale).toBe("de");
+    expect((await C.call("PATCH", "/me", { locale: "xx" })).statusCode).toBe(400);
+    const { id } = await sharedDrawer(); // C reads it
+    expect((await A.call("DELETE", `/drawers/${id}/members/${C.id}`)).statusCode).toBe(204);
+    expect([...sentMails].reverse().find((m) => m.to === C.user.email)?.subject).toBe("Dein Zugriff auf eine Schublade wurde beendet");
+    // a join link reaches someone with no account yet: it goes out in the inviter's language
+    expect((await A.call("PATCH", "/me", { locale: "fr" })).statusCode).toBe(200);
+    expect((await A.call("POST", "/join-links", { email: `friend-${run}@test.local` })).statusCode).toBe(201);
+    const invite = [...sentMails].reverse().find((m) => m.to === `friend-${run}@test.local`)!;
+    expect(invite.subject).toBe("Invitation à Petty");
+    expect(invite.text).toMatch(/\/join#[A-Za-z0-9_-]+/);
+    for (const u of [A, C]) expect((await u.call("PATCH", "/me", { locale: "en" })).statusCode).toBe(200);
+  });
+});
+
 describe("admin and password reset (Phase 15a)", () => {
   it("non-admins get 403; block kills login and sessions; unblock restores; revoke ends sessions; self is protected", async () => {
     const { sentMails } = await import("../src/lib/mail.js");

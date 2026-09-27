@@ -80,6 +80,11 @@ main { flex: 1; padding: 8px calc(16px + env(safe-area-inset-right, 0px)) 16px c
 .amount-display { text-align: center; font-size: 40px; font-weight: 800; padding: 16px 0; font-variant-numeric: tabular-nums; word-break: break-all; }
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* PETTY-249: the compact language switch (top bar when signed out, landing header) */
+.lang-picker { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; color: var(--muted); }
+.lang-picker > svg { position: absolute; left: 10px; pointer-events: none; }
+.lang-picker select { appearance: none; -webkit-appearance: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px 8px 32px; min-height: 40px; cursor: pointer; }
+.lang-picker select:hover { border-color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
   .sheet, .spinner { animation: none; }
@@ -281,6 +286,8 @@ main.landing { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(5
 .landing-brand { display: flex; align-items: center; gap: 12px; }
 .landing-brand h1 { font-size: 40px; letter-spacing: -0.03em; }
 .landing > * { width: 100%; max-width: 480px; }
+.landing > .landing-lang { max-width: none; display: flex; justify-content: flex-end; margin-bottom: -16px; }
+.landing-langs { flex-wrap: wrap; justify-content: center; gap: 2px; }
 .landing-hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .landing-logo { border-radius: 0; box-shadow: none; }
 .landing-brand h1 { font-size: 34px; letter-spacing: -0.02em; }
@@ -305,9 +312,10 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* Desktop: bigger hero, one-line CTAs, three-up features (UX review findings 6/7). */
 /* Desktop (PETTY-49 → PETTY-135): one centred column — hero, the five phones, then the rest. */
 @media (min-width: 1280px) {
-  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "hero" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
+  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
   .landing > .landing-hero { grid-area: hero; text-align: center; align-items: center; max-width: none; }
   .landing > .usecases { grid-area: uses; justify-self: center; width: 100%; }
+  .landing > .landing-lang { grid-area: lang; width: 100%; }
   .landing > .landing-hero .landing-cta { justify-content: center; }
   .landing > .shots { grid-area: shots; max-width: 1000px; width: 100%; }
   .landing > .landing-features, .landing > section:not(.landing-hero):not(.shots), .landing > footer { grid-column: 1 / -1; justify-self: center; }
@@ -531,7 +539,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* Drawer filter rows after the mockup (PETTY-80): the status chips share the row evenly; the tag row is lighter —
    small chips, the selected one a pale accent tint, no counts. */
 .status-bar { gap: 8px; padding-bottom: 6px; }
-.status-bar .tag-chip { flex: 1 1 0; justify-content: center; height: 34px; line-height: 32px; padding: 0 8px; min-width: 0; }
+/* PETTY-249: chips share the row but never shrink below their words (longer languages scroll the row instead of overlapping) */
+.status-bar .tag-chip { flex: 1 0 auto; justify-content: center; height: 34px; line-height: 32px; padding: 0 10px; }
 .status-bar .tag-chip .tag-count { margin-left: 2px; }
 .line-tag-bar { gap: 6px; padding-top: 0; }
 .line-tag-bar .tag-chip { height: 28px; line-height: 26px; font-size: 12px; padding: 0 10px; font-weight: 600; }

@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./i18n/index.js";
+import { i18nReady } from "./i18n/index.js";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import { App } from "./App.js";
@@ -43,8 +43,11 @@ if ("serviceWorker" in navigator) {
   });
 }
 document.documentElement.lang = document.documentElement.lang || "en";
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// PETTY-249: the first frame is already in the reader's language (its dictionary loads on demand).
+void i18nReady.then(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});

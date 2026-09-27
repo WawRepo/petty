@@ -208,10 +208,6 @@
       "totalsHint": "Karta „Łączna wartość” i sumy częściowe na ekranie głównym, karta sum i etykiety „w sumie” w szufladzie. Wyłącz, aby widzieć tylko, co jest w każdej szufladzie i linii."
     },
     "language": "Język",
-    "languages": {
-      "en": "English",
-      "pl": "Polski"
-    },
     "account": "Konto",
     "signedInAs": "Zalogowano jako {email}",
     "safetyNumber": "Twój numer bezpieczeństwa",
@@ -420,7 +416,7 @@
       "lines": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
       "byTool": "zmienione przez narzędzie",
       "restore": "Przywróć",
-      "restoreNamed": "Przywróć wersję z {{when}}",
+      "restoreNamed": "Przywróć wersję z {when}",
       "restored": "Przywrócono wcześniejszą wersję."
     }
   },
@@ -444,10 +440,10 @@
       "title": {
         "add": "Wpłata",
         "withdraw": "Wypłata",
-        "adjust": "Korekta — wpisz policzone {noun}"
+        "adjust": "Korekta — wpisz {noun, select, liczba {policzoną liczbę} other {policzone saldo}}"
       },
       "amount": "Kwota ({unit})",
-      "real": "Rzeczywiste {noun} ({unit})",
+      "real": "{noun, select, liczba {Rzeczywista liczba} other {Rzeczywiste saldo}} ({unit})",
       "noun": {
         "balance": "saldo",
         "count": "liczba"
@@ -457,9 +453,9 @@
       "review": "Sprawdź",
       "confirmTitle": "Potwierdź",
       "operation": "Operacja",
-      "current": "Obecne {noun}",
+      "current": "{noun, select, liczba {Obecna liczba} other {Obecne saldo}}",
       "change": "Zmiana",
-      "new": "Nowe {noun}",
+      "new": "{noun, select, liczba {Nowa liczba} other {Nowe saldo}}",
       "confirm": "Potwierdź",
       "saved": "Zapisano",
       "negativeWarning": "Saldo spadnie do {amount}. Może być tu więcej gotówki, niż zapisano, albo kwota jest błędna.",
@@ -717,9 +713,9 @@
       "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
       "Token dostępu, który tworzysz dla narzędzia (Ustawienia → Tokeny dostępu), czyta każdą szufladę, którą możesz otworzyć, także szuflady udostępnione Ci później, a token z prawem zapisu może dodawać wpisy i zmieniać tagi oraz miejsca. Kto ma ten token, ma ten dostęp, dopóki token nie wygaśnie albo go nie unieważnisz. Traktuj go jak klucz.",
       "Każdy, z kim dzielisz szufladę, może przeczytać i skopiować całą jej zawartość. Usunięcie odcina tylko przyszły dostęp.",
+      "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz.",
       "Błąd bezpieczeństwa w samej aplikacji.",
-      "Zapomniane hasło bez kodu odzyskiwania: nikt nie pomoże — celowo.",
-      "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz."
+      "Zapomniane hasło bez kodu odzyskiwania: nikt nie pomoże — celowo."
     ],
     "source": "Petty to wolne oprogramowanie (AGPL-3.0). Przeczytaj kod lub uruchom go samodzielnie:"
   },
@@ -766,8 +762,8 @@
   },
   "landing": {
     "slogan": "Małe kwoty. Duży spokój.",
-    "tagline": "Wspólna ewidencja gotówki z Twoich szuflad — zaszyfrowana tak, że tylko Ty ją odczytasz.",
-    "sub": "Gotówka w szufladzie w kuchni, euro na wakacje, kasa klubu: policz raz, daj każdej szufladzie miejsce, podziel się z tymi, którzy z niej korzystają.",
+    "tagline": "Wszystko, co przechowujesz, na swoim miejscu — wspólne z wybranymi osobami, szyfrowane od końca do końca.",
+    "sub": "Gotówka w puszce w kuchni, narzędzia w piwnicy, paszporty w sejfie: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
     "how": "Jak to szyfruje",
     "uses": {
       "title": "Jeden pomysł, wiele zastosowań",
@@ -1062,7 +1058,7 @@
     },
     "stepsTitle": "Jak to działa",
     "steps": {
-      "one": "Załóż szufladę dla każdego miejsca z gotówką, umieść ją w pokoju lub na półce i wpisz, co jest teraz w środku.",
+      "one": "Załóż szufladę dla każdego miejsca, w którym trzymasz gotówkę lub rzeczy, umieść ją w pokoju lub na półce i wpisz, co jest teraz w środku.",
       "two": "Wpłacaj i wypłacaj dwoma dotknięciami, gdy pieniądze się ruszają. Cofaj pomyłki.",
       "three": "Co jakiś czas policz szufladę i potwierdź stan. Udostępnij ją osobom, które z niej korzystają."
     },

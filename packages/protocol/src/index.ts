@@ -12,6 +12,10 @@ export type Role = z.infer<typeof Role>;
 export const AnyRole = z.enum(["owner", "write", "read"]);
 export type AnyRole = z.infer<typeof AnyRole>;
 
+/** PETTY-249: the languages the app and its emails speak. */
+export const LocaleCode = z.enum(["en", "pl", "de", "es", "fr"]);
+export type LocaleCode = z.infer<typeof LocaleCode>;
+
 export const HealthResponse = z.object({ ok: z.boolean(), db: z.enum(["up", "down"]) });
 export type HealthResponse = z.infer<typeof HealthResponse>;
 
@@ -72,7 +76,7 @@ export const SignupBody = z.object({
   email: z.string().email().max(254),
   password: z.string().min(8).max(1024),
   display_name: z.string().trim().min(1).max(80),
-  locale: z.enum(["en", "pl"]).default("en"),
+  locale: LocaleCode.default("en"),
   keys: z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string().regex(/^[0-9a-f]{32}$/) }),
   /** Passphrase copy of the keys. Optional since PETTY-102: a passkey may be the only everyday door. */
   vault: VaultBlob.optional(),
@@ -174,7 +178,7 @@ export const AdminUser = z.object({
 export type AdminUser = z.infer<typeof AdminUser>;
 export const AdminUsers = z.object({ users: z.array(AdminUser) });
 export const SetAdminBody = z.object({ is_admin: z.boolean() });
-export const PatchMeBody = z.object({ locale: z.enum(["en", "pl"]).optional(), display_name: z.string().trim().min(1).max(80).optional() });
+export const PatchMeBody = z.object({ locale: LocaleCode.optional(), display_name: z.string().trim().min(1).max(80).optional() });
 export const JoinLinkBody = z.object({ email: z.string().email().max(254).optional() });
 export const JoinLinkResponse = z.object({ token: z.string(), expires_at: z.string() });
 export const JoinLinkInfo = z.object({ valid: z.boolean(), inviter_name: z.string().nullable(), email: z.string().nullable() });

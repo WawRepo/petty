@@ -7,11 +7,24 @@ All notable, user-visible changes to Petty. The format follows
 ## [Unreleased]
 
 ### Added
+- German, Spanish and French, next to English and Polish: the whole app, the Clerk sign-in forms and
+  every email. A first visit follows the browser's language. A language switch sits at the top of the
+  landing page and on every signed-out page; in Settings the choice is also stored on the account, so
+  emails follow it.
 - Landing page: "One idea, many uses" — a live demo right under the introduction. Six examples (a
   workshop drawer, a trip kitty, yearly accounts, cash at home, things lent out, a family safe) are all
   the same three pieces — a place in the tree, a drawer in it, items in the drawer — and each turns into
   the next. It pauses on hover, focus, a Pause button or a picked example, and never moves on its own
-  under reduced motion.
+  under reduced motion. Each example has its own shape; item colours show money, things and notes.
+
+### Changed
+- Landing page: a headline about everything you keep, not only cash; the English page no longer talks
+  about złoty.
+
+### Fixed
+- Seven emails (invitations, join links, handovers and more) went out in English whatever the
+  recipient's language; changing the language in Settings did not reach the server; the "Restore the
+  version from …" button had a broken screen-reader label.
 
 ## [1.3.4] — 2026-09-26
 

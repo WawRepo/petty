@@ -22,7 +22,9 @@ make test
 pnpm --filter @petty/web exec playwright test --project=dev
 ```
 
-- Every user-facing string goes through the English and Polish dictionaries (ICU plurals).
+- Every user-facing string goes through the dictionaries in `apps/web/src/i18n/` — English, Polish,
+  German, Spanish and French (ICU plurals); `pnpm --filter @petty/web i18n:check` must pass. Emails
+  are in `apps/api/src/lib/mail-text.ts`, one catalogue per language.
 - Clickable elements are `<button>`s; icon-only controls need an accessible name.
 - A visible change to a screen updates the landing page captures (see `CLAUDE.md`).
 - The ciphertext compatibility corpus in `packages/crypto` must keep passing. Never regenerate

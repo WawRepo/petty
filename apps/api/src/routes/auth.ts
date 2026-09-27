@@ -166,7 +166,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const token = randomToken(24);
     const expires = new Date(Date.now() + JOIN_LINK_DAYS * 86_400_000);
     await apiPool.query("insert into join_links (token_hash, created_by, email, expires_at) values ($1, $2, $3, $4)", [sha256(token), me.id, body.email ?? null, expires]);
-    if (body.email) mails.joinLink(body.email, me.display_name, token);
+    if (body.email) mails.joinLink(body.email, me.display_name, token, me.locale); // no account yet: the inviter's language
     return reply.code(201).send(JoinLinkResponse.parse({ token, expires_at: iso(expires) }));
   });
 
