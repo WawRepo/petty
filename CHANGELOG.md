@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.5] — 2026-09-28
+
 ### Added
 - `petty`, a command line for Petty: sign in through your browser the way `gh auth login` works —
   it shows a code, you allow it on a page of your Petty, and no token is copied by hand. Then read
@@ -210,7 +212,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.5...HEAD
+[1.5.5]: https://github.com/WawRepo/petty/releases/tag/v1.5.5
 [1.5.4]: https://github.com/WawRepo/petty/releases/tag/v1.5.4
 [1.5.3]: https://github.com/WawRepo/petty/releases/tag/v1.5.3
 [1.5.2]: https://github.com/WawRepo/petty/releases/tag/v1.5.2
