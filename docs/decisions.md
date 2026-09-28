@@ -89,9 +89,11 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `DEPLOYMENT_ENV` tags every signal so instances don't merge. See [monitoring.md](monitoring.md).
 - **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
   tag); `/api/config`, Settings and the landing footer show it.
-- **Releases (2026-09-23/24).** Multi-architecture images built by CI with provenance and an SBOM,
-  pinned by digest; a tag is released only if CI's `test` and `integration` passed for that commit.
-  Runtime is Node 24 LTS.
+- **Releases (2026-09-23/24; PETTY-254).** Multi-architecture images built by CI with provenance and an
+  SBOM, pinned by digest. A release is started by hand from main and never waits for CI: it is refused
+  while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
+  version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
+  the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.
 - **Contributions (2026-09-25).** AGPL inbound = outbound with a DCO `Signed-off-by` per commit; no CLA.
 - **History (2026-09-25).** Deleted hosting files and private repository names in git history are
   accepted as public (no credentials); no history rewrite.

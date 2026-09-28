@@ -103,3 +103,21 @@ and `pl.json`. A landing page that shows last month's app is a bug.
   proves nothing about enforcement.
 - The concurrency scenarios listed in the spec are required, not optional —
   particularly simultaneous Adjusts on one line.
+
+## Releasing
+
+A release is started by hand and never waits for CI (PETTY-254, `.github/workflows/release.yml`).
+
+- **Start it from main:** Actions → *release* → Run workflow, or `gh workflow run release.yml --ref main`.
+- **It refuses** while `ci.yml` runs on main, and when `ci.yml`'s latest run on main did not pass on
+  main's newest commit. A refused run publishes nothing: let CI finish (or fix main), then start it again.
+- **The version is counted, never chosen:** the highest `vX.Y.Z` tag plus one patch. To start a new
+  minor or major, push a tag by hand (`git tag v1.6.0 && git push origin v1.6.0`). That tag releases
+  nothing; the next release is `v1.6.1`.
+- **The workflow makes the release commit** ("Release X.Y.Z": the version in every `package.json` and in
+  `apps/mcp/mcpb/manifest.json`; `## [Unreleased]` in `CHANGELOG.md` becomes `## [X.Y.Z] — date`), tags
+  it `vX.Y.Z`, builds and pushes the image, and publishes the GitHub Release with that section as notes.
+- **Never bump a version or write a version heading by hand.** Each user-visible change adds its lines
+  under `## [Unreleased]` in the same commit as the change. An empty section ships as "Maintenance only".
+- **After a release, pull before you push:** main has the release commit on top. Deploying a release is
+  the operator's step and lives outside this repository.
