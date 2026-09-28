@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.3] — 2026-09-28
+
 ### Fixed
 - Back from a drawer to Home jumped: the Home picture was drawn at a guessed width, then at its real
   width in the next frame, so the list below jumped and the bubbles slid across under the drawer
@@ -187,7 +189,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.3...HEAD
+[1.5.3]: https://github.com/WawRepo/petty/releases/tag/v1.5.3
 [1.5.2]: https://github.com/WawRepo/petty/releases/tag/v1.5.2
 [1.5.1]: https://github.com/WawRepo/petty/releases/tag/v1.5.1
 [1.5.0]: https://github.com/WawRepo/petty/releases/tag/v1.5.0
