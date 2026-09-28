@@ -6,6 +6,11 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Back from a drawer to Home jumped: the Home picture was drawn at a guessed width, then at its real
+  width in the next frame, so the list below jumped and the bubbles slid across under the drawer
+  shrinking into its bubble. The picture is now drawn once, at its real width, every time Home opens.
+
 ## [1.5.2] — 2026-09-28
 
 ### Added

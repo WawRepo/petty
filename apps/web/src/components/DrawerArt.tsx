@@ -302,11 +302,17 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
   onPick: (path: readonly string[]) => void; onDrawer: (id: string) => void; backName: (to: ArtPlace) => string;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(306);
+  // The width is measured before the picture is first drawn (a layout effect, before the paint). Drawn at
+  // a guess and then at its real width, every bubble glided across and the list below jumped, each time
+  // Home opened — Back from a drawer too, under its morph (PETTY-271).
+  const [w, setW] = useState<number | null>(null);
   useLayoutEffect(() => {
     const el = wrap.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([e]) => { if (e) setW(Math.max(250, Math.min(400, Math.round(e.contentRect.width)))); });
+    if (!el) return;
+    const fit = (width: number) => setW(Math.max(250, Math.min(400, Math.round(width))));
+    fit(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => { if (e) fit(e.contentRect.width); });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -321,6 +327,7 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
   const viewKey = placeKey(view.path);
   const [turn, setTurn] = useState({ view: viewKey, by: 0 });
   const by = turn.view === viewKey ? turn.by : 0;
+  if (w === null) return <div className="places-art-wrap" ref={wrap} />;
   const L = placesLayout(view, trail, w, by);
 
   // every place and drawer, in one order that does not change with the view (a moved node would not glide)

@@ -23,6 +23,22 @@ const art = (page: Page) => page.getByTestId("places-art");
 const shown = (page: Page, kind: string) => art(page).locator(`.pa-bub.${kind}:not(.off) .uc-bub-tip`).allTextContents();
 const tap = (page: Page, kind: string, name: string) => art(page).locator(`.pa-bub.${kind}:not(.off) .uc-bub-hit`).filter({ hasText: name }).click();
 const shots = process.env["SHOTS"]; // a folder: the test leaves a capture of each step there, for a look by eye
+/** From now on, for 1.2 s: the picture's size and its drawers' places on screen, once per frame. */
+const watchFrames = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { paFrames: string[] };
+  w.paFrames = [];
+  const t0 = performance.now();
+  const tick = () => {
+    const a = document.querySelector(".places-art");
+    if (a) {
+      const r = (e: Element) => { const b = e.getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.width)}x${Math.round(b.height)}`; };
+      w.paFrames.push([a, ...a.querySelectorAll(".pa-bub.drawer:not(.off)")].map(r).join(" "));
+    }
+    if (performance.now() - t0 < 1200) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
+const framesSeen = (page: Page) => page.evaluate(() => [...new Set((window as unknown as { paFrames: string[] }).paFrames)]);
 
 test("with places, the picture is the place tree: a place's bubble picks it and goes one level down, the middle goes back up", async ({ page }) => {
   const user = await signupWithKeys("tre");
@@ -166,9 +182,14 @@ test("the way back (PETTY-269): Back from a drawer lands on the place it was ope
   await expect(page.getByRole("heading", { name: "Cash tin" })).toBeVisible();
   const trail = page.getByTestId("place-trail");
   await expect(trail.getByRole("button")).toHaveText(["All", "Flat", "Kitchen"]);
+  await watchFrames(page);
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(art(page)).toHaveAttribute("data-view", "flat/kitchen");
   await expect(page.getByTestId("tag-bar").getByRole("button", { name: /^Kitchen/ })).toHaveAttribute("aria-pressed", "true");
+  // PETTY-271: the picture is drawn once, at its own width, and the drawer shrinks into a bubble that stays
+  // put. Drawn at a guess first, it grew in the next frame (the list below jumped) and its bubbles glided across.
+  await page.waitForTimeout(1300);
+  expect(await framesSeen(page)).toHaveLength(1);
 
   // the trail: one level up, or all the way to All
   await tap(page, "drawer", "Cash tin");
