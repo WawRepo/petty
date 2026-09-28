@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-09-28
+
 ### Added
 - A drawer's screen shows where the drawer is — All › Flat › Kitchen — and a tap opens Home at that
   level. Back from a drawer returns to the place it was opened from, and the drawer shrinks back into
@@ -180,7 +182,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/WawRepo/petty/releases/tag/v1.5.2
 [1.5.1]: https://github.com/WawRepo/petty/releases/tag/v1.5.1
 [1.5.0]: https://github.com/WawRepo/petty/releases/tag/v1.5.0
 [1.4.2]: https://github.com/WawRepo/petty/releases/tag/v1.4.2
