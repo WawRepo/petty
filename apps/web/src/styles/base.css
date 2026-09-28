@@ -513,11 +513,12 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
    once, in turn. Line tiles take their kind's colour (.tile.k-money / k-things / k-notes above). */
 .app-art .uc-bub-float { animation: none; }
 .app-art .uc-bub.sat .uc-bub-disc { animation: uc-bub-in 0.5s var(--pop) both; animation-delay: calc(var(--i, 0) * 55ms + 80ms); }
-.app-art .uc-spoke { animation: uc-spoke-in 0.45s ease both; animation-delay: calc(var(--i, 0) * 55ms + 200ms); }
+/* a spoke fades in as its bubble lands; the fade ends at the spoke's own opacity, so a hidden one stays hidden */
+.app-art .uc-spoke { animation: uc-spoke-in 0.8s ease both; animation-delay: calc(var(--i, 0) * 55ms); }
 .app-art .uc-bub .uc-bub-disc svg { width: calc(var(--uc-sz) * 0.46); height: calc(var(--uc-sz) * 0.46); }
 .app-art .uc-more { font-size: calc(var(--uc-sz) * 0.32); font-weight: 800; color: var(--muted); }
 @keyframes uc-bub-in { from { opacity: 0; scale: 0.3; } to { opacity: 1; scale: 1; } }
-@keyframes uc-spoke-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes uc-spoke-in { 0%, 50% { opacity: 0; } }
 /* the drawer: a band across the top of its screen, the name stays in the top bar */
 .drawer-art { width: 100%; height: clamp(132px, 34vw, 170px); aspect-ratio: auto; max-width: none; }
 .drawer-art .uc-bub.sat { --uc-sz: min(10.5cqw, 46px); }
@@ -640,8 +641,13 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .hero-bubble .uc-bub-tip { top: calc(100% + 6px); }
 /* A ring's "+N" (DrawerArt, useRing): hidden bubbles wait folded where their "+N" is. Opening it sends
    them out of it — it bursts — while bubbles on the far side slide together into a new "+N", which pops
-   in as they meet. One glide for everything, no stagger, so it reads as one move. */
-.app-art .uc-bub, .app-art .uc-spoke { --dl: 0ms; transition-duration: 0.75s, 0.75s, 0.75s, 0.6s, 0.45s, 0.55s; }
+   in as they meet. One glide for everything, no stagger, so it reads as one move.
+   PETTY-273: in the app only translate, scale and opacity animate, so the GPU moves the bubbles in a
+   straight line and nothing is laid out again frame by frame (the landing turns the angle round the
+   ring, which lays the page out on every frame). A spoke is not bent round: it is keyed by its place,
+   drawn where it belongs and fades in as its bubble lands (DrawerArt, HomeArt). */
+.app-art .uc-bub { transition: translate 0.75s var(--glide), opacity 0.45s ease, scale 0.55s var(--glide); }
+.app-art .uc-spoke { transition: opacity 0.45s ease; }
 .uc-bub.off .uc-bub-hit { pointer-events: none; }
 .app-art .uc-bub.sat.uc-more-bub .uc-bub-disc { animation-delay: 320ms; }
 .uc-more-burst { pointer-events: none; }
@@ -668,6 +674,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @keyframes val-in { from { opacity: 0.15; translate: 0 5px; } to { opacity: 1; translate: none; } }
 @media (prefers-reduced-motion: reduce) {
   .app-art .uc-bub .uc-bub-disc, .app-art .uc-spoke, .app-art .uc-bub-name, .enter > *, .val-in { animation: none; }
+  .app-art .uc-bub, .app-art .uc-spoke { transition-property: opacity; }
 }
 
 /* Drawer screen after the mockup (PETTY-64). */

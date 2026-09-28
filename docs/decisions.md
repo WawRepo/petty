@@ -132,8 +132,10 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   the total. "Show the picture" (on by default) is in the encrypted user document, like the other Home
   settings. The picked place outlives the screen in memory only — never in the URL or storage, since
   place names are content — so Back from a drawer lands on its level (PETTY-269); a drawer's screen
-  shows the trail to its place, and Back plays the morph the other way. The pictures animate only
-  transform and opacity, so a move never lays the page out again frame by frame.
+  shows the trail to its place, and Back plays the morph the other way. The app's pictures (Home, with
+  or without places, and a drawer's) animate only transform and opacity (PETTY-269, PETTY-273), so a
+  move never lays the page out again frame by frame: a bubble glides in a straight line, and a spoke is
+  drawn anew where it belongs and fades in. The landing's pictures still turn round their ring.
 - **Theme (PETTY-259, 2026-09-28).** Settings offers the device's own theme, light or dark. The choice
   is kept on the device, not on the account: a phone and a laptop may want different ones. A forced
   theme is a `data-theme` on `<html>` that picks the palette in `tokens.css`, so every colour still

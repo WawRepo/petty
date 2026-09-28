@@ -7,8 +7,8 @@ import { orbit } from "./UseCaseArt.js";
 /**
  * The app's pictures (PETTY-250), in the landing page's look: bubbles round a middle, joined by
  * dashed spokes, drawn by the same CSS as the landing's (base.css, "the picture"). Bubbles are keyed
- * by what they show, so a reorder sends them round the middle to their new places, a new one pops in
- * and the others make room. A ring holds six: past that, a "+N" stands for the rest (useRing).
+ * by what they show, so a reorder glides them to their new places, a new one pops in and the others
+ * make room. A ring holds six: past that, a "+N" stands for the rest (useRing).
  *
  * Every bubble is a shortcut, as the landing's pictures are: a tap opens what it shows, and its bubble
  * grows into the next screen's picture (useMorph; `vt` is the shared view-transition name). Only the
@@ -31,7 +31,7 @@ const vtStyle = (vt: string | undefined): CSSProperties | undefined => (vt ? { v
  * it (or tapping it) opens it: the N items come out of it — it bursts as they leave — while N items on
  * the far side of the ring slide together into a new "+N" there. Every item keeps its own bubble all the
  * time (a hidden one waits folded where its "+N" is), so each change is one glide: out of the "+N",
- * round the ring, or into the new "+N".
+ * across the ring, or into the new "+N".
  */
 function useRing(total: number) {
   const hidden = total > MAX ? total - (MAX - 1) : 0;
@@ -65,6 +65,12 @@ function useRing(total: number) {
   };
 }
 type Ring = ReturnType<typeof useRing>;
+/**
+ * A spoke's key: what it points at, and where (PETTY-273). Only transforms and opacity animate, so a
+ * spoke does not turn with its bubble: at a new place it is a new spoke, which fades in as the bubble
+ * lands (base.css, uc-spoke-in). `i` is the item's index; without it, the ring's "+N".
+ */
+const spokeKey = (id: string, ring: Ring, i?: number) => `${id}@${i === undefined ? ring.moreSlot : ring.slotOf(i)}/${ring.slots}`;
 
 /**
  * The invisible button over a disc, and the name that shows on hover — above the disc when `up` (a bubble
@@ -99,7 +105,8 @@ function Bubble({ cls, style, vt, name, up, label, onClick, onEnter, children }:
           {children}
           {onClick ? <Hit name={name ?? ""} vt={vt} up={up ?? false} onClick={onClick} onEnter={onEnter} /> : null}
         </span>
-        {label ? <span className={`uc-bub-name ${label.side}`}>{label.text}</span> : null}
+        {/* keyed by its side: a name that changes side is drawn anew there and fades in, it does not jump */}
+        {label ? <span key={label.side} className={`uc-bub-name ${label.side}`}>{label.text}</span> : null}
       </span>
     </span>
   );
@@ -142,15 +149,24 @@ export function DrawerArt({ drawerId, lines, center, icon, color, centerName, on
     if (Math.sin(a) > 0.5 || ring.slots < 5) return "below";
     return Math.cos(a) > 0 ? "right" : "left";
   };
+  // PETTY-273: a name keeps its side while its bubble folds into the "+N" (it fades with the bubble); one
+  // that comes out takes its new side while still hidden. Only a line in view sets its side.
+  const sides = useRef(new Map<string, Side>());
+  const nameSide = (id: string, i: number): Side => {
+    if (ring.inRun(i)) return sides.current.get(id) ?? side(ring.slotOf(i));
+    const s = side(ring.slotOf(i));
+    sides.current.set(id, s);
+    return s;
+  };
   const vt = vtName("d", drawerId);
   return (
     <div className={`uc-art app-art drawer-art named ${colorClass(color)}`} data-testid={testId} data-count={lines.length}>
       <span className="uc-halo" aria-hidden="true" />
-      {lines.map((l, i) => <span key={l.id} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} aria-hidden="true" />)}
-      {ring.hidden ? <span key={ring.moreKey} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} aria-hidden="true" /> : null}
+      {lines.map((l, i) => <span key={spokeKey(l.id, ring, i)} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} aria-hidden="true" />)}
+      {ring.hidden ? <span key={spokeKey(ring.moreKey, ring)} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} aria-hidden="true" /> : null}
       {lines.map((l, i) => (
         <Bubble key={l.id} cls={`${KIND_CLASS[l.kind]}${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} vt={vtName("l", l.id)} name={l.name}
-          label={{ text: l.name, side: side(ring.slotOf(i)) }} onClick={() => { if (!ring.settling()) onLine(l); }}>
+          label={{ text: l.name, side: nameSide(l.id, i) }} onClick={() => { if (!ring.settling()) onLine(l); }}>
           <PIcon name={lineIcon(l)} />
         </Bubble>
       ))}
@@ -181,8 +197,8 @@ export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
   return (
     <div className="uc-art app-art home-art" aria-hidden="true" data-testid="home-art" data-count={drawers.length}>
       <span className="uc-orbit" style={{ "--uc-rx": geo.rx, "--uc-ry": geo.ry } as CSSProperties} />
-      {drawers.map((d, i) => <span key={d.id} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} />)}
-      {ring.hidden ? <span key={ring.moreKey} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} /> : null}
+      {drawers.map((d, i) => <span key={spokeKey(d.id, ring, i)} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} />)}
+      {ring.hidden ? <span key={spokeKey(ring.moreKey, ring)} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} /> : null}
       {drawers.map((d, i) => (
         <Bubble key={d.id} cls={`k-case ${colorClass(d.color)}${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} vt={vtName("d", d.id)} name={d.name} up={up(ring.slotOf(i))}
           onClick={() => { if (!ring.settling()) onDrawer(d.id); }}>

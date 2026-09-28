@@ -135,11 +135,22 @@ test("more than six: five and a +N; pointing at it (or tapping it) brings those 
   const more = art.locator(".uc-more-bub");
   await expect.poll(shown).toEqual(["Box 1", "Box 2", "Box 3", "Box 4", "Box 5"]);
   await expect(more).toHaveText("+2");
+  // PETTY-273: only translate, opacity and scale move (the GPU's work: nothing is laid out frame by frame);
+  // a spoke only fades, and the spokes of the lines folded into the +N stay hidden
+  expect(await art.locator(".uc-bub.sat").first().evaluate((e) => getComputedStyle(e).transitionProperty)).toBe("translate, opacity, scale");
+  expect(await art.locator(".uc-spoke").first().evaluate((e) => getComputedStyle(e).transitionProperty)).toBe("opacity");
+  const hiddenSpokes = () => art.locator(".uc-spoke.off").evaluateAll((els) => els.map((e) => getComputedStyle(e).opacity));
+  await expect.poll(hiddenSpokes).toEqual(["0", "0"]);
+  const nameSide = (name: string) => art.locator(".uc-bub.sat").filter({ has: page.locator(".uc-bub-tip", { hasText: name }) }).locator(".uc-bub-name").getAttribute("class");
+  const folding = [await nameSide("Box 3"), await nameSide("Box 4")];
   // a mouse pointing at it: the two come out, and the two across the ring fold into a new +2
   await more.locator(".uc-bub-hit").hover();
   await expect.poll(shown).toEqual(["Box 1", "Box 2", "Box 5", "Box 6", "Box 7"]);
   await expect(more).toHaveText("+2");
   await expect(art.locator(".uc-bub.sat.off")).toHaveCount(2);
+  // the names of the two folding away keep their side as they fade with their bubbles (they jumped across before)
+  expect([await nameSide("Box 3"), await nameSide("Box 4")]).toEqual(folding);
+  await expect.poll(hiddenSpokes).toEqual(["0", "0"]);
   // a tap (no hover on a touch screen) does the same
   await page.mouse.move(2, 2);
   await more.locator(".uc-bub-hit").dispatchEvent("click");

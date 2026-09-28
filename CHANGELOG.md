@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- A drawer's "+N" bubble opened with a stutter: the lines' names jumped to the other side of their
+  bubbles, the spokes of the hidden lines swept across the picture, and every frame laid the page out
+  again. Now the bubbles glide on the GPU in straight lines, a name keeps its side while its bubble
+  folds away and fades in on the new side, and a spoke fades in once its bubble has landed. The same
+  for the Home picture without places.
+
 ## [1.5.3] — 2026-09-28
 
 ### Fixed
