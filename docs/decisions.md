@@ -108,6 +108,13 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   person owns: a member's writes to a shared drawer count against its owner, who is the one able to
   free space. Writes that free space (a smaller photo, removing a photo, deleting a line or drawer)
   always pass. The check is soft: writes racing at the limit may overshoot by one record.
+- **The app's look (PETTY-248/250, 2026-09-27).** A line's colour is its kind: money green, counted
+  things blue, single items amber (`--k-money/--k-things/--k-notes`), on the landing page and in the
+  app alike. Pictures — the landing examples, a drawer's header, the home beside the total — are
+  bubbles round a middle. In the app every bubble is a shortcut for the list below it, so it is hidden
+  from the accessibility tree and the tab order; the list stays the keyboard and screen-reader path. A
+  tapped bubble grows into the next screen's picture through the View Transitions API where the
+  browser has it. Nothing moves on its own in the app, and reduced motion turns every animation off.
 
 ## Non-goals
 
