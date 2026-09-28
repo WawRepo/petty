@@ -95,6 +95,8 @@ jobs:
       # third-party notices and checksums. Built from the same release commit as the image.
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @petty/mcp run pack
+      # PETTY-274: the command line, one file, from the same release commit
+      - run: pnpm --filter @petty/cli run pack
       # Both or neither: if main moved meanwhile, nothing is published; the next run builds the version again.
       - name: Push the release commit and its tag to main
         env:
@@ -109,16 +111,16 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         working-directory: apps/web/public/downloads
         run: |
-          sha256sum petty.mcpb petty-mcp.mjs > SHA256SUMS
+          sha256sum petty.mcpb petty-mcp.mjs petty.mjs > SHA256SUMS
           {
             cat "$RUNNER_TEMP/notes.md"
             # shellcheck disable=SC2016 # the backticks are Markdown
-            printf '\n---\n\nImage: `%s` (linux/amd64, linux/arm64). Claude Desktop add-on: `petty.mcpb`; other MCP apps: `petty-mcp.mjs` — see docs/agent.md. Checksums in `SHA256SUMS`.\n' \
+            printf '\n---\n\nImage: `%s` (linux/amd64, linux/arm64). Claude Desktop add-on: `petty.mcpb`; other MCP apps: `petty-mcp.mjs` — see docs/agent.md. The command line: `petty.mjs` — see docs/cli.md. Checksums in `SHA256SUMS`.\n' \
               "ghcr.io/wawrepo/petty:v$VERSION@$DIGEST"
           } > "$RUNNER_TEMP/release-notes.md"
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --title "v$VERSION" \
             --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag \
-            petty.mcpb petty-mcp.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS
+            petty.mcpb petty-mcp.mjs petty.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS
           echo "Released v$VERSION: \`ghcr.io/wawrepo/petty:v$VERSION@$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
       # One source, so imagetools makes a carbon copy: `latest` gets the same digest, attestations included.
       - name: Point `latest` at this release

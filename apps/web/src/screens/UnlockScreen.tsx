@@ -14,6 +14,7 @@ import { checkPassphrase } from "../lib/passphrase.js";
 import { signOut, unlock, unlockWithPasskey, updateMe, updateVault, useAuth, type PasskeyUnlock } from "../lib/session.js";
 import { deviceLabel, knownPasskeyIds, PasskeyError, passkeyPrfSupported, rememberPasskey } from "../lib/passkey.js";
 import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
+import { afterUnlock } from "../lib/afterUnlock.js";
 
 /**
  * Passkey first (PETTY-102): the passkey button leads when the account has any; the passphrase
@@ -52,7 +53,7 @@ export function UnlockScreen() {
       const r = await unlockWithPasskey({ hold: true });
       if (r.extractable && !knownPasskeyIds().includes(r.credential_id)) { setOffer(r); return; }
       await r.open();
-      nav("/", { replace: true });
+      nav(afterUnlock() ?? "/", { replace: true });
     } catch (err) {
       if (err instanceof PasskeyError) setPkErr(err.code === "cancelled" ? null : t(hasPassphrase ? "auth.unlock.passkeyNoPrf" : "auth.unlock.passkeyNoPrfNoPassphrase"));
       else if (err instanceof WrongPassphrase) setPkErr(t("auth.unlock.passkeyWrong"));
@@ -65,7 +66,7 @@ export function UnlockScreen() {
     rememberPasskey(offer.credential_id);
     setOffer(null);
     await offer.open();
-    nav("/", { replace: true });
+    nav(afterUnlock() ?? "/", { replace: true });
   }
   async function acceptOffer(e: FormEvent) {
     e.preventDefault();
@@ -78,7 +79,7 @@ export function UnlockScreen() {
       toast(t("settings.passkey.added"));
       setOffer(null);
       await offer.open();
-      nav("/", { replace: true });
+      nav(afterUnlock() ?? "/", { replace: true });
     } catch (err) {
       if (err instanceof PasskeyError && err.code === "cancelled") setOErr(t("settings.passkey.cancelled"));
       else if (err instanceof PasskeyError) setOErr(t(err.code === "exists" ? "settings.passkey.exists" : err.code === "no_prf" ? "settings.passkey.noPrf" : "settings.passkey.unsupported"));
@@ -115,7 +116,7 @@ export function UnlockScreen() {
     setBusy(true); setError(null);
     try {
       await unlock(passphrase);
-      nav("/", { replace: true });
+      nav(afterUnlock() ?? "/", { replace: true });
     } catch (err) {
       setError(err instanceof WrongPassphrase ? t("auth.unlock.wrong") : t("errors.unknown"));
     } finally { setBusy(false); }

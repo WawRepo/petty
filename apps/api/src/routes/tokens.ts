@@ -227,6 +227,17 @@ export async function tokenRoutes(app: FastifyInstance) {
     });
   });
 
+  /**
+   * A tool ends its own token (PETTY-274, `petty auth logout`): the same as revoking it in Settings.
+   * Any token may, a read-only one too; it can end only itself.
+   */
+  app.delete("/me/token", async (req, reply) => {
+    const t = req.token;
+    if (!t) throw unauthorized();
+    await apiPool.query("update access_tokens set revoked_at = now() where id = $1 and revoked_at is null", [t.id]);
+    reply.code(204);
+  });
+
   /** What a tool asks for with its own token: who it belongs to and its sealed bundle. */
   app.get("/me/token", async (req) => {
     const t = req.token;

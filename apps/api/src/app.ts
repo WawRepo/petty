@@ -18,6 +18,7 @@ import { drawerRoutes } from "./routes/drawers.js";
 import { entryRoutes } from "./routes/entries.js";
 import { meRoutes } from "./routes/me.js";
 import { tokenRoutes } from "./routes/tokens.js";
+import { deviceRoutes } from "./routes/device.js";
 import { rotationRoutes } from "./routes/rotation.js";
 import { sharingRoutes } from "./routes/sharing.js";
 
@@ -97,6 +98,7 @@ export function buildApp() {
     await a.register(authRoutes);
     await a.register(meRoutes);
     await a.register(tokenRoutes);
+    await a.register(deviceRoutes);
     await a.register(drawerRoutes);
     await a.register(entryRoutes);
     await a.register(sharingRoutes);

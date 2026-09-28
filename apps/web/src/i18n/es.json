@@ -1235,6 +1235,30 @@
     "addonDownload": "Descargar el complemento",
     "address": "Dirección de Petty"
   },
+  "device": {
+    "title": "Conectar una herramienta de línea de comandos",
+    "enterBody": "Escribe el código que muestra tu terminal tras petty auth login.",
+    "code": "Código",
+    "continue": "Continuar",
+    "checking": "Comprobando el código…",
+    "notACode": "Eso no es un código. Un código tiene 12 letras, como BCDF-GHJK-LMNP.",
+    "unknown": "No hay ninguna solicitud pendiente con este código. Puede que haya caducado a los 15 minutos o que ya se haya usado. Vuelve a ejecutar petty auth login.",
+    "tooMany": "Demasiados intentos. Espera unos minutos y vuelve a probar.",
+    "mismatch": "Esta solicitud no coincide con su código: alguien la cambió por el camino. No la permitas. Vuelve a ejecutar petty auth login y avisa a quien administra este Petty.",
+    "askTitle": "¿Permitir «{name}»?",
+    "checkCode": "Comprueba que tu terminal muestra este código:",
+    "asked": "Solicitado {when}.",
+    "askedFrom": "Solicitado {when} desde {ip}.",
+    "onlyYours": "Permítelo solo si lo acabas de iniciar tú. La herramienta recibe una copia de las claves de tus cajones: podrá leer todos los cajones que puedes abrir.",
+    "readOnly": "Solo pide permiso de lectura. No puede añadir movimientos.",
+    "allow": "Permitir",
+    "deny": "Rechazar",
+    "doneTitle": "Permitido",
+    "doneBody": "Vuelve a tu terminal: la herramienta ya tiene acceso. Aparece en Ajustes → Tokens de acceso, donde puedes revocarla cuando quieras.",
+    "toSettings": "Ajustes",
+    "deniedTitle": "Rechazado",
+    "deniedBody": "La herramienta no tiene acceso. Tu terminal lo indicará y dejará de esperar."
+  },
   "ai": {
     "link": "Usar Petty con IA",
     "title": "Usar Petty con IA",
@@ -1267,6 +1291,15 @@
     "example": "El bloque que se muestra se parece a este, con tus propias rutas:",
     "copyConfig": "Copiar el bloque de configuración",
     "claudeCode": "Para Claude Code, lo mismo en un solo comando:",
+    "cliTitle": "2c. La línea de comandos: petty",
+    "cliIntro": "Un programa para tu terminal, tus scripts y los agentes de IA que ejecutan comandos (Claude Code, Codex). El programa inicia sesión a través de una página de este Petty en tu navegador, como gh auth login: no hay que copiar ningún token.",
+    "cliSteps": [
+      "Instala Node 20 o posterior.",
+      "Ejecuta los comandos de abajo que correspondan a tu equipo. El último muestra un código y abre este Petty en tu navegador.",
+      "Comprueba que la página muestra el mismo código y permítelo.",
+      "Después prueba petty drawers, o petty help para ver el resto. Para completar con la tecla Tab, ejecuta petty completion -s zsh (o bash, fish, powershell)."
+    ],
+    "cliDownload": "Descargar petty.mjs",
     "askTitle": "3. Pregunta",
     "ask": [
       "¿Qué hay en el cajón de la cocina?",

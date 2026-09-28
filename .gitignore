@@ -21,6 +21,7 @@ apps/mcp/mcpb/server/
 apps/mcp/mcpb/LICENSE
 apps/mcp/mcpb/THIRD_PARTY_NOTICES.md
 apps/mcp/meta.json
+apps/cli/meta.json
 apps/web/public/downloads/
 apps/web/public/THIRD_PARTY_NOTICES.md
 

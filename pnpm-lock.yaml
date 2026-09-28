@@ -136,6 +136,40 @@ importers:
         specifier: ^6.2.12
         version: 6.2.12
 
+  apps/cli:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.1
+        version: 1.30.1(zod@4.6.5)
+      '@petty/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@petty/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@petty/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@petty/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@petty/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+    devDependencies:
+      '@petty/api':
+        specifier: workspace:*
+        version: link:../api
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.6
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   apps/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
@@ -8180,7 +8214,7 @@ snapshots:
 
   '@types/pg@8.15.6':
     dependencies:
-      '@types/node': 26.6.2
+      '@types/node': 24.13.6
       pg-protocol: 1.16.0
       pg-types: 2.2.0
 

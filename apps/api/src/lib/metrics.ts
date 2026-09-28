@@ -54,7 +54,7 @@ export const httpDuration = dualHistogram(
 
 export const authEvents = dualCounter(
   "petty_auth_events_total",
-  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout", ["event"],
+  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied", ["event"],
 );
 
 export const entriesAppended = dualCounter(

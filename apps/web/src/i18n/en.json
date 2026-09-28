@@ -1235,6 +1235,30 @@
     "addonDownload": "Get the Claude Desktop add-on",
     "address": "Petty address"
   },
+  "device": {
+    "title": "Sign in a command-line tool",
+    "enterBody": "Type the code your terminal shows after petty auth login.",
+    "code": "Code",
+    "continue": "Continue",
+    "checking": "Checking the code…",
+    "notACode": "That is not a code. A code has 12 letters, like BCDF-GHJK-LMNP.",
+    "unknown": "No request is waiting with this code. It may have expired after 15 minutes, or it was already used. Run petty auth login again.",
+    "tooMany": "Too many tries. Wait a few minutes and try again.",
+    "mismatch": "This request does not match its code: it was changed on its way here. Do not allow it. Run petty auth login again, and tell whoever runs this Petty.",
+    "askTitle": "Allow “{name}”?",
+    "checkCode": "Check that your terminal shows this code:",
+    "asked": "Asked {when}.",
+    "askedFrom": "Asked {when}, from {ip}.",
+    "onlyYours": "Allow it only if you started it yourself, just now. The tool gets a copy of your drawer keys: it can read every drawer you can open.",
+    "readOnly": "It asks to read only. It cannot add entries.",
+    "allow": "Allow",
+    "deny": "Deny",
+    "doneTitle": "Allowed",
+    "doneBody": "Go back to your terminal: the tool is signed in. It is listed under Settings → Access tokens, where you can revoke it at any time.",
+    "toSettings": "Settings",
+    "deniedTitle": "Denied",
+    "deniedBody": "The tool is not signed in. Your terminal says so and stops waiting."
+  },
   "ai": {
     "link": "Use Petty with AI",
     "title": "Use Petty with AI",
@@ -1267,6 +1291,15 @@
     "example": "The printed block looks like this, with your own paths:",
     "copyConfig": "Copy the settings block",
     "claudeCode": "For Claude Code, the same as one command:",
+    "cliTitle": "2c. The command line: petty",
+    "cliIntro": "One program for your terminal, your scripts, and AI agents that run commands (Claude Code, Codex). It signs in through a page of this Petty in your browser, like gh auth login: no token to copy.",
+    "cliSteps": [
+      "Install Node 20 or newer.",
+      "Run the commands for your computer below. The last one shows a code and opens this Petty in your browser.",
+      "Check that the page shows the same code, and allow it.",
+      "Then try petty drawers, or petty help for the rest. For Tab completion, run petty completion -s zsh (or bash, fish, powershell)."
+    ],
+    "cliDownload": "Download petty.mjs",
     "askTitle": "3. Ask",
     "ask": [
       "What is in my kitchen drawer?",

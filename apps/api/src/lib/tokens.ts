@@ -79,6 +79,8 @@ const READ_ROUTES = new Set([
   "GET /drawers/:id",
   "GET /drawers/:id/photo",
   "GET /drawers/:id/lines/:lineId/entries",
+  // PETTY-274: a tool ends its own token (`petty auth logout`); a read-only one may too
+  "DELETE /me/token",
 ]);
 // PETTY-175: a writing token may also edit a drawer's document (tags, places). The server cannot see
 // what changed, because the document is sealed; the tools on the owner's side decide which edits exist.

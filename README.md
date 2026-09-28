@@ -27,6 +27,9 @@ choose. Everything is encrypted on your device before it is sent.
 - **Works with AI apps.** Ask Claude Desktop (a one-click add-on) or any MCP app about your drawers,
   or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. See
   [docs/agent.md](docs/agent.md).
+- **A command line.** `petty` signs in through your browser, like `gh auth login`, then reads and
+  writes drawers from a terminal, scripts or AI agents, with `--json` and Tab completion. See
+  [docs/cli.md](docs/cli.md).
 - **Passkey first, works offline.** Face ID, Touch ID or Windows Hello opens your vault. It
   installs like an app and keeps working without a network.
 - **English, Polish, German, Spanish and French** — the app, its emails and the sign-in pages.
@@ -35,7 +38,7 @@ choose. Everything is encrypted on your device before it is sent.
 
 | For | Read |
 |---|---|
-| Users | this README, the in-app privacy page, [docs/agent.md](docs/agent.md) (use Petty from Claude Desktop or another AI app) |
+| Users | this README, the in-app privacy page, [docs/agent.md](docs/agent.md) (use Petty from Claude Desktop or another AI app), [docs/cli.md](docs/cli.md) (the `petty` command line) |
 | Operators (self-hosting) | [docs/deploy.md](docs/deploy.md) · [docs/monitoring.md](docs/monitoring.md) · [docs/auth-clerk.md](docs/auth-clerk.md) |
 | Contributors | [CONTRIBUTING.md](CONTRIBUTING.md) · [docs/decisions.md](docs/decisions.md) · [CLAUDE.md](CLAUDE.md) — the engineering rules; plain text, no AI tool needed to read or follow them |
 | Security reviewers | [SECURITY.md](SECURITY.md) · [docs/threat-model.md](docs/threat-model.md) · [docs/security-review-2026-09.md](docs/security-review-2026-09.md) · [docs/README.md](docs/README.md) (how keys and tokens work, with diagrams) |

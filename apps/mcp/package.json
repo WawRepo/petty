@@ -11,6 +11,9 @@
   "bin": {
     "petty-mcp": "./src/bin.ts"
   },
+  "exports": {
+    "./server": "./src/server.ts"
+  },
   "scripts": {
     "start": "tsx src/bin.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",

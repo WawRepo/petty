@@ -11,6 +11,10 @@ Claude Desktop ──stdio──▶ petty-mcp (your machine, holds the token)
                           Petty API (ciphertext only)
 ```
 
+**Agents that can run commands** (Claude Code, Codex, scripts) can use the command line instead:
+[cli.md](cli.md). It signs in through your browser, so there is no token to copy, and `petty mcp`
+runs this same server with that login.
+
 ## 1. Make a token
 
 In Petty: **Settings → Access tokens → New token**. Give it a name, decide whether it may add

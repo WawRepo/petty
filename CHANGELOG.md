@@ -6,6 +6,18 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- `petty`, a command line for Petty: sign in through your browser the way `gh auth login` works —
+  it shows a code, you allow it on a page of your Petty, and no token is copied by hand. Then read
+  and change drawers from a terminal, scripts or AI agents: `petty drawers`, `find`, `history`,
+  `add`, `take`, `adjust`, `tag`, `move` and more, with `--json`, exit codes and Tab completion for
+  bash, zsh, fish and PowerShell. `petty mcp` runs the MCP server with the same login. Download it
+  from your Petty (`/downloads/petty.mjs`) or a GitHub release; see docs/cli.md and the app's *Use
+  Petty with AI* page.
+- The page that allows it, `/device`: it shows what asks and the same code as the terminal, and the
+  token it makes is an ordinary access token, listed and revocable in Settings. Opened while signed
+  out, it comes back after you sign in and unlock.
+
 ## [1.5.4] — 2026-09-28
 
 ### Fixed

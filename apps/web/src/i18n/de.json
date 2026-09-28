@@ -1235,6 +1235,30 @@
     "addonDownload": "Erweiterung herunterladen",
     "address": "Petty-Adresse"
   },
+  "device": {
+    "title": "Kommandozeilen-Tool anmelden",
+    "enterBody": "Gib den Code ein, den dein Terminal nach petty auth login zeigt.",
+    "code": "Code",
+    "continue": "Weiter",
+    "checking": "Code wird geprüft…",
+    "notACode": "Das ist kein Code. Ein Code hat 12 Buchstaben, etwa BCDF-GHJK-LMNP.",
+    "unknown": "Zu diesem Code gibt es keine offene Anfrage. Sie ist vielleicht nach 15 Minuten abgelaufen oder wurde schon verwendet. Führe petty auth login noch einmal aus.",
+    "tooMany": "Zu viele Versuche. Warte ein paar Minuten und versuche es dann noch einmal.",
+    "mismatch": "Diese Anfrage passt nicht zu ihrem Code: Sie wurde auf dem Weg hierher verändert. Erlaube sie nicht. Führe petty auth login noch einmal aus und sag der Person Bescheid, die dieses Petty betreibt.",
+    "askTitle": "„{name}“ erlauben?",
+    "checkCode": "Prüfe, ob dein Terminal diesen Code zeigt:",
+    "asked": "Angefragt {when}.",
+    "askedFrom": "Angefragt {when} von {ip}.",
+    "onlyYours": "Erlaube es nur, wenn du es gerade eben selbst gestartet hast. Das Tool bekommt eine Kopie deiner Schubladenschlüssel: Es kann jede Schublade lesen, die du öffnen kannst.",
+    "readOnly": "Es möchte nur lesen. Buchungen hinzufügen kann es nicht.",
+    "allow": "Erlauben",
+    "deny": "Ablehnen",
+    "doneTitle": "Erlaubt",
+    "doneBody": "Geh zurück zu deinem Terminal: Das Tool ist angemeldet. Du findest es unter Einstellungen → Zugriffstokens und kannst es dort jederzeit widerrufen.",
+    "toSettings": "Einstellungen",
+    "deniedTitle": "Abgelehnt",
+    "deniedBody": "Das Tool ist nicht angemeldet. Dein Terminal zeigt das an und wartet nicht weiter."
+  },
   "ai": {
     "link": "Petty mit KI nutzen",
     "title": "Petty mit KI nutzen",
@@ -1267,6 +1291,15 @@
     "example": "Der ausgegebene Block sieht so aus, mit deinen eigenen Pfaden:",
     "copyConfig": "Einstellungsblock kopieren",
     "claudeCode": "Für Claude Code dasselbe in einem Befehl:",
+    "cliTitle": "2c. Die Kommandozeile: petty",
+    "cliIntro": "Ein Programm für dein Terminal, deine Skripte und KI-Agenten, die Befehle ausführen (Claude Code, Codex). Es meldet sich über eine Seite dieses Petty in deinem Browser an, wie gh auth login: Du musst kein Token kopieren.",
+    "cliSteps": [
+      "Installiere Node 20 oder neuer.",
+      "Führe unten die Befehle für deinen Computer aus. Der letzte zeigt einen Code und öffnet dieses Petty in deinem Browser.",
+      "Prüfe, ob die Seite denselben Code zeigt, und erlaube es.",
+      "Probiere dann petty drawers aus, alles Weitere zeigt petty help. Für die Tab-Vervollständigung führe petty completion -s zsh aus (oder bash, fish, powershell)."
+    ],
+    "cliDownload": "petty.mjs herunterladen",
     "askTitle": "3. Fragen",
     "ask": [
       "Was ist in meiner Küchenschublade?",

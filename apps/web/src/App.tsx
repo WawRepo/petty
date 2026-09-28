@@ -9,6 +9,7 @@ import { HomeScreen } from "./screens/HomeScreen.js";
 import { PageSkeleton } from "./components/Skeleton.js";
 import { LoginScreen } from "./screens/LoginScreen.js";
 import { UnlockScreen } from "./screens/UnlockScreen.js";
+import { afterUnlock, rememberAfterUnlock } from "./lib/afterUnlock.js";
 /**
  * Code-split: screens off the sign-in → unlock → home path load on demand.
  * A chunk that fails to load is almost always a chunk of a build that is no longer served: the open
@@ -42,6 +43,7 @@ const VaultSetupScreen = screen(() => import("./screens/VaultSetupScreen.js"), (
 const ClerkAuthScreen = screen<typeof import("./screens/ClerkAuthScreen.js"), { kind: "sign-in" | "sign-up" }>(() => import("./screens/ClerkAuthScreen.js"), (m) => m.ClerkAuthScreen);
 const PlacesScreen = screen(() => import("./screens/PlacesScreen.js"), (m) => m.PlacesScreen);
 const NotFoundScreen = screen(() => import("./screens/NotFoundScreen.js"), (m) => m.NotFoundScreen);
+const DeviceScreen = screen(() => import("./screens/DeviceScreen.js"), (m) => m.DeviceScreen);
 
 /**
  * Never a blank page (PETTY-60): a render error or a screen that could not load shows what went wrong
@@ -92,15 +94,16 @@ function Guard({ need, children }: { need: "anonymous" | "locked" | "unlocked" |
   // screen itself leaves once the code is confirmed, or at once when it is not in the middle of that.
   if (need === "setup") return auth.status === "anonymous" ? <Navigate to="/login" replace /> : children;
   if (auth.status === "novault") return <Navigate to="/setup" replace />;
-  if (need === "unlocked") {
-    if (auth.status === "anonymous") return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
-    if (auth.status === "locked") return <Navigate to="/unlock" replace />;
+  if (need === "unlocked" && (auth.status === "anonymous" || auth.status === "locked")) {
+    // PETTY-274: the device login page is opened from a terminal; after signing in, come back to it
+    rememberAfterUnlock(loc.pathname + loc.search);
+    return auth.status === "anonymous" ? <Navigate to="/login" replace state={{ from: loc.pathname }} /> : <Navigate to="/unlock" replace />;
   }
   if (need === "locked") {
     if (auth.status === "anonymous") return <Navigate to="/login" replace />;
-    if (auth.status === "unlocked") return <Navigate to="/" replace />;
+    if (auth.status === "unlocked") return <Navigate to={afterUnlock() ?? "/"} replace />;
   }
-  if (need === "anonymous" && auth.status !== "anonymous") return <Navigate to={auth.status === "locked" ? "/unlock" : "/"} replace />;
+  if (need === "anonymous" && auth.status !== "anonymous") return <Navigate to={auth.status === "locked" ? "/unlock" : afterUnlock() ?? "/"} replace />;
   return children;
 }
 
@@ -125,6 +128,7 @@ export function App() {
             <Route path="/reset/:token" element={<ResetRoute />} />
             <Route path="/setup" element={<Guard need="setup"><VaultSetupScreen /></Guard>} />
             <Route path="/admin" element={<Guard need="unlocked"><AdminScreen /></Guard>} />
+            <Route path="/device" element={<Guard need="unlocked"><DeviceScreen /></Guard>} />
             <Route path="/unlock" element={<Guard need="locked"><UnlockScreen /></Guard>} />
             <Route path="/" element={<RootRoute />} />
             <Route path="/drawers/:id" element={<Guard need="unlocked"><DrawerScreen /></Guard>} />

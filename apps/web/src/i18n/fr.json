@@ -1235,6 +1235,30 @@
     "addonDownload": "Obtenir l’extension Claude Desktop",
     "address": "Adresse Petty"
   },
+  "device": {
+    "title": "Connecter un outil en ligne de commande",
+    "enterBody": "Saisissez le code affiché par votre terminal après petty auth login.",
+    "code": "Code",
+    "continue": "Continuer",
+    "checking": "Vérification du code…",
+    "notACode": "Ce n’est pas un code. Un code compte 12 lettres, comme BCDF-GHJK-LMNP.",
+    "unknown": "Aucune demande en attente ne correspond à ce code. Elle a peut-être expiré au bout de 15 minutes, ou elle a déjà servi. Relancez petty auth login.",
+    "tooMany": "Trop de tentatives. Patientez quelques minutes, puis réessayez.",
+    "mismatch": "Cette demande ne correspond pas à son code : elle a été modifiée en chemin. Ne l’autorisez pas. Relancez petty auth login et prévenez la personne qui gère ce Petty.",
+    "askTitle": "Autoriser « {name} » ?",
+    "checkCode": "Vérifiez que votre terminal affiche ce code :",
+    "asked": "Demande envoyée {when}.",
+    "askedFrom": "Demande envoyée {when}, depuis {ip}.",
+    "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie de vos clés de tiroir : il pourra lire tous les tiroirs que vous pouvez ouvrir.",
+    "readOnly": "Il ne demande qu’un accès en lecture. Il ne peut pas ajouter d’opérations.",
+    "allow": "Autoriser",
+    "deny": "Refuser",
+    "doneTitle": "Autorisé",
+    "doneBody": "Retournez à votre terminal : l’outil est connecté. Vous le trouverez dans Réglages → Jetons d’accès, où vous pouvez le révoquer à tout moment.",
+    "toSettings": "Réglages",
+    "deniedTitle": "Refusé",
+    "deniedBody": "L’outil n’est pas connecté. Votre terminal l’indique et cesse d’attendre."
+  },
   "ai": {
     "link": "Utiliser Petty avec l’IA",
     "title": "Utiliser Petty avec l’IA",
@@ -1267,6 +1291,15 @@
     "example": "Le bloc affiché ressemble à ceci, avec vos propres chemins :",
     "copyConfig": "Copier le bloc de configuration",
     "claudeCode": "Pour Claude Code, la même chose en une seule commande :",
+    "cliTitle": "2c. La ligne de commande : petty",
+    "cliIntro": "Un programme pour votre terminal, vos scripts et les agents d’IA qui lancent des commandes (Claude Code, Codex). Il se connecte via une page de ce Petty dans votre navigateur, comme gh auth login : aucun jeton à copier.",
+    "cliSteps": [
+      "Installez Node 20 ou une version plus récente.",
+      "Lancez ci-dessous les commandes pour votre ordinateur. La dernière affiche un code et ouvre ce Petty dans votre navigateur.",
+      "Vérifiez que la page affiche le même code, puis autorisez la demande.",
+      "Essayez ensuite petty drawers, ou petty help pour le reste. Pour la complétion avec la touche Tab, lancez petty completion -s zsh (ou bash, fish, powershell)."
+    ],
+    "cliDownload": "Télécharger petty.mjs",
     "askTitle": "3. Demander",
     "ask": [
       "Qu’y a-t-il dans mon tiroir de la cuisine ?",

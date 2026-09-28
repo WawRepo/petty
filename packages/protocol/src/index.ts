@@ -161,6 +161,50 @@ export const AccessTokenKey = z.object({ drawer_id: uuid, key_version: z.number(
 export const AccessTokenKeysBody = z.object({ keys: z.array(AccessTokenKey).max(500) });
 export type AccessTokenKey = z.infer<typeof AccessTokenKey>;
 
+/**
+ * Device login (PETTY-274): `petty auth login` asks, the web app approves, the tool polls. The page
+ * seals an ordinary access token to the tool's one-time key; the server relays that blob and cannot
+ * open it. The code the person sees is derived from the tool's key (@petty/crypto deviceUserCode).
+ */
+const DeviceCode = z.string().regex(/^[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}$/);
+export const DeviceCodeRequest = z.object({
+  /** The tool's one-time ECDH P-256 public key, base64 SPKI. */
+  cli_pub: b64.max(200),
+  /** What the page shows and the token is named, for example "petty on laptop". */
+  client_name: z.string().trim().min(1).max(80),
+  role: z.enum(["read", "write"]),
+  /** How long the token lasts; null = until revoked. The same choices as Settings → Access tokens. */
+  expires_days: z.union([z.literal(30), z.literal(90), z.literal(365)]).nullable(),
+});
+export type DeviceCodeRequest = z.infer<typeof DeviceCodeRequest>;
+export const DeviceCodeResponse = z.object({
+  request_id: uuid,
+  /** Only the tool knows it: it polls with it. The server keeps its hash. */
+  device_code: z.string().min(40).max(64),
+  user_code: DeviceCode,
+  expires_in: z.number().int(),
+  interval: z.number().int(),
+});
+export type DeviceCodeResponse = z.infer<typeof DeviceCodeResponse>;
+/** What the page shows before the person allows or denies. */
+export const DeviceRequestView = z.object({
+  id: uuid,
+  user_code: DeviceCode,
+  cli_pub: b64,
+  client_name: z.string(),
+  role: z.enum(["read", "write"]),
+  expires_days: z.number().int().nullable(),
+  ip: z.string().nullable(),
+  created_at: z.string(),
+  expires_at: z.string(),
+});
+export type DeviceRequestView = z.infer<typeof DeviceRequestView>;
+export const SealedDeviceToken = z.object({ v: z.literal(1), eph_pub: b64.max(200), salt: b64.max(100), nonce: b64.max(40), ciphertext: b64.max(2000) });
+export const DeviceApproveBody = z.object({ sealed: SealedDeviceToken });
+export const DeviceTokenPoll = z.object({ device_code: z.string().min(40).max(64) });
+export const DeviceTokenResponse = z.object({ request_id: uuid, sealed: SealedDeviceToken });
+export type DeviceTokenResponse = z.infer<typeof DeviceTokenResponse>;
+
 export const UserKeys = z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string(), created_at: z.string(), retired_at: z.string().nullable() });
 export const Me = z.object({
   id: uuid,

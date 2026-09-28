@@ -22,10 +22,13 @@ COPY packages/ledger/package.json packages/ledger/
 COPY packages/protocol/package.json packages/protocol/
 COPY packages/agent/package.json packages/agent/
 COPY apps/mcp/package.json apps/mcp/
+COPY apps/cli/package.json apps/cli/
 RUN pnpm install --frozen-lockfile
 COPY . .
 # The Claude Desktop add-on (PETTY-172) is packed into the web app's public folder, so Petty serves it.
 RUN pnpm --filter @petty/mcp run pack
+# The command line (PETTY-274), one file, served at /downloads/petty.mjs like the add-on.
+RUN pnpm --filter @petty/cli run pack
 RUN pnpm --filter @petty/web build
 
 FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS deps

@@ -113,6 +113,30 @@ key. It **can never** touch the vault, the account, sharing, admin or export, or
 the server refuses every route not on its allow-list. Creating one requires the custody proof. Details
 and diagram: [README.md](README.md).
 
+## Device login
+
+`petty auth login` (PETTY-274) signs the command line in through the web app, the way `gh auth login`
+does (RFC 8628). The server cannot make a token, because it has no keys, so the web app makes an
+ordinary access token and seals it to a one-time key that only the command line holds. The server
+relays the sealed blob once and deletes the request; it never sees the token.
+
+- **A server or database that swaps the key.** To receive the token, it would have to put a key of
+  its own in the request. The code a person sees is derived from the command line's key; the page
+  works it out again from the key it was given and refuses a mismatch, and the command line checks
+  the code the server returns. A substitute key with the same 12-letter code takes about 2^52 tries
+  within the request's 15 minutes. A server that ships altered web-app code is the *malicious
+  frontend build* above, as everywhere in the app.
+- **Phishing** ("please allow this code"). The page shows what asks (its name, address and time) and
+  what it gets (read or write, expiry), says to allow only a request the person started, and a token
+  that may write needs the passphrase or passkey. Someone who allows an attacker's request gives that
+  attacker a token, as with any device login; revoking it in Settings stops it at once.
+- **Guessing codes.** 12 letters from 20 (about 2^52), one-time, 15 minutes. Lookups are limited per
+  person and per address, only a signed-in and unlocked person can allow one, and a token can never
+  allow a token. Asking for codes is limited per address.
+- **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
+  token file. What a person types (names, amounts, notes) stays in their shell's history, outside
+  Petty's control; [cli.md](cli.md) says how to keep notes out of it.
+
 ## Custody proofs
 
 Calls that could destroy keys or data — replacing the vault, deleting the account, deleting a drawer,

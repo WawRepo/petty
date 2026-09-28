@@ -1235,6 +1235,30 @@
     "addonDownload": "Pobierz dodatek do Claude Desktop",
     "address": "Adres Petty"
   },
+  "device": {
+    "title": "Zaloguj narzędzie wiersza poleceń",
+    "enterBody": "Wpisz kod, który terminal pokazał po petty auth login.",
+    "code": "Kod",
+    "continue": "Dalej",
+    "checking": "Sprawdzanie kodu…",
+    "notACode": "To nie jest kod. Kod ma 12 liter, na przykład BCDF-GHJK-LMNP.",
+    "unknown": "Nie ma oczekującej prośby z tym kodem. Mogła wygasnąć po 15 minutach albo została już użyta. Uruchom petty auth login jeszcze raz.",
+    "tooMany": "Za dużo prób. Odczekaj kilka minut i spróbuj ponownie.",
+    "mismatch": "Ta prośba nie pasuje do swojego kodu: ktoś zmienił ją po drodze. Nie zezwalaj na nią. Uruchom petty auth login jeszcze raz i powiedz o tym osobie, która prowadzi ten serwer Petty.",
+    "askTitle": "Zezwolić na „{name}”?",
+    "checkCode": "Sprawdź, czy terminal pokazuje ten kod:",
+    "asked": "Prośba wysłana {when}.",
+    "askedFrom": "Prośba wysłana {when} z adresu {ip}.",
+    "onlyYours": "Zezwól tylko wtedy, gdy to Twoja własna prośba sprzed chwili. Narzędzie dostanie kopię kluczy Twoich szuflad: odczyta każdą szufladę, którą możesz otworzyć.",
+    "readOnly": "Prosi tylko o odczyt. Nie może dodawać wpisów.",
+    "allow": "Zezwól",
+    "deny": "Odmów",
+    "doneTitle": "Zezwolono",
+    "doneBody": "Wróć do terminala: narzędzie jest zalogowane. Znajdziesz je w Ustawieniach → Tokeny dostępu, gdzie możesz je w każdej chwili unieważnić.",
+    "toSettings": "Ustawienia",
+    "deniedTitle": "Odmówiono",
+    "deniedBody": "Narzędzie nie zostało zalogowane. Terminal to pokaże i przestanie czekać."
+  },
   "ai": {
     "link": "Petty z AI",
     "title": "Petty z AI",
@@ -1267,6 +1291,15 @@
     "example": "Wypisany blok wygląda tak, z Twoimi ścieżkami:",
     "copyConfig": "Skopiuj blok ustawień",
     "claudeCode": "W Claude Code to samo jednym poleceniem:",
+    "cliTitle": "2c. Wiersz poleceń: petty",
+    "cliIntro": "Jeden program do terminala, skryptów i agentów AI, które uruchamiają polecenia (Claude Code, Codex). Loguje się przez stronę tego Petty w przeglądarce, jak gh auth login: bez kopiowania tokenu.",
+    "cliSteps": [
+      "Zainstaluj Node 20 lub nowszy.",
+      "Uruchom poniższe polecenia dla swojego komputera. Ostatnie pokaże kod i otworzy to Petty w przeglądarce.",
+      "Sprawdź, czy strona pokazuje ten sam kod, i zezwól.",
+      "Potem wypróbuj petty drawers albo petty help, żeby zobaczyć resztę. Uzupełnianie klawiszem Tab włączysz poleceniem petty completion -s zsh (albo bash, fish, powershell)."
+    ],
+    "cliDownload": "Pobierz petty.mjs",
     "askTitle": "3. Zapytaj",
     "ask": [
       "Co jest w szufladzie w kuchni?",

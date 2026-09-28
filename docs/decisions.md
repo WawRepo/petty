@@ -71,6 +71,13 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   tool's machine, its own delegated signing key, and a scope (all drawers or listed ones, read or
   write). The server keeps an allow-list; every route not on it is refused to tokens. Revocation is
   immediate. Diagram in [README.md](README.md).
+- **The command line and device login (PETTY-274, 2026-09-28).** `petty` is one file (`petty.mjs`,
+  Node 20+) on `@petty/agent`, shipped with each release and served at `/downloads/petty.mjs`; it
+  also runs the MCP server (`petty mcp`). It signs in like `gh auth login` (RFC 8628): the web app's
+  `/device` page makes an ordinary access token and seals it to the command line's one-time key, and
+  the server only relays the sealed blob. The code is derived from that key (12 of 20 consonants), so
+  the page and the command line both detect a swapped key. Only the login is stored
+  (`~/.petty/hosts.json`, 600); Tab completion decrypts names per key press, never cached on disk.
 - **Drawer document history (PETTY-194, 2026-09-19).** Names, items, tags and places before each
   change are kept for 30 days and the drawer's owner can restore an earlier version. Entries and
   balances are unaffected. Refines "Deletion" above for the document only.
