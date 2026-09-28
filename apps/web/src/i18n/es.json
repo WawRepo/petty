@@ -108,7 +108,7 @@
       "recoveryCode": "Código de recuperación",
       "newPassphrase": "Nueva frase de contraseña de la bóveda",
       "newPassphraseRepeat": "Repite la nueva frase de contraseña",
-      "recover": "Establecer nueva frase de contraseña",
+      "recover": "Establecer frase de contraseña",
       "recoverWrong": "Ese código no abrió la bóveda.",
       "recoverDone": "Frase de contraseña de la bóveda cambiada. Desbloquea con la nueva.",
       "loginPassword": "Tu contraseña de acceso",
@@ -202,8 +202,8 @@
       "title": "Pantalla de inicio",
       "places": "Mostrar lugares",
       "placesHint": "Agrupa los cajones por habitación y muestra los filtros de lugar. Desactivado: una sola lista.",
-      "verification": "Mostrar confirmaciones",
-      "verificationHint": "La barra «Confirmar estado» de los cajones, su historial y las insignias de confirmado. Desactívalo si nunca cuentas ni confirmas.",
+      "verification": "Mostrar verificación",
+      "verificationHint": "La barra «Confirmar estado» de los cajones, su historial y las insignias «Verificado». Desactívalo si nunca cuentas ni confirmas.",
       "totals": "Mostrar totales",
       "totalsHint": "La tarjeta Valor total y los subtotales de la pantalla de inicio, y en cada cajón la tarjeta de totales y las marcas «En el total». Desactívalo para ver solo lo que contiene cada cajón y cada línea."
     },
@@ -218,7 +218,7 @@
     "joinLinkCopy": "Copiar",
     "joinLinkCopied": "Enlace copiado",
     "deleteAccount": "Eliminar cuenta",
-    "changePassphrase": "Cambiar la frase de contraseña de la bóveda",
+    "changePassphrase": "Cambiar la frase de contraseña",
     "currentPassphrase": "Frase de contraseña actual de la bóveda",
     "passphraseChanged": "Frase de contraseña de la bóveda cambiada.",
     "passkey": {
@@ -246,10 +246,10 @@
       "unnamed": "Llave de acceso",
       "addedOn": "Añadida el {date}",
       "addHintPasskey": "Primero lo confirma tu llave de acceso actual (si está en tu teléfono, escanea el código QR). Después este dispositivo te pedirá Face ID, Touch ID, un PIN o una llave de seguridad.",
-      "lastDoor": "Es tu última llave de acceso y no tienes frase de contraseña. Primero establece una frase de contraseña de respaldo.",
+      "lastDoor": "Es tu última llave de acceso y no tienes frase de contraseña. Primero crea una frase de contraseña de respaldo.",
       "exists": "Este dispositivo ya tiene una llave de acceso para esta bóveda."
     },
-    "setPassphrase": "Establecer una frase de contraseña de respaldo",
+    "setPassphrase": "Crear frase de contraseña de respaldo",
     "setPassphraseHint": "Una frase de contraseña abre la bóveda donde las llaves de acceso no pueden. Primero lo confirma tu llave de acceso actual.",
     "passphraseSet": "Frase de contraseña de respaldo establecida.",
     "recovery": {
@@ -320,7 +320,7 @@
     "kind": {
       "money": "Dinero",
       "countable": "Por unidades",
-      "single": "Objeto individual"
+      "single": "Objeto único"
     },
     "fields": {
       "type": "Tipo",
@@ -500,18 +500,18 @@
   },
   "verify": {
     "notYet": "Aún sin contar",
-    "verified": "Confirmado · {when}",
-    "changed": "Por confirmar · Cambió {when}",
+    "verified": "Verificado · {when}",
+    "changed": "Por verificar · Cambió {when}",
     "bar": {
       "never": "¿Contaste el efectivo? Confirma lo que hay dentro y todos verán cuándo se revisó por última vez.",
-      "verified": "Confirmado {when}",
-      "stale": "Confirmado {when}, pero algo cambió desde entonces.",
+      "verified": "Verificado {when}",
+      "stale": "Verificado {when}, pero algo cambió desde entonces.",
       "withComment": " — {comment}"
     },
     "confirm": "Confirmar estado",
     "history": "Historial ({count})",
     "hide": "Ocultar",
-    "historyTitle": "Historial de confirmaciones",
+    "historyTitle": "Historial de verificaciones",
     "sheet": {
       "title": "Confirmar estado del cajón",
       "hint": "Confirmar significa que revisaste físicamente este cajón: cada saldo de abajo coincide con el efectivo real y cada objeto está en su sitio. Esto no cambia ningún saldo: si una línea no cuadra, cierra esto y usa primero Ajustar en esa línea.",
@@ -525,7 +525,7 @@
     },
     "toast": "Cajón confirmado",
     "row": {
-      "title": "Confirmado",
+      "title": "Verificado",
       "by": "por {name}",
       "missing": "Faltan: {names}",
       "present": "presente",
@@ -683,7 +683,7 @@
   },
   "pins": {
     "rolledBackTitle": "Tu lista de claves de confianza desapareció del servidor",
-    "rolledBack": "Este dispositivo vio por última vez la versión {seen} de tu lista de claves de confianza; ahora el servidor tiene la versión {server}. Puede ser una copia de seguridad restaurada, o alguien que intenta que confíes en claves nuevas. Hasta que empieces de nuevo, ninguna clave nueva será de confianza automáticamente y no podrás compartir cajones.",
+    "rolledBack": "Este dispositivo vio por última vez la versión {seen} de tu lista de claves de confianza; ahora el servidor tiene la versión {server}. Puede ser una copia de seguridad restaurada, o alguien que intenta que confíes en claves nuevas. Hasta que empieces de nuevo, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
     "startOver": "Entendido, empezar de nuevo"
   },
   "privacy": {
@@ -763,7 +763,7 @@
   },
   "landing": {
     "slogan": "Pequeñas cantidades. Gran tranquilidad.",
-    "tagline": "Todo lo que guardas, en su lugar — compartido con quien tú elijas y cifrado de extremo a extremo.",
+    "tagline": "Todo lo que guardas, en su lugar: compartido con quien tú elijas y cifrado de extremo a extremo.",
     "sub": "Efectivo en la lata de la cocina, herramientas en el sótano, pasaportes en la caja fuerte: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
     "how": "Cómo se cifra",
     "uses": {
@@ -975,7 +975,7 @@
         "family": {
           "chip": "Caja fuerte familiar",
           "title": "Deja un mapa, no un caos",
-          "body": "Dónde están los pasaportes, las llaves y los papeles — compartido en solo lectura con quienes algún día puedan necesitarlo.",
+          "body": "Dónde están los pasaportes, las llaves y los papeles: un mapa compartido en solo lectura con quienes algún día puedan necesitarlo.",
           "places": {
             "home": "Casa",
             "bedroom": "Dormitorio",
@@ -1014,7 +1014,7 @@
         "all": {
           "chip": "Todo junto",
           "title": "Todo en un solo lugar",
-          "body": "Herramientas, viajes, cuentas, efectivo, cosas prestadas y papeles de la familia: cada cajón en su sitio, y cada uno compartido solo con quien tú elijas."
+          "body": "Herramientas, viajes, cuentas, efectivo, cosas prestadas y papeles de la familia: cada cajón en su lugar, y cada uno compartido solo con quien tú elijas."
         }
       }
     },
@@ -1072,7 +1072,7 @@
     "faq": {
       "see": {
         "q": "¿Petty puede ver mi dinero?",
-        "a": "No. Las cantidades y los nombres se cifran en tu dispositivo. El servidor guarda cajas ilegibles, y puedes comprobarlo en el navegador."
+        "a": "No. Las cantidades y los nombres se cifran en tu dispositivo. El servidor guarda cajas ilegibles, y puedes verificarlo en el navegador."
       },
       "places": {
         "q": "¿Puedo agrupar los cajones por habitación?",
@@ -1219,7 +1219,7 @@
     "passphraseOrPasskey": "Déjalo vacío para usar tu llave de acceso.",
     "addonTitle": "Úsalo en Claude Desktop",
     "addonBody": "Descarga el complemento, haz doble clic en él y haz clic en Instalar. Claude Desktop te pedirá dos cosas: la dirección de abajo y el token de arriba.",
-    "addonDownload": "Descargar el complemento para Claude Desktop",
+    "addonDownload": "Descargar el complemento",
     "address": "Dirección de Petty"
   },
   "ai": {

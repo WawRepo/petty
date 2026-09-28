@@ -6,6 +6,10 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- German, Spanish, French and Polish, checked string by string, the emails too: wrong meanings, grammar
+  and plural forms, and one word for each thing everywhere (in Polish, 140 of 960 texts changed).
+
 ## [1.5.0] — 2026-09-28
 
 ### Added

@@ -11,7 +11,7 @@
     "retry": "Spróbuj ponownie",
     "copy": "Kopiuj",
     "copied": "Skopiowano",
-    "crashed": "Nie udało się wczytać tej strony. Odśwież, aby dostać aktualną wersję Petty.",
+    "crashed": "Nie udało się wczytać tej strony. Odśwież ją, aby pobrać aktualną wersję Petty.",
     "reload": "Odśwież",
     "offline": "Brak połączenia.",
     "yes": "Tak",
@@ -30,7 +30,7 @@
       "email": "E-mail",
       "password": "Hasło logowania",
       "submit": "Zaloguj",
-      "failed": "Zły e-mail lub hasło.",
+      "failed": "Nieprawidłowy e-mail lub hasło.",
       "tooMany": "Za dużo prób. Odczekaj kilka minut.",
       "forgot": "Nie pamiętasz hasła?",
       "noAccount": "Nie masz jeszcze konta? Petty jest na razie tylko na zaproszenia.",
@@ -38,9 +38,9 @@
     },
     "reset": {
       "title": "Reset hasła logowania",
-      "body": "To resetuje tylko hasło logowania. Nie dotyka sejfu: dane otwiera wyłącznie hasło sejfu lub kod odzyskiwania. Jeśli oba są utracone, poproś innego członka wspólnej szuflady o ponowne udostępnienie.",
-      "send": "Wyślij link resetu",
-      "sent": "Jeśli ten adres ma konto, link resetu jest w drodze. Działa raz, przez godzinę.",
+      "body": "Ten reset dotyczy tylko hasła logowania. Sejfu nie zmienia: dane otwiera wyłącznie hasło sejfu lub kod odzyskiwania. Jeśli stracisz oba, poproś innego członka wspólnej szuflady, aby ponownie Ci ją udostępnił.",
+      "send": "Wyślij link resetujący",
+      "sent": "Jeśli istnieje konto z tym adresem, link resetujący jest już w drodze. Działa raz, przez godzinę.",
       "ok": "Rozumiem",
       "emailInvalid": "Wpisz adres e-mail.",
       "newTitle": "Nowe hasło logowania",
@@ -55,14 +55,14 @@
     },
     "join": {
       "title": "Utwórz konto",
-      "invalid": "Ten link dołączenia jest nieprawidłowy lub został już użyty.",
+      "invalid": "Ten link z zaproszeniem jest nieprawidłowy lub został już użyty.",
       "invitedBy": "Zaprasza: {name}",
       "displayName": "Twoje imię",
       "email": "E-mail",
       "password": "Hasło logowania",
       "passwordHint": "Co najmniej 8 znaków. Służy tylko do logowania.",
       "passphrase": "Hasło sejfu",
-      "passphraseHint": "Co najmniej 12 znaków, inne niż hasło logowania. Otwiera zaszyfrowany sejf i nikt nie może go zresetować.",
+      "passphraseHint": "Co najmniej 12 znaków, inne niż hasło logowania. Otwiera zaszyfrowany sejf. Nikt nie może zresetować tego hasła.",
       "passphraseRepeat": "Powtórz hasło sejfu",
       "submit": "Utwórz konto",
       "working": "Tworzenie kluczy…",
@@ -71,13 +71,13 @@
         "passphraseShort": "Hasło sejfu musi mieć co najmniej 12 znaków.",
         "passphraseSame": "Hasło sejfu musi być inne niż hasło logowania.",
         "passphraseWeak": "To hasło jest zbyt łatwe do odgadnięcia. Użyj więcej słów.",
-        "passphraseMismatch": "Hasła nie są takie same.",
-        "emailTaken": "Ten e-mail ma już konto.",
-        "linkMismatch": "Ten link dołączenia jest dla innego adresu e-mail."
+        "passphraseMismatch": "Hasła sejfu nie są takie same.",
+        "emailTaken": "Konto z tym adresem e-mail już istnieje.",
+        "linkMismatch": "Ten link z zaproszeniem jest przeznaczony dla innego adresu e-mail."
       },
       "explainer": {
-        "title": "Jak działa sejf, minuta czytania",
-        "password": "Hasło logowania loguje Cię do konta. Jeśli je zapomnisz, zresetujemy je e-mailem.",
+        "title": "Jak działa sejf (minuta czytania)",
+        "password": "Hasłem logowania logujesz się do konta. Jeśli je zapomnisz, zresetujemy je przez e-mail.",
         "passphrase": "Hasło sejfu szyfruje Twoje zapisy gotówki na telefonie. Nigdy go nie widzimy i nie możemy go zresetować. Pozwól menedżerowi haseł je zapisać, gdy zapyta.",
         "recovery": "Potem dostaniesz kod odzyskiwania. Zapisz go na papierze. To jedyna inna droga do środka, jeśli stracisz wszystkie klucze dostępu lub zapomnisz hasła sejfu.",
         "passkey": "Klucz dostępu na tym urządzeniu (Face ID, Touch ID, Windows Hello) otwiera Twoje zapisy gotówki. Nigdy go nie widzimy. Na nowym urządzeniu telefon może raz potwierdzić albo dodasz tam klucz dostępu."
@@ -86,15 +86,15 @@
       "usePassphrase": "Wolę hasło sejfu",
       "usePasskey": "Wolę klucz dostępu",
       "submitPasskey": "Utwórz sejf z kluczem dostępu",
-      "invalidHint": "Link dołączenia działa raz i wygasa po 7 dniach. Poproś osobę, która Cię zaprosiła, o nowy.",
+      "invalidHint": "Link z zaproszeniem działa raz i wygasa po 7 dniach. Poproś osobę, która Cię zaprosiła, o nowy.",
       "haveAccount": "Masz już konto?"
     },
     "recovery": {
       "title": "Twój kod odzyskiwania",
       "body": "Zapisz ten kod i schowaj w bezpiecznym miejscu. To jedyna droga powrotu do sejfu, jeśli stracisz klucze dostępu lub zapomnisz hasła sejfu. Nie pokażemy go ponownie.",
-      "confirmLabel": "Wpisz kod, aby potwierdzić, że go zapisałeś",
+      "confirmLabel": "Wpisz kod, aby potwierdzić, że masz go zapisany",
       "mismatch": "To się nie zgadza. Sprawdź każdą grupę.",
-      "done": "Zapisałem"
+      "done": "Kod zapisany"
     },
     "unlock": {
       "title": "Odblokuj sejf",
@@ -104,11 +104,11 @@
       "working": "Odblokowywanie…",
       "signOut": "Wyloguj",
       "useRecovery": "Nie pamiętasz hasła sejfu? Użyj kodu odzyskiwania",
-      "recoveryTitle": "Odzyskaj kodem",
+      "recoveryTitle": "Odzyskaj dostęp kodem",
       "recoveryCode": "Kod odzyskiwania",
       "newPassphrase": "Nowe hasło sejfu",
-      "newPassphraseRepeat": "Powtórz nowe hasło",
-      "recover": "Ustaw nowe hasło",
+      "newPassphraseRepeat": "Powtórz nowe hasło sejfu",
+      "recover": "Ustaw nowe hasło sejfu",
       "recoverWrong": "Ten kod nie otworzył sejfu.",
       "recoverDone": "Hasło sejfu zmienione. Odblokuj nowym hasłem.",
       "loginPassword": "Twoje hasło logowania",
@@ -124,7 +124,7 @@
       "recoverSet": "Hasło sejfu ustawione. Odblokuj nim albo kluczem dostępu.",
       "passkeyNoPrfNoPassphrase": "Ta przeglądarka nie może tu użyć klucza dostępu. Spróbuj w Safari, Chrome lub Edge albo użyj kodu odzyskiwania.",
       "addHereTitle": "Dodać klucz dostępu dla tego urządzenia?",
-      "addHereBody": "Sejf otworzył klucz dostępu z innego urządzenia. Dodaj klucz tutaj, a następnym razem to urządzenie otworzy sejf samo.",
+      "addHereBody": "Sejf odblokowano kluczem dostępu z innego urządzenia. Dodaj klucz tutaj, a następnym razem to urządzenie samo otworzy sejf.",
       "addHere": "Dodaj klucz dostępu",
       "notNow": "Nie teraz"
     },
@@ -137,16 +137,16 @@
       "title": "Załóż sejf",
       "submit": "Utwórz sejf",
       "displayName": "Imię (opcjonalnie)",
-      "displayNameHint": "Tak widzą Cię osoby, z którymi dzielisz szuflady. Puste: użyjemy imienia z konta.",
+      "displayNameHint": "Tak widzą Cię osoby, z którymi dzielisz szuflady. Jeśli zostawisz to pole puste, użyjemy imienia z konta Clerk.",
       "already": "To konto ma już sejf. Odśwież aplikację.",
       "explainer": {
-        "identity": "Jesteś zalogowany. Sejf to drugi, osobny zamek: otwiera Twoje szuflady na tym urządzeniu i nigdy go nie opuszcza."
+        "identity": "Zalogowano. Sejf to drugi, osobny zamek: otwiera Twoje szuflady na tym urządzeniu i nigdy go nie opuszcza."
       },
       "passkeyAccount": "Sejf Petty"
     }
   },
   "home": {
-    "signOutTitle": "Wylogować?",
+    "signOutTitle": "Wylogować się?",
     "signOutBody": "Żeby wrócić, będziesz potrzebować hasła logowania i hasła sejfu.",
     "empty": "Brak szuflad.",
     "emptyHint": "Dodaj jedną, aby zacząć liczyć gotówkę.",
@@ -172,7 +172,7 @@
       "placeholder": "Szukaj nazw lub tagów, np. paszport",
       "count": "{lines, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}} w {drawers, plural, one {# szufladzie} few {# szufladach} many {# szufladach} other {# szufladach}}",
       "none": "Nic nie pasuje.",
-      "hitsIn": "Trafienia w {name}",
+      "hitsIn": "Trafienia w szufladzie {name}",
       "unavailable": "Tej szuflady nie udało się odczytać, więc nie można jej przeszukać."
     },
     "totalsCount": "{count, plural, one {Razem w # walucie} few {Razem w # walutach} many {Razem w # walutach} other {Razem w # walutach}}",
@@ -181,14 +181,14 @@
     "drawerName": "Nazwa",
     "drawerNamePlaceholder": "np. Kuchnia",
     "add": "Dodaj",
-    "lines": "{count, plural, one {# linia} few {# linie} many {# linii} other {# linii}}",
+    "lines": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
     "degraded": "Nie udało się odszyfrować tej szuflady.",
     "loadFailed": "Nie udało się wczytać szuflad.",
     "warn": "Wymaga uwagi",
     "degradedReason": {
       "no_key": "Nie masz jeszcze klucza do tej szuflady.",
-      "sender_unknown": "Klucz udostępniła osoba, której jeszcze nie widziano.",
-      "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w Członkach.",
+      "sender_unknown": "Klucz udostępniła osoba, której jeszcze nie znasz.",
+      "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w sekcji Członkowie.",
       "unwrap_failed": "Nie udało się odpakować klucza szuflady.",
       "decrypt_failed": "Nie udało się odszyfrować tej szuflady.",
       "bad_document": "Dokument szuflady jest nieprawidłowy.",
@@ -201,11 +201,11 @@
     "home": {
       "title": "Ekran główny",
       "places": "Pokazuj miejsca",
-      "placesHint": "Grupuj szuflady po pokoju i pokazuj etykiety miejsc. Wyłączone: jedna zwykła lista.",
+      "placesHint": "Grupuj szuflady według pokoi i pokazuj etykiety miejsc. Wyłączone: jedna zwykła lista.",
       "verification": "Pokazuj weryfikację",
       "verificationHint": "Pasek „Potwierdź stan” w szufladach, jego historia i odznaki weryfikacji. Wyłącz, jeśli nie liczysz i nie potwierdzasz.",
       "totals": "Pokazuj sumy",
-      "totalsHint": "Karta „Łączna wartość” i sumy częściowe na ekranie głównym, karta sum i etykiety „w sumie” w szufladzie. Wyłącz, aby widzieć tylko, co jest w każdej szufladzie i linii."
+      "totalsHint": "Karta „Łączna wartość” i sumy częściowe na ekranie głównym, karta sum i etykiety „w sumie” w szufladzie. Wyłącz, aby widzieć tylko, co jest w każdej szufladzie i pozycji."
     },
     "language": "Język",
     "account": "Konto",
@@ -214,7 +214,7 @@
     "safetyNumberHint": "Porównaj go osobiście z każdym, z kim dzielisz szufladę.",
     "joinLink": "Zaproś kogoś do Petty",
     "joinLinkHint": "Tworzy jednorazowy link (ważny 7 dni). Wyślij go tej osobie samodzielnie, a gdy założy konto, udostępnij jej szufladę.",
-    "joinLinkCreate": "Utwórz link dołączenia",
+    "joinLinkCreate": "Utwórz link z zaproszeniem",
     "joinLinkCopy": "Kopiuj",
     "joinLinkCopied": "Link skopiowany",
     "deleteAccount": "Usuń konto",
@@ -229,9 +229,9 @@
       "unsupported": "Ta przeglądarka nie obsługuje kluczy dostępu w sposób, którego potrzebuje Petty (Firefox jeszcze nie). Spróbuj Safari, Chrome lub Edge.",
       "addHint": "Wpisz hasło sejfu. Potem urządzenie poprosi o Face ID, Touch ID, PIN lub klucz sprzętowy.",
       "removeHint": "Klucz dostępu „{name}” przestanie otwierać sejf. Pozostałe klucze, hasło sejfu i kod odzyskiwania dalej działają.",
-      "added": "Klucz dostępu ustawiony. Od teraz możesz nim odblokowywać.",
+      "added": "Klucz dostępu dodany. Od teraz możesz nim odblokowywać sejf.",
       "removed": "Klucz dostępu usunięty.",
-      "cancelled": "Anulowano okno klucza dostępu.",
+      "cancelled": "Anulowano prośbę o klucz dostępu.",
       "noPrf": "Ten klucz dostępu nie może przechowywać klucza sejfu w tej przeglądarce. Spróbuj innej przeglądarki lub klucza sprzętowego.",
       "nudge": "Dodaj klucz dostępu dla tego urządzenia: Face ID, Touch ID lub Windows Hello otworzy sejf następnym razem.",
       "nudgeGo": "Dodaj klucz dostępu",
@@ -250,7 +250,7 @@
       "exists": "To urządzenie ma już klucz dostępu do tego sejfu."
     },
     "setPassphrase": "Ustaw zapasowe hasło sejfu",
-    "setPassphraseHint": "Hasło sejfu otwiera sejf tam, gdzie klucze dostępu nie mogą. Najpierw potwierdzi to Twój obecny klucz dostępu.",
+    "setPassphraseHint": "Hasło sejfu otwiera sejf tam, gdzie klucze dostępu nie działają. Najpierw potwierdzi to Twój obecny klucz dostępu.",
     "passphraseSet": "Zapasowe hasło sejfu ustawione.",
     "recovery": {
       "new": "Utwórz nowy kod odzyskiwania",
@@ -260,9 +260,9 @@
       "saved": "Zapisano nowy kod odzyskiwania. Stary już nie działa."
     },
     "storage": {
-      "title": "Miejsce",
+      "title": "Miejsce na dane",
       "used": "Zajęte {used} z {quota}",
-      "hint": "Liczy wszystko w szufladach, których jesteś właścicielem, także to, co dodają osoby, którym je udostępniasz. Najwięcej miejsca zajmują zdjęcia."
+      "hint": "Wlicza się tu wszystko w szufladach, których jesteś właścicielem, także to, co dodają osoby, którym je udostępniasz. Najwięcej miejsca zajmują zdjęcia."
     }
   },
   "keypad": {
@@ -273,8 +273,8 @@
     "network": "Nie można połączyć się z serwerem.",
     "unknown": "Coś poszło nie tak.",
     "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
-    "storageFull": "Twoje miejsce jest pełne. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. Ustawienia pokazują, ile zajmujesz.",
-    "ownerStorageFull": "Właściciel tej szuflady nie ma już miejsca, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
+    "storageFull": "Nie masz już wolnego miejsca na dane. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
+    "ownerStorageFull": "Właściciel tej szuflady nie ma już wolnego miejsca na dane, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
     "photoTooLarge": "To zdjęcie jest za duże. Wybierz mniejsze."
   },
   "drawer": {
@@ -287,7 +287,7 @@
       "all": "Wszystkie pozycje",
       "notInTotal": "Poza sumą",
       "countsToward": "{included, plural, one {# z {total} pozycji wlicza się do tej sumy} few {# z {total} pozycji wliczają się do tej sumy} many {# z {total} pozycji wlicza się do tej sumy} other {# z {total} pozycji wlicza się do tej sumy}}",
-      "none": "Brak linii pieniężnych"
+      "none": "Nie ma jeszcze pozycji pieniężnych"
     },
     "filter": {
       "all": "Wszystkie",
@@ -302,7 +302,7 @@
     "countedHint": "Wyłącz dla gotówki, którą tylko przechowujesz, np. kasy koła. Zmienia się tylko Twój widok.",
     "rename": "Zmień nazwę szuflady",
     "delete": "Usuń szufladę",
-    "deleteConfirm": "Usunąć „{name}” wraz ze wszystkimi liniami i historią? Tego nie można cofnąć.",
+    "deleteConfirm": "Usunąć „{name}” wraz ze wszystkimi pozycjami i historią? Tego nie można cofnąć.",
     "deleteBtn": "Usuń",
     "deleteType": "Wpisz nazwę szuflady, aby potwierdzić",
     "photoAdd": "Dodaj zdjęcie",
@@ -310,9 +310,9 @@
     "photoRemove": "Usuń zdjęcie",
     "photoAlt": "Zdjęcie: {name}",
     "photoProcessing": "Przygotowywanie zdjęcia…",
-    "photoFailed": "Nie udało się odczytać obrazu. Spróbuj inne zdjęcie.",
-    "addLine": "Dodaj linię",
-    "noLines": "Ta szuflada nie ma jeszcze linii.",
+    "photoFailed": "Nie udało się odczytać obrazu. Wybierz inne zdjęcie.",
+    "addLine": "Dodaj pozycję",
+    "noLines": "Ta szuflada nie ma jeszcze pozycji.",
     "editedBy": "Ostatnio edytował(a): {name}",
     "dragHandle": "Przesuń {name}: przeciągnij lub użyj strzałek",
     "lineOptions": "Opcje: {name}",
@@ -332,7 +332,7 @@
       "startingBalance": "Saldo początkowe",
       "startingCount": "Liczba początkowa",
       "text": "Tekst (opcjonalnie)",
-      "textPlaceholder": "np. numer, ważność, miejsce…",
+      "textPlaceholder": "np. numer, data ważności, lokalizacja…",
       "namePlaceholder": {
         "money": "np. USD kuchnia",
         "countable": "np. Szklane kulki",
@@ -354,11 +354,11 @@
       "editText": "Edytuj tekst",
       "moveUp": "Przenieś wyżej",
       "moveDown": "Przenieś niżej",
-      "delete": "Usuń linię",
+      "delete": "Usuń pozycję",
       "deleteConfirm": "Usunąć „{name}”?",
-      "deleteHistory": "Razem z nią zniknie {count, plural, one {# wpis} few {# wpisy} many {# wpisów} other {# wpisu}} historii. Tego nie można cofnąć.",
+      "deleteHistory": "Razem z nią {count, plural, one {zniknie # wpis} few {znikną # wpisy} many {zniknie # wpisów} other {zniknie # wpisu}} historii. Tego nie można cofnąć.",
       "deleteNoHistory": "Tego nie można cofnąć.",
-      "kindLocked": "Rodzaj można zmienić tylko, gdy linia nie ma wpisów.",
+      "kindLocked": "Rodzaj można zmienić tylko wtedy, gdy pozycja nie ma wpisów.",
       "countable": "Policzalne",
       "items": "szt.",
       "lastEntry": "Ostatni wpis {when}",
@@ -373,14 +373,14 @@
     "errors": {
       "opsDropped": "Ktoś w międzyczasie zmienił tę szufladę. Nie udało się zastosować zmiany.",
       "amountInvalid": "Podaj poprawną kwotę.",
-      "countInteger": "Liczby są całkowite.",
+      "countInteger": "Liczba musi być całkowita.",
       "nameRequired": "Nazwa jest wymagana.",
       "currencyRequired": "Kod waluty jest wymagany."
     },
-    "readOnly": "Możesz oglądać tę szufladę, ale nie zmieniać. Poproś {owner} o prawo zapisu.",
-    "movedTo": "{name} przeniesiono na pozycję {pos} z {count}",
+    "readOnly": "Możesz przeglądać tę szufladę, ale nie możesz jej zmieniać. O prawo zapisu poproś właściciela: {owner}.",
+    "movedTo": "{name} jest teraz na pozycji {pos} z {count}",
     "tagNoItemsYet": "Jeszcze bez pozycji",
-    "tagNoItemsYetLong": "Żadna pozycja nie ma jeszcze tego tagu. Dodaj go przez Wybierz pozycje.",
+    "tagNoItemsYetLong": "Żadna pozycja nie ma jeszcze tego tagu. Dodaj go przyciskiem „Wybierz pozycje”.",
     "tagMore": "+{count} więcej",
     "tagRowName": "{tag}, {count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
     "tagDetailReadOnly": "tylko do odczytu",
@@ -388,7 +388,7 @@
     "tagMergeTitle": "Połączyć tagi?",
     "tagMergeConfirm": "„{to}” już istnieje. Połączyć z nim „{from}”?",
     "tagMerge": "Połącz",
-    "tagOpenItem": "Otwórz {item} w {drawer}",
+    "tagOpenItem": "Otwórz {item} w szufladzie {drawer}",
     "tagHiddenReadOnly": "Wspólne szuflady tylko do odczytu nie są tu pokazane.",
     "tagNew": "Nowy tag",
     "tagName": "Nazwa tagu",
@@ -399,10 +399,10 @@
     "tagNoItems": "Ta szuflada nie ma jeszcze pozycji. Najpierw dodaj pozycję.",
     "tagsManageHint": "Jedna lista tagów dla wszystkich szuflad.",
     "tagPickItemsOptional": "Pozycje z tym tagiem (możesz je wybrać później)",
-    "tagItemIn": "{item} w {drawer}",
+    "tagItemIn": "{item} w szufladzie {drawer}",
     "tagRewriteFailed": "{count, plural, one {# szuflada nie została zmieniona. Spróbuj ponownie.} few {# szuflady nie zostały zmienione. Spróbuj ponownie.} many {# szuflad nie zostało zmienionych. Spróbuj ponownie.} other {# szuflady nie zostały zmienione. Spróbuj ponownie.}}",
     "tagRewriteReadOnly": "{count, plural, one {# wspólna szuflada jest tylko do odczytu i zachowuje stary tag.} few {# wspólne szuflady są tylko do odczytu i zachowują stary tag.} many {# wspólnych szuflad jest tylko do odczytu i zachowuje stary tag.} other {# wspólnej szuflady jest tylko do odczytu i zachowuje stary tag.}}",
-    "tagsEmpty": "Nie masz jeszcze tagów. Stuknij Nowy tag, aby go utworzyć.",
+    "tagsEmpty": "Nie masz jeszcze tagów. Stuknij „Nowy tag”, aby go utworzyć.",
     "tagsManage": "Zarządzaj tagami",
     "tagRename": "Zmień nazwę",
     "tagRemove": "Usuń tag",
@@ -459,12 +459,12 @@
       "new": "{noun, select, liczba {Nowa liczba} other {Nowe saldo}}",
       "confirm": "Potwierdź",
       "saved": "Zapisano",
-      "negativeWarning": "Saldo spadnie do {amount}. Może być tu więcej gotówki, niż zapisano, albo kwota jest błędna.",
+      "negativeWarning": "Saldo spadnie do {amount}. Być może jest tu więcej gotówki, niż zapisano, albo kwota jest błędna.",
       "zero": "Podaj kwotę.",
       "invalid": "Podaj poprawną kwotę."
     },
     "row": {
-      "reversed": "cofnięte",
+      "reversed": "cofnięta",
       "cancels": "cofa wcześniejszy wpis",
       "adjustHint": "({delta})",
       "by": "autor: {name}",
@@ -478,21 +478,21 @@
         "adjust_not_reversible": "Korekty nie można cofnąć. Jeśli liczenie było błędne, policz ponownie.",
         "reverse_not_reversible": "Cofnięcia nie można cofnąć.",
         "already_reversed": "Ten wpis został już cofnięty.",
-        "before_checkpoint": "Uwzględnione już przez późniejsze liczenie."
+        "before_checkpoint": "Późniejsze liczenie już to uwzględniło."
       }
     },
     "recount": {
-      "title": "Linia się zmieniła",
+      "title": "Pozycja się zmieniła",
       "body": "Ktoś dodał wpis od czasu liczenia. Policz ponownie i wpisz nową wartość.",
       "ok": "OK"
     },
     "warn": {
-      "problems": "{count, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}} nie udało się odczytać lub zweryfikować. Kwota nie jest wliczona do salda.",
+      "problems": "Nie udało się odczytać lub zweryfikować {count, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}}. {count, plural, one {Jego kwota nie jest wliczona} other {Ich kwoty nie są wliczone}} do salda.",
       "broken": "Powiązania historii nie zgadzają się. Część wpisów mogła zostać usunięta lub zmieniona.",
       "truncated": "Historia jest krótsza niż ostatnio. Wpisy mogły zostać usunięte.",
-      "acknowledge": "Zaakceptuj jak jest",
-      "skipped": "{count, plural, one {# wpis został} few {# wpisy zostały} many {# wpisów zostało} other {# wpisu zostało}} pominięte przez saldo, bo łamie zasady.",
-      "negative": "Ujemne saldo. Policz tę linię i zrób korektę."
+      "acknowledge": "Zaakceptuj mimo to",
+      "skipped": "Saldo pomija {count, plural, one {# wpis, który łamie zasady} few {# wpisy, które łamią zasady} many {# wpisów, które łamią zasady} other {# wpisu, które łamią zasady}}.",
+      "negative": "Ujemne saldo. Policz tę pozycję i zrób korektę."
     }
   },
   "time": {
@@ -503,7 +503,7 @@
     "verified": "Zweryfikowano · {when}",
     "changed": "Wymaga weryfikacji · Zmiana {when}",
     "bar": {
-      "never": "Policzone? Potwierdź, co jest w środku — wszyscy zobaczą, kiedy ostatnio sprawdzono.",
+      "never": "Gotówka policzona? Potwierdź, co jest w środku — wszyscy zobaczą, kiedy ostatnio to sprawdzono.",
       "verified": "Zweryfikowano {when}",
       "stale": "Zweryfikowano {when}, ale od tego czasu coś się zmieniło.",
       "withComment": " — {comment}"
@@ -514,8 +514,8 @@
     "historyTitle": "Historia weryfikacji",
     "sheet": {
       "title": "Potwierdź stan szuflady",
-      "hint": "Potwierdzenie oznacza, że fizycznie sprawdzono tę szufladę: każde saldo poniżej zgadza się z gotówką, a każdy przedmiot jest na miejscu. To nie zmienia żadnego salda — jeśli coś się nie zgadza, zamknij to okno i zrób najpierw korektę na tej linii.",
-      "lines": "Linie",
+      "hint": "Potwierdzenie oznacza, że fizycznie sprawdzono tę szufladę: każde saldo poniżej zgadza się z gotówką, a każdy przedmiot jest na miejscu. To nie zmienia żadnego salda — jeśli któraś pozycja się nie zgadza, zamknij to okno i najpierw zrób jej korektę.",
+      "lines": "Salda",
       "none": "brak",
       "items": "Przedmioty",
       "present": "{name} jest na miejscu",
@@ -546,7 +546,7 @@
     "transferOffer": "{name} chce przekazać Ci szufladę.",
     "transferAccept": "Przejmij własność",
     "transferDecline": "Odrzuć",
-    "transferWaiting": "Czekamy, aż {name} przyjmie własność „{drawer}”.",
+    "transferWaiting": "Czekamy, aż {name} przejmie szufladę „{drawer}”.",
     "cancel": "Wycofaj ofertę"
   },
   "members": {
@@ -561,7 +561,7 @@
     "safety": "Numer bezpieczeństwa",
     "status": {
       "confirmed": "Potwierdzony",
-      "unconfirmed": "Jeszcze nie porównany",
+      "unconfirmed": "Jeszcze nie porównano",
       "changed": "KLUCZ ZMIENIONY — porównaj ponownie, zanim cokolwiek udostępnisz",
       "unpinned": "Brak klucza"
     },
@@ -569,7 +569,7 @@
     "acceptNew": "Zaakceptuj nowy klucz",
     "remove": "Usuń",
     "removeConfirm": "Usunąć {name} z tej szuflady? Zachowa to, co już widział(a); klucz zostanie wymieniony, więc nie odczyta niczego nowego.",
-    "makeOwner": "Zrób właścicielem",
+    "makeOwner": "Przekaż własność",
     "leave": "Opuść szufladę",
     "leaveConfirm": "Opuścić tę szufladę? Powrót wymaga nowego zaproszenia.",
     "invite": "Zaproś kogoś",
@@ -580,42 +580,42 @@
     "title": "Zaproś do tej szuflady",
     "email": "E-mail tej osoby",
     "lookup": "Znajdź",
-    "notFound": "Brak konta Petty z tym e-mailem. Wyślij najpierw link dołączenia.",
+    "notFound": "Brak konta Petty z tym e-mailem. Najpierw wyślij link z zaproszeniem.",
     "noKeys": "Ta osoba nie dokończyła zakładania konta.",
     "found": "{name}",
     "role": "Rola",
-    "roleWrite": "Piszący — może dodawać operacje, edytować linie i potwierdzać stan",
-    "roleRead": "Czytający — widzi wszystko, nic nie zmienia i nie eksportuje",
+    "roleWrite": "Piszący — może dodawać operacje, edytować pozycje i potwierdzać stan",
+    "roleRead": "Czytający — widzi wszystko, ale nie może niczego zmieniać ani eksportować",
     "compare": "Porównałem(-am) ten numer bezpieczeństwa z {name} osobiście lub przez telefon",
-    "blockedChanged": "Klucz tej osoby zmienił się od ostatniego potwierdzenia. Najpierw zaakceptuj nowy klucz w Członkach.",
+    "blockedChanged": "Klucz tej osoby zmienił się od ostatniego potwierdzenia. Najpierw zaakceptuj nowy klucz w sekcji Członkowie.",
     "send": "Zaproś",
     "sent": "Zaproszenie wysłane",
-    "joinLink": "Wyślij link dołączenia",
-    "joinLinkHint": "Dla kogoś, kto nie ma jeszcze Petty. Dostanie e-mail z jednorazowym linkiem.",
-    "joinLinkSent": "Link dołączenia wysłany na {email}",
+    "joinLink": "Wyślij link z zaproszeniem",
+    "joinLinkHint": "Dla kogoś, kto nie ma jeszcze konta w Petty. Dostanie e-mail z jednorazowym linkiem.",
+    "joinLinkSent": "Link z zaproszeniem wysłany na {email}",
     "alreadyMember": "Już jest członkiem."
   },
   "rotation": {
-    "running": "Wymiana klucza szuflady… {done} z {total} wpisów zaszyfrowano ponownie.",
+    "running": "Wymiana klucza szuflady… Ponownie zaszyfrowano {done} z {total, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}}.",
     "needed": "Członek został usunięty. Klucz szuflady zostanie wymieniony, gdy piszący następnym razem otworzy tę szufladę.",
-    "keyChanged": "Klucz: {names} — zmienił się. Sprawdź numer bezpieczeństwa w Członkach, zanim cokolwiek udostępnisz.",
-    "cannot": "Nie można wymienić klucza: najpierw potwierdź klucz każdego członka w Członkach."
+    "keyChanged": "Zmiana klucza: {names}. Zanim cokolwiek udostępnisz, sprawdź numer bezpieczeństwa w sekcji Członkowie.",
+    "cannot": "Nie można wymienić klucza: najpierw potwierdź klucze wszystkich członków w sekcji Członkowie."
   },
   "offline": {
-    "banner": "Brak połączenia. Zmiany zapisują się na tym urządzeniu i wyślą się po połączeniu.",
+    "banner": "Brak połączenia. Zmiany są zapisywane na tym urządzeniu i zostaną wysłane po ponownym połączeniu.",
     "cached": "Pokazujemy to, co wczytano ostatnio.",
     "pending": "{count, plural, one {# zmiana czeka} few {# zmiany czekają} many {# zmian czeka} other {# zmiany czeka}} na wysłanie",
     "pendingEntry": "oczekuje",
     "old": "Część zmian czeka na wysłanie dłużej niż dzień. Połącz się z internetem, aby je zsynchronizować.",
     "report": {
       "title": "Pod Twoją nieobecność",
-      "foreign": "{amount} — {name}, linia {line}",
-      "recount": "Twoje liczenie na linii {line} nie zostało zapisane — linia zmieniła się w międzyczasie. Policz ponownie.",
-      "reverseRefused": "Twoje cofnięcie na linii {line} nie zostało zapisane: {reason}",
-      "opsDropped": "Zmiany w „{drawer}” nie udało się zastosować: ktoś zmienił ją w międzyczasie.",
-      "failed": "Nie udało się wysłać zmiany w „{drawer}”.",
-      "storageFull": "Zmiana w „{drawer}” nie została zapisana: Twoje miejsce jest pełne.",
-      "ownerStorageFull": "Zmiana w „{drawer}” nie została zapisana: właściciel nie ma już miejsca.",
+      "foreign": "{amount} — {name}, pozycja {line}",
+      "recount": "Twoje liczenie pozycji {line} nie zostało zapisane — pozycja zmieniła się w międzyczasie. Policz ponownie.",
+      "reverseRefused": "Twoje cofnięcie wpisu w pozycji {line} nie zostało zapisane: {reason}",
+      "opsDropped": "Szuflada „{drawer}” zmieniła się w międzyczasie, więc nie udało się zastosować Twojej zmiany.",
+      "failed": "Nie udało się wysłać zmiany w szufladzie „{drawer}”.",
+      "storageFull": "Zmiana w szufladzie „{drawer}” nie została zapisana: nie masz już wolnego miejsca na dane.",
+      "ownerStorageFull": "Zmiana w szufladzie „{drawer}” nie została zapisana: jej właściciel nie ma już wolnego miejsca na dane.",
       "dismiss": "OK"
     }
   },
@@ -632,8 +632,8 @@
   },
   "backup": {
     "title": "Kopia zapasowa",
-    "hint": "Eksport zawiera każdą szufladę, której jesteś właścicielem lub piszącym, ze zdjęciami i pełną historią. Trzymaj plik w zaufanym miejscu.",
-    "exportEncrypted": "Eksportuj (zaszyfrowane)",
+    "hint": "Eksport zawiera każdą szufladę, której jesteś właścicielem lub w której masz prawo zapisu, ze zdjęciami i pełną historią. Trzymaj plik w zaufanym miejscu.",
+    "exportEncrypted": "Eksportuj z szyfrowaniem",
     "exportPlain": "Eksportuj jako zwykły tekst…",
     "import": "Importuj z pliku",
     "password": "Hasło eksportu",
@@ -646,13 +646,13 @@
     "exported": "Eksport gotowy",
     "skipped": "Pominięto {count, plural, one {# szufladę tylko do odczytu} few {# szuflady tylko do odczytu} many {# szuflad tylko do odczytu} other {# szuflady tylko do odczytu}}.",
     "plainTitle": "Eksportować jako zwykły tekst?",
-    "plainWarning": "Ten plik będzie zawierał każde saldo, wpis, komentarz i zdjęcie bez szyfrowania. Każdy, kto go zdobędzie, przeczyta wszystko. Wybierz eksport zaszyfrowany, chyba że wiesz, po co ci ten.",
-    "plainConfirm": "Eksportuj niezaszyfrowane",
+    "plainWarning": "Ten plik będzie zawierał każde saldo, wpis, komentarz i zdjęcie bez szyfrowania. Każdy, kto go zdobędzie, przeczyta wszystko. Wybierz eksport zaszyfrowany, chyba że wiesz, dlaczego potrzebujesz właśnie tego.",
+    "plainConfirm": "Eksportuj bez szyfrowania",
     "importTitle": "Import",
     "importHint": "Tworzy z pliku nowe szuflady, których jesteś właścicielem. Pierwotni autorzy zostają jako etykiety; każdy zaimportowany wpis jest podpisany przez Ciebie i oznaczony [imported].",
     "importPassword": "Hasło pliku",
     "importFile": "Wybierz plik",
-    "importing": "Import {drawer}: {done} z {total} wpisów…",
+    "importing": "Importowanie szuflady {drawer}: {done} z {total, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}}…",
     "imported": "Zaimportowano {count, plural, one {# szufladę} few {# szuflady} many {# szuflad} other {# szuflady}}",
     "importInvalid": "To nie jest plik eksportu Petty.",
     "importWrongPassword": "To hasło nie otworzyło pliku.",
@@ -664,8 +664,8 @@
     "erased": "Co zostanie usunięte: Twoje klucze prywatne, sesje, e-mail i imię oraz każda szuflada, której jesteś jedynym właścicielem.",
     "kept": "Co zostaje: wpisy, które dodałeś(-aś) w szufladach zachowanych przez innych członków — to ich księga, zaszyfrowana kluczem, który mają. Twoje imię przy nich zmieni się na „Usunięty użytkownik”. Twoje klucze publiczne zostają, aby te wpisy dało się nadal zweryfikować.",
     "sharedTitle": "Wspólne szuflady, których jesteś właścicielem",
-    "sole": "{count, plural, one {# szuflada tylko Twoja zostanie usunięta.} few {# szuflady tylko Twoje zostaną usunięte.} many {# szuflad tylko Twoich zostanie usuniętych.} other {# szuflady tylko Twoje zostaną usunięte.}}",
-    "memberships": "Opuścisz {count, plural, one {# szufladę} few {# szuflady} many {# szuflad} other {# szuflady}}, w których jesteś członkiem.",
+    "sole": "{count, plural, one {# szuflada należąca tylko do Ciebie zostanie usunięta.} few {# szuflady należące tylko do Ciebie zostaną usunięte.} many {# szuflad należących tylko do Ciebie zostanie usuniętych.} other {# szuflady należące tylko do Ciebie zostaną usunięte.}}",
+    "memberships": "Opuścisz {count, plural, one {# szufladę, w której jesteś członkiem} few {# szuflady, w których jesteś członkiem} many {# szuflad, w których jesteś członkiem} other {# szuflady, w których jesteś członkiem}}.",
     "giveTo": "Przekaż",
     "deleteForAll": "Usuń dla wszystkich",
     "nobody": "Wybierz osobę…",
@@ -674,7 +674,7 @@
     "working": "Usuwanie…",
     "done": "Twoje konto zostało usunięte.",
     "decide": "Najpierw zdecyduj o każdej wspólnej szufladzie.",
-    "wrongPassword": "Złe hasło.",
+    "wrongPassword": "Nieprawidłowe hasło.",
     "none": "Nie masz szuflad, z których korzystają inni.",
     "summaryTitle": "Co się stanie",
     "summaryGive": "{drawer} → {name}",
@@ -683,7 +683,7 @@
   },
   "pins": {
     "rolledBackTitle": "Twoja lista zaufanych kluczy zniknęła z serwera",
-    "rolledBack": "To urządzenie widziało ostatnio wersję {seen} listy zaufanych kluczy; serwer ma teraz wersję {server}. To może być przywrócona kopia zapasowa albo próba podsunięcia Ci nowych kluczy. Dopóki nie zaczniesz od nowa, żaden nowy klucz nie jest ufany automatycznie i nie możesz udostępniać szuflad.",
+    "rolledBack": "To urządzenie widziało ostatnio wersję {seen} listy zaufanych kluczy; serwer ma teraz wersję {server}. To może być przywrócona kopia zapasowa albo próba podsunięcia Ci nowych kluczy. Dopóki nie zaczniesz od nowa, żaden nowy klucz nie zostanie automatycznie uznany za zaufany i nie możesz udostępniać szuflad.",
     "startOver": "Rozumiem, zacznij od nowa"
   },
   "privacy": {
@@ -693,10 +693,10 @@
     "seesTitle": "Co widzi serwer",
     "sees": [
       "Twój e-mail i imię oraz e-maile i imiona osób, z którymi dzielisz szuflady.",
-      "Ile masz szuflad i ile linii ma każda.",
+      "Ile masz szuflad i ile pozycji ma każda z nich.",
       "Kto z kim dzieli którą szufladę i w jakiej roli.",
-      "Kiedy każdy wpis powstał, kto go dodał, na której linii i czy było to liczenie albo cofnięcie — nigdy kwotę, komentarz ani nazwę linii.",
-      "Rozmiar każdego zaszyfrowanego rekordu, zaokrąglony do 256 bajtów.",
+      "Kiedy powstał każdy wpis, kto go dodał, w której pozycji i czy było to liczenie, czy cofnięcie — nigdy kwoty, komentarza ani nazwy pozycji.",
+      "Rozmiar każdego zaszyfrowanego rekordu, zaokrąglony w górę do wielokrotności 256 bajtów.",
       "Kopie zapasowe to decyzja operatora: ta aplikacja żadnych nie tworzy. Jeśli operator wykonuje kopie bazy, zawierają ten sam szyfrogram, Twój e-mail i zaszyfrowany sejf — zapytaj go, jak długo są przechowywane, także po usunięciu konta.",
       "Jeśli pozwolisz menedżerowi haseł w przeglądarce zapisać hasło sejfu, ten menedżer (i jego synchronizacja w chmurze) też je ma. To Twój wybór, nie serwera."
     ],
@@ -705,18 +705,18 @@
       "Każdy, kto czyta bazę lub kopię zapasową: treść szuflad, zdjęcia i sejfy to tylko szyfrogram. Nadal widzi jednak dane konta i aktywności wymienione wyżej.",
       "Każdy, kto zmienia bazę: przeniesione, zamienione lub usunięte wpisy są wykrywane.",
       "Przejęty serwer: nie ma kluczy i nie odczyta zawartości szuflad.",
-      "Zgubiony telefon: sejf pozostaje zamknięty bez hasła i zamyka się sam po 24 godzinach.",
+      "Zgubiony telefon: sejf pozostaje zablokowany bez hasła sejfu i sam blokuje się po 24 godzinach.",
       "Usunięty członek: po usunięciu klucz szuflady jest wymieniany; nie odczyta niczego dodanego później."
     ],
     "notTitle": "Przed czym Petty nie chroni",
     "not": [
-      "Kto serwuje tę stronę, mógłby podać wersję, która kradnie hasło. Ścisłe reguły przeglądarki zawężają to ryzyko, ale go nie usuwają.",
-      "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
+      "Kto udostępnia tę stronę, mógłby podsunąć wersję, która wykrada hasło sejfu. Ścisłe reguły przeglądarki zawężają to ryzyko, ale go nie usuwają.",
+      "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła sejfu lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
       "Token dostępu, który tworzysz dla narzędzia (Ustawienia → Tokeny dostępu), czyta każdą szufladę, którą możesz otworzyć, także szuflady udostępnione Ci później, a token z prawem zapisu może dodawać wpisy i zmieniać tagi oraz miejsca. Kto ma ten token, ma ten dostęp, dopóki token nie wygaśnie albo go nie unieważnisz. Traktuj go jak klucz.",
       "Każdy, z kim dzielisz szufladę, może przeczytać i skopiować całą jej zawartość. Usunięcie odcina tylko przyszły dostęp.",
       "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz.",
       "Błąd bezpieczeństwa w samej aplikacji.",
-      "Zapomniane hasło bez kodu odzyskiwania: nikt nie pomoże — celowo."
+      "Zapomniane hasło sejfu bez kodu odzyskiwania: nikt nie pomoże — celowo."
     ],
     "source": "Petty to wolne oprogramowanie (AGPL-3.0). Przeczytaj kod lub uruchom go samodzielnie:"
   },
@@ -726,27 +726,27 @@
     "forbidden": "Tylko dla administratorów.",
     "inviteTitle": "Zaproś e-mailem",
     "inviteEmail": "E-mail",
-    "inviteSend": "Wyślij link dołączenia",
+    "inviteSend": "Wyślij link z zaproszeniem",
     "badgeAdmin": "admin",
     "badgeBlocked": "zablokowane",
     "badgeDeleted": "usunięte",
-    "meta": "Właściciel {owned, plural, one {# szuflady} few {# szuflad} many {# szuflad} other {# szuflad}} · ostatnio {seen} · klucz dostępu: {passkey}",
+    "meta": "Właściciel {owned, plural, one {# szuflady} few {# szuflad} many {# szuflad} other {# szuflad}} · ostatnia aktywność: {seen} · klucz dostępu: {passkey}",
     "never": "nigdy",
     "block": "Zablokuj",
     "unblock": "Odblokuj",
     "revoke": "Wyloguj wszędzie",
-    "makeAdmin": "Nadaj admina",
-    "removeAdmin": "Odbierz admina",
+    "makeAdmin": "Nadaj rolę admina",
+    "removeAdmin": "Odbierz rolę admina",
     "done": {
       "block": "Zablokowano. Sesje zakończone.",
       "unblock": "Odblokowano.",
       "revoke": "Wylogowano na każdym urządzeniu.",
-      "admin": "Flaga admina zmieniona."
+      "admin": "Rola admina zmieniona."
     },
     "confirm": {
       "block": {
         "title": "Zablokować {name}?",
-        "body": "Nie może się logować, a każda otwarta sesja kończy się teraz. Dane zostają; odblokowanie przywraca wszystko.",
+        "body": "Ta osoba nie będzie mogła się zalogować, a każda jej otwarta sesja od razu się zakończy. Dane zostają; odblokowanie przywraca wszystko.",
         "ok": "Zablokuj"
       },
       "revoke": {
@@ -755,7 +755,7 @@
         "ok": "Wyloguj"
       },
       "admin": {
-        "title": "Zmienić flagę admina dla {name}?",
+        "title": "Zmienić rolę admina dla {name}?",
         "body": "Administratorzy mogą blokować konta i wysyłać zaproszenia. Nadal nie mogą czytać niczyich szuflad.",
         "ok": "Zmień"
       }
@@ -765,7 +765,7 @@
     "slogan": "Małe kwoty. Duży spokój.",
     "tagline": "Wszystko, co przechowujesz, na swoim miejscu — wspólne z wybranymi osobami, szyfrowane od końca do końca.",
     "sub": "Gotówka w puszce w kuchni, narzędzia w piwnicy, paszporty w sejfie: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
-    "how": "Jak to szyfruje",
+    "how": "Jak działa szyfrowanie",
     "uses": {
       "title": "Jeden pomysł, wiele zastosowań",
       "sub": "Miejsca mieszczą szuflady, a szuflady pozycje — pieniądze, rzeczy albo notatki. Ułóż je, jak chcesz; te same trzy elementy pasują do wszystkiego, co przechowujesz.",
@@ -822,7 +822,7 @@
           }
         },
         "trip": {
-          "chip": "Wspólny wyjazd",
+          "chip": "Wspólna kasa",
           "title": "Wyjazd ze znajomymi",
           "body": "Jedna szuflada na wyjazd, jedna pozycja na osobę. Każdy dopisuje, ile zapłacił, i nikt nie zmieni tego po cichu.",
           "places": {
@@ -870,15 +870,15 @@
           "drawers": {
             "pension": {
               "name": "Emerytura",
-              "meta": "Potwierdzone 2 stycznia"
+              "meta": "Potwierdzono 2 stycznia"
             },
             "brokerage": {
               "name": "Konto maklerskie",
-              "meta": "Potwierdzone 2 stycznia"
+              "meta": "Potwierdzono 2 stycznia"
             },
             "savings": {
               "name": "Oszczędności",
-              "meta": "Potwierdzone 2 stycznia"
+              "meta": "Potwierdzono 2 stycznia"
             }
           },
           "items": {
@@ -911,7 +911,7 @@
           "drawers": {
             "tin": {
               "name": "Puszka na gotówkę",
-              "meta": "Potwierdzone dziś"
+              "meta": "Potwierdzono dziś"
             },
             "envelope": {
               "name": "Koperta",
@@ -1021,9 +1021,9 @@
     "beta": "Masz zaproszenie? Zaloguj się powyżej.",
     "shotsTitle": "Zrzuty ekranu",
     "shots": {
-      "home": "Ekran główny: suma i szuflady pogrupowane po miejscu",
-      "drawer": "Szuflada: dwie sumy, tagi i linie z ikonami",
-      "items": "Szuflada z rzeczami: narzędzia liczone na sztuki, klucze i latarka jako pojedyncze",
+      "home": "Ekran główny: suma i szuflady pogrupowane według miejsc",
+      "drawer": "Szuflada: dwie sumy, tagi i pozycje z ikonami",
+      "items": "Szuflada z rzeczami: narzędzia liczone na sztuki, klucze i latarka jako pojedyncze przedmioty",
       "entry": "Zapis wypłaty na klawiaturze",
       "places": "Miejsca: pokoje, półki i pudełka jako drzewo do przeciągania"
     },
@@ -1060,7 +1060,7 @@
       "server": "Serwer przechowuje zamknięte pudełka, których nie umie otworzyć. Nie moglibyśmy pokazać Twoich danych, nawet gdybyśmy chcieli.",
       "safety": "Każdy członek ma numer bezpieczeństwa. Porównaj go raz osobiście, a nikt nie stanie po cichu pośrodku.",
       "recovery": "Klucz dostępu lub hasło sejfu otwiera Twoje dane; jednorazowy kod odzyskiwania to zapasowy klucz. Żadnego nie możemy zresetować.",
-      "chain": "Wpisy tworzą łańcuch odporny na manipulacje: usunięcie lub zmiana historii jest wykrywalna."
+      "chain": "Wpisy tworzą łańcuch, który ujawnia manipulacje: usunięcie lub zmianę historii da się wykryć."
     },
     "stepsTitle": "Jak to działa",
     "steps": {
@@ -1076,15 +1076,15 @@
       },
       "places": {
         "q": "Czy mogę pogrupować szuflady po pokojach?",
-        "a": "Tak. Miejsca to drzewo — dom › kuchnia › półka — a każda szuflada jest w jednym z nich. Ekran główny grupuje po pokoju, a miejsce można przeciągnąć do innego pokoju; szuflady pójdą za nim."
+        "a": "Tak. Miejsca to drzewo — dom › kuchnia › półka — a każda szuflada jest w jednym z nich. Ekran główny grupuje szuflady według pokoi, a miejsce można przeciągnąć do innego pokoju; szuflady pójdą za nim."
       },
       "lost": {
         "q": "Co, jeśli stracę klucz dostępu lub zapomnę hasła sejfu?",
-        "a": "Sejf otworzy inny klucz dostępu, hasło sejfu lub kod odzyskiwania. Jeśli stracisz wszystkie, nikt — także my — nie odszyfruje Twoich danych; członek szuflady może ponownie udostępnić Ci wspólną szufladę."
+        "a": "Sejf otworzysz innym kluczem dostępu, hasłem sejfu lub kodem odzyskiwania. Jeśli stracisz wszystkie, nikt — także my — nie odszyfruje Twoich danych; członek szuflady może ponownie udostępnić Ci wspólną szufladę."
       },
       "undo": {
         "q": "Czy mogę cofnąć zmianę w szufladzie?",
-        "a": "Tak. Wpisy nigdy nie są usuwane: błąd cofa nowy wpis. Zmiany nazw, pozycji, tagów i miejsc są przechowywane 30 dni, a właściciel szuflady może przywrócić wcześniejszą wersję."
+        "a": "Tak. Wpisy nigdy nie są usuwane: pomyłkę cofa się nowym wpisem. Zmiany nazw, pozycji, tagów i miejsc są przechowywane 30 dni, a właściciel szuflady może przywrócić wcześniejszą wersję."
       },
       "cost": {
         "q": "Ile to kosztuje?",
@@ -1092,7 +1092,7 @@
       },
       "phone": {
         "q": "Czy jest aplikacja na telefon?",
-        "a": "Petty instaluje się z przeglądarki (Dodaj do ekranu głównego) i działa offline jak natywna aplikacja, na iPhonie i Androidzie."
+        "a": "Petty instaluje się z przeglądarki (Dodaj do ekranu początkowego) i działa offline jak natywna aplikacja, na iPhonie i Androidzie."
       }
     },
     "footer": "© 2026 Petty · gotówka domowa szyfrowana od końca do końca",
@@ -1102,7 +1102,7 @@
     "getInvite": "Poproś o zaproszenie",
     "betaOpen": "Bez karty, bez instalacji.",
     "betaInvite": "To Petty jest tylko na zaproszenia: poproś członka albo napisz do nas.",
-    "again": "Gotowi? To zajmuje minutę.",
+    "again": "Zaczynamy? To zajmuje minutę.",
     "againInvite": "Masz zaproszenie? Zaloguj się i załóż sejf.",
     "shotOpen": "Powiększ: {name}",
     "shotPrev": "Poprzedni zrzut",
@@ -1166,13 +1166,13 @@
     "moveUp": "W górę",
     "moveDown": "W dół",
     "delete": "Usuń",
-    "deleteBody": "Szuflady w „{name}” przechodzą do: {parent}. Miejsca wewnątrz idą poziom wyżej.",
+    "deleteBody": "Szuflady z miejsca „{name}” trafią do: {parent}. Miejsca w nim przesuną się o poziom wyżej.",
     "topLevel": "Najwyższy poziom",
     "none": "Bez miejsca",
     "newHere": "Nowe miejsce w: {parent}",
     "newTop": "Nowe miejsce na najwyższym poziomie",
     "name": "Nazwa",
-    "exists": "Takie miejsce już tu jest.",
+    "exists": "Miejsce o tej nazwie już tu jest.",
     "count": "{count, plural, one {# szuflada} few {# szuflady} many {# szuflad} other {# szuflady}}",
     "manage": "Zarządzaj miejscami",
     "manageHint": "Pokoje, półki i pudełka jako drzewo. Dodawaj, zmieniaj nazwy, przenoś i układaj; szuflady pójdą za nimi.",
@@ -1180,14 +1180,14 @@
     "options": "Opcje: {name}",
     "expand": "Rozwiń {name}",
     "collapse": "Zwiń {name}",
-    "moved": "{count, plural, one {zaktualizowano # szufladę} few {zaktualizowano # szuflady} many {zaktualizowano # szuflad} other {zaktualizowano # szuflady}}",
+    "moved": "{count, plural, one {Zaktualizowano # szufladę} few {Zaktualizowano # szuflady} many {Zaktualizowano # szuflad} other {Zaktualizowano # szuflady}}",
     "plus": "Dodaj miejsce w: {name}",
     "minus": "Usuń {name}",
     "drag": "Przesuń {name}: przeciągnij lub użyj strzałek",
-    "dragHint": "Przeciągnij wiersz za uchwyt: w górę lub w dół, aby zmienić kolejność; w prawo, aby umieścić w wierszu powyżej; w lewo, aby wyjąć poziom wyżej.",
+    "dragHint": "Przeciągnij wiersz za uchwyt: w górę lub w dół, aby zmienić kolejność; w prawo, aby umieścić go w wierszu powyżej; w lewo, aby przenieść go o poziom wyżej.",
     "rewriteFailed": "{count, plural, one {Nie udało się zaktualizować # szuflady} few {Nie udało się zaktualizować # szuflad} many {Nie udało się zaktualizować # szuflad} other {Nie udało się zaktualizować # szuflady}}. Spróbuj przenieść jeszcze raz.",
-    "rewriteReadOnly": "{count, plural, one {# udostępniona szuflada jest tylko do odczytu i zostaje w starym miejscu} few {# udostępnione szuflady są tylko do odczytu i zostają w starym miejscu} many {# udostępnionych szuflad jest tylko do odczytu i zostaje w starym miejscu} other {# udostępnione szuflady są tylko do odczytu i zostają w starym miejscu}}.",
-    "movedTo": "{name} przeniesiono na pozycję {pos} z {count}"
+    "rewriteReadOnly": "{count, plural, one {# wspólna szuflada jest tylko do odczytu i zostaje w starym miejscu} few {# wspólne szuflady są tylko do odczytu i zostają w starym miejscu} many {# wspólnych szuflad jest tylko do odczytu i zostaje w starym miejscu} other {# wspólne szuflady są tylko do odczytu i zostają w starym miejscu}}.",
+    "movedTo": "{name} jest teraz na pozycji {pos} z {count}"
   },
   "notFound": {
     "title": "Ta strona nie istnieje",
@@ -1197,25 +1197,25 @@
   },
   "tokens": {
     "title": "Tokeny dostępu",
-    "hint": "Dla Twoich własnych narzędzi, na przykład serwera w Claude Desktop. Token nosi kopię kluczy Twoich szuflad; serwer widzi tylko jego nazwową połowę i nie potrafi go otworzyć.",
+    "hint": "Dla Twoich własnych narzędzi, na przykład serwera w Claude Desktop. Token zawiera kopię kluczy Twoich szuflad; serwer widzi tylko jego jawną połowę i nie potrafi go otworzyć.",
     "new": "Nowy token",
     "name": "Nazwa",
     "defaultName": "Mój asystent",
     "mayWriteSwitch": "Może dodawać wpisy",
-    "mayWriteHint": "Wyłączone: token tylko czyta. Włączone: może dodawać wpisy, a wpisy są Twoje.",
+    "mayWriteHint": "Wyłączone: token tylko czyta. Włączone: może też dodawać wpisy w Twoim imieniu.",
     "expiry": "Wygasa",
     "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
     "never": "Nigdy",
     "create": "Utwórz token",
     "madeTitle": "Skopiuj token teraz",
-    "madeBody": "Pokazujemy go tylko raz. Wklej go do swojego narzędzia. Cofnięcie zatrzyma dalsze użycie, ale nie cofnie tego, co już zostało odczytane.",
+    "madeBody": "Pokazujemy go tylko raz. Wklej go do swojego narzędzia. Unieważnienie zatrzyma dalsze użycie, ale nie cofnie tego, co już zostało odczytane.",
     "mayWrite": "Może dodawać wpisy",
     "mayRead": "Tylko odczyt",
     "used": "użyty {when}",
-    "neverUsed": "nieużywany",
-    "revoke": "Cofnij",
-    "revokeNamed": "Cofnij token {name}",
-    "revokeBody": "Cofnąć „{name}”? Narzędzie od razu przestanie działać. To, co już odczytało, zostaje odczytane.",
+    "neverUsed": "nigdy nieużyty",
+    "revoke": "Unieważnij",
+    "revokeNamed": "Unieważnij token {name}",
+    "revokeBody": "Unieważnić „{name}”? Narzędzie od razu przestanie działać. Tego, co już odczytało, nie da się cofnąć.",
     "passphraseOrPasskey": "Zostaw puste, aby użyć klucza dostępu.",
     "addonTitle": "Użyj w Claude Desktop",
     "addonBody": "Pobierz dodatek, kliknij go dwukrotnie i wybierz Zainstaluj. Claude Desktop zapyta wtedy o dwie rzeczy: adres poniżej i token powyżej.",
@@ -1235,7 +1235,7 @@
     ],
     "desktopTitle": "2a. Claude Desktop",
     "desktopSteps": [
-      "Zainstaluj Claude Desktop ze strony claude.ai/download i zaloguj się, jeśli jeszcze tego nie zrobiłeś.",
+      "Jeśli jeszcze nie masz Claude Desktop, zainstaluj go ze strony claude.ai/download i zaloguj się.",
       "Utwórz token dostępu (krok 1) i miej go pod ręką.",
       "Pobierz dodatek poniżej. Kliknij dwukrotnie petty.mcpb (albo przeciągnij go na okno Claude Desktop) i kliknij Zainstaluj.",
       "Claude Desktop zapyta o dwie rzeczy: wklej ten adres Petty i swój token, potem zapisz. Później zmienisz je w Claude Desktop → Ustawienia → Rozszerzenia → Petty.",
@@ -1258,7 +1258,7 @@
     "ask": [
       "Co jest w szufladzie w kuchni?",
       "Dodaj 10 zł do gotówki w kuchni, z zakupów.",
-      "W puszce jest policzone 37,50. Ustaw to.",
+      "Po przeliczeniu w puszce jest 37,50. Ustaw to.",
       "Co brałem z szopy w tym tygodniu?",
       "Które szuflady mają euro?"
     ],
@@ -1274,9 +1274,9 @@
       "history": "ostatnie wpisy jednej pozycji",
       "list_tags": "każdy tag z jego pozycjami",
       "list_places": "drzewo miejsc z szufladami",
-      "add": "dodaje kwotę",
-      "withdraw": "wyjmuje kwotę",
-      "adjust": "ustawia policzoną kwotę",
+      "add": "wpłaca kwotę",
+      "withdraw": "wypłaca kwotę",
+      "adjust": "ustawia policzony stan",
       "tag_item": "dodaje tag do pozycji",
       "untag_item": "zdejmuje tag z pozycji",
       "rename_tag": "zmienia nazwę tagu wszędzie",

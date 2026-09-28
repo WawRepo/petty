@@ -103,7 +103,7 @@ test("login, wrong passphrase, unlock, Lock now, sign out — in English and in 
   await page.getByTestId("account-menu").click();
   await page.getByTestId("menu-sign-out").click();
   const bye = page.getByRole("dialog");
-  await expect(bye.getByRole("heading", { name: "Wylogować?" })).toBeVisible();
+  await expect(bye.getByRole("heading", { name: "Wylogować się?" })).toBeVisible();
   await bye.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished))); // the sheet slides in at partial opacity; axe must sample the settled colours
   await axe(page);
   await bye.getByRole("button", { name: "Wyloguj" }).click();

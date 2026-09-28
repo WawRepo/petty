@@ -11,7 +11,7 @@
     "retry": "Erneut versuchen",
     "copy": "Kopieren",
     "copied": "Kopiert",
-    "crashed": "Diese Seite konnte nicht geladen werden. Lade neu, um die aktuelle Version von Petty zu bekommen.",
+    "crashed": "Diese Seite konnte nicht geladen werden. Lade sie neu, um die aktuelle Version von Petty zu bekommen.",
     "reload": "Neu laden",
     "offline": "Du bist offline.",
     "yes": "Ja",
@@ -181,7 +181,7 @@
     "drawerName": "Name",
     "drawerNamePlaceholder": "z. B. Küche",
     "add": "Hinzufügen",
-    "lines": "{count, plural, one {# Zeile} other {# Zeilen}}",
+    "lines": "{count, plural, one {# Posten} other {# Posten}}",
     "degraded": "Diese Schublade konnte nicht entschlüsselt werden.",
     "loadFailed": "Deine Schubladen konnten nicht geladen werden.",
     "warn": "Bitte prüfen",
@@ -205,7 +205,7 @@
       "verification": "Bestätigungen anzeigen",
       "verificationHint": "Die Leiste „Bestand bestätigen“ in Schubladen, ihr Verlauf und die „Bestätigt“-Abzeichen. Schalte das aus, wenn du nie zählst und bestätigst.",
       "totals": "Summen anzeigen",
-      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die „In der Summe“-Chips in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und Zeile enthält."
+      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die „In der Summe“-Chips in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und jeder Posten enthält."
     },
     "language": "Sprache",
     "account": "Konto",
@@ -287,7 +287,7 @@
       "all": "Alle Posten",
       "notInTotal": "Nicht in der Summe",
       "countsToward": "{included, plural, one {# von {total} Posten zählt zu dieser Summe} other {# von {total} Posten zählen zu dieser Summe}}",
-      "none": "Noch keine Geldzeilen"
+      "none": "Noch keine Geldposten"
     },
     "filter": {
       "all": "Alle Posten",
@@ -302,7 +302,7 @@
     "tagsPlaceholder": "Küche Regal",
     "tagsHint": "Durch Leerzeichen getrennte Wörter, vom Zimmer bis zur Kiste, z. B. „Küche Regal“. Bis zu 5 Wörter. Alle, die die Schublade teilen, sehen das.",
     "delete": "Schublade löschen",
-    "deleteConfirm": "„{name}“ mit allen Zeilen und dem ganzen Verlauf löschen? Das lässt sich nicht rückgängig machen.",
+    "deleteConfirm": "„{name}“ mit allen Posten und dem ganzen Verlauf löschen? Das lässt sich nicht rückgängig machen.",
     "deleteBtn": "Löschen",
     "deleteType": "Gib zur Bestätigung den Namen der Schublade ein",
     "photoAdd": "Foto hinzufügen",
@@ -311,8 +311,8 @@
     "photoAlt": "Foto von {name}",
     "photoProcessing": "Foto wird vorbereitet…",
     "photoFailed": "Das Bild konnte nicht gelesen werden. Versuch es mit einem anderen Foto.",
-    "addLine": "Zeile hinzufügen",
-    "noLines": "Diese Schublade hat noch keine Zeilen.",
+    "addLine": "Posten hinzufügen",
+    "noLines": "Diese Schublade hat noch keine Posten.",
     "editedBy": "Zuletzt bearbeitet von {name}",
     "dragHandle": "{name} verschieben: ziehen oder die Pfeiltasten nutzen",
     "lineOptions": "Optionen für {name}",
@@ -354,11 +354,11 @@
       "editText": "Text bearbeiten",
       "moveUp": "Nach oben",
       "moveDown": "Nach unten",
-      "delete": "Zeile löschen",
+      "delete": "Posten löschen",
       "deleteConfirm": "„{name}“ löschen?",
       "deleteHistory": "{count, plural, one {# Buchung im Verlauf wird mitgelöscht.} other {# Buchungen im Verlauf werden mitgelöscht.}} Das lässt sich nicht rückgängig machen.",
       "deleteNoHistory": "Das lässt sich nicht rückgängig machen.",
-      "kindLocked": "Die Art lässt sich nur ändern, solange die Zeile keine Buchungen hat.",
+      "kindLocked": "Die Art lässt sich nur ändern, solange der Posten keine Buchungen hat.",
       "countable": "Zählbar",
       "items": "Stk.",
       "lastEntry": "Letzte Buchung {when}",
@@ -368,7 +368,7 @@
       "tagsNew": "Neuer Tag",
       "tagsAdd": "Tag hinzufügen",
       "tagsCount": "{count} von {max} Tags",
-      "tagsFull": "Diese Zeile hat schon {max} Tags, mehr sind nicht möglich."
+      "tagsFull": "Dieser Posten hat schon {max} Tags, mehr sind nicht möglich."
     },
     "errors": {
       "opsDropped": "Jemand hat diese Schublade inzwischen geändert. Deine Änderung konnte nicht übernommen werden.",
@@ -482,7 +482,7 @@
       }
     },
     "recount": {
-      "title": "Die Zeile hat sich geändert",
+      "title": "Der Posten hat sich geändert",
       "body": "Seit deiner Zählung hat jemand eine Buchung hinzugefügt. Zähl noch einmal und gib den neuen Wert ein.",
       "ok": "OK"
     },
@@ -492,7 +492,7 @@
       "truncated": "Der Verlauf ist kürzer als beim letzten Mal. Vielleicht wurden Buchungen entfernt.",
       "acknowledge": "So akzeptieren",
       "skipped": "{count, plural, one {# Buchung wird im Saldo ignoriert, weil sie gegen die Regeln verstößt.} other {# Buchungen werden im Saldo ignoriert, weil sie gegen die Regeln verstoßen.}}",
-      "negative": "Negativer Saldo. Zähl diese Zeile und korrigiere sie."
+      "negative": "Negativer Saldo. Zähl diesen Posten nach und korrigiere ihn."
     }
   },
   "time": {
@@ -514,10 +514,10 @@
     "historyTitle": "Verlauf der Bestätigungen",
     "sheet": {
       "title": "Bestand der Schublade bestätigen",
-      "hint": "Mit dem Bestätigen sagst du, dass du diese Schublade wirklich geprüft hast: Jeder Saldo unten stimmt mit dem echten Bargeld überein, und jeder Gegenstand ist da. Kein Saldo ändert sich dadurch – stimmt eine Zeile nicht, schließ dieses Fenster und korrigiere zuerst diese Zeile.",
-      "lines": "Zeilen",
+      "hint": "Mit dem Bestätigen sagst du, dass du diese Schublade wirklich geprüft hast: Jeder Saldo unten stimmt mit dem echten Bargeld überein, und jedes Einzelstück ist da. Kein Saldo ändert sich dadurch – stimmt ein Posten nicht, schließ dieses Fenster und korrigiere zuerst diesen Posten.",
+      "lines": "Posten",
       "none": "keine",
-      "items": "Gegenstände",
+      "items": "Einzelstücke",
       "present": "{name} ist vorhanden",
       "comment": "Kommentar (optional)",
       "commentPlaceholder": "z. B. mit Alex gezählt",
@@ -546,7 +546,7 @@
     "transferOffer": "{name} möchte dir eine Schublade übergeben.",
     "transferAccept": "Eigentum übernehmen",
     "transferDecline": "Ablehnen",
-    "transferWaiting": "„{drawer}“ wartet darauf, dass {name} das Eigentum annimmt.",
+    "transferWaiting": "{name} hat die Übergabe von „{drawer}“ noch nicht angenommen.",
     "cancel": "Angebot zurückziehen"
   },
   "members": {
@@ -584,7 +584,7 @@
     "noKeys": "Diese Person hat ihr Konto noch nicht fertig eingerichtet.",
     "found": "{name}",
     "role": "Rolle",
-    "roleWrite": "Bearbeiter – kann buchen, Zeilen bearbeiten und den Bestand bestätigen",
+    "roleWrite": "Bearbeiter – kann buchen, Posten bearbeiten und den Bestand bestätigen",
     "roleRead": "Leser – sieht alles, kann nichts ändern und nichts exportieren",
     "compare": "Ich habe diese Sicherheitsnummer mit {name} persönlich oder am Telefon verglichen",
     "blockedChanged": "Der Schlüssel dieser Person hat sich seit deiner letzten Bestätigung geändert. Akzeptiere zuerst unter Mitglieder den neuen Schlüssel.",
@@ -610,7 +610,7 @@
     "report": {
       "title": "Während du weg warst",
       "foreign": "{amount} von {name} in {line}",
-      "recount": "Deine Zählung in {line} wurde nicht gespeichert – die Zeile hat sich inzwischen geändert. Zähl noch einmal.",
+      "recount": "Deine Zählung in {line} wurde nicht gespeichert – der Posten hat sich inzwischen geändert. Zähl noch einmal.",
       "reverseRefused": "Deine Stornierung in {line} wurde nicht gespeichert: {reason}",
       "opsDropped": "Eine Änderung an „{drawer}“ konnte nicht übernommen werden: Jemand hat die Schublade inzwischen geändert.",
       "failed": "Eine Änderung an „{drawer}“ konnte nicht gesendet werden.",
@@ -693,9 +693,9 @@
     "seesTitle": "Was der Server sehen kann",
     "sees": [
       "Deine E-Mail-Adresse und deinen Anzeigenamen, ebenso die der Menschen, mit denen du teilst.",
-      "Wie viele Schubladen du hast und wie viele Zeilen jede enthält.",
+      "Wie viele Schubladen du hast und wie viele Posten jede enthält.",
       "Wer welche Schublade mit wem teilt, und in welcher Rolle.",
-      "Wann jede Buchung geschrieben wurde, von wem, in welcher Zeile und ob es eine Zählung oder eine Stornierung war – nie den Betrag, den Kommentar oder den Namen der Zeile.",
+      "Wann jede Buchung geschrieben wurde, von wem, zu welchem Posten und ob es eine Zählung oder eine Stornierung war – nie den Betrag, den Kommentar oder den Namen des Postens.",
       "Die Größe jedes verschlüsselten Datensatzes, aufgerundet auf Schritte von 256 Byte.",
       "Über Backups entscheidet dein Betreiber: Diese App bringt keine mit. Sichert dein Betreiber die Datenbank, enthält eine Kopie dieselben verschlüsselten Daten, deine E-Mail-Adresse und deinen verschlüsselten Tresor – frag nach, wie lange Kopien aufbewahrt werden, auch nachdem ein Konto gelöscht wurde.",
       "Lässt du den Passwortmanager deines Browsers die Tresor-Passphrase speichern, hat dieser Manager (und seine Cloud-Synchronisierung) sie ebenfalls. Das ist deine Entscheidung, nicht die des Servers."
@@ -1022,7 +1022,7 @@
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Startbildschirm: die Summe und die Schubladen, nach Ort gruppiert",
-      "drawer": "Eine Schublade: zwei Summen, Tags und Zeilen mit Symbolen",
+      "drawer": "Eine Schublade: zwei Summen, Tags und Posten mit Symbolen",
       "items": "Eine Schublade mit Dingen: Werkzeug nach Stück gezählt, Schlüssel und eine Taschenlampe als Einzelstücke",
       "entry": "Eine Entnahme über das Ziffernfeld erfassen",
       "places": "Orte: Zimmer, Regale und Kisten als Baum, den du per Ziehen ordnest"
@@ -1043,7 +1043,7 @@
       },
       "currencies": {
         "title": "Währungen und Dinge",
-        "body": "Euro und Dollar nebeneinander – dazu zählbare Dinge wie Schlüssel oder Dokumente. Versieh jede Zeile mit Tags und filtere danach."
+        "body": "Euro und Dollar nebeneinander – dazu zählbare Dinge wie Schlüssel oder Dokumente. Versieh jeden Posten mit Tags und filtere danach."
       },
       "verify": {
         "title": "Zählen, bestätigen, nie löschen",
@@ -1065,7 +1065,7 @@
     "stepsTitle": "So funktioniert es",
     "steps": {
       "one": "Leg für jeden Ort, an dem du Bargeld oder Dinge aufbewahrst, eine Schublade an, ordne sie ihrem Zimmer oder Regal zu und trag ein, was jetzt darin ist.",
-      "two": "Zahl mit zwei Tipps ein oder aus, wann immer Geld fließt. Storniere Fehler.",
+      "two": "Füge Beträge mit zwei Fingertipps hinzu oder entnimm sie, wann immer Geld fließt. Storniere Fehler.",
       "three": "Zähl die Schublade ab und zu und bestätige sie. Teile sie mit den Menschen, die sie nutzen."
     },
     "faqTitle": "Fragen",
@@ -1166,7 +1166,7 @@
     "moveUp": "Nach oben",
     "moveDown": "Nach unten",
     "delete": "Löschen",
-    "deleteBody": "Schubladen in „{name}“ kommen nach: {parent}. Orte darin rücken eine Ebene nach oben.",
+    "deleteBody": "Schubladen in „{name}“ werden nach „{parent}“ verschoben. Orte darin rücken eine Ebene nach oben.",
     "topLevel": "Oberste Ebene",
     "none": "Kein Ort",
     "newHere": "Neuer Ort in {parent}",
@@ -1211,7 +1211,7 @@
     "madeBody": "Es wird nur einmal angezeigt. Füge es in dein Tool ein. Widerrufen stoppt die weitere Nutzung, macht aber nicht ungelesen, was schon gelesen wurde.",
     "mayWrite": "Darf Buchungen hinzufügen",
     "mayRead": "Nur lesen",
-    "used": "genutzt {when}",
+    "used": "zuletzt genutzt: {when}",
     "neverUsed": "nie genutzt",
     "revoke": "Widerrufen",
     "revokeNamed": "Token {name} widerrufen",
@@ -1219,7 +1219,7 @@
     "passphraseOrPasskey": "Leer lassen, um stattdessen deinen Passkey zu verwenden.",
     "addonTitle": "In Claude Desktop verwenden",
     "addonBody": "Lade die Erweiterung herunter, doppelklicke sie und klicke auf Installieren. Claude Desktop fragt dann nach zwei Dingen: der Adresse unten und dem Token oben.",
-    "addonDownload": "Erweiterung für Claude Desktop herunterladen",
+    "addonDownload": "Erweiterung herunterladen",
     "address": "Petty-Adresse"
   },
   "ai": {
@@ -1274,8 +1274,8 @@
       "history": "letzte Buchungen eines Postens",
       "list_tags": "alle Tags mit ihren Posten",
       "list_places": "der Ortsbaum mit seinen Schubladen",
-      "add": "zahlt einen Betrag ein",
-      "withdraw": "zahlt einen Betrag aus",
+      "add": "fügt einen Betrag hinzu",
+      "withdraw": "entnimmt einen Betrag",
       "adjust": "trägt ein, was gezählt wurde",
       "tag_item": "versieht einen Posten mit einem Tag",
       "untag_item": "nimmt einen Tag von einem Posten",
