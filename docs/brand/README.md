@@ -25,9 +25,13 @@ drawn in `--accent` on a tinted tile) and any mockup should use these and nothin
 | `--k-money` | `#2e7a4f` | `#5fb88a` | a money line's tile and dot |
 | `--k-things` | `#2f63a8` | `#7fa9e8` | a counted line's tile and dot |
 | `--k-notes` | `#9a5f12` | `#e0a95a` | a single item's tile and dot |
+| `--dc-teal` · `--dc-blue` · `--dc-violet` · `--dc-rose` | `#1b7174` · `#3657a6` · `#6c4a9e` · `#a3406a` | `#4fb4b0` · `#86a2ec` · `#b49ae8` · `#e98fb3` | a drawer's chosen colour (PETTY-252) |
+| `--dc-clay` · `--dc-olive` · `--dc-slate` | `#a4552f` · `#5d6a1e` · `#4f5a68` | `#e5a07c` · `#b5c46a` · `#a8b3c2` | a drawer's chosen colour; green is `--accent` |
 
 Tinted grounds (total card, icon tiles) are `color-mix(in srgb, var(--accent) 9–14%, var(--card))`;
 a line's tile uses its kind's colour instead (`--k-*` at 15%, PETTY-250), as the landing page does.
+A drawer with a chosen colour (`.c-<name>`) sets the local `--accent` to its `--dc-*`, so everything the
+drawer draws in the accent follows.
 Pictures (the landing examples, a drawer's header, the home beside the total) are bubbles round a
 middle, joined by dashed spokes: the middle in `--accent`, the bubbles tinted by kind.
 

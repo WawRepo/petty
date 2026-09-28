@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LedgerError, applyOp, applyOps, assertDocumentShape, foldText, hasTag, iconOf, lineCounted, lineTagsOf, newDocument, staleness, tagsOf, totals, type Line, type Verification } from "../src/index.js";
+import { LedgerError, applyOp, applyOps, assertDocumentShape, foldText, hasTag, iconOf, lineCounted, lineTagsOf, newDocument, staleness, tagsOf, totals, type Line, type Verification, colorOf } from "../src/index.js";
 
 const money = (id: string, currency = "PLN", exponent = 2): Line => ({ id, kind: "money", name: `${currency} ${id}`, currency, exponent });
 const single = (id: string): Line => ({ id, kind: "single", name: "Passport", text: "" });
@@ -144,6 +144,20 @@ describe("line extras and drawer icon (PETTY-64)", () => {
     const cleared = applyOp(applyOp(d, { type: "set_line_icon", line_id: "m1", icon: null }, ctx()), { type: "set_icon", icon: null }, ctx());
     expect("icon" in cleared.lines[0]!).toBe(false);
     expect(iconOf(cleared)).toBeNull();
+  });
+  it("a drawer colour is a short slug; null goes back to the default (PETTY-252)", () => {
+    const d = applyOp(base(), { type: "set_color", color: "teal" }, ctx());
+    expect(colorOf(d)).toBe("teal");
+    expect(colorOf(base())).toBeNull();
+    expect(() => applyOp(d, { type: "set_color", color: "#ff0000" }, ctx())).toThrow(LedgerError);
+    expect(() => applyOp(d, { type: "set_color", color: "" }, ctx())).toThrow(LedgerError);
+    const cleared = applyOp(d, { type: "set_color", color: null }, ctx());
+    expect("color" in cleared).toBe(false);
+    // other changes keep it, as an older build's would (they spread the document)
+    expect(colorOf(applyOp(d, { type: "set_icon", icon: "home" }, ctx()))).toBe("teal");
+    expect(() => assertDocumentShape(JSON.parse(JSON.stringify(d)))).not.toThrow();
+    expect(() => assertDocumentShape({ ...d, color: 7 })).toThrow(LedgerError);
+    expect(() => assertDocumentShape({ ...d, color: "Not a slug!" })).toThrow(LedgerError);
   });
   it("assertDocumentShape accepts the new fields and rejects a bad icon", () => {
     const d = applyOp(applyOp(base(), { type: "set_line_tags", line_id: "m1", tags: ["cash"] }, ctx()), { type: "set_icon", icon: "home" }, ctx());

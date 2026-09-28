@@ -117,6 +117,9 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   browser has it. Nothing moves on its own in the app, and reduced motion turns every movement off.
   The landing demo is the one thing that plays by itself (with a Pause button, WCAG 2.2.2); under
   reduced motion it still plays, with cross-fades only — nothing slides, pops or floats (PETTY-251).
+  A drawer may take a colour (PETTY-252) from a fixed palette of eight muted shades — never the
+  danger red or the "check" amber — stored as a slug in its encrypted document; it replaces the
+  accent wherever the drawer is drawn. Lines have no colour of their own: theirs is their kind.
 
 ## Non-goals
 

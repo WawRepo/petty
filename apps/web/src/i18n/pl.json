@@ -280,6 +280,7 @@
   "drawer": {
     "options": "Opcje szuflady",
     "icon": "Ikona",
+    "iconColor": "Ikona i kolor",
     "editedAt": "Ostatnio edytował(a): {name} · {when}",
     "totals": {
       "title": "Razem",
@@ -1142,6 +1143,17 @@
     "shirt": "Ubrania",
     "tag": "Etykieta",
     "note": "Notatka"
+  },
+  "colors": {
+    "pick": "Kolor",
+    "green": "Zielony",
+    "teal": "Morski",
+    "blue": "Niebieski",
+    "violet": "Fioletowy",
+    "rose": "Różowy",
+    "clay": "Ceglasty",
+    "olive": "Oliwkowy",
+    "slate": "Grafitowy"
   },
   "places": {
     "title": "Miejsca",

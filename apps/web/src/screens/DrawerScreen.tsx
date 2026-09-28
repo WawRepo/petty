@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "re
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useBack, useMorph } from "../lib/nav.js";
-import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent, staleness, LedgerError, type Line, type Verification, placeLabel, tagsOf, foldText, formatAmount, iconOf, lineCounted, lineTagsOf, normalizeCurrencyCode, totals as ledgerTotals, type Totals } from "@petty/ledger";
+import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent, staleness, LedgerError, type Line, type Verification, placeLabel, tagsOf, foldText, formatAmount, iconOf, colorOf, lineCounted, lineTagsOf, normalizeCurrencyCode, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { ConfirmStateSheet } from "../components/ConfirmStateSheet.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
 import { SyncReport } from "../components/SyncReport.js";
@@ -21,7 +21,7 @@ import { useToast } from "../components/Toast.js";
 import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
 import { appendEntry, deleteDrawer, lineBalance, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
-import { DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
+import { ColorPicker, DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, colorClass, lineIcon } from "../lib/icons.js";
 import { DrawerArt, vtName } from "../components/DrawerArt.js";
 import { TagChip } from "../components/TagChip.js";
 import { Coins, Tags } from "lucide-react";
@@ -325,7 +325,7 @@ export function DrawerScreen() {
         <section className="drawer-head" data-testid="drawer-head">
           {/* PETTY-250: the drawer's picture — its photo or icon in the middle, its lines around it in their kinds' colours */}
           {/* its bubbles are shortcuts: a line's opens the line (growing into its picture), the middle opens the options */}
-          <DrawerArt drawerId={id} lines={lines} testId="drawer-art" icon={view.photo ? null : iconOf(doc) ?? DEFAULT_DRAWER_ICON}
+          <DrawerArt drawerId={id} lines={lines} testId="drawer-art" color={colorOf(doc)} icon={view.photo ? null : iconOf(doc) ?? DEFAULT_DRAWER_ICON}
             center={view.photo ? <img className="uc-bub-photo" src={view.photo} alt={t("drawer.photoAlt", { name: doc.name })} data-testid="drawer-photo" /> : <PIcon name={iconOf(doc) ?? DEFAULT_DRAWER_ICON} />}
             centerName={t("drawer.options")} onCenter={() => setSheet("options")}
             onLine={(l) => morph(`/drawers/${id}/lines/${l.id}`, `.hero-bubble[data-vt="${vtName("l", l.id)}"]`)} />
@@ -437,7 +437,7 @@ export function DrawerScreen() {
           <SwitchRow label={t("drawer.counted")} hint={t("drawer.countedHint")} checked={counted} onChange={(v) => { void setCountedInTotal(id, v); }} testId="counted-switch" />
           <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button>
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("rename")}>{t("drawer.rename")}</Button> : null}
-          {canWrite ? <Button variant="secondary" onClick={() => setSheet("icon")} data-testid="drawer-icon">{t("drawer.icon")}</Button> : null}
+          {canWrite ? <Button variant="secondary" onClick={() => setSheet("icon")} data-testid="drawer-icon">{t("drawer.iconColor")}</Button> : null}
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("lineTags")} data-testid="manage-tags">{t("drawer.tagsManage")}</Button> : null}
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("tags")} data-testid="drawer-tags">{tagsOf(doc).length ? `${t("drawer.tags")}: ${placeLabel(tagsOf(doc))}` : t("drawer.tags")}</Button> : null}
           {canWrite ? <Button variant="secondary" busy={photoBusy} onClick={() => { setSheet(null); fileRef.current?.click(); }} data-testid="drawer-photo-add">{photoBusy ? t("drawer.photoProcessing") : view.summary.has_photo ? t("drawer.photoChange") : t("drawer.photoAdd")}</Button> : null}
@@ -457,8 +457,14 @@ export function DrawerScreen() {
         challenge={{ label: t("drawer.deleteType"), expected: doc.name, testId: "delete-drawer-name" }}
         onConfirm={async () => { await deleteDrawer(id); nav("/", { replace: true }); }} />
       <TagManager open={sheet === "lineTags"} drawerId={id} onClose={() => setSheet(null)} />
-      <Sheet open={sheet === "icon"} title={t("drawer.icon")} onClose={() => setSheet(null)}>
-        <IconPicker value={iconOf(doc)} onPick={(icon) => { setSheet(null); void run(() => mutateDocument(id, [{ type: "set_icon", icon }])); }} />
+      {/* PETTY-252: a colour saves at once and the icons below show it; an icon saves and closes */}
+      <Sheet open={sheet === "icon"} title={t("drawer.iconColor")} onClose={() => setSheet(null)}>
+        <p className="label mb6">{t("colors.pick")}</p>
+        <ColorPicker value={colorOf(doc)} onPick={(color) => { void run(() => mutateDocument(id, [{ type: "set_color", color }])); }} />
+        <p className="label mb6">{t("drawer.icon")}</p>
+        <div className={colorClass(colorOf(doc))}>
+          <IconPicker value={iconOf(doc)} onPick={(icon) => { setSheet(null); void run(() => mutateDocument(id, [{ type: "set_icon", icon }])); }} />
+        </div>
       </Sheet>
       <AddLineSheet open={sheet === "addLine"} onClose={() => setSheet(null)} view={view} />
       {isOwner ? <DocumentHistorySheet open={sheet === "history"} drawerId={id} onClose={() => setSheet(null)} /> : null}

@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- A drawer can have a colour, picked with its icon ("Icon and colour"): eight, muted like the app's
+  green — green (the default), teal, blue, violet, rose, clay, olive and slate, each with a dark-mode
+  shade. The drawer's tile on Home, its bubble in the Home picture and the middle of its own picture
+  take it. It is stored in the drawer's encrypted document, like the icon; older versions ignore it.
+  Lines keep the colour of their kind.
+
 ## [1.4.2] — 2026-09-28
 
 ### Fixed

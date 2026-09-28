@@ -640,6 +640,21 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .icon-cell { height: 56px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
 .icon-cell.none { color: var(--muted); }
 .icon-cell[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+/* A drawer's colour (PETTY-252): the class sets the local accent, so whatever the drawer draws in the
+   accent — its tile, its bubble, its picture's middle and glow — takes the colour. */
+.c-teal { --accent: var(--dc-teal); }
+.c-blue { --accent: var(--dc-blue); }
+.c-violet { --accent: var(--dc-violet); }
+.c-rose { --accent: var(--dc-rose); }
+.c-clay { --accent: var(--dc-clay); }
+.c-olive { --accent: var(--dc-olive); }
+.c-slate { --accent: var(--dc-slate); }
+.color-row { display: grid; grid-template-columns: repeat(8, minmax(0, 38px)); gap: 8px; margin: 0 0 14px; } /* one row of eight, down to a narrow phone */
+.color-swatch { position: relative; width: 100%; aspect-ratio: 1; padding: 0; border-radius: 50%; border: 2px solid var(--card); background: var(--accent); box-shadow: 0 0 0 1px var(--border); cursor: pointer; transition: transform 0.15s var(--ease), box-shadow 0.15s ease; }
+.color-swatch:hover { transform: scale(1.08); }
+.color-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent); }
+.color-swatch[aria-pressed="true"]::after { content: ""; position: absolute; left: 50%; top: 45%; width: 7px; height: 12px; border: solid var(--accent-text); border-width: 0 2.5px 2.5px 0; translate: -50% -50%; rotate: 45deg; }
+.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 
 /* The entry just saved (PETTY-65): a short highlight so the eye lands on it after the jump to the top. */
 .entry.fresh { animation: entry-fresh 2.2s ease-out; }

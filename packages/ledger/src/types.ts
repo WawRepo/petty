@@ -71,6 +71,8 @@ export interface DrawerDocument {
   readonly has_photo: boolean;
   /** Icon slug from the app's set (PETTY-64). Absent: the default drawer icon. */
   readonly icon?: string;
+  /** Colour slug from the app's palette (PETTY-252). Absent: the default (the brand green). Older builds ignore it and keep it. */
+  readonly color?: string;
   readonly lines: readonly Line[];
   readonly verifications: readonly Verification[];
   /** Places or groups this drawer belongs to (PETTY-52): "basement", "shed". Optional so v1 documents written before it still parse; older builds ignore it. */

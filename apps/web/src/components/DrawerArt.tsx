@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Line } from "@petty/ledger";
-import { KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
+import { KIND_CLASS, PIcon, colorClass, lineIcon } from "../lib/icons.js";
 import { orbit } from "./UseCaseArt.js";
 
 /**
@@ -122,15 +122,15 @@ function More({ ring, geo, cls, up }: { ring: Ring; geo: { rot: number; rx: numb
  * photo with its alt text and test id, or the icon — inside a disc that carries the drawer's
  * view-transition name (the Home bubble grows into it) and the `.tile[data-icon]` the tests read.
  */
-export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter, onLine, testId }: {
-  drawerId: string; lines: readonly Line[]; center: ReactNode; icon: string | null; centerName: string;
+export function DrawerArt({ drawerId, lines, center, icon, color, centerName, onCenter, onLine, testId }: {
+  drawerId: string; lines: readonly Line[]; center: ReactNode; icon: string | null; color: string | null; centerName: string;
   onCenter: () => void; onLine: (line: Line) => void; testId?: string;
 }) {
   const ring = useRing(lines.length);
   const geo = { rot: ring.rot, rx: 30, ry: 33, wobble: ring.slots >= 4 ? 0.08 : 0 };
   const vt = vtName("d", drawerId);
   return (
-    <div className="uc-art app-art drawer-art" data-testid={testId} data-count={lines.length}>
+    <div className={`uc-art app-art drawer-art ${colorClass(color)}`} data-testid={testId} data-count={lines.length}>
       <span className="uc-halo" aria-hidden="true" />
       {lines.map((l, i) => <span key={l.id} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} aria-hidden="true" />)}
       {ring.hidden ? <span key={ring.moreKey} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} aria-hidden="true" /> : null}
@@ -158,7 +158,7 @@ export function DrawerArt({ drawerId, lines, center, icon, centerName, onCenter,
  * the Home total. A drawer's bubble opens the drawer; while a place is picked, the home clears it.
  */
 export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
-  drawers: readonly { readonly id: string; readonly icon: string; readonly name: string }[];
+  drawers: readonly { readonly id: string; readonly icon: string; readonly name: string; readonly color: string | null }[];
   onDrawer: (id: string) => void; onHome?: (() => void) | undefined; homeName: string;
 }) {
   const ring = useRing(drawers.length);
@@ -170,7 +170,7 @@ export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
       {drawers.map((d, i) => <span key={d.id} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} />)}
       {ring.hidden ? <span key={ring.moreKey} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} /> : null}
       {drawers.map((d, i) => (
-        <Bubble key={d.id} cls={`k-case${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} vt={vtName("d", d.id)} name={d.name} up={up(ring.slotOf(i))}
+        <Bubble key={d.id} cls={`k-case ${colorClass(d.color)}${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} vt={vtName("d", d.id)} name={d.name} up={up(ring.slotOf(i))}
           onClick={() => { if (!ring.settling()) onDrawer(d.id); }}>
           <PIcon name={d.icon} />
         </Bubble>

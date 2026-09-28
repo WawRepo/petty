@@ -12,6 +12,7 @@ export type DocumentOp =
   | { readonly type: "set_tags"; readonly tags: readonly string[] }
   | { readonly type: "set_has_photo"; readonly has_photo: boolean }
   | { readonly type: "set_icon"; readonly icon: string | null }
+  | { readonly type: "set_color"; readonly color: string | null }
   | { readonly type: "set_line_icon"; readonly line_id: string; readonly icon: string | null }
   | { readonly type: "set_line_tags"; readonly line_id: string; readonly tags: readonly string[] }
   | { readonly type: "set_line_counted"; readonly line_id: string; readonly counted: boolean }
@@ -47,6 +48,11 @@ export function newDocument(drawerName: string): DrawerDocument {
 export const ICON_SLUG = /^[a-z0-9-]{1,40}$/;
 function assertIcon(x: unknown): string {
   if (typeof x !== "string" || !ICON_SLUG.test(x)) throw new LedgerError("bad_icon");
+  return x;
+}
+/** A colour slug (PETTY-252): the app maps it to its palette; the ledger keeps it short and plain, like an icon. */
+function assertColor(x: unknown): string {
+  if (typeof x !== "string" || !ICON_SLUG.test(x)) throw new LedgerError("bad_color");
   return x;
 }
 
@@ -90,6 +96,7 @@ export function lineTagsOf(line: Line): readonly string[] { return line.tags ?? 
 /** False only when the line was switched out of the totals (PETTY-64). */
 export function lineCounted(line: Line): boolean { return line.counted !== false; }
 export function iconOf(doc: DrawerDocument): string | null { return doc.icon ?? null; }
+export function colorOf(doc: DrawerDocument): string | null { return doc.color ?? null; }
 
 function indexOf(doc: DrawerDocument, lineId: string): number {
   const i = doc.lines.findIndex((l) => l.id === lineId);
@@ -166,6 +173,10 @@ export function applyOp(doc: DrawerDocument, op: DocumentOp, ctx: OpContext): Dr
     case "set_icon": {
       if (op.icon === null) { const rest = { ...doc }; delete (rest as { icon?: string }).icon; return rest; }
       return { ...doc, icon: assertIcon(op.icon) };
+    }
+    case "set_color": {
+      if (op.color === null) { const rest = { ...doc }; delete (rest as { color?: string }).color; return rest; }
+      return { ...doc, color: assertColor(op.color) };
     }
     case "set_line_icon": {
       const i = indexOf(doc, op.line_id);
@@ -269,6 +280,7 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
     if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string" || t.length === 0 || t.length > MAX_TAG_LENGTH) || tags.length > MAX_TAGS) throw new LedgerError("bad_document");
   }
   if (d["icon"] !== undefined && (typeof d["icon"] !== "string" || !ICON_SLUG.test(d["icon"]))) throw new LedgerError("bad_document");
+  if (d["color"] !== undefined && (typeof d["color"] !== "string" || !ICON_SLUG.test(d["color"]))) throw new LedgerError("bad_document");
   const ids = new Set<string>();
   for (const l of d["lines"] as Line[]) {
     assertLine(l);

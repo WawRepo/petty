@@ -280,6 +280,7 @@
   "drawer": {
     "options": "Options du tiroir",
     "icon": "Icône",
+    "iconColor": "Icône et couleur",
     "editedAt": "Dernière modification par {name} · {when}",
     "totals": {
       "title": "Total",
@@ -1142,6 +1143,17 @@
     "shirt": "Vêtements",
     "tag": "Étiquette",
     "note": "Note"
+  },
+  "colors": {
+    "pick": "Couleur",
+    "green": "Vert",
+    "teal": "Bleu canard",
+    "blue": "Bleu",
+    "violet": "Violet",
+    "rose": "Rose",
+    "clay": "Terre cuite",
+    "olive": "Olive",
+    "slate": "Ardoise"
   },
   "places": {
     "title": "Lieux",

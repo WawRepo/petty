@@ -280,6 +280,7 @@
   "drawer": {
     "options": "Opciones del cajón",
     "icon": "Icono",
+    "iconColor": "Icono y color",
     "editedAt": "Última edición: {name} · {when}",
     "totals": {
       "title": "Total",
@@ -1142,6 +1143,17 @@
     "shirt": "Ropa",
     "tag": "Etiqueta",
     "note": "Nota"
+  },
+  "colors": {
+    "pick": "Color",
+    "green": "Verde",
+    "teal": "Verde azulado",
+    "blue": "Azul",
+    "violet": "Violeta",
+    "rose": "Rosa",
+    "clay": "Terracota",
+    "olive": "Oliva",
+    "slate": "Pizarra"
   },
   "places": {
     "title": "Lugares",

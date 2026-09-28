@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef } from "react";
 import { useFlip } from "../lib/flip.js";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { foldText, formatAmount, iconOf, lineCounted, lineTagsOf, normalizeCurrencyCode, placeLabel, totals as ledgerTotals, type Totals } from "@petty/ledger";
+import { colorOf, foldText, formatAmount, iconOf, lineCounted, lineTagsOf, normalizeCurrencyCode, placeLabel, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { TopBar } from "../components/TopBar.js";
 import { Button } from "../components/Button.js";
 import { createDrawer, drawerWarnings, homeTotals, lineBalance, loadAll, loadPhoto, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
@@ -15,7 +15,7 @@ import { HomeSkeleton } from "../components/Skeleton.js";
 import { PinsWarning } from "../components/PinsWarning.js";
 import { excludedFromTotal, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TagChip } from "../components/TagChip.js";
-import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon } from "../lib/icons.js";
+import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon, colorClass } from "../lib/icons.js";
 import { Coins, ListTree, MapPin } from "lucide-react";
 import { HomeArt, vtName } from "../components/DrawerArt.js";
 import { useMorph } from "../lib/nav.js";
@@ -92,7 +92,7 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const head = subtotals[0];
   return (
     <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} aria-label={t("drawer.open", { name })} data-testid="drawer-row">
-      {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className="tile" aria-hidden="true" data-icon={drawerIcon(view)}><PIcon name={drawerIcon(view)} /></span>}
+      {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className={`tile ${colorClass(view.doc ? colorOf(view.doc) : null)}`} aria-hidden="true" data-icon={drawerIcon(view)}><PIcon name={drawerIcon(view)} /></span>}
       <span className="rowmain">
         <span className="rowtitle">{name}{place ? <span className="row-sub" data-testid={placeTestId}>{Icon.pin}{place}</span> : null}</span>
         {view.error ? <span className="degraded" role="status">{t(`home.degradedReason.${view.error}`)}</span> : (
@@ -228,7 +228,7 @@ export function HomeScreen() {
   // PETTY-250: the home with the drawers of this view around it, as on the landing page — beside the total
   // when there is one; each bubble opens its drawer, the home clears a picked place
   const homeArt = (
-    <HomeArt drawers={visibleIds.map((id) => ({ id, icon: drawerIcon(state.drawers.get(id)), name: state.drawers.get(id)?.doc?.name ?? "…" }))}
+    <HomeArt drawers={visibleIds.map((id) => { const v = state.drawers.get(id); return { id, icon: drawerIcon(v), name: v?.doc?.name ?? "…", color: v?.doc ? colorOf(v.doc) : null }; })}
       onDrawer={(id) => morph(`/drawers/${id}`, `.drawer-art [data-vt="${vtName("d", id)}"]`)}
       onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")} />
   );

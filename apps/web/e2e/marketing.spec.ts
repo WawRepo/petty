@@ -54,9 +54,14 @@ async function setPlace(page: Page, segments: readonly string[]) {
     await expect(page.getByRole("dialog")).toBeHidden();
   }
 }
-async function setDrawerIcon(page: Page, label: string) {
+/** Drawer options → Icon and colour: a colour first (it keeps the sheet open, PETTY-252), then the icon. */
+async function setDrawerIcon(page: Page, label: string, colour?: string) {
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByTestId("drawer-icon").click();
+  if (colour) {
+    await page.getByTestId("color-picker").getByRole("button", { name: colour }).click();
+    await expect(page.getByTestId("color-picker").getByRole("button", { name: colour })).toHaveAttribute("aria-pressed", "true");
+  }
   await page.getByTestId("icon-picker").getByRole("button", { name: label }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 }
@@ -113,7 +118,7 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     await addLine(sp, "money", N.trip, { Currency: "USD", "Starting balance": "420" });
     await addLine(sp, "single", N.pass, { Text: N.passText });
     const P = PLACES[loc];
-    await setDrawerIcon(sp, "Kitchen");
+    await setDrawerIcon(sp, "Kitchen", "Clay");
     await setPlace(sp, [P.home, P.kitchen]);
     await setLineTags(sp, N.groceries, P.tags1);
     await setLineIcon(sp, N.groceries, "Banknote");
@@ -143,7 +148,7 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     await expect(sp.getByRole("heading", { name: N.d2 })).toBeVisible();
     await addLine(sp, "money", N.dollars, { Currency: "USD", "Starting balance": "300" });
     await addLine(sp, "single", N.ring, { Text: N.ringText });
-    await setDrawerIcon(sp, "Bedroom");
+    await setDrawerIcon(sp, "Bedroom", "Violet");
     await setPlace(sp, [P.home, P.bedroom]);
     await confirmState(sp);
     // a drawer of things: an inventory, not cash
@@ -158,7 +163,7 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     await addLine(sp, "countable", I.screws, { "Unit (optional)": I.screwsUnit, "Starting count": "6" });
     await addLine(sp, "single", I.keys, { Text: I.keysText });
     await addLine(sp, "single", I.torch, { Text: I.torchText });
-    await setDrawerIcon(sp, "Tools");
+    await setDrawerIcon(sp, "Tools", "Slate");
     await setPlace(sp, [P.home, P.basement]);
     await setLineIcon(sp, I.bits, "Tools");
     await setLineIcon(sp, I.keys, "Key");

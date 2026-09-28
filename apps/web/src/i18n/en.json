@@ -280,6 +280,7 @@
   "drawer": {
     "options": "Drawer options",
     "icon": "Icon",
+    "iconColor": "Icon and colour",
     "editedAt": "Last edited by {name} · {when}",
     "totals": {
       "title": "Total",
@@ -1142,6 +1143,17 @@
     "shirt": "Clothes",
     "tag": "Tag",
     "note": "Note"
+  },
+  "colors": {
+    "pick": "Colour",
+    "green": "Green",
+    "teal": "Teal",
+    "blue": "Blue",
+    "violet": "Violet",
+    "rose": "Rose",
+    "clay": "Clay",
+    "olive": "Olive",
+    "slate": "Slate"
   },
   "places": {
     "title": "Places",

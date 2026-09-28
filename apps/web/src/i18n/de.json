@@ -280,6 +280,7 @@
   "drawer": {
     "options": "Schubladen-Optionen",
     "icon": "Symbol",
+    "iconColor": "Symbol und Farbe",
     "editedAt": "Zuletzt bearbeitet von {name} · {when}",
     "totals": {
       "title": "Summe",
@@ -1142,6 +1143,17 @@
     "shirt": "Kleidung",
     "tag": "Etikett",
     "note": "Notiz"
+  },
+  "colors": {
+    "pick": "Farbe",
+    "green": "Grün",
+    "teal": "Petrol",
+    "blue": "Blau",
+    "violet": "Violett",
+    "rose": "Rosa",
+    "clay": "Terrakotta",
+    "olive": "Oliv",
+    "slate": "Schiefer"
   },
   "places": {
     "title": "Orte",

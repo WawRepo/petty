@@ -30,6 +30,31 @@ export function PIcon({ name, size = 22 }: { name: string; size?: number }) {
   return <C size={size} strokeWidth={1.8} aria-hidden="true" />;
 }
 
+/**
+ * A drawer's colour (PETTY-252): one of eight, muted like the brand green, stored as a slug in the
+ * drawer's document. "green" is the default and is stored as no colour. The class sets the local
+ * `--accent`, so the drawer's tile, its bubble on Home and the middle and glow of its picture follow.
+ * Lines keep their kind's colour (KIND_CLASS): there the colour is a meaning, not a choice.
+ */
+export const DRAWER_COLORS = ["green", "teal", "blue", "violet", "rose", "clay", "olive", "slate"] as const;
+export type DrawerColor = (typeof DRAWER_COLORS)[number];
+const isDrawerColor = (c: string | null | undefined): c is DrawerColor => !!c && (DRAWER_COLORS as readonly string[]).includes(c);
+/** The class for a drawer's colour; none for the default or a slug a newer build wrote. */
+export const colorClass = (c: string | null | undefined): string => (isDrawerColor(c) && c !== "green" ? `c-${c}` : "");
+
+/** A row of colour swatches; the current one is pressed. "green" picks the default (null). */
+export function ColorPicker({ value, onPick, testId = "color-picker" }: { value: string | null; onPick: (color: string | null) => void; testId?: string }) {
+  const { t } = useTranslation();
+  const current = isDrawerColor(value) ? value : "green";
+  return (
+    <div className="color-row" role="group" aria-label={t("colors.pick")} data-testid={testId}>
+      {DRAWER_COLORS.map((c) => (
+        <button type="button" key={c} className={`color-swatch ${colorClass(c)}`} aria-pressed={current === c} aria-label={t(`colors.${c}`)} data-color={c} onClick={() => onPick(c === "green" ? null : c)} />
+      ))}
+    </div>
+  );
+}
+
 /** A grid of icon buttons; the current one is pressed. Every button has a real name (CLAUDE.md rule 10). */
 export function IconPicker({ value, onPick, testId = "icon-picker" }: { value: string | null; onPick: (icon: string | null) => void; testId?: string }) {
   const { t } = useTranslation();
