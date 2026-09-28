@@ -6,8 +6,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { fromB64, hkdfAesKey, importEcdhPublic, open, seal, safetyNumber, toB64, utf8, fromUtf8, canonicalJson, type RecordIdentity } from "@petty/crypto";
-import { UserDocRow, type Member } from "@petty/protocol";
-import { z } from "zod";
+import { UserDocRow, z, type Member } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { getAuth } from "./session.js";

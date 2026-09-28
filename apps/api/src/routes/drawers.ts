@@ -52,7 +52,7 @@ async function keepHistory(db: Queryable, drawerId: string, version: number, use
  * document moves to history, so a write adds the new document's size to the owner's storage
  * (PETTY-243). Delete-line skips the quota: it is how a full account frees space.
  */
-async function writeDocument(db: Queryable, drawerId: string, userId: string, body: typeof PutDocumentBody._type, tokenId: string | null = null, checkQuota = true) {
+async function writeDocument(db: Queryable, drawerId: string, userId: string, body: PutDocumentBody, tokenId: string | null = null, checkQuota = true) {
   const d = await lockDrawer(db, drawerId);
   if (d.version !== body.base_version) throw conflict("VersionConflict", "document changed since you loaded it", { drawer_id: drawerId, current_version: d.version });
   if (d.key_version !== body.key_version) throw conflict("KeyVersionMismatch", "drawer key rotated; re-seal with the current key", { drawer_id: drawerId, key_version: d.key_version });

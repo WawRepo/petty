@@ -7,8 +7,7 @@
  */
 import { fromB64, openDocument, openEntryUnverified, openPhoto, sealArchive, openArchive, sealDocument, toB64, createDrawerKey, type ExportArchiveV1, type RecordIdentity } from "@petty/crypto";
 import { assertDocumentShape, type DrawerDocument, type Line } from "@petty/ledger";
-import { ExportPayload, type DrawerSummary, type ExportDrawer, type ExportPayload as ExportPayloadT } from "@petty/protocol";
-import { z } from "zod";
+import { ExportPayload, z, type DrawerSummary, type ExportDrawer, type ExportPayload as ExportPayloadT } from "@petty/protocol";
 import { api } from "./api.js";
 import { appendEntry, getDrawers, loadAll, setPhoto } from "./drawers.js";
 import { getAuth } from "./session.js";

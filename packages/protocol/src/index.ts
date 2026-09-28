@@ -5,6 +5,12 @@
  */
 import { z } from "zod";
 
+// PETTY-255: zod 4 builds object parsers with `new Function`; the web app's CSP forbids that and the
+// browser reports a Trusted Types violation. The setting is global and must come before any schema
+// is built, so it lives here, and the web app takes `z` from this package, never from "zod" itself.
+z.config({ jitless: true });
+export { z };
+
 export const uuid = z.string().uuid();
 export const b64 = z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/).max(4_000_000);
 export const Role = z.enum(["write", "read"]);
@@ -272,6 +278,7 @@ export const PutDocumentBody = SealedBody.extend({
   /** true when this write appends a verification: the server stamps last_verified_at */
   verification: z.boolean().default(false),
 });
+export type PutDocumentBody = z.infer<typeof PutDocumentBody>;
 export const PutDocumentResponse = z.object({ version: z.number().int(), last_write_at: z.string(), last_verified_at: z.string().nullable() });
 export const DeleteLineBody = z.object({ document: PutDocumentBody });
 export const PutPhotoBody = SealedBody;
