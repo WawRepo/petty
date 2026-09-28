@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-28
+
 ### Added
 - A drawer can have a colour, picked with its icon ("Icon and colour"): eight, muted like the app's
   green — green (the default), teal, blue, violet, rose, clay, olive and slate, each with a dark-mode
@@ -153,7 +155,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/WawRepo/petty/releases/tag/v1.5.0
 [1.4.2]: https://github.com/WawRepo/petty/releases/tag/v1.4.2
 [1.4.1]: https://github.com/WawRepo/petty/releases/tag/v1.4.1
 [1.4.0]: https://github.com/WawRepo/petty/releases/tag/v1.4.0
