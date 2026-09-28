@@ -4,7 +4,8 @@ import { expect, loginAndUnlock, signupWithKeys, test } from "./fixtures.js";
 
 /**
  * PETTY-250: the app's pictures, in the landing page's look. A drawer's screen shows the drawer with
- * its lines around it in their kinds' colours; the Home total sits beside the home with its drawers.
+ * its lines around it in their kinds' colours; the Home total sits beside the home with its drawers, or,
+ * once there are places, above the place tree (PETTY-257, e2e/home-places.spec.ts).
  * Every bubble is a shortcut that opens what it shows (its bubble grows into the next picture through
  * a view transition) — a mouse or touch shortcut for the list below it, which stays the keyboard path.
  */
@@ -61,23 +62,23 @@ test("the pictures show each drawer's lines in their kinds' colours, and every b
   await addLine(page, "Countable", "Screws", { "Unit (optional)": "boxes", "Starting count": "6" });
   await expect(page.getByTestId("drawer-art").locator(".uc-bub.sat.k-things")).toHaveCount(1);
 
-  // Home: the total beside the home with both drawers; each card has one dot per line in its colour
+  // Home: the total above the place tree with both drawers; each card has one dot per line in its colour
   await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByTestId("home-art")).toHaveAttribute("data-count", "2");
+  await expect(page.getByTestId("places-art")).toHaveAttribute("data-count", "2");
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).locator(".kd")).toHaveCount(2);
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).locator(".kd.k-money")).toHaveCount(1);
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).getByTestId("row-place")).toHaveText("Home");
 
-  // picking a place narrows the picture; the home in its middle goes back to every drawer
+  // picking a place narrows the picture to it; the place in its middle goes back to every drawer
   await page.getByTestId("tag-bar").getByRole("button", { name: /^Home/ }).click();
-  await expect(page.getByTestId("home-art")).toHaveAttribute("data-count", "1");
-  await page.getByTestId("home-art").locator(".uc-bub.center .uc-bub-hit").click();
-  await expect(page.getByTestId("home-art")).toHaveAttribute("data-count", "2");
+  await expect(page.getByTestId("places-art")).toHaveAttribute("data-count", "1");
+  await page.getByTestId("places-art").locator(".pa-bub.center .uc-bub-hit").click();
+  await expect(page.getByTestId("places-art")).toHaveAttribute("data-count", "2");
   await expect(page.getByTestId("tag-bar").getByRole("button", { name: /^All/ })).toHaveAttribute("aria-pressed", "true");
 
   // a drawer's bubble opens the drawer, growing into its picture
   await countMorphs(page);
-  await bubble(page, "home-art", "Garage").click();
+  await bubble(page, "places-art", "Garage").click();
   await expect(page).toHaveURL(new RegExp(`/drawers/${garage}$`));
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible();
   expect(await morphs(page)).toBe(1);
@@ -96,7 +97,7 @@ test("the pictures show each drawer's lines in their kinds' colours, and every b
   await page.emulateMedia({ reducedMotion: "reduce" });
   for (const path of ["/", `/drawers/${kitchen}`]) {
     await page.goto(path);
-    const picture = page.getByTestId(path === "/" ? "home-art" : "drawer-art");
+    const picture = page.getByTestId(path === "/" ? "places-art" : "drawer-art");
     await expect(picture).toBeVisible();
     await expect(picture.getByRole("button")).toHaveCount(0);
     for (const hit of await picture.locator(".uc-bub-hit").all()) await expect(hit).toHaveAttribute("tabindex", "-1");

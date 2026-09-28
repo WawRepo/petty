@@ -313,7 +313,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* Desktop (PETTY-49 → PETTY-135): one centred column — hero, the five phones, then the rest. */
 @media (min-width: 1280px) {
   main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
-  .landing > .landing-hero { grid-area: hero; text-align: center; align-items: center; max-width: none; }
+  /* PETTY-260: the hero keeps its 700 px (the 900 px rule below) and stands in the middle of the 960 px column */
+  .landing > .landing-hero { grid-area: hero; text-align: center; align-items: center; justify-self: center; }
   .landing > .usecases { grid-area: uses; justify-self: center; width: 100%; }
   .landing > .landing-lang { grid-area: lang; width: 100%; }
   .landing > .landing-hero .landing-cta { justify-content: center; }
@@ -536,6 +537,45 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .home-picture .home-art { width: 156px; height: 156px; }
 .home-picture .home-art .uc-bub.sat { --uc-sz: 40px; }
 .home-picture .home-art .uc-bub.center { --uc-sz: 58px; }
+/* PETTY-257: with places, the picture is the place tree (DrawerArt.tsx, PlacesArt): under the total, the card's full width */
+.total-card.tree { flex-direction: column; align-items: stretch; gap: 6px; }
+.home-picture.tree { display: block; }
+.places-art-wrap { width: 100%; display: flex; justify-content: center; }
+/* only the bubbles' buttons take the pointer: a folded bubble (see-through, over the one it folds into) must not catch a tap */
+.places-art { position: relative; flex: none; pointer-events: none; transition: height 0.6s var(--glide); }
+.pa-halo, .pa-orbit, .pa-spoke, .pa-bub { position: absolute; }
+.pa-halo { border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 15%, transparent), transparent); }
+.pa-orbit { border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 50%; pointer-events: none; }
+.pa-halo, .pa-orbit { transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), height 0.75s var(--glide); }
+.pa-spoke { height: 0; transform-origin: 0 0; border-top: 1.5px dashed color-mix(in srgb, var(--accent) 38%, transparent); pointer-events: none;
+  transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), rotate 0.75s var(--glide), opacity 0.4s ease; }
+.pa-spoke.thin { border-top: 1px dashed color-mix(in srgb, var(--text) 24%, transparent); }
+.pa-spoke.crumb { border-top: 1.5px dotted color-mix(in srgb, var(--text) 30%, transparent); }
+.pa-spoke.off { opacity: 0; }
+.pa-bub { z-index: 2; --kc: var(--accent); transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), height 0.75s var(--glide), opacity 0.45s ease; }
+.pa-bub.off { opacity: 0; z-index: 1; }
+.pa-bub.center { z-index: 4; }
+.pa-bub.crumb { z-index: 3; }
+.pa-disc { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center;
+  background-color: color-mix(in srgb, var(--kc) 14%, var(--card)); color: var(--kc); border: 2px solid color-mix(in srgb, var(--kc) 36%, var(--card)); box-shadow: 0 3px 9px rgba(0,0,0,0.10);
+  transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease; }
+.pa-disc svg { width: 48%; height: 48%; }
+.pa-bub.center .pa-disc { background-color: var(--accent); color: var(--accent-text); border: 3px solid color-mix(in srgb, var(--accent) 55%, var(--card)); box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+.pa-bub.center .pa-disc svg { width: 44%; height: 44%; }
+.pa-bub:is(.place, .sub, .crumb, .more, .more2) .pa-disc { background-color: var(--card); color: var(--text); border-color: color-mix(in srgb, var(--text) 22%, var(--card)); }
+.pa-bub:is(.sub, .crumb, .sat, .more2) .pa-disc { border-width: 1.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+.pa-bub:is(.more, .more2) .pa-disc { color: var(--muted); }
+.pa-more { font-size: calc(var(--sz) * 0.34); font-weight: 800; }
+.pa-label { position: absolute; left: 50%; z-index: 5; translate: -50% 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; font-weight: 700; line-height: 16px; padding: 1px 7px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); color: var(--text); pointer-events: none; }
+.pa-label.below { top: calc(100% + 4px); }
+.pa-label.above { bottom: calc(100% + 4px); }
+.pa-bub.center .pa-label { font-size: 12px; padding: 2px 9px; background: var(--accent); color: var(--accent-text); border-color: transparent; }
+.pa-bub.off .uc-bub-hit { pointer-events: none; }
+.pa-disc:has(> .uc-bub-hit:hover) { scale: 1.08; }
+.pa-bub:has(.uc-bub-hit:hover) { z-index: 6; }
+/* reduced motion: the picture changes by fades only, nothing glides */
+@media (prefers-reduced-motion: reduce) { .places-art, .pa-halo, .pa-orbit, .pa-spoke, .pa-bub { transition-property: opacity; } .pa-disc:has(> .uc-bub-hit:hover) { scale: none; } }
 /* one dot per line on a drawer card, in the line's kind's colour */
 .kind-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; }
 .kind-dots .kd { width: 7px; height: 7px; border-radius: 2px; background: var(--muted); }

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { MapPin } from "lucide-react";
 import type { Line } from "@petty/ledger";
 import { KIND_CLASS, PIcon, colorClass, lineIcon } from "../lib/icons.js";
 import { orbit } from "./UseCaseArt.js";
@@ -184,6 +185,207 @@ export function HomeArt({ drawers, onDrawer, onHome, homeName }: {
           </span>
         </span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * PETTY-257: the Home picture with places. The place in view is the middle — the home at the top, the
+ * picked place below that. Its places and the drawers kept right in it stand on the first ring; round
+ * each place a fan of small bubbles shows what is in it (its places and drawers; a "+N" for more than
+ * fit). A place's bubble picks it, as its chip does, and the picture goes one level down: the place
+ * glides to the middle and its small bubbles grow into the first ring, while the levels above wait as
+ * small bubbles in the top-left corner. The middle, or a corner bubble, goes back up.
+ *
+ * A level that holds one place and nothing else would draw one lonely bubble (a house with every room in
+ * "Home"): the first ring shows what is in that place instead, and its name labels the middle.
+ *
+ * Every place and drawer keeps one bubble all the time: one out of view folds into its nearest bubble in
+ * view (the place it is in, the "+N" it is counted in, or a corner bubble), so each change is one glide.
+ * The bubbles are shortcuts for the chips and the list, like the other pictures: out of the tab order.
+ */
+export interface ArtDrawer { readonly id: string; readonly icon: string; readonly name: string; readonly color: string | null }
+export interface ArtPlace { readonly path: readonly string[]; readonly name: string; readonly places: readonly ArtPlace[]; readonly drawers: readonly ArtDrawer[] }
+
+type SpotKind = "center" | "crumb" | "place" | "sub" | "drawer" | "sat" | "more" | "more2";
+interface Spot { readonly kind: SpotKind; readonly x: number; readonly y: number; readonly size: number; readonly label?: "above" | "below"; readonly text?: string }
+interface Link { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number; readonly style: "spoke" | "thin" | "crumb" }
+type Item = { readonly p: ArtPlace } | { readonly d: ArtDrawer };
+
+const placeKey = (path: readonly string[]) => `p:${path.join("\u0001")}`;
+const drawerKey = (id: string) => `d:${id}`;
+const itemKey = (it: Item) => ("p" in it ? placeKey(it.p.path) : drawerKey(it.d.id));
+const itemsOf = (p: ArtPlace): Item[] => [...p.places.map((q) => ({ p: q })), ...p.drawers.map((d) => ({ d }))];
+const countIn = (p: ArtPlace): number => p.drawers.length + p.places.reduce((a, q) => a + countIn(q), 0);
+/** The place whose content a ring shows: through every level that holds one place and nothing else. */
+const through = (p: ArtPlace): ArtPlace => (p.places.length === 1 && p.drawers.length === 0 ? through(p.places[0]!) : p);
+
+/** Where each bubble stands for this view, in px of a picture `w` wide. `turn` turns the first ring when it holds more than six. */
+export function placesLayout(view: ArtPlace, trail: readonly ArtPlace[], w: number, turn: number) {
+  const s = w / 306;
+  const top = trail.length ? 30 * s : 0;
+  const cx = w / 2, cy = top + 150 * s, rx = 100 * s, ry = 90 * s, r2 = 40 * s;
+  const spots = new Map<string, Spot>(), links = new Map<string, Link>(), fold = new Map<string, string>();
+  const more: { key: string; n: number; place: ArtPlace | null }[] = [];
+  trail.forEach((p, i) => {
+    const x = (18 + i * 34) * s, y = 16 * s;
+    spots.set(placeKey(p.path), { kind: "crumb", x, y, size: 26 * s });
+    if (i > 0) links.set(placeKey(p.path), { x1: x - 34 * s, y1: y, x2: x, y2: y, style: "crumb" });
+  });
+  const inner = through(view);
+  spots.set(placeKey(view.path), { kind: "center", x: cx, y: cy, size: 62 * s, ...(inner !== view || view.path.length ? { label: "below" as const, text: inner.name } : {}) });
+  // the first ring: six at most, else five and a "+N" that the rest fold into
+  const items = itemsOf(inner);
+  const hidden = items.length > 6 ? items.length - 5 : 0;
+  const from = hidden ? ((turn % items.length) + items.length) % items.length : 0;
+  const shown = hidden ? [...items.slice(from), ...items.slice(0, from)].slice(0, 5) : items;
+  const moreKey = `m:${placeKey(view.path)}`;
+  if (hidden) for (const it of items) if (!shown.includes(it)) fold.set(itemKey(it), moreKey);
+  const n = shown.length + (hidden ? 1 : 0);
+  [...shown, ...(hidden ? [null] : [])].forEach((it, i) => {
+    const deg = (n % 2 === 0 ? -90 + 180 / n : -90) + (360 / n) * i;
+    const sin = Math.sin((deg * Math.PI) / 180), cos = Math.cos((deg * Math.PI) / 180);
+    const x = cx + rx * cos, y = cy + ry * sin;
+    const key = it ? itemKey(it) : moreKey;
+    links.set(key, { x1: cx, y1: cy, x2: x, y2: y, style: "spoke" });
+    if (!it) { spots.set(key, { kind: "more", x, y, size: 38 * s }); more.push({ key, n: hidden, place: null }); return; }
+    if ("d" in it) { spots.set(key, { kind: "drawer", x, y, size: 38 * s }); return; }
+    // a place: its name on the side away from its small bubbles; at the left and right the fan turns up and the name goes below
+    const side = Math.abs(sin) <= 0.3;
+    spots.set(key, { kind: "place", x, y, size: 44 * s, label: side || sin < 0 ? "below" : "above" });
+    const inner = itemsOf(it.p), cap = n >= 5 ? 3 : 4;
+    const fan = inner.length > cap ? inner.slice(0, cap - 1) : inner;
+    const rest = inner.length > cap ? inner.length - (cap - 1) : 0;
+    const more2 = `m2:${key}`;
+    if (rest) for (const q of inner) if (!fan.includes(q)) fold.set(itemKey(q), more2);
+    const m = fan.length + (rest ? 1 : 0);
+    const spread = m <= 1 ? 0 : Math.min(48 * (m - 1), n >= 5 ? 110 : 150);
+    const at = side ? deg - 45 * Math.sign(cos) : deg;
+    [...fan, ...(rest ? [null] : [])].forEach((q, j) => {
+      const d2 = (((at - spread / 2 + (m <= 1 ? 0 : (spread / (m - 1)) * j)) * Math.PI) / 180);
+      const sx = x + r2 * Math.cos(d2), sy = y + r2 * Math.sin(d2);
+      const k = q ? itemKey(q) : more2;
+      links.set(k, { x1: x, y1: y, x2: sx, y2: sy, style: "thin" });
+      if (!q) { spots.set(k, { kind: "more2", x: sx, y: sy, size: Math.max(20, 22 * s) }); more.push({ key: k, n: rest, place: it.p }); }
+      else spots.set(k, { kind: "p" in q ? "sub" : "sat", x: sx, y: sy, size: Math.max(20, 22 * s) });
+    });
+  });
+  // the height fits what is drawn — the ring, the bubbles and their names — right under the corner bubbles
+  const pad = 8 * s, name = 24;
+  let lo = cy - ry, hi = cy + ry;
+  for (const sp of spots.values()) {
+    if (sp.kind === "crumb") continue;
+    lo = Math.min(lo, sp.y - sp.size / 2 - (sp.label === "above" ? name : 0));
+    hi = Math.max(hi, sp.y + sp.size / 2 + (sp.label === "below" ? name : 0));
+  }
+  const up = lo - pad - top;
+  for (const [k, sp] of spots) if (sp.kind !== "crumb") spots.set(k, { ...sp, y: sp.y - up });
+  for (const [k, l] of links) if (l.style !== "crumb") links.set(k, { ...l, y1: l.y1 - up, y2: l.y2 - up });
+  return { w, h: Math.round(hi - up + pad), cx, cy: cy - up, rx, ry, spots, links, fold, more };
+}
+
+export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
+  root: ArtPlace; selected: readonly string[];
+  onPick: (path: readonly string[]) => void; onDrawer: (id: string) => void; backName: (to: ArtPlace) => string;
+}) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(306);
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => { if (e) setW(Math.max(250, Math.min(400, Math.round(e.contentRect.width)))); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // the place in view (a path that no longer exists stops at its longest live part), and the levels above it
+  const trail: ArtPlace[] = [];
+  let view = root;
+  for (const seg of selected) {
+    const next = view.places.find((p) => p.path[p.path.length - 1] === seg);
+    if (!next) break;
+    trail.push(view); view = next;
+  }
+  const viewKey = placeKey(view.path);
+  const [turn, setTurn] = useState({ view: viewKey, by: 0 });
+  const by = turn.view === viewKey ? turn.by : 0;
+  const L = placesLayout(view, trail, w, by);
+
+  // every place and drawer, in one order that does not change with the view (a moved node would not glide)
+  const all: { key: string; parent: string | null; item: Item }[] = [];
+  const walk = (p: ArtPlace, parent: string | null) => {
+    const k = placeKey(p.path);
+    all.push({ key: k, parent, item: { p } });
+    for (const q of p.places) walk(q, k);
+    for (const d of p.drawers) all.push({ key: drawerKey(d.id), parent: k, item: { d } });
+  };
+  walk(root, null);
+  const parentOf = new Map(all.map((a) => [a.key, a.parent]));
+  const home = (key: string): Spot => {
+    let k: string | null | undefined = key;
+    while (k && !L.spots.has(k)) k = L.fold.get(k) ?? parentOf.get(k);
+    return L.spots.get(k ?? "") ?? L.spots.get(placeKey(view.path))!;
+  };
+  const angles = useRef(new Map<string, number>());
+  const line = (key: string, l: Link | null, at: Spot) => {
+    const x1 = l ? l.x1 : at.x, y1 = l ? l.y1 : at.y, x2 = l ? l.x2 : at.x, y2 = l ? l.y2 : at.y;
+    let a = l ? (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI : angles.current.get(key) ?? 0;
+    const prev = angles.current.get(key);
+    if (prev !== undefined) a += 360 * Math.round((prev - a) / 360);
+    angles.current.set(key, a);
+    return <span key={`s${key}`} className={`pa-spoke ${l?.style ?? "spoke"}${l ? "" : " off"}`} style={{ left: x1, top: y1, width: Math.hypot(x2 - x1, y2 - y1), rotate: `${a}deg` }} />;
+  };
+  const box = (sp: Spot, shown: boolean): CSSProperties => {
+    const size = shown ? sp.size : Math.min(12, sp.size);
+    return { left: sp.x - size / 2, top: sp.y - size / 2, width: size, height: size, "--sz": `${size}px` } as CSSProperties;
+  };
+  const up = (sp: Spot) => sp.y < L.cy - 8;
+  const parentPath = trail.length ? trail[trail.length - 1]! : null;
+
+  return (
+    <div className="places-art-wrap" ref={wrap}>
+      <div className="places-art" aria-hidden="true" data-testid="places-art" data-view={view.path.join("/")} data-count={countIn(view)} style={{ width: L.w, height: L.h }}>
+        <span className="pa-halo" style={{ left: L.cx - L.rx * 1.2, top: L.cy - L.rx * 1.2, width: L.rx * 2.4, height: L.rx * 2.4 }} />
+        <span className="pa-orbit" style={{ left: L.cx - L.rx, top: L.cy - L.ry, width: L.rx * 2, height: L.ry * 2 }} />
+        {all.map((a) => line(a.key, L.links.get(a.key) ?? null, home(a.key)))}
+        {L.more.map((m) => line(m.key, L.links.get(m.key) ?? null, L.spots.get(m.key)!))}
+        {all.map(({ key, item }) => {
+          const sp = L.spots.get(key), shown = !!sp, at = sp ?? home(key);
+          if ("d" in item) {
+            const d = item.d;
+            return (
+              <span key={key} className={`pa-bub ${sp?.kind ?? "sat"} ${colorClass(d.color)}${shown ? "" : " off"}`} style={box(at, shown)} data-key={key}>
+                <span className="pa-disc">
+                  <PIcon name={d.icon} />
+                  {shown ? <Hit name={d.name} vt={vtName("d", d.id)} up={up(at)} onClick={() => onDrawer(d.id)} /> : null}
+                </span>
+              </span>
+            );
+          }
+          const p = item.p, kind = sp?.kind ?? "sub";
+          const pick = kind === "center" ? (parentPath ? () => onPick(parentPath.path) : null) : () => onPick(p.path);
+          const tip = kind === "center" ? (parentPath ? backName(parentPath) : "") : kind === "crumb" ? backName(p) : p.name;
+          return (
+            <span key={key} className={`pa-bub ${kind}${shown ? "" : " off"}`} style={box(at, shown)} data-key={key}>
+              <span className="pa-disc">
+                {p.path.length ? <MapPin size={22} strokeWidth={1.8} aria-hidden="true" /> : <PIcon name="home" />}
+                {shown && pick ? <Hit name={tip} up={up(at)} onClick={pick} /> : null}
+              </span>
+              {sp?.label ? <span className={`pa-label ${sp.label}`}>{sp.text ?? p.name}</span> : null}
+            </span>
+          );
+        })}
+        {L.more.map((m) => {
+          const sp = L.spots.get(m.key)!;
+          return (
+            <span key={m.key} className={`pa-bub ${sp.kind}`} style={box(sp, true)} data-key={m.key}>
+              <span className="pa-disc">
+                <span className="pa-more">+{m.n}</span>
+                <Hit name="" up={up(sp)} onClick={m.place ? () => onPick(m.place!.path) : () => setTurn({ view: viewKey, by: by + 5 })} />
+              </span>
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }

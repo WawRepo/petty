@@ -122,6 +122,19 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   A drawer may take a colour (PETTY-252) from a fixed palette of eight muted shades — never the
   danger red or the "check" amber — stored as a slug in its encrypted document; it replaces the
   accent wherever the drawer is drawn. Lines have no colour of their own: theirs is their kind.
+- **The Home picture with places (PETTY-257, 2026-09-28).** Once there are places, the Home picture is
+  the place tree, under the total at the card's full width: the place in view in the middle, its places
+  and the drawers kept right in it on the first ring, what is in each place in a fan round it. A place's
+  bubble picks it exactly as its chip does, and the picture goes one level down; the levels above wait as
+  small bubbles in a corner. A level that holds one place and nothing else shows what is in that place
+  (a house whose rooms all sit in "Home"). Every place and drawer keeps one bubble, and one out of view
+  folds into its nearest bubble in view, so each change is one glide. Without places the picture stays the home beside
+  the total. "Show the picture" (on by default) is in the encrypted user document, like the other Home
+  settings.
+- **Theme (PETTY-259, 2026-09-28).** Settings offers the device's own theme, light or dark. The choice
+  is kept on the device, not on the account: a phone and a laptop may want different ones. A forced
+  theme is a `data-theme` on `<html>` that picks the palette in `tokens.css`, so every colour still
+  comes from the tokens.
 
 ## Non-goals
 

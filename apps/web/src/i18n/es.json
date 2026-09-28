@@ -194,7 +194,11 @@
       "bad_document": "El documento del cajón no es válido.",
       "unknown_schema": "Este cajón lo escribió una versión más reciente de Petty."
     },
-    "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}"
+    "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}",
+    "picture": {
+      "back": "Volver a {place}",
+      "backAll": "Volver a todos los cajones"
+    }
   },
   "settings": {
     "title": "Ajustes",
@@ -205,9 +209,17 @@
       "verification": "Mostrar verificación",
       "verificationHint": "La barra «Confirmar estado» de los cajones, su historial y las insignias «Verificado». Desactívalo si nunca cuentas ni confirmas.",
       "totals": "Mostrar totales",
-      "totalsHint": "La tarjeta Valor total y los subtotales de la pantalla de inicio, y en cada cajón la tarjeta de totales y las marcas «En el total». Desactívalo para ver solo lo que contiene cada cajón y cada línea."
+      "totalsHint": "La tarjeta Valor total y los subtotales de la pantalla de inicio, y en cada cajón la tarjeta de totales y las marcas «En el total». Desactívalo para ver solo lo que contiene cada cajón y cada línea.",
+      "picture": "Mostrar el dibujo",
+      "pictureHint": "La casa con tus lugares y cajones alrededor, en la pantalla de inicio. Toca un lugar para ver solo sus cajones."
     },
     "language": "Idioma",
+    "theme": {
+      "label": "Tema",
+      "system": "Como este dispositivo",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
     "account": "Cuenta",
     "signedInAs": "Sesión iniciada como {email}",
     "safetyNumber": "Tu número de seguridad",
@@ -1021,7 +1033,7 @@
     "beta": "¿Tienes una invitación? Inicia sesión arriba.",
     "shotsTitle": "Capturas de pantalla",
     "shots": {
-      "home": "Pantalla de inicio: el total y los cajones agrupados por lugar",
+      "home": "Pantalla de inicio: el total, los lugares en un dibujo y los cajones agrupados por lugar",
       "drawer": "Un cajón: dos totales, etiquetas y líneas con iconos",
       "items": "Un cajón de cosas: herramientas contadas por unidades, y llaves y una linterna como objetos individuales",
       "entry": "Retirar dinero con el teclado numérico",
@@ -1076,7 +1088,7 @@
       },
       "places": {
         "q": "¿Puedo agrupar los cajones por habitación?",
-        "a": "Sí. Los lugares forman un árbol (casa › cocina › estante) y cada cajón está en uno de ellos. La pantalla de inicio agrupa por habitación, y puedes arrastrar un lugar a otra habitación; sus cajones lo siguen."
+        "a": "Sí. Los lugares forman un árbol (casa › cocina › estante) y cada cajón está en uno de ellos. La pantalla de inicio agrupa por habitación y dibuja tus lugares alrededor de la casa: toca uno para ver solo sus cajones. Arrastra un lugar a otra habitación y sus cajones lo siguen."
       },
       "lost": {
         "q": "¿Y si pierdo mi llave de acceso u olvido la frase de contraseña?",

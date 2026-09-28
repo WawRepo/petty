@@ -23,7 +23,10 @@
     --dc-teal: #4fb4b0; --dc-blue: #86a2ec; --dc-violet: #b49ae8; --dc-rose: #e98fb3; --dc-clay: #e5a07c; --dc-olive: #b5c46a; --dc-slate: #a8b3c2;
   }
 }
+/* PETTY-259: a theme chosen in Settings (lib/theme.ts) overrides the device's; the browser's own parts follow */
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #151412; --card: #201e1b; --text: #f0ece4; --muted: #a8a094;
   --border: #332f2a; --accent: #4c9c72; --accent-text: #0b1210;
   --danger: #e0725a; --add: #4c9c72; --withdraw: #e0725a; --adjust: #d4ac3f; --on-adjust: #1c1a17; --on-op: #0b1210;

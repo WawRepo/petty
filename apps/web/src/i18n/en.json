@@ -194,7 +194,11 @@
       "bad_document": "The drawer document is not valid.",
       "unknown_schema": "This drawer was written by a newer version of Petty."
     },
-    "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}"
+    "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}",
+    "picture": {
+      "back": "Back to {place}",
+      "backAll": "Back to all drawers"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -205,9 +209,17 @@
       "verification": "Show verification",
       "verificationHint": "The “Confirm state” bar on drawers, its history and the verified badges. Turn off if you never count and confirm.",
       "totals": "Show totals",
-      "totalsHint": "The Total value card and the subtotals on the home screen, the totals card and the “in total” chips on a drawer. Turn off to see only what each drawer and line holds."
+      "totalsHint": "The Total value card and the subtotals on the home screen, the totals card and the “in total” chips on a drawer. Turn off to see only what each drawer and line holds.",
+      "picture": "Show the picture",
+      "pictureHint": "The home with your places and drawers around it, on the home screen. Tap a place to see only its drawers."
     },
     "language": "Language",
+    "theme": {
+      "label": "Theme",
+      "system": "Same as this device",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "account": "Account",
     "signedInAs": "Signed in as {email}",
     "safetyNumber": "Your safety number",
@@ -1021,7 +1033,7 @@
     "beta": "Have an invite? Sign in above.",
     "shotsTitle": "Screenshots",
     "shots": {
-      "home": "Home screen: the total, and the drawers grouped by place",
+      "home": "Home screen: the total, the places as a picture, and the drawers grouped by place",
       "drawer": "A drawer: two totals, tags, and lines with icons",
       "items": "A drawer of things: tools counted by the piece, keys and a torch as single items",
       "entry": "Recording a withdrawal on the keypad",
@@ -1076,7 +1088,7 @@
       },
       "places": {
         "q": "Can I group drawers by room?",
-        "a": "Yes. Places are a tree — house › kitchen › shelf — and every drawer sits in one of them. The home screen groups by room, and you can drag a place to another room; its drawers follow."
+        "a": "Yes. Places are a tree — house › kitchen › shelf — and every drawer sits in one of them. The home screen groups by room and draws your places round the home: tap one to see only its drawers. Drag a place to another room and its drawers follow."
       },
       "lost": {
         "q": "What if I lose my passkey or forget the passphrase?",

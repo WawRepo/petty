@@ -13,16 +13,16 @@ import { SyncReport } from "../components/SyncReport.js";
 import { Nudges } from "../components/Nudges.js";
 import { HomeSkeleton } from "../components/Skeleton.js";
 import { PinsWarning } from "../components/PinsWarning.js";
-import { excludedFromTotal, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { excludedFromTotal, pictureShown, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TagChip } from "../components/TagChip.js";
 import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon, colorClass } from "../lib/icons.js";
 import { Coins, ListTree, MapPin } from "lucide-react";
-import { HomeArt, vtName } from "../components/DrawerArt.js";
+import { HomeArt, PlacesArt, vtName, type ArtDrawer, type ArtPlace } from "../components/DrawerArt.js";
 import { useMorph } from "../lib/nav.js";
 import { PlacePicker } from "../components/PlacePicker.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
-import { addPlace, flatten, pathKey, placeOfView, savePlaceTree, usePlaceTree, type PlacePath } from "../lib/places.js";
+import { addPlace, flatten, pathKey, placeOfView, savePlaceTree, usePlaceTree, type PlaceNode, type PlacePath } from "../lib/places.js";
 import { quantityLabel } from "../lib/format.js";
 import { lineBalance as balanceOf } from "../lib/drawers.js";
 import { searchDrawers } from "../lib/search.js";
@@ -226,11 +226,23 @@ export function HomeScreen() {
     });
   };
   // PETTY-250: the home with the drawers of this view around it, as on the landing page — beside the total
-  // when there is one; each bubble opens its drawer, the home clears a picked place
-  const homeArt = (
-    <HomeArt drawers={visibleIds.map((id) => { const v = state.drawers.get(id); return { id, icon: drawerIcon(v), name: v?.doc?.name ?? "…", color: v?.doc ? colorOf(v.doc) : null }; })}
-      onDrawer={(id) => morph(`/drawers/${id}`, `.drawer-art [data-vt="${vtName("d", id)}"]`)}
-      onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")} />
+  // when there is one; each bubble opens its drawer, the home clears a picked place.
+  // PETTY-257: with places, the picture is the place tree under the total instead; off in Settings, no picture.
+  const artDrawer = (id: string): ArtDrawer => { const v = state.drawers.get(id); return { id, icon: drawerIcon(v), name: v?.doc?.name ?? "…", color: v?.doc ? colorOf(v.doc) : null }; };
+  const openDrawer = (id: string) => morph(`/drawers/${id}`, `.drawer-art [data-vt="${vtName("d", id)}"]`);
+  const artPlaces = (nodes: readonly PlaceNode[], prefix: readonly string[]): ArtPlace[] => nodes.flatMap((n) => {
+    const path = [...prefix, foldText(n.name)];
+    if (!state.order.some((id) => startsWith(paths.get(id)!, path))) return []; // a place with no drawer under it is not drawn
+    const here = state.order.filter((id) => paths.get(id)!.length === path.length && startsWith(paths.get(id)!, path));
+    return [{ path, name: n.name, places: artPlaces(n.children, path), drawers: here.map(artDrawer) }];
+  });
+  const treeArt = showPlaces && labels.size > 0;
+  const homeArt = !pictureShown(pinsDoc) ? null : treeArt ? (
+    <PlacesArt root={{ path: [], name: t("home.tags.all"), places: artPlaces(tree, []), drawers: untagged.map(artDrawer) }} selected={selected}
+      onPick={(p) => setPicked([...p])} onDrawer={openDrawer}
+      backName={(to) => (to.path.length ? t("home.picture.back", { place: to.name }) : t("home.picture.backAll"))} />
+  ) : (
+    <HomeArt drawers={visibleIds.map(artDrawer)} onDrawer={openDrawer} onHome={filtering ? () => setPicked([]) : undefined} homeName={t("home.tags.all")} />
   );
   const result = searchDrawers(visibleIds.map((id) => state.drawers.get(id)).filter((v): v is DrawerView => !!v), searching ? debounced : "");
   const active = searching && debounced.trim() !== "";
@@ -260,7 +272,7 @@ export function HomeScreen() {
         {state.status === "ready" && state.order.length === 0 ? <div className="empty" data-testid="home-empty">{t("home.empty")}<br />{t("home.emptyHint")}</div> : null}
         {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}
         {totalCard ? (
-          <section className="total-card" data-testid="home-totals">
+          <section className={`total-card${homeArt && treeArt ? " tree" : ""}`} data-testid="home-totals">
             <div className="tmain">
               <h2 className="label">{filtering ? t("home.totalsIn", { tag: selectedLabels }) : t("home.totals")}</h2>
               {tot.byCurrency.length ? (
@@ -279,7 +291,7 @@ export function HomeScreen() {
           </section>
         ) : null}
         {/* no total to show (no money yet, or totals switched off): the picture stands on its own */}
-        {!totalCard && state.status === "ready" && !active && visibleIds.length > 0 ? <section className="home-picture">{homeArt}</section> : null}
+        {!totalCard && homeArt && state.status === "ready" && !active && visibleIds.length > 0 ? <section className={`home-picture${treeArt ? " tree" : ""}`}>{homeArt}</section> : null}
         {active || state.status !== "ready" ? null : <Nudges />}
         {state.status === "ready" && !active && showPlaces && labels.size > 0 ? (
           <div className="tag-bar" role="group" aria-label={t("home.tags.label")} data-testid="tag-bar">

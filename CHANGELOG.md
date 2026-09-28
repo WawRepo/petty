@@ -6,9 +6,17 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- With places, the Home picture shows them: your places on a ring round the home, and what is in each
+  place in small bubbles round it. Tapping a place shows only its drawers, as its chip does, and the
+  picture goes one level down; the middle, or a small bubble in the corner, goes back up. Settings →
+  Home screen → "Show the picture" turns the picture off.
+- Settings has a theme choice: the same as this device, light or dark. It is kept on this device.
+
 ### Fixed
 - German, Spanish, French and Polish, checked string by string, the emails too: wrong meanings, grammar
   and plural forms, and one word for each thing everywhere (in Polish, 140 of 960 texts changed).
+- Landing page: on screens 1280 px and wider, the top part stood to the left of the middle.
 
 ## [1.5.0] — 2026-09-28
 

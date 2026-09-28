@@ -15,6 +15,7 @@ const Pin = z.object({ ecdh: z.string(), ecdsa: z.string(), sig_key_id: z.string
 // `excluded_from_total` (PETTY-38): drawers this person does not count in the home TOTAL —
 // optional, so documents written before it existed still parse. Older builds ignore it.
 // `hide_places` (PETTY-59): this person wants a plain list on the home screen, no place chips or groups.
+// `hide_picture` (PETTY-257): no picture on the home screen, only the total and the list.
 // `places` (PETTY-66): this person's tree of places; each node's path of names is what a drawer stores.
 // `line_tags` (PETTY-152): this person's tag list for items, across all drawers; merged on read with the tags found on drawers.
 interface PlaceNodeT { readonly name: string; readonly children: readonly PlaceNodeT[] }
@@ -24,7 +25,7 @@ interface PlaceNodeT { readonly name: string; readonly children: readonly PlaceN
 const TrustedToken = z.object({ id: z.string(), pub_fp: z.string(), scope: z.array(z.string()).nullable(), expires_at: z.string().nullable() });
 export type TrustedToken = z.infer<typeof TrustedToken>;
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional() });
+const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
 
@@ -146,6 +147,14 @@ export async function setVerificationShown(shown: boolean): Promise<void> {
 export function totalsShown(doc: UserDocT = state.doc): boolean { return !doc.hide_totals; }
 export async function setTotalsShown(shown: boolean): Promise<void> {
   const mutate = (doc: UserDocT): UserDocT => { const next = { ...doc }; if (shown) delete next.hide_totals; else next.hide_totals = true; return next; };
+  set({ ...state, doc: mutate(state.doc) });
+  try { await save(mutate); } catch (e) { await loadPins().catch(() => undefined); throw e; }
+}
+
+/** The home picture (PETTY-257): the home with the places and drawers round it. On unless switched off. */
+export function pictureShown(doc: UserDocT = state.doc): boolean { return !doc.hide_picture; }
+export async function setPictureShown(shown: boolean): Promise<void> {
+  const mutate = (doc: UserDocT): UserDocT => { const next = { ...doc }; if (shown) delete next.hide_picture; else next.hide_picture = true; return next; };
   set({ ...state, doc: mutate(state.doc) });
   try { await save(mutate); } catch (e) { await loadPins().catch(() => undefined); throw e; }
 }

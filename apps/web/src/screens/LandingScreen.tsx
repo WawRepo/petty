@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { appVersion, contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
 import { SOURCE_URL } from "../lib/links.js";
+import { useTheme } from "../lib/theme.js";
 
 
 /**
@@ -62,10 +63,7 @@ export function LandingScreen() {
       <section className="shots" role="region" aria-label={t("landing.shotsTitle")}>
         {shots.map((s, i) => (
           <button type="button" key={s.light} className="shot-btn" onClick={() => setBig(i)} aria-label={t("landing.shotOpen", { name: s.alt })}>
-            <picture>
-              <source media="(prefers-color-scheme: dark)" srcSet={s.dark} />
-              <img src={s.light} alt={s.alt} className="shot" loading="lazy" width="320" height="591" />
-            </picture>
+            <Shot shot={s} className="shot" lazy />
           </button>
         ))}
       </section>
@@ -137,6 +135,17 @@ export function LandingScreen() {
 }
 
 /** One capture at full size: Escape or the backdrop closes, ← → step through the five. Focus lands on Close and returns to the page after. */
+/** A capture in the palette on screen (PETTY-259): the device's, or the theme chosen in Settings. */
+function Shot({ shot, className, lazy = false }: { shot: { light: string; dark: string; alt: string }; className: string; lazy?: boolean }) {
+  const { theme, resolved } = useTheme();
+  return (
+    <picture>
+      {theme === "system" ? <source media="(prefers-color-scheme: dark)" srcSet={shot.dark} /> : null}
+      <img src={theme !== "system" && resolved === "dark" ? shot.dark : shot.light} alt={shot.alt} className={className} loading={lazy ? "lazy" : undefined} width="320" height="591" />
+    </picture>
+  );
+}
+
 function ShotOverlay({ shot, index, count, onClose, onStep }: { shot: { light: string; dark: string; alt: string }; index: number; count: number; onClose: () => void; onStep: (d: -1 | 1) => void }) {
   const { t } = useTranslation();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -151,10 +160,7 @@ function ShotOverlay({ shot, index, count, onClose, onStep }: { shot: { light: s
   return createPortal(
     <div className="shot-overlay" role="dialog" aria-modal="true" aria-label={shot.alt} onClick={onClose} data-testid="shot-overlay">
       <div className="shot-overlay-body" onClick={(e) => e.stopPropagation()}>
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcSet={shot.dark} />
-          <img src={shot.light} alt={shot.alt} className="shot-big" width="320" height="591" />
-        </picture>
+        <Shot shot={shot} className="shot-big" />
         <p className="shot-caption">{shot.alt} · {index + 1}/{count}</p>
         <div className="shot-controls">
           <Button variant="secondary" onClick={() => onStep(-1)} aria-label={t("landing.shotPrev")}>‹</Button>

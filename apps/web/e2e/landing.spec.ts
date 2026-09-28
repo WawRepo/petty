@@ -202,3 +202,13 @@ test("the demo passes axe (WCAG 2.1 AA)", async ({ page }) => {
   const r = await new AxeBuilder({ page }).include('[data-testid="use-cases"]').withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 });
+
+test("the hero stands in the middle of wide screens too (PETTY-260)", async ({ page }) => {
+  for (const width of [1100, 1280, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const hero = await page.locator(".landing-hero").boundingBox();
+    const middle = await page.evaluate(() => document.documentElement.clientWidth / 2);
+    expect(Math.abs(hero!.x + hero!.width / 2 - middle), `${width} px`).toBeLessThan(2);
+  }
+});

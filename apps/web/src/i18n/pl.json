@@ -194,7 +194,11 @@
       "bad_document": "Dokument szuflady jest nieprawidłowy.",
       "unknown_schema": "Tę szufladę zapisała nowsza wersja Petty."
     },
-    "otherDrawers": "{count, plural, one {Inna szuflada} few {Inne szuflady} many {Inne szuflady} other {Inne szuflady}}"
+    "otherDrawers": "{count, plural, one {Inna szuflada} few {Inne szuflady} many {Inne szuflady} other {Inne szuflady}}",
+    "picture": {
+      "back": "Wróć do: {place}",
+      "backAll": "Wróć do wszystkich szuflad"
+    }
   },
   "settings": {
     "title": "Ustawienia",
@@ -205,9 +209,17 @@
       "verification": "Pokazuj weryfikację",
       "verificationHint": "Pasek „Potwierdź stan” w szufladach, jego historia i odznaki weryfikacji. Wyłącz, jeśli nie liczysz i nie potwierdzasz.",
       "totals": "Pokazuj sumy",
-      "totalsHint": "Karta „Łączna wartość” i sumy częściowe na ekranie głównym, karta sum i etykiety „w sumie” w szufladzie. Wyłącz, aby widzieć tylko, co jest w każdej szufladzie i pozycji."
+      "totalsHint": "Karta „Łączna wartość” i sumy częściowe na ekranie głównym, karta sum i etykiety „w sumie” w szufladzie. Wyłącz, aby widzieć tylko, co jest w każdej szufladzie i pozycji.",
+      "picture": "Pokazuj obrazek",
+      "pictureHint": "Dom z miejscami i szufladami wokół niego, na ekranie głównym. Dotknij miejsca, aby zobaczyć tylko jego szuflady."
     },
     "language": "Język",
+    "theme": {
+      "label": "Motyw",
+      "system": "Jak na tym urządzeniu",
+      "light": "Jasny",
+      "dark": "Ciemny"
+    },
     "account": "Konto",
     "signedInAs": "Zalogowano jako {email}",
     "safetyNumber": "Twój numer bezpieczeństwa",
@@ -1021,7 +1033,7 @@
     "beta": "Masz zaproszenie? Zaloguj się powyżej.",
     "shotsTitle": "Zrzuty ekranu",
     "shots": {
-      "home": "Ekran główny: suma i szuflady pogrupowane według miejsc",
+      "home": "Ekran główny: suma, miejsca na obrazku i szuflady pogrupowane według miejsc",
       "drawer": "Szuflada: dwie sumy, tagi i pozycje z ikonami",
       "items": "Szuflada z rzeczami: narzędzia liczone na sztuki, klucze i latarka jako pojedyncze przedmioty",
       "entry": "Zapis wypłaty na klawiaturze",
@@ -1076,7 +1088,7 @@
       },
       "places": {
         "q": "Czy mogę pogrupować szuflady po pokojach?",
-        "a": "Tak. Miejsca to drzewo — dom › kuchnia › półka — a każda szuflada jest w jednym z nich. Ekran główny grupuje szuflady według pokoi, a miejsce można przeciągnąć do innego pokoju; szuflady pójdą za nim."
+        "a": "Tak. Miejsca to drzewo — dom › kuchnia › półka — a każda szuflada jest w jednym z nich. Ekran główny grupuje szuflady według pokoi i rysuje miejsca wokół domu: dotknij jednego, aby zobaczyć tylko jego szuflady. Przeciągnij miejsce do innego pokoju, a jego szuflady pójdą za nim."
       },
       "lost": {
         "q": "Co, jeśli stracę klucz dostępu lub zapomnę hasła sejfu?",

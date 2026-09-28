@@ -4,6 +4,9 @@ import { i18nReady } from "./i18n/index.js";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import { App } from "./App.js";
+import { applyTheme } from "./lib/theme.js";
+
+applyTheme(); // PETTY-259: a forced theme is on <html> before the first render
 
 /**
  * Trusted Types (CSP `require-trusted-types-for 'script'`): DOM sinks that take

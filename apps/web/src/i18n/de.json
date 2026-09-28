@@ -194,7 +194,11 @@
       "bad_document": "Das Dokument der Schublade ist ungültig.",
       "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty geschrieben."
     },
-    "otherDrawers": "{count, plural, one {Weitere Schublade} other {Weitere Schubladen}}"
+    "otherDrawers": "{count, plural, one {Weitere Schublade} other {Weitere Schubladen}}",
+    "picture": {
+      "back": "Zurück zu {place}",
+      "backAll": "Zurück zu allen Schubladen"
+    }
   },
   "settings": {
     "title": "Einstellungen",
@@ -205,9 +209,17 @@
       "verification": "Bestätigungen anzeigen",
       "verificationHint": "Die Leiste „Bestand bestätigen“ in Schubladen, ihr Verlauf und die „Bestätigt“-Abzeichen. Schalte das aus, wenn du nie zählst und bestätigst.",
       "totals": "Summen anzeigen",
-      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die „In der Summe“-Chips in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und jeder Posten enthält."
+      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die „In der Summe“-Chips in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und jeder Posten enthält.",
+      "picture": "Bild anzeigen",
+      "pictureHint": "Das Zuhause mit deinen Orten und Schubladen drumherum, auf dem Startbildschirm. Tippe auf einen Ort, um nur seine Schubladen zu sehen."
     },
     "language": "Sprache",
+    "theme": {
+      "label": "Design",
+      "system": "Wie auf diesem Gerät",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
     "account": "Konto",
     "signedInAs": "Angemeldet als {email}",
     "safetyNumber": "Deine Sicherheitsnummer",
@@ -1021,7 +1033,7 @@
     "beta": "Du hast eine Einladung? Melde dich oben an.",
     "shotsTitle": "Screenshots",
     "shots": {
-      "home": "Startbildschirm: die Summe und die Schubladen, nach Ort gruppiert",
+      "home": "Startbildschirm: die Summe, die Orte als Bild und die Schubladen, nach Ort gruppiert",
       "drawer": "Eine Schublade: zwei Summen, Tags und Posten mit Symbolen",
       "items": "Eine Schublade mit Dingen: Werkzeug nach Stück gezählt, Schlüssel und eine Taschenlampe als Einzelstücke",
       "entry": "Eine Entnahme über das Ziffernfeld erfassen",
@@ -1076,7 +1088,7 @@
       },
       "places": {
         "q": "Kann ich Schubladen nach Zimmer gruppieren?",
-        "a": "Ja. Orte bilden einen Baum – Haus › Küche › Regal –, und jede Schublade gehört zu genau einem davon. Der Startbildschirm gruppiert nach Zimmer, und du kannst einen Ort in ein anderes Zimmer ziehen; seine Schubladen ziehen mit."
+        "a": "Ja. Orte bilden einen Baum – Haus › Küche › Regal –, und jede Schublade gehört zu genau einem davon. Der Startbildschirm gruppiert nach Zimmer und zeigt deine Orte rund um das Zuhause: Tippe auf einen, um nur seine Schubladen zu sehen. Ziehst du einen Ort in ein anderes Zimmer, ziehen seine Schubladen mit."
       },
       "lost": {
         "q": "Was, wenn ich meinen Passkey verliere oder die Passphrase vergesse?",

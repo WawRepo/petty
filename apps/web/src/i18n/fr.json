@@ -194,7 +194,11 @@
       "bad_document": "Le document du tiroir n’est pas valide.",
       "unknown_schema": "Ce tiroir a été écrit par une version plus récente de Petty."
     },
-    "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}"
+    "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}",
+    "picture": {
+      "back": "Retour à {place}",
+      "backAll": "Retour à tous les tiroirs"
+    }
   },
   "settings": {
     "title": "Réglages",
@@ -205,9 +209,17 @@
       "verification": "Afficher les confirmations",
       "verificationHint": "La barre « Confirmer l’état » des tiroirs, son historique et les badges de confirmation. Désactivez l’option si vous ne comptez et ne confirmez jamais.",
       "totals": "Afficher les totaux",
-      "totalsHint": "La carte « Valeur totale » et les sous-totaux de l’écran d’accueil, la carte des totaux et les pastilles « dans le total » d’un tiroir. Désactivez l’option pour ne voir que ce que contient chaque tiroir et chaque ligne."
+      "totalsHint": "La carte « Valeur totale » et les sous-totaux de l’écran d’accueil, la carte des totaux et les pastilles « dans le total » d’un tiroir. Désactivez l’option pour ne voir que ce que contient chaque tiroir et chaque ligne.",
+      "picture": "Afficher l’illustration",
+      "pictureHint": "La maison avec vos lieux et vos tiroirs autour, sur l’écran d’accueil. Touchez un lieu pour ne voir que ses tiroirs."
     },
     "language": "Langue",
+    "theme": {
+      "label": "Thème",
+      "system": "Selon l’appareil",
+      "light": "Clair",
+      "dark": "Sombre"
+    },
     "account": "Compte",
     "signedInAs": "Connecté en tant que {email}",
     "safetyNumber": "Votre numéro de sécurité",
@@ -1021,7 +1033,7 @@
     "beta": "Vous avez une invitation ? Connectez-vous ci-dessus.",
     "shotsTitle": "Captures d’écran",
     "shots": {
-      "home": "Écran d’accueil : le total, et les tiroirs regroupés par lieu",
+      "home": "Écran d’accueil : le total, les lieux en illustration et les tiroirs regroupés par lieu",
       "drawer": "Un tiroir : deux totaux, des étiquettes et des lignes avec icônes",
       "items": "Un tiroir d’objets : des outils comptés à la pièce, des clés et une lampe de poche en objets uniques",
       "entry": "Saisie d’un retrait sur le pavé numérique",
@@ -1076,7 +1088,7 @@
       },
       "places": {
         "q": "Puis-je regrouper les tiroirs par pièce ?",
-        "a": "Oui. Les lieux forment un arbre — maison › cuisine › étagère — et chaque tiroir se trouve dans l’un d’eux. L’écran d’accueil regroupe par pièce, et vous pouvez faire glisser un lieu dans une autre pièce ; ses tiroirs suivent."
+        "a": "Oui. Les lieux forment un arbre — maison › cuisine › étagère — et chaque tiroir se trouve dans l’un d’eux. L’écran d’accueil regroupe les tiroirs par pièce et dessine vos lieux autour de la maison : touchez-en un pour ne voir que ses tiroirs. Faites glisser un lieu dans une autre pièce ; ses tiroirs suivent."
       },
       "lost": {
         "q": "Et si je perds ma clé d’accès ou oublie la phrase secrète ?",

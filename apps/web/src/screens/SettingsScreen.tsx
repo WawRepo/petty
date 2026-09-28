@@ -7,6 +7,7 @@ import { TopBar } from "../components/TopBar.js";
 import { TagManager } from "../components/TagManager.js";
 import { useToast } from "../components/Toast.js";
 import { LanguagePicker } from "../components/LanguagePicker.js";
+import { ThemePicker } from "../components/ThemePicker.js";
 import { lockNow, mySafetyNumber, signOut, useAuth } from "../lib/session.js";
 import { api } from "../lib/api.js";
 import { BackupSection } from "../components/BackupSection.js";
@@ -26,7 +27,7 @@ import { updateVault } from "../lib/session.js";
 import { type FormEvent } from "react";
 import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
 import { promptInstall, useInstallState } from "../lib/install.js";
-import { placesShown, setPlacesShown, setTotalsShown, setVerificationShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { pictureShown, placesShown, setPictureShown, setPlacesShown, setTotalsShown, setVerificationShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { appVersion, isClerk } from "../lib/authConfig.js";
 
 export function SettingsScreen() {
@@ -172,12 +173,14 @@ export function SettingsScreen() {
         <section className="card">
           {/* PETTY-249: the choice is also stored on the account, so emails come in this language */}
           <LanguagePicker testId="settings-language" onPick={(l) => { void api("PATCH", "/me", { locale: l }).then(() => updateMe({ locale: l })).catch(() => undefined); }} />
+          <ThemePicker testId="settings-theme" />
         </section>
         <section className="card" data-testid="home-section">
           <h2 className="h-card">{t("settings.home.title")}</h2>
           <SwitchRow label={t("settings.home.places")} hint={t("settings.home.placesHint")} checked={showPlaces} onChange={(v) => { void setPlacesShown(v); }} testId="places-switch" />
           <SwitchRow className="mt8" label={t("settings.home.verification")} hint={t("settings.home.verificationHint")} checked={showVerification} onChange={(v) => { void setVerificationShown(v); }} testId="verification-switch" />
           <SwitchRow className="mt8" label={t("settings.home.totals")} hint={t("settings.home.totalsHint")} checked={showTotals} onChange={(v) => { void setTotalsShown(v); }} testId="totals-switch" />
+          <SwitchRow className="mt8" label={t("settings.home.picture")} hint={t("settings.home.pictureHint")} checked={pictureShown(pinsDoc)} onChange={(v) => { void setPictureShown(v); }} testId="picture-switch" />
           <p className="hint my6">{t("places.manageHint")}</p>
           <Button variant="secondary" onClick={() => nav("/places")} data-testid="manage-places">{t("places.manage")}</Button>
           <p className="hint my6">{t("drawer.tagsManageHint")}</p>
