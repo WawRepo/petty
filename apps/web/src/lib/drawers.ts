@@ -6,6 +6,7 @@
  * (SPEC-ISSUES B4).
  */
 import { useSyncExternalStore } from "react";
+import { resetHomePlace } from "./homePlace.js";
 import {
   delegationCovers, fromB64, importEcdsaPublic, openDocument, verifyDelegation, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
   createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
@@ -100,6 +101,7 @@ const deleted = new Map<string, number>();
 /** Drops every decrypted document, key handle and photo URL from memory (lock, sign-out). */
 export function resetDrawers(): void {
   for (const v of state.drawers.values()) if (v.photo) URL.revokeObjectURL(v.photo);
+  resetHomePlace();
   created.clear();
   deleted.clear();
   set({ status: "idle", drawers: new Map(), order: [], invitations: [], transfers: [], fromCache: false, outboxOldest: null, outboxCount: 0 });

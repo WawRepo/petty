@@ -431,7 +431,8 @@
       "restore": "Restore",
       "restoreNamed": "Restore the version from {when}",
       "restored": "Earlier version restored."
-    }
+    },
+    "trail": "Where this drawer is"
   },
   "line": {
     "noText": "No text yet.",
@@ -1034,7 +1035,7 @@
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Home screen: the total, the places as a picture, and the drawers grouped by place",
-      "drawer": "A drawer: two totals, tags, and lines with icons",
+      "drawer": "A drawer: where it is, its lines as a picture, two totals, and tags",
       "items": "A drawer of things: tools counted by the piece, keys and a torch as single items",
       "entry": "Recording a withdrawal on the keypad",
       "places": "Places: rooms, shelves and boxes as a tree you can drag"

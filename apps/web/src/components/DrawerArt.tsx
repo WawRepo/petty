@@ -84,16 +84,22 @@ function Hit({ name, vt, up = false, onClick, onEnter }: { name: string; vt?: st
   );
 }
 
-function Bubble({ cls, style, vt, name, up, onClick, onEnter, children }: {
-  cls: string; style: CSSProperties; vt?: string; name?: string; up?: boolean; onClick?: () => void; onEnter?: () => void; children: ReactNode;
+/** Where a bubble's name sits: on the side away from the middle; at the left and right of a full ring, beside it. */
+type Side = "above" | "below" | "left" | "right";
+
+function Bubble({ cls, style, vt, name, up, label, onClick, onEnter, children }: {
+  cls: string; style: CSSProperties; vt?: string; name?: string; up?: boolean; label?: { text: string; side: Side };
+  onClick?: () => void; onEnter?: () => void; children: ReactNode;
 }) {
   return (
     <span className={`uc-bub sat ${cls}`} style={style} aria-hidden="true">
       <span className="uc-bub-float">
-        <span className={`uc-bub-disc${onClick ? " clickable" : ""}`}>
+        {/* data-vt: a morph back to this screen finds the bubble it shrinks into (useMorphBack) */}
+        <span className={`uc-bub-disc${onClick ? " clickable" : ""}`} data-vt={vt}>
           {children}
           {onClick ? <Hit name={name ?? ""} vt={vt} up={up ?? false} onClick={onClick} onEnter={onEnter} /> : null}
         </span>
+        {label ? <span className={`uc-bub-name ${label.side}`}>{label.text}</span> : null}
       </span>
     </span>
   );
@@ -128,16 +134,23 @@ export function DrawerArt({ drawerId, lines, center, icon, color, centerName, on
   onCenter: () => void; onLine: (line: Line) => void; testId?: string;
 }) {
   const ring = useRing(lines.length);
-  const geo = { rot: ring.rot, rx: 30, ry: 33, wobble: ring.slots >= 4 ? 0.08 : 0 };
+  // PETTY-269: every line shows its name, so the ring is flatter and wider, with room above and below it
+  const geo = { rot: ring.rot, rx: 32, ry: 25, wobble: ring.slots >= 4 ? 0.08 : 0 };
+  const side = (slot: number): Side => {
+    const a = ((geo.rot + (360 / ring.slots) * slot) * Math.PI) / 180;
+    if (Math.sin(a) < -0.5) return "above";
+    if (Math.sin(a) > 0.5 || ring.slots < 5) return "below";
+    return Math.cos(a) > 0 ? "right" : "left";
+  };
   const vt = vtName("d", drawerId);
   return (
-    <div className={`uc-art app-art drawer-art ${colorClass(color)}`} data-testid={testId} data-count={lines.length}>
+    <div className={`uc-art app-art drawer-art named ${colorClass(color)}`} data-testid={testId} data-count={lines.length}>
       <span className="uc-halo" aria-hidden="true" />
       {lines.map((l, i) => <span key={l.id} className={`uc-spoke${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} aria-hidden="true" />)}
       {ring.hidden ? <span key={ring.moreKey} className="uc-spoke" style={orbit(geo, ring.slots, ring.moreSlot)} aria-hidden="true" /> : null}
       {lines.map((l, i) => (
         <Bubble key={l.id} cls={`${KIND_CLASS[l.kind]}${ring.inRun(i) ? " off" : ""}`} style={orbit(geo, ring.slots, ring.slotOf(i))} vt={vtName("l", l.id)} name={l.name}
-          onClick={() => { if (!ring.settling()) onLine(l); }}>
+          label={{ text: l.name, side: side(ring.slotOf(i)) }} onClick={() => { if (!ring.settling()) onLine(l); }}>
           <PIcon name={lineIcon(l)} />
         </Bubble>
       ))}
@@ -249,7 +262,7 @@ export function placesLayout(view: ArtPlace, trail: readonly ArtPlace[], w: numb
     const key = it ? itemKey(it) : moreKey;
     links.set(key, { x1: cx, y1: cy, x2: x, y2: y, style: "spoke" });
     if (!it) { spots.set(key, { kind: "more", x, y, size: 38 * s }); more.push({ key, n: hidden, place: null }); return; }
-    if ("d" in it) { spots.set(key, { kind: "drawer", x, y, size: 38 * s }); return; }
+    if ("d" in it) { spots.set(key, { kind: "drawer", x, y, size: 38 * s, label: sin < -0.3 ? "above" : "below" }); return; }
     // a place: its name on the side away from its small bubbles; at the left and right the fan turns up and the name goes below
     const side = Math.abs(sin) <= 0.3;
     spots.set(key, { kind: "place", x, y, size: 44 * s, label: side || sin < 0 ? "below" : "above" });
@@ -325,39 +338,39 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
     while (k && !L.spots.has(k)) k = L.fold.get(k) ?? parentOf.get(k);
     return L.spots.get(k ?? "") ?? L.spots.get(placeKey(view.path))!;
   };
-  const angles = useRef(new Map<string, number>());
-  const line = (key: string, l: Link | null, at: Spot) => {
-    const x1 = l ? l.x1 : at.x, y1 = l ? l.y1 : at.y, x2 = l ? l.x2 : at.x, y2 = l ? l.y2 : at.y;
-    let a = l ? (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI : angles.current.get(key) ?? 0;
-    const prev = angles.current.get(key);
-    if (prev !== undefined) a += 360 * Math.round((prev - a) / 360);
-    angles.current.set(key, a);
-    return <span key={`s${key}`} className={`pa-spoke ${l?.style ?? "spoke"}${l ? "" : " off"}`} style={{ left: x1, top: y1, width: Math.hypot(x2 - x1, y2 - y1), rotate: `${a}deg` }} />;
+  // Only transforms and opacity animate, so the browser moves layers without laying the page out again
+  // on every frame: a bubble is a point moved by translate, its disc scales from its old size (PaDisc),
+  // and the lines are redrawn where they belong, fading in once the bubbles have arrived.
+  const line = (key: string, l: Link) => {
+    const a = (Math.atan2(l.y2 - l.y1, l.x2 - l.x1) * 180) / Math.PI;
+    return <span key={`s${key}`} className={`pa-spoke ${l.style}`} style={{ transform: `translate(${l.x1}px, ${l.y1}px) rotate(${a}deg)`, width: Math.hypot(l.x2 - l.x1, l.y2 - l.y1) }} />;
   };
-  const box = (sp: Spot, shown: boolean): CSSProperties => {
-    const size = shown ? sp.size : Math.min(12, sp.size);
-    return { left: sp.x - size / 2, top: sp.y - size / 2, width: size, height: size, "--sz": `${size}px` } as CSSProperties;
-  };
+  const at = (sp: Spot): CSSProperties => ({ transform: `translate3d(${sp.x}px, ${sp.y}px, 0)` });
+  const sizeOf = (sp: Spot, shown: boolean) => (shown ? sp.size : Math.min(12, sp.size));
+  const label = (sp: Spot | undefined, size: number, text: string) =>
+    sp?.label ? <span className={`pa-label ${sp.label}`} style={{ "--off": `${size / 2 + 4}px` } as CSSProperties}>{text}</span> : null;
   const up = (sp: Spot) => sp.y < L.cy - 8;
   const parentPath = trail.length ? trail[trail.length - 1]! : null;
 
   return (
     <div className="places-art-wrap" ref={wrap}>
       <div className="places-art" aria-hidden="true" data-testid="places-art" data-view={view.path.join("/")} data-count={countIn(view)} style={{ width: L.w, height: L.h }}>
-        <span className="pa-halo" style={{ left: L.cx - L.rx * 1.2, top: L.cy - L.rx * 1.2, width: L.rx * 2.4, height: L.rx * 2.4 }} />
-        <span className="pa-orbit" style={{ left: L.cx - L.rx, top: L.cy - L.ry, width: L.rx * 2, height: L.ry * 2 }} />
-        {all.map((a) => line(a.key, L.links.get(a.key) ?? null, home(a.key)))}
-        {L.more.map((m) => line(m.key, L.links.get(m.key) ?? null, L.spots.get(m.key)!))}
+        <span className="pa-lines" key={`${viewKey}:${by}`}>
+          <span className="pa-halo" style={{ left: L.cx - L.rx * 1.2, top: L.cy - L.rx * 1.2, width: L.rx * 2.4, height: L.rx * 2.4 }} />
+          <span className="pa-orbit" style={{ left: L.cx - L.rx, top: L.cy - L.ry, width: L.rx * 2, height: L.ry * 2 }} />
+          {[...L.links].map(([k, l]) => line(k, l))}
+        </span>
         {all.map(({ key, item }) => {
-          const sp = L.spots.get(key), shown = !!sp, at = sp ?? home(key);
+          const sp = L.spots.get(key), shown = !!sp, where = sp ?? home(key), size = sizeOf(where, shown);
           if ("d" in item) {
-            const d = item.d;
+            const d = item.d, vt = vtName("d", d.id);
             return (
-              <span key={key} className={`pa-bub ${sp?.kind ?? "sat"} ${colorClass(d.color)}${shown ? "" : " off"}`} style={box(at, shown)} data-key={key}>
-                <span className="pa-disc">
+              <span key={key} className={`pa-bub ${sp?.kind ?? "sat"} ${colorClass(d.color)}${shown ? "" : " off"}`} style={at(where)} data-key={key}>
+                <PaDisc size={size} vt={vt}>
                   <PIcon name={d.icon} />
-                  {shown ? <Hit name={d.name} vt={vtName("d", d.id)} up={up(at)} onClick={() => onDrawer(d.id)} /> : null}
-                </span>
+                  {shown ? <Hit name={d.name} vt={vt} up={up(where)} onClick={() => onDrawer(d.id)} /> : null}
+                </PaDisc>
+                {label(sp, size, d.name)}
               </span>
             );
           }
@@ -365,27 +378,53 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
           const pick = kind === "center" ? (parentPath ? () => onPick(parentPath.path) : null) : () => onPick(p.path);
           const tip = kind === "center" ? (parentPath ? backName(parentPath) : "") : kind === "crumb" ? backName(p) : p.name;
           return (
-            <span key={key} className={`pa-bub ${kind}${shown ? "" : " off"}`} style={box(at, shown)} data-key={key}>
-              <span className="pa-disc">
+            <span key={key} className={`pa-bub ${kind}${shown ? "" : " off"}`} style={at(where)} data-key={key}>
+              <PaDisc size={size}>
                 {p.path.length ? <MapPin size={22} strokeWidth={1.8} aria-hidden="true" /> : <PIcon name="home" />}
-                {shown && pick ? <Hit name={tip} up={up(at)} onClick={pick} /> : null}
-              </span>
-              {sp?.label ? <span className={`pa-label ${sp.label}`}>{sp.text ?? p.name}</span> : null}
+                {shown && pick ? <Hit name={tip} up={up(where)} onClick={pick} /> : null}
+              </PaDisc>
+              {label(sp, size, sp?.text ?? p.name)}
             </span>
           );
         })}
         {L.more.map((m) => {
           const sp = L.spots.get(m.key)!;
           return (
-            <span key={m.key} className={`pa-bub ${sp.kind}`} style={box(sp, true)} data-key={m.key}>
-              <span className="pa-disc">
+            <span key={m.key} className={`pa-bub ${sp.kind}`} style={at(sp)} data-key={m.key}>
+              <PaDisc size={sp.size}>
                 <span className="pa-more">+{m.n}</span>
                 <Hit name="" up={up(sp)} onClick={m.place ? () => onPick(m.place!.path) : () => setTurn({ view: viewKey, by: by + 5 })} />
-              </span>
+              </PaDisc>
             </span>
           );
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * A bubble's disc, centred on its bubble. A new size is set at once and played as a scale from the old
+ * one (FLIP), so the disc grows or shrinks on the GPU and nothing is laid out again frame by frame.
+ * `vt`: the view-transition name a morph back to Home looks for (data-vt), not set as a style.
+ */
+function PaDisc({ size, vt, children }: { size: number; vt?: string; children: ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const was = useRef(size);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || was.current === size) return;
+    const from = was.current / size;
+    was.current = size;
+    el.style.transition = "none";
+    el.style.transform = `scale(${from})`;
+    void el.offsetWidth; // the old size is on screen before the transition starts
+    el.style.transition = "";
+    el.style.transform = "";
+  }, [size]);
+  return (
+    <span ref={ref} className="pa-disc" data-vt={vt} style={{ width: size, height: size, left: -size / 2, top: -size / 2, "--sz": `${size}px` } as CSSProperties}>
+      {children}
+    </span>
   );
 }

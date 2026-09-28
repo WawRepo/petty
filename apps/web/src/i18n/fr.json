@@ -431,7 +431,8 @@
       "restore": "Restaurer",
       "restoreNamed": "Restaurer la version du {when}",
       "restored": "Version précédente restaurée."
-    }
+    },
+    "trail": "Où se trouve ce tiroir"
   },
   "line": {
     "noText": "Pas encore de texte.",
@@ -1034,7 +1035,7 @@
     "shotsTitle": "Captures d’écran",
     "shots": {
       "home": "Écran d’accueil : le total, les lieux en illustration et les tiroirs regroupés par lieu",
-      "drawer": "Un tiroir : deux totaux, des étiquettes et des lignes avec icônes",
+      "drawer": "Un tiroir : où il se trouve, ses lignes en illustration, deux totaux et des étiquettes",
       "items": "Un tiroir d’objets : des outils comptés à la pièce, des clés et une lampe de poche en objets uniques",
       "entry": "Saisie d’un retrait sur le pavé numérique",
       "places": "Lieux : pièces, étagères et boîtes, en arbre à réorganiser par glisser-déposer"

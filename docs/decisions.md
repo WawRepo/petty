@@ -130,7 +130,10 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   (a house whose rooms all sit in "Home"). Every place and drawer keeps one bubble, and one out of view
   folds into its nearest bubble in view, so each change is one glide. Without places the picture stays the home beside
   the total. "Show the picture" (on by default) is in the encrypted user document, like the other Home
-  settings.
+  settings. The picked place outlives the screen in memory only — never in the URL or storage, since
+  place names are content — so Back from a drawer lands on its level (PETTY-269); a drawer's screen
+  shows the trail to its place, and Back plays the morph the other way. The pictures animate only
+  transform and opacity, so a move never lays the page out again frame by frame.
 - **Theme (PETTY-259, 2026-09-28).** Settings offers the device's own theme, light or dark. The choice
   is kept on the device, not on the account: a phone and a laptop may want different ones. A forced
   theme is a `data-theme` on `<html>` that picks the palette in `tokens.css`, so every colour still

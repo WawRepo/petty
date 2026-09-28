@@ -50,6 +50,8 @@ test("the pictures show each drawer's lines in their kinds' colours, and every b
   await expect(page.getByTestId("line-row").filter({ hasText: "Passport" }).locator(".tile")).toHaveClass(/k-notes/);
   await expect(page.getByTestId("drawer-art")).toHaveAttribute("data-count", "2");
   await expect(page.getByTestId("drawer-art").locator(".uc-bub.sat")).toHaveCount(2);
+  // PETTY-269: each line's name sits by its bubble
+  await expect(page.getByTestId("drawer-art").locator(".uc-bub-name")).toHaveText(["Groceries", "Passport"]);
   // the place: Kitchen sits in Home
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByTestId("drawer-tags").click();
@@ -86,6 +88,10 @@ test("the pictures show each drawer's lines in their kinds' colours, and every b
   await bubble(page, "drawer-art", "Screws").click();
   await expect(page.getByRole("heading", { name: "Screws" })).toBeVisible();
   await expect(page.getByTestId("line-balance")).toHaveText("6");
+  // PETTY-269: Back plays the other way — the line's bubble shrinks into its place in the drawer's picture
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible();
+  expect(await morphs(page)).toBe(3);
   // the drawer in the middle opens its options
   await page.goto(`/drawers/${kitchen}`);
   await page.getByTestId("drawer-art").locator(".uc-bub.center .uc-bub-hit").click();

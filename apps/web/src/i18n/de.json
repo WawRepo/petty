@@ -431,7 +431,8 @@
       "restore": "Wiederherstellen",
       "restoreNamed": "Version vom {when} wiederherstellen",
       "restored": "Frühere Version wiederhergestellt."
-    }
+    },
+    "trail": "Wo diese Schublade ist"
   },
   "line": {
     "noText": "Noch kein Text.",
@@ -1034,7 +1035,7 @@
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Startbildschirm: die Summe, die Orte als Bild und die Schubladen, nach Ort gruppiert",
-      "drawer": "Eine Schublade: zwei Summen, Tags und Posten mit Symbolen",
+      "drawer": "Eine Schublade: wo sie ist, ihre Posten als Bild, zwei Summen und Tags",
       "items": "Eine Schublade mit Dingen: Werkzeug nach Stück gezählt, Schlüssel und eine Taschenlampe als Einzelstücke",
       "entry": "Eine Entnahme über das Ziffernfeld erfassen",
       "places": "Orte: Zimmer, Regale und Kisten als Baum, den du per Ziehen ordnest"

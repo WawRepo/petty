@@ -23,6 +23,7 @@ import { PlacePicker } from "../components/PlacePicker.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
 import { addPlace, flatten, pathKey, placeOfView, savePlaceTree, usePlaceTree, type PlaceNode, type PlacePath } from "../lib/places.js";
+import { homePlace, setHomePlace } from "../lib/homePlace.js";
 import { quantityLabel } from "../lib/format.js";
 import { lineBalance as balanceOf } from "../lib/drawers.js";
 import { searchDrawers } from "../lib/search.js";
@@ -175,7 +176,9 @@ export function HomeScreen() {
   const tree = usePlaceTree();
   // Rooms and sub-places follow the order of the tree (PETTY-66), not the alphabet.
   const treeOrder = new Map(flatten(tree).map((f, i) => [f.key, i]));
-  const [picked, setPicked] = useState<string[]>([]);
+  // PETTY-269: the picked place outlives the screen (in memory), so Back from a drawer lands on its level
+  const [picked, setPickedHere] = useState<string[]>(() => [...homePlace()]);
+  const setPicked = (path: string[]) => { setHomePlace(path); setPickedHere(path); };
   const paths = new Map<string, readonly string[]>();  // drawer id -> folded path
   const labels = new Map<string, string>();            // folded segment -> display spelling (first wins)
   for (const id of state.order) {

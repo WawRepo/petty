@@ -6,6 +6,17 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Added
+- A drawer's screen shows where the drawer is — All › Flat › Kitchen — and a tap opens Home at that
+  level. Back from a drawer returns to the place it was opened from, and the drawer shrinks back into
+  its bubble; Back from a line shrinks it into its place in the drawer's picture.
+- Names by the bubbles: a drawer's lines in its picture, and the drawers on the Home picture's first
+  ring. A long name is cut short with "…".
+
+### Fixed
+- The Home picture's moves were not smooth: every frame laid the page out again (about 50 times per
+  move). The bubbles now glide on the GPU, and the page is laid out once per move.
+
 ## [1.5.1] — 2026-09-28
 
 ### Added

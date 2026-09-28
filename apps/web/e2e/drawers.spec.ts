@@ -242,8 +242,10 @@ test("two users edit the same drawer: a stale-version write is retried and both 
   ]);
   // Each click applies locally first, then posts (the loser of the race retries after a 409). Wait for both
   // local orders, then reload until both pages read the same server order — a reload that races the retry is stale, not wrong.
-  await expect.poll(() => lineNames(pageA)).not.toEqual(["Uno", "Dos", "Three"]);
-  await expect.poll(() => lineNames(pageB)).not.toEqual(["Uno", "Dos", "Three"]);
+  // (the drawer's list is back — on the line screen there is no list, which "not the old order" would also match)
+  const moved = (page: Page) => async () => { const n = await lineNames(page); return n.length === 3 && n.join() !== "Uno,Dos,Three"; };
+  await expect.poll(moved(pageA)).toBe(true);
+  await expect.poll(moved(pageB)).toBe(true);
   let a: string[] = [];
   await expect.poll(async () => {
     await pageA.reload(); await pageB.reload();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { useBack } from "../lib/nav.js";
+import { useMorphBack } from "../lib/nav.js";
 import { KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
 import { vtName } from "../components/DrawerArt.js";
 import { decimalSeparator, formatAmount, formatCount, negativeWarning, newEntryAmount, parseAmount, LedgerError, type LedgerEntry, type Line } from "@petty/ledger";
@@ -161,7 +161,9 @@ export function LineScreen() {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const { id = "", lineId = "" } = useParams();
-  const back = useBack(`/drawers/${id}`);
+  // PETTY-269: back to the drawer plays the other way — the line's bubble shrinks into its place in the drawer's picture
+  const morphBack = useMorphBack(`/drawers/${id}`);
+  const back = () => morphBack(vtName("l", lineId), `.drawer-art .uc-bub:not(.off) [data-vt="${vtName("l", lineId)}"]`);
   const state = useDrawers();
   const [op, setOp] = useState<Op | null>(null);
   const [picked, setPicked] = useState<LedgerEntry | null>(null);

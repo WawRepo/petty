@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { useBack, useMorph } from "../lib/nav.js";
+import { useMorph, useMorphBack } from "../lib/nav.js";
 import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent, staleness, LedgerError, type Line, type Verification, placeLabel, tagsOf, foldText, formatAmount, iconOf, colorOf, lineCounted, lineTagsOf, normalizeCurrencyCode, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { ConfirmStateSheet } from "../components/ConfirmStateSheet.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
@@ -11,7 +11,7 @@ import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { PromptSheet } from "../components/PromptSheet.js";
 import { Sheet } from "../components/Sheet.js";
-import { excludedFromTotal, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { excludedFromTotal, placesShown, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { ReadOnlyHint } from "../components/ReadOnlyHint.js";
@@ -26,7 +26,9 @@ import { DrawerArt, vtName } from "../components/DrawerArt.js";
 import { TagChip } from "../components/TagChip.js";
 import { Coins, Tags } from "lucide-react";
 import { PlacePicker } from "../components/PlacePicker.js";
-import { addPlace, savePlaceTree, usePlaceTree } from "../lib/places.js";
+import { addPlace, placeOfView, savePlaceTree, usePlaceTree } from "../lib/places.js";
+import { setHomePlace } from "../lib/homePlace.js";
+import { PlaceTrail } from "../components/PlaceTrail.js";
 import { processPhoto } from "../lib/photo.js";
 import { storageErrorKey } from "../lib/storage.js";
 import { ApiError } from "../lib/api.js";
@@ -135,7 +137,10 @@ function AddLineSheet({ open, onClose, view }: { open: boolean; onClose: () => v
 export function DrawerScreen() {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
-  const back = useBack("/");
+  // PETTY-269: back to Home plays the other way — this drawer's middle shrinks into its bubble there
+  const morphBack = useMorphBack("/");
+  const homeBubble = (d: string) => `.places-art .pa-bub:not(.off) > [data-vt="${d}"], .home-art .uc-bub:not(.off) [data-vt="${d}"]`;
+  const back = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)));
   const morph = useMorph();
   const toast = useToast();
   const { id = "" } = useParams();
@@ -323,6 +328,10 @@ export function DrawerScreen() {
         <OfflineBanner />
         <SyncReport />
         <section className="drawer-head" data-testid="drawer-head">
+          {/* PETTY-269: the way back to Home at the level of this drawer's place */}
+          {placesShown(pinsDoc) && placeOfView(view).length ? (
+            <PlaceTrail path={placeOfView(view)} onPick={(depth) => { setHomePlace(placeOfView(view).slice(0, depth).map(foldText)); back(); }} />
+          ) : null}
           {/* PETTY-250: the drawer's picture — its photo or icon in the middle, its lines around it in their kinds' colours */}
           {/* its bubbles are shortcuts: a line's opens the line (growing into its picture), the middle opens the options */}
           <DrawerArt drawerId={id} lines={lines} testId="drawer-art" color={colorOf(doc)} icon={view.photo ? null : iconOf(doc) ?? DEFAULT_DRAWER_ICON}

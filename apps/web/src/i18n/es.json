@@ -431,7 +431,8 @@
       "restore": "Restaurar",
       "restoreNamed": "Restaurar la versión del {when}",
       "restored": "Versión anterior restaurada."
-    }
+    },
+    "trail": "Dónde está este cajón"
   },
   "line": {
     "noText": "Sin texto.",
@@ -1034,7 +1035,7 @@
     "shotsTitle": "Capturas de pantalla",
     "shots": {
       "home": "Pantalla de inicio: el total, los lugares en un dibujo y los cajones agrupados por lugar",
-      "drawer": "Un cajón: dos totales, etiquetas y líneas con iconos",
+      "drawer": "Un cajón: dónde está, sus líneas en un dibujo, dos totales y etiquetas",
       "items": "Un cajón de cosas: herramientas contadas por unidades, y llaves y una linterna como objetos individuales",
       "entry": "Retirar dinero con el teclado numérico",
       "places": "Lugares: habitaciones, estantes y cajas en un árbol que puedes arrastrar"

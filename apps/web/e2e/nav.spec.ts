@@ -50,6 +50,7 @@ test("home nudges (PETTY-113): never more than one at a time, and it sits under 
   await page.getByRole("dialog").getByLabel("Name", { exact: true }).fill("Tin");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
   await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByTestId("drawer-row").filter({ hasText: "Tin" })).toBeVisible(); // Home is drawn again (Back plays a morph, PETTY-269)
   const order = await page.evaluate(() => {
     const all = Array.from(document.querySelectorAll('[data-testid="home-empty"], [data-testid="home-totals"], [data-testid="passkey-nudge"], [data-testid="drawer-row"]')).map((e) => e.getAttribute("data-testid"));
     return all;

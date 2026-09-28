@@ -524,6 +524,27 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .drawer-art .uc-bub.center { --uc-sz: min(17cqw, 78px); }
 .drawer-art .uc-bub .uc-bub-disc { width: var(--uc-sz); height: var(--uc-sz); border-radius: 50%; display: grid; place-items: center; }
 .drawer-art .uc-bub-photo { object-fit: cover; padding: 0; background-color: var(--card); }
+/* PETTY-269: each line's name in the drawer's picture, on the side away from the middle (beside it at the left and
+   right of a full ring); a long one ends in "…". The ring is flatter and the picture taller, to leave them room. */
+.drawer-art.named { height: clamp(176px, 46vw, 216px); }
+.uc-bub-name { position: absolute; left: 0; top: 0; z-index: 1; max-width: min(104px, 27cqw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+  font-size: 11px; font-weight: 600; line-height: 16px; padding: 0 6px; border-radius: 999px; color: var(--text); background: color-mix(in srgb, var(--card) 80%, transparent);
+  --off: calc(var(--uc-sz) / 2 + 3px); }
+.uc-bub-name.below { transform: translate(-50%, var(--off)); }
+.uc-bub-name.above { transform: translate(-50%, calc(-100% - var(--off))); }
+.uc-bub-name.right { transform: translate(var(--off), -50%); max-width: 13cqw; }
+.uc-bub-name.left { transform: translate(calc(-100% - var(--off)), -50%); max-width: 13cqw; }
+.app-art .uc-bub-name { animation: uc-name-in 0.4s ease both; animation-delay: calc(var(--i, 0) * 55ms + 260ms); }
+@keyframes uc-name-in { from { opacity: 0; } }
+/* PETTY-269: above a drawer's picture, the way back to Home at the level of its place */
+.place-trail { align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 0 4px; }
+.trail-pill { display: inline-flex; align-items: center; gap: 5px; max-width: 150px; height: 28px; padding: 0 10px 0 7px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; }
+.trail-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trail-pill svg { flex: none; width: 14px; height: 14px; color: var(--muted); }
+.trail-pill:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.trail-pill:focus-visible { outline: none; box-shadow: var(--focus); }
+.trail-sep { color: var(--muted); font-size: 13px; }
 .drawer-head .rowmain { align-items: center; text-align: center; }
 /* the home: the drawers of the view on one ring round the home, beside the total */
 .total-card { align-items: center; }
@@ -541,24 +562,26 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .total-card.tree { flex-direction: column; align-items: stretch; gap: 6px; }
 .home-picture.tree { display: block; }
 .places-art-wrap { width: 100%; display: flex; justify-content: center; }
-/* only the bubbles' buttons take the pointer: a folded bubble (see-through, over the one it folds into) must not catch a tap */
-.places-art { position: relative; flex: none; pointer-events: none; transition: height 0.6s var(--glide); }
-.pa-halo, .pa-orbit, .pa-spoke, .pa-bub { position: absolute; }
-.pa-halo { border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 15%, transparent), transparent); }
-.pa-orbit { border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 50%; pointer-events: none; }
-.pa-halo, .pa-orbit { transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), height 0.75s var(--glide); }
-.pa-spoke { height: 0; transform-origin: 0 0; border-top: 1.5px dashed color-mix(in srgb, var(--accent) 38%, transparent); pointer-events: none;
-  transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), rotate 0.75s var(--glide), opacity 0.4s ease; }
+/* only the bubbles' buttons take the pointer: a folded bubble (see-through, over the one it folds into) must not catch a tap.
+   Only transform and opacity animate (the GPU moves layers): a bubble is a point moved by translate, its disc
+   scales from its old size (PaDisc), and the height is set at once — an animated height would lay the list
+   below out again on every frame. The lines are redrawn where they belong and fade in once the bubbles land. */
+.places-art { position: relative; flex: none; pointer-events: none; }
+.pa-lines { position: absolute; inset: 0; animation: pa-lines-in 0.9s ease both; }
+@keyframes pa-lines-in { 0%, 60% { opacity: 0; } 100% { opacity: 1; } }
+.pa-halo, .pa-orbit, .pa-spoke { position: absolute; }
+.pa-halo { border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 15%, transparent), transparent); }
+.pa-orbit { border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 50%; }
+.pa-spoke { left: 0; top: 0; height: 0; transform-origin: 0 0; border-top: 1.5px dashed color-mix(in srgb, var(--accent) 38%, transparent); }
 .pa-spoke.thin { border-top: 1px dashed color-mix(in srgb, var(--text) 24%, transparent); }
 .pa-spoke.crumb { border-top: 1.5px dotted color-mix(in srgb, var(--text) 30%, transparent); }
-.pa-spoke.off { opacity: 0; }
-.pa-bub { z-index: 2; --kc: var(--accent); transition: left 0.75s var(--glide), top 0.75s var(--glide), width 0.75s var(--glide), height 0.75s var(--glide), opacity 0.45s ease; }
+.pa-bub { position: absolute; left: 0; top: 0; z-index: 2; --kc: var(--accent); will-change: transform; transition: transform 0.75s var(--glide), opacity 0.45s ease; }
 .pa-bub.off { opacity: 0; z-index: 1; }
+.pa-bub:is(.place, .drawer, .crumb) { z-index: 3; }
 .pa-bub.center { z-index: 4; }
-.pa-bub.crumb { z-index: 3; }
-.pa-disc { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center;
+.pa-disc { position: absolute; border-radius: 50%; display: grid; place-items: center; will-change: transform;
   background-color: color-mix(in srgb, var(--kc) 14%, var(--card)); color: var(--kc); border: 2px solid color-mix(in srgb, var(--kc) 36%, var(--card)); box-shadow: 0 3px 9px rgba(0,0,0,0.10);
-  transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease; }
+  transition: transform 0.75s var(--glide), scale 0.25s ease, background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease; }
 .pa-disc svg { width: 48%; height: 48%; }
 .pa-bub.center .pa-disc { background-color: var(--accent); color: var(--accent-text); border: 3px solid color-mix(in srgb, var(--accent) 55%, var(--card)); box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent); }
 .pa-bub.center .pa-disc svg { width: 44%; height: 44%; }
@@ -566,16 +589,23 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .pa-bub:is(.sub, .crumb, .sat, .more2) .pa-disc { border-width: 1.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
 .pa-bub:is(.more, .more2) .pa-disc { color: var(--muted); }
 .pa-more { font-size: calc(var(--sz) * 0.34); font-weight: 800; }
-.pa-label { position: absolute; left: 50%; z-index: 5; translate: -50% 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; font-weight: 700; line-height: 16px; padding: 1px 7px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); color: var(--text); pointer-events: none; }
-.pa-label.below { top: calc(100% + 4px); }
-.pa-label.above { bottom: calc(100% + 4px); }
+/* a name sits on its bubble's outer side, --off from the bubble's centre; a long one ends in … */
+.pa-label { position: absolute; left: 0; top: 0; max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; will-change: transform;
+  font-size: 11px; font-weight: 700; line-height: 16px; padding: 1px 7px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); color: var(--text); pointer-events: none;
+  transition: transform 0.75s var(--glide), opacity 0.4s ease; }
+.pa-label.below { transform: translate(-50%, var(--off)); }
+.pa-label.above { transform: translate(-50%, calc(-100% - var(--off))); }
+.pa-bub.drawer .pa-label { font-weight: 600; color: var(--muted); }
 .pa-bub.center .pa-label { font-size: 12px; padding: 2px 9px; background: var(--accent); color: var(--accent-text); border-color: transparent; }
 .pa-bub.off .uc-bub-hit { pointer-events: none; }
 .pa-disc:has(> .uc-bub-hit:hover) { scale: 1.08; }
 .pa-bub:has(.uc-bub-hit:hover) { z-index: 6; }
 /* reduced motion: the picture changes by fades only, nothing glides */
-@media (prefers-reduced-motion: reduce) { .places-art, .pa-halo, .pa-orbit, .pa-spoke, .pa-bub { transition-property: opacity; } .pa-disc:has(> .uc-bub-hit:hover) { scale: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pa-bub, .pa-disc, .pa-label { transition-property: opacity; }
+  .pa-lines { animation: none; }
+  .pa-disc:has(> .uc-bub-hit:hover) { scale: none; }
+}
 /* one dot per line on a drawer card, in the line's kind's colour */
 .kind-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; }
 .kind-dots .kd { width: 7px; height: 7px; border-radius: 2px; background: var(--muted); }
@@ -637,7 +667,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @keyframes app-in { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: none; } }
 @keyframes val-in { from { opacity: 0.15; translate: 0 5px; } to { opacity: 1; translate: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .app-art .uc-bub .uc-bub-disc, .app-art .uc-spoke, .enter > *, .val-in { animation: none; }
+  .app-art .uc-bub .uc-bub-disc, .app-art .uc-spoke, .app-art .uc-bub-name, .enter > *, .val-in { animation: none; }
 }
 
 /* Drawer screen after the mockup (PETTY-64). */

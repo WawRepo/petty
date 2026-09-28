@@ -431,7 +431,8 @@
       "restore": "Przywróć",
       "restoreNamed": "Przywróć wersję z {when}",
       "restored": "Przywrócono wcześniejszą wersję."
-    }
+    },
+    "trail": "Gdzie jest ta szuflada"
   },
   "line": {
     "noText": "Brak tekstu.",
@@ -1034,7 +1035,7 @@
     "shotsTitle": "Zrzuty ekranu",
     "shots": {
       "home": "Ekran główny: suma, miejsca na obrazku i szuflady pogrupowane według miejsc",
-      "drawer": "Szuflada: dwie sumy, tagi i pozycje z ikonami",
+      "drawer": "Szuflada: gdzie jest, jej pozycje na obrazku, dwie sumy i tagi",
       "items": "Szuflada z rzeczami: narzędzia liczone na sztuki, klucze i latarka jako pojedyncze przedmioty",
       "entry": "Zapis wypłaty na klawiaturze",
       "places": "Miejsca: pokoje, półki i pudełka jako drzewo do przeciągania"

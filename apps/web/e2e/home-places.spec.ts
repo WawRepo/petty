@@ -145,3 +145,42 @@ test("a level with only one place in it shows what is in that place, and the pla
   await expect(art(page).locator(".pa-bub.crumb")).toHaveCount(2);
   await expect.poll(() => shown(page, "drawer")).toEqual(["Cash tin"]);
 });
+
+test("the way back (PETTY-269): Back from a drawer lands on the place it was opened from, and its trail opens any level above", async ({ page }) => {
+  const user = await signupWithKeys("bck");
+  await loginAndUnlock(page, user);
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+  await makeDrawers(page, [["Cash tin", ["Flat", "Kitchen"]], ["Coin jar with a very long name for its label", ["Flat", "Kitchen"]], ["Shoe box", ["Flat", "Bedroom"]], ["Wallet", []]]);
+  await tap(page, "place", "Flat");
+  await tap(page, "place", "Kitchen");
+  await expect(art(page)).toHaveAttribute("data-view", "flat/kitchen");
+  // the drawers on the first ring carry their names; a long one is cut short
+  await expect(art(page).locator(".pa-bub.drawer:not(.off) .pa-label")).toHaveText(["Cash tin", "Coin jar with a very long name for its label"]);
+  const cut = art(page).locator(".pa-bub.drawer:not(.off) .pa-label").nth(1);
+  expect(await cut.evaluate((e) => e.scrollWidth > e.clientWidth && getComputedStyle(e).textOverflow === "ellipsis")).toBe(true);
+  // only transforms and opacity animate: nothing is laid out again frame by frame
+  expect(await art(page).locator(".pa-bub").first().evaluate((e) => getComputedStyle(e).transitionProperty)).toBe("transform, opacity");
+
+  // the drawer, and Back: the same level, not All
+  await tap(page, "drawer", "Cash tin");
+  await expect(page.getByRole("heading", { name: "Cash tin" })).toBeVisible();
+  const trail = page.getByTestId("place-trail");
+  await expect(trail.getByRole("button")).toHaveText(["All", "Flat", "Kitchen"]);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(art(page)).toHaveAttribute("data-view", "flat/kitchen");
+  await expect(page.getByTestId("tag-bar").getByRole("button", { name: /^Kitchen/ })).toHaveAttribute("aria-pressed", "true");
+
+  // the trail: one level up, or all the way to All
+  await tap(page, "drawer", "Cash tin");
+  await trail.getByRole("button", { name: "Flat", exact: true }).click();
+  await expect(art(page)).toHaveAttribute("data-view", "flat");
+  await tap(page, "place", "Kitchen");
+  await tap(page, "drawer", "Cash tin");
+  await trail.getByRole("button", { name: "All", exact: true }).click();
+  await expect(art(page)).toHaveAttribute("data-view", "");
+
+  // a drawer with no place has no trail
+  await tap(page, "drawer", "Wallet");
+  await expect(page.getByRole("heading", { name: "Wallet" })).toBeVisible();
+  await expect(page.getByTestId("place-trail")).toHaveCount(0);
+});
