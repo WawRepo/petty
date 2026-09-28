@@ -22,11 +22,13 @@ import { SCENES, UseCaseArt, caseIcon, finaleScene } from "./UseCaseArt.js";
  * feature the app lacks. Words come from the i18n dictionaries; amounts and currency codes are data,
  * and the examples use no local names or currency.
  *
- * Autoplay (WCAG 2.2.2): it plays by default, and a Pause button in the row stops it (and the
- * picture's gentle floating, which also stops off screen). It holds while a mouse is over the section,
- * while keyboard focus is in it (a mouse click's focus does not count, so a pick plays on), while the
- * demo is off screen or the tab is hidden. Picking an example jumps there and plays on from it. It
- * never starts under reduced motion, which also shows every change at once.
+ * Autoplay (WCAG 2.2.2): it plays by default, as soon as a little of the picture or the phone is in
+ * view (PETTY-251), and a Pause button in the row stops it (and the picture's gentle floating, which
+ * also stops off screen). It holds while a mouse is over the phone or the icon row — not anywhere over
+ * the wide section, where a resting pointer would hold it for good — while keyboard focus is in it (a
+ * mouse click's focus does not count, so a pick plays on), and while the tab is hidden. Picking an
+ * example jumps there and plays on from it. Under reduced motion it still plays, but nothing slides,
+ * pops or floats: things change place at once and the words and icons cross-fade (base.css).
  */
 
 type Kind = "money" | "things" | "notes";
@@ -132,7 +134,7 @@ export function UseCases() {
   const locale = i18n.language;
   const [reduced, setReduced] = useState(() => reducedQuery()?.matches ?? false);
   const [idx, setIdx] = useState(0);
-  const [playing, setPlaying] = useState(() => !(reducedQuery()?.matches ?? false));
+  const [playing, setPlaying] = useState(true);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
@@ -142,12 +144,13 @@ export function UseCases() {
   const sectionRef = useRef<HTMLElement>(null);
   const artRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
   const running = playing && !hover && !focus && onScreen && tabVisible;
 
   useEffect(() => {
     const q = reducedQuery();
     if (!q) return;
-    const on = () => { setReduced(q.matches); if (q.matches) { setPlaying(false); setSeen(true); } };
+    const on = () => { setReduced(q.matches); if (q.matches) setSeen(true); };
     q.addEventListener("change", on);
     return () => q.removeEventListener("change", on);
   }, []);
@@ -156,39 +159,43 @@ export function UseCases() {
     document.addEventListener("visibilitychange", on);
     return () => document.removeEventListener("visibilitychange", on);
   }, []);
-  // A mouse over the section, or keyboard focus in it, holds the autoplay. A finger's tap does not
-  // count as hover, so a phone never gets stuck paused.
+  // A mouse over the phone or the icon row holds the autoplay (someone reading or picking). A finger's
+  // tap does not count as hover, so a phone never gets stuck paused.
+  useEffect(() => {
+    const els = [stageRef.current, dockRef.current].filter((e): e is HTMLDivElement => !!e);
+    const over = new Set<EventTarget>();
+    const enter = (e: PointerEvent) => { if (e.pointerType === "mouse" && e.currentTarget) { over.add(e.currentTarget); setHover(true); } };
+    const leave = (e: PointerEvent) => { if (e.currentTarget) over.delete(e.currentTarget); setHover(over.size > 0); };
+    for (const el of els) { el.addEventListener("pointerenter", enter); el.addEventListener("pointerleave", leave); }
+    return () => { for (const el of els) { el.removeEventListener("pointerenter", enter); el.removeEventListener("pointerleave", leave); } };
+  }, []);
+  // Keyboard focus in the section holds it too; only focus a keyboard put there (:focus-visible), since
+  // a mouse click also focuses the button it hits.
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const enter = (e: PointerEvent) => { if (e.pointerType === "mouse") setHover(true); };
-    const leave = () => setHover(false);
-    // only focus a keyboard put there (:focus-visible) holds it: a mouse click also focuses the button
     const focusIn = (e: FocusEvent) => setFocus(keyboardFocus(e.target));
     const focusOut = (e: FocusEvent) => { if (!el.contains(e.relatedTarget as Node | null)) setFocus(false); };
-    el.addEventListener("pointerenter", enter);
-    el.addEventListener("pointerleave", leave);
     el.addEventListener("focusin", focusIn);
     el.addEventListener("focusout", focusOut);
     return () => {
-      el.removeEventListener("pointerenter", enter);
-      el.removeEventListener("pointerleave", leave);
       el.removeEventListener("focusin", focusIn);
       el.removeEventListener("focusout", focusOut);
     };
   }, []);
-  // The demo is on screen while its picture or its phone is at least half in view (on a phone the
-  // two are far apart, and either one alone is worth playing for).
+  // The demo is on screen while a little (15%) of its picture or its phone is in view: on a laptop the
+  // demo starts low on the first screen, and what can be seen should move (PETTY-251). On a phone the
+  // two are far apart, and either one alone is worth playing for.
   useEffect(() => {
     const els = [artRef.current, stageRef.current].filter((e): e is HTMLDivElement => !!e);
     if (typeof IntersectionObserver === "undefined") { setOnScreen(true); setSeen(true); return; }
     const inView = new Map<Element, boolean>();
     const io = new IntersectionObserver((entries) => {
-      for (const e of entries) inView.set(e.target, e.intersectionRatio >= 0.5);
+      for (const e of entries) inView.set(e.target, e.intersectionRatio >= 0.15);
       const visible = [...inView.values()].some(Boolean);
       setOnScreen(visible);
       if (visible) setSeen(true);
-    }, { threshold: [0, 0.5, 1] });
+    }, { threshold: [0, 0.15, 0.5, 1] });
     for (const el of els) io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -265,9 +272,9 @@ export function UseCases() {
 
       <UseCaseArt ref={artRef} scene={scene} sceneKey={step.key} seen={seen} />
 
-      <div className="uc-dock" role="group" aria-label={t("landing.uses.pick")} style={{ "--sel": idx } as CSSProperties}>
+      <div ref={dockRef} className="uc-dock" role="group" aria-label={t("landing.uses.pick")} style={{ "--sel": idx } as CSSProperties}>
         <span className="uc-dock-thumb" aria-hidden="true">
-          {running && !reduced ? (
+          {running ? (
             <svg key={idx} className="uc-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" pathLength={100} style={{ animationDuration: `${step.ms}ms` }} /></svg>
           ) : null}
         </span>

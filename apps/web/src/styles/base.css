@@ -489,12 +489,16 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @keyframes uc-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes uc-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-8px); } }
 @keyframes uc-ring { to { stroke-dashoffset: 0; } }
+/* Reduced motion (PETTY-251): the demo still plays, but nothing slides, pops or floats — things change
+   place at once, and words, icons and colours cross-fade. */
 @media (prefers-reduced-motion: reduce) {
-  .usecases .uc-line, .usecases .uc-bub, .usecases .uc-spoke, .usecases .uc-orbit, .usecases .uc-halo, .usecases .uc-bub-disc, .usecases .uc-bub-badge, .usecases .uc-dock-thumb { transition: none; }
+  .usecases .uc-line, .usecases .uc-bub, .usecases .uc-spoke, .usecases .uc-orbit, .usecases .uc-halo, .usecases .uc-bub-badge, .usecases .uc-dock-thumb { transition: none; }
+  .usecases .uc-bub-disc { transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease; }
   .usecases .uc-bub-float { animation: none; }
-  .usecases .morph > .morph-in { animation: none; }
-  .usecases .morph > .morph-out { display: none; }
+  .usecases .morph > .morph-in { animation: uc-fade-still 0.45s ease both; animation-delay: 0ms; }
+  .usecases .morph > .morph-out { animation: uc-fade-out 0.3s ease both; animation-delay: 0ms; }
 }
+@keyframes uc-fade-still { from { opacity: 0; } to { opacity: 1; } }
 @media (min-width: 900px) {
   .landing > .usecases { max-width: 920px; }
   .usecases { grid-template-columns: minmax(0, 1fr) 400px; grid-template-rows: auto auto auto 1fr; grid-template-areas: "intro intro" "art stage" "dock stage" "caption stage"; column-gap: 48px; row-gap: 16px; justify-items: stretch; align-items: start; }

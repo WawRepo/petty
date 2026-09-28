@@ -6,6 +6,14 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Landing demo: it did not start on a first visit. It waited until half of the picture or the phone
+  was in view, which on a laptop's first screen it is not; it now starts once a little of it shows. A
+  mouse anywhere over the wide section held it; now only a mouse over the phone or the icon row does.
+  With reduced motion (Windows with "Animation effects" off, for one) it stood still and swapped
+  examples by a jump; it now plays there too, with fades only — nothing slides, pops or floats — and
+  shows its progress ring.
+
 ## [1.4.0] — 2026-09-28
 
 ### Added

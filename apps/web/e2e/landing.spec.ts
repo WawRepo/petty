@@ -130,17 +130,56 @@ test("each example has its picture; after the six, a last step puts them all tog
   await expect(art).toHaveAttribute("data-scene", "workshop");
 });
 
-test("reduced motion: the demo never moves on its own, and a picked example shows at once", async ({ page }) => {
+test("it plays as soon as a little of it is in view, and only a mouse over the phone or the icon row holds it (PETTY-251)", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+  const stage = page.getByTestId("use-case-stage");
+  await stage.waitFor();
+  // a quarter of the phone at the bottom of the window, as on a laptop's first screen
+  await page.evaluate(() => {
+    const r = document.querySelector('[data-testid="use-case-stage"]')!.getBoundingClientRect();
+    window.scrollBy(0, r.top - window.innerHeight + r.height * 0.25);
+  });
+  await page.mouse.move(2, 2);
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "trip");
+  // a mouse resting over the picture does not hold it
+  await stage.scrollIntoViewIfNeeded();
+  const art = (await page.getByTestId("use-case-art").boundingBox())!;
+  await page.mouse.move(art.x + art.width / 2, art.y + 12);
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "accounts");
+  // over the phone it does
+  const phone = (await stage.boundingBox())!;
+  await page.mouse.move(phone.x + phone.width / 2, phone.y + phone.height / 2);
+  await page.clock.runFor(20_000);
+  await expect(stage).toHaveAttribute("data-case", "accounts");
+});
+
+test("reduced motion: the demo still plays, with fades only — nothing slides, pops or floats (PETTY-251)", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const stage = await openDemo(page);
-  await expect(page.getByTestId("use-case-toggle")).toHaveText("Play");
-  await page.clock.runFor(30_000);
-  await expect(stage).toHaveAttribute("data-case", "workshop");
+  await expect(page.getByTestId("use-case-toggle")).toHaveText("Pause");
+  await expect(page.getByTestId("use-case-art")).not.toHaveClass(/unseen/); // the picture is there at once
+  await page.clock.runFor(STEP);
+  await expect(stage).toHaveAttribute("data-case", "trip");
+  await expect(page.getByTestId("use-case-art")).toHaveAttribute("data-scene", "trip");
+  const motion = await page.evaluate(() => ({
+    bubble: getComputedStyle(document.querySelector(".uc-bub")!).transitionDuration,
+    line: getComputedStyle(document.querySelector(".uc-line")!).transitionDuration,
+    float: getComputedStyle(document.querySelector(".uc-bub-float")!).animationName,
+    words: getComputedStyle(document.querySelector(".uc-line-body > :last-child")!).animationName,
+  }));
+  expect(motion.bubble.split(",").every((d) => d.trim() === "0s")).toBe(true);
+  expect(motion.line.split(",").every((d) => d.trim() === "0s")).toBe(true);
+  expect(motion.float).toBe("none");
+  expect(["uc-fade-still", "none"]).toContain(motion.words); // a fade (or, once settled, nothing)
+  // a picked example shows; the old words fade out and are gone
   await page.getByTestId("use-case-cash").click();
   await expect(stage.getByText("Cash tin")).toBeVisible();
-  await expect(stage.getByText("Desk drawer")).toBeHidden(); // no fading copy of the old words
+  await settle(page, stage);
+  await expect(stage.getByText("George Town kitty")).toBeHidden();
   await expect(page.getByTestId("use-case-art")).toHaveAttribute("data-scene", "cash");
-  await expect(page.getByTestId("use-case-art")).not.toHaveClass(/unseen/); // the picture is there at once
 });
 
 test("the Polish page shows the same examples in Polish, with no local names or currency", async ({ page }) => {

@@ -114,7 +114,9 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   bubbles round a middle. In the app every bubble is a shortcut for the list below it, so it is hidden
   from the accessibility tree and the tab order; the list stays the keyboard and screen-reader path. A
   tapped bubble grows into the next screen's picture through the View Transitions API where the
-  browser has it. Nothing moves on its own in the app, and reduced motion turns every animation off.
+  browser has it. Nothing moves on its own in the app, and reduced motion turns every movement off.
+  The landing demo is the one thing that plays by itself (with a Pause button, WCAG 2.2.2); under
+  reduced motion it still plays, with cross-fades only — nothing slides, pops or floats (PETTY-251).
 
 ## Non-goals
 
