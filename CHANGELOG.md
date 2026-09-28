@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-09-28
+
 ### Fixed
 - A drawer created right after unlocking, or while the drawers reloaded, could vanish again, its
   screen saying "Something went wrong"; a drawer deleted meanwhile could come back. Two loads of the
@@ -144,7 +146,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/WawRepo/petty/releases/tag/v1.4.2
 [1.4.1]: https://github.com/WawRepo/petty/releases/tag/v1.4.1
 [1.4.0]: https://github.com/WawRepo/petty/releases/tag/v1.4.0
 [1.3.4]: https://github.com/WawRepo/petty/releases/tag/v1.3.4
