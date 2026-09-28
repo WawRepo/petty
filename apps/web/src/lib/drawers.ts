@@ -86,9 +86,22 @@ export function useDrawers(): DrawersState {
 }
 export function getDrawers(): DrawersState { return state; }
 
+/**
+ * A full reload (loadAll) fetches the bootstrap and then opens every drawer, which takes a while. A
+ * drawer created or deleted here in the meantime may be missing from, or still in, the bootstrap it
+ * fetched, so the reload's final write keeps it as it is now (PETTY-245: a drawer created while a reload
+ * ran vanished, and its screen said "Something went wrong"). Each such change takes the next number; a
+ * reload keeps whatever changed after the number it started with.
+ */
+let changeSeq = 0;
+const created = new Map<string, number>();
+const deleted = new Map<string, number>();
+
 /** Drops every decrypted document, key handle and photo URL from memory (lock, sign-out). */
 export function resetDrawers(): void {
   for (const v of state.drawers.values()) if (v.photo) URL.revokeObjectURL(v.photo);
+  created.clear();
+  deleted.clear();
   set({ status: "idle", drawers: new Map(), order: [], invitations: [], transfers: [], fromCache: false, outboxOldest: null, outboxCount: 0 });
 }
 export function patchRotation(id: string, rotation: RotationProgress | null): void { patch(id, { rotation }); }
@@ -279,10 +292,32 @@ export async function acknowledgeChain(drawerId: string, lineId: string): Promis
 }
 
 /** GET /bootstrap, then decrypt everything. A drawer that fails stays listed with an error, never silently dropped. */
-export async function loadAll(): Promise<void> {
+let loading: Promise<void> | null = null;
+let again: Promise<void> | null = null;
+/**
+ * Loads, or reloads, every drawer. One load runs at a time (PETTY-245: Home and the place tree each
+ * started one, and the slower one overwrote what happened in between). A call while one runs gets one
+ * more run after it, since the running one may have fetched before the caller's change; any number of
+ * such calls share that one extra run.
+ */
+export function loadAll(): Promise<void> {
+  if (!loading) {
+    loading = loadOnce().finally(() => { loading = null; });
+    return loading;
+  }
+  again ??= loading.catch(() => undefined).then(() => { again = null; return loadAll(); });
+  return again;
+}
+/** For screens that load on first sight: reads the live store, so one render's several effects start one load. */
+export function loadIfIdle(): void {
+  if (state.status === "idle") void loadAll();
+}
+
+async function loadOnce(): Promise<void> {
   // Nothing to load for a signed-out or locked vault. Guards the sign-out race (SR-8): the wipe
   // resets this store, the still-mounted home screen sees "idle" and would reload and re-cache.
   if (getAuth().status !== "unlocked") return;
+  const since = changeSeq;
   set({ ...state, status: state.status === "ready" ? "ready" : "loading" });
   const meId = me().me.id;
   let boot: Bootstrap;
@@ -332,7 +367,14 @@ export async function loadAll(): Promise<void> {
     }
   }
   const oldest = outbox.length ? Math.max(...outbox.map((o) => Date.now() - Date.parse(o.created_at))) : null;
-  set({ status: "ready", drawers, order: boot.drawers.map((d) => d.id), invitations: boot.invitations, transfers: boot.transfers, fromCache, outboxOldest: oldest, outboxCount: outbox.length });
+  // PETTY-245: what was created or deleted here while this ran stays as it is now
+  const order = boot.drawers.map((d) => d.id);
+  for (const [id, seq] of created) {
+    const now = state.drawers.get(id);
+    if (seq > since && now && !drawers.has(id)) { drawers.set(id, now); order.push(id); }
+  }
+  for (const [id, seq] of deleted) if (seq > since && drawers.delete(id)) order.splice(order.indexOf(id), 1);
+  set({ status: "ready", drawers, order, invitations: boot.invitations, transfers: boot.transfers, fromCache, outboxOldest: oldest, outboxCount: outbox.length });
   // Anything queued while offline goes out now (idempotent by client id); a reload mid-send just resumes here.
   if (!fromCache && outbox.length) { const sync = await import("./sync.js"); void sync.syncOutbox(); }
   // A removed member means the key must turn (SPEC-ISSUES A7); any writer's client does it, and resumes an unfinished one.
@@ -436,9 +478,10 @@ export async function createDrawer(name: string, tags: readonly string[] = []): 
   const doc = applyOps(newDocument(name), [{ type: "set_tags", tags }], { lineHasEntries: () => false });
   const summary: DrawerSummary = { id, owner_id: a.me.id, role: "owner", version: 1, key_version: 1, last_write_at: new Date().toISOString(), last_verified_at: null, rotation_needed: false, has_photo: false };
   const sealed = await sealDocument(key, docIdentity(summary, a.me.id), doc);
-  const created = await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
+  const made = await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
   const drawers = new Map(state.drawers);
-  drawers.set(id, { summary: created, members: [{ user_id: a.me.id, display_name: a.me.display_name, role: "owner", keys: a.me.keys }], key, doc, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: null, docAuthor: a.me.id, wraps: [{ ...selfWrap, sender_id: a.me.id }], keyChanged: [], rotation: null, pending: new Set(), pendingOps: 0 });
+  drawers.set(id, { summary: made, members: [{ user_id: a.me.id, display_name: a.me.display_name, role: "owner", keys: a.me.keys }], key, doc, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: null, docAuthor: a.me.id, wraps: [{ ...selfWrap, sender_id: a.me.id }], keyChanged: [], rotation: null, pending: new Set(), pendingOps: 0 });
+  created.set(id, ++changeSeq);
   set({ ...state, drawers, order: [...state.order, id] });
   return id;
 }
@@ -509,6 +552,7 @@ export async function deleteDrawer(id: string): Promise<void> {
   const v = drawers.get(id);
   if (v?.photo) URL.revokeObjectURL(v.photo);
   drawers.delete(id);
+  deleted.set(id, ++changeSeq);
   set({ ...state, drawers, order: state.order.filter((x) => x !== id) });
 }
 

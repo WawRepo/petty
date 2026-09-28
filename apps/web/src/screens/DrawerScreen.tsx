@@ -19,7 +19,7 @@ import { SwitchRow } from "../components/SwitchRow.js";
 import { TagManager } from "../components/TagManager.js";
 import { useToast } from "../components/Toast.js";
 import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
-import { appendEntry, deleteDrawer, lineBalance, loadAll, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView } from "../lib/drawers.js";
+import { appendEntry, deleteDrawer, lineBalance, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
 import { DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
 import { DrawerArt, vtName } from "../components/DrawerArt.js";
@@ -178,7 +178,7 @@ export function DrawerScreen() {
     }
   });
 
-  useEffect(() => { if (state.status === "idle") void loadAll(); }, [state.status]);
+  useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   useEffect(() => { if (view?.summary.has_photo && !view.photo && view.key) void loadPhoto(id); }, [view?.summary.has_photo, view?.photo, view?.key, id]);
 
   if (state.status === "loading" || state.status === "idle") return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;

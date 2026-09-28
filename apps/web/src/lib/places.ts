@@ -1,6 +1,6 @@
 import { foldText, placeLabel, tagsOf } from "@petty/ledger";
 import { useEffect } from "react";
-import { loadAll, mutateDocument, useDrawers, type DrawerView } from "./drawers.js";
+import { mutateDocument, useDrawers, type DrawerView, loadIfIdle } from "./drawers.js";
 import { placesTree, setPlacesTree, usePins } from "./pins.js";
 
 /**
@@ -128,7 +128,7 @@ export function usePlaceTree(): readonly PlaceNode[] {
   const drawers = useDrawers();
   const doc = usePins().doc;
   // Opened directly (a reload on /places): load the drawers — and with them the user document that holds the tree.
-  useEffect(() => { if (drawers.status === "idle") void loadAll(); }, [drawers.status]);
+  useEffect(() => { if (drawers.status === "idle") loadIfIdle(); }, [drawers.status]);
   return mergePaths(placesTree(doc), [...drawers.drawers.values()].map(placeOfView).filter((p) => p.length));
 }
 

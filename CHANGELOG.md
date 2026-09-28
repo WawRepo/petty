@@ -6,6 +6,13 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- A drawer created right after unlocking, or while the drawers reloaded, could vanish again, its
+  screen saying "Something went wrong"; a drawer deleted meanwhile could come back. Two loads of the
+  drawers could run at once (Home and the place list each started one), and the slower one wrote an
+  older list over the newer. Now one load runs at a time, and a load keeps what was created or deleted
+  while it ran.
+
 ## [1.4.1] — 2026-09-28
 
 ### Fixed

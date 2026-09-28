@@ -4,7 +4,7 @@ import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type Signed
 import { custodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
-import { expectedSender, getDrawers, loadAll, type DrawerView } from "./drawers.js";
+import { expectedSender, getDrawers, type DrawerView, loadIfIdle } from "./drawers.js";
 import { getAuth } from "./session.js";
 
 /**
@@ -174,7 +174,7 @@ export function useAccessTokens(open: boolean): { tokens: AccessTokenT[]; reload
   const [nonce, setNonce] = useState(0);
   useEffect(() => {
     if (!open) return;
-    if (getDrawers().status === "idle") void loadAll();
+    loadIfIdle();
     void listAccessTokens().then(setTokens).catch(() => setTokens([]));
   }, [open, nonce]);
   return { tokens, reload: () => setNonce((n) => n + 1) };

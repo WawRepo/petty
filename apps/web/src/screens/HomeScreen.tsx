@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { foldText, formatAmount, iconOf, lineCounted, lineTagsOf, normalizeCurrencyCode, placeLabel, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { TopBar } from "../components/TopBar.js";
 import { Button } from "../components/Button.js";
-import { createDrawer, drawerWarnings, homeTotals, lineBalance, loadAll, loadPhoto, useDrawers, type DrawerView } from "../lib/drawers.js";
+import { createDrawer, drawerWarnings, homeTotals, lineBalance, loadAll, loadPhoto, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { VerifyBadge } from "../components/VerifyBadge.js";
 import { PendingArea } from "../components/PendingArea.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
@@ -165,7 +165,7 @@ export function HomeScreen() {
   useEffect(() => { const h = window.setTimeout(() => setDebounced(query), 300); return () => window.clearTimeout(h); }, [query]);
   useEffect(() => { if (searching) searchRef.current?.focus(); }, [searching]);
   const closeSearch = () => { setSearching(false); setQuery(""); setDebounced(""); };
-  useEffect(() => { if (state.status === "idle") void loadAll(); }, [state.status]);
+  useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   const pinsDoc = usePins().doc;
   const excluded = excludedFromTotal(pinsDoc);
   // Places (PETTY-59): a drawer's tags are an ORDERED path — room, shelf, box. The selection is a path prefix:

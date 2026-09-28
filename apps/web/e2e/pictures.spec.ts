@@ -55,13 +55,14 @@ test("the pictures show each drawer's lines in their kinds' colours, and every b
   await page.getByTestId("drawer-place-picker").getByTestId("place-new").fill("Home");
   await page.getByTestId("drawer-place-picker").getByRole("button", { name: "Add place" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  await page.goto("/");
+  // in-app navigation: the place is still being saved, and a full reload would cut that off
+  await page.getByRole("button", { name: "Back" }).click();
   const garage = await addDrawer(page, "Garage");
   await addLine(page, "Countable", "Screws", { "Unit (optional)": "boxes", "Starting count": "6" });
   await expect(page.getByTestId("drawer-art").locator(".uc-bub.sat.k-things")).toHaveCount(1);
 
   // Home: the total beside the home with both drawers; each card has one dot per line in its colour
-  await page.goto("/");
+  await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("home-art")).toHaveAttribute("data-count", "2");
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).locator(".kd")).toHaveCount(2);
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).locator(".kd.k-money")).toHaveCount(1);

@@ -6,7 +6,7 @@
  */
 import { foldText, lineTagsOf, MAX_TAGS, MAX_TAG_LENGTH, normalizeTags, type Line } from "@petty/ledger";
 import { useEffect } from "react";
-import { loadAll, useDrawers, mutateDocument, type DrawerView } from "./drawers.js";
+import { useDrawers, mutateDocument, type DrawerView, loadIfIdle } from "./drawers.js";
 import { savedLineTags, updateSavedLineTags, usePins } from "./pins.js";
 
 /** Upper bound on the saved list; household scale, and it keeps the user document small. */
@@ -45,7 +45,7 @@ export function useTagIndex(firstDrawer?: string): { tags: TagInfo[]; items: Tag
   const drawers = useDrawers();
   const doc = usePins().doc;
   // opened from Settings after a reload: load the drawers, and with them the user document
-  useEffect(() => { if (drawers.status === "idle") void loadAll(); }, [drawers.status]);
+  useEffect(() => { if (drawers.status === "idle") loadIfIdle(); }, [drawers.status]);
   const views = [...drawers.drawers.values()];
   const items = allItems(views, firstDrawer);
   return { tags: tagIndex(savedLineTags(doc), items), items, views };

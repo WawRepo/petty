@@ -10,7 +10,7 @@ import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
 import { api, ApiError } from "../lib/api.js";
 import { custodyProof } from "../lib/custody.js";
-import { loadAll, useDrawers } from "../lib/drawers.js";
+import { useDrawers, loadIfIdle } from "../lib/drawers.js";
 import { getAuth, signOut } from "../lib/session.js";
 
 type Choice = { action: "transfer"; to_user_id: string } | { action: "delete" };
@@ -27,7 +27,7 @@ export function DeleteAccountScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (state.status === "idle") void loadAll(); }, [state.status]);
+  useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   useEffect(() => { api<unknown>("GET", "/me/delete").then((r) => setPreview(DeletePreview.parse(r))).catch(() => setError(t("errors.unknown"))); }, [t]);
   const name = (id: string) => state.drawers.get(id)?.doc?.name ?? "…";
   const undecided = preview ? preview.shared.filter((s) => !choices[s.drawer_id]) : [];

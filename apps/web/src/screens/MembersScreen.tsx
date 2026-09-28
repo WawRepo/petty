@@ -11,7 +11,7 @@ import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
 import { api, ApiError } from "../lib/api.js";
-import { cancelTransfer, inviteMember, leaveDrawer, loadAll, offerTransfer, removeMember, useDrawers, useSharingState } from "../lib/drawers.js";
+import { cancelTransfer, inviteMember, leaveDrawer, loadAll, offerTransfer, removeMember, useDrawers, useSharingState, loadIfIdle } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
 import { confirmPin, memberSafetyNumber, pinStatus, usePins } from "../lib/pins.js";
 import { useAuth } from "../lib/session.js";
@@ -118,7 +118,7 @@ export function MembersScreen() {
   usePins();
   const [invite, setInvite] = useState(false);
   const [confirm, setConfirm] = useState<null | { kind: "remove"; m: Member } | { kind: "leave" }>(null);
-  useEffect(() => { if (state.status === "idle") void loadAll(); }, [state.status]);
+  useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   const view = state.drawers.get(id);
   if (!view || auth.status !== "unlocked") return <><TopBar title={t("members.title")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;
   const meId = auth.me.id;

@@ -17,7 +17,7 @@ import { LineOptions, type LineOptionsStep } from "../components/LineOptions.js"
 import { OfflineBanner } from "../components/OfflineBanner.js";
 import { SyncReport } from "../components/SyncReport.js";
 import { useToast } from "../components/Toast.js";
-import { acknowledgeChain, appendEntry, lineFold, loadAll, loadOlder, memberName, RecountRequired, reverseFor, ReverseRefused, useDrawers, type DrawerView } from "../lib/drawers.js";
+import { acknowledgeChain, appendEntry, lineFold, loadOlder, memberName, RecountRequired, reverseFor, ReverseRefused, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
 import { storageErrorKey } from "../lib/storage.js";
 
@@ -175,7 +175,7 @@ export function LineScreen() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   };
-  useEffect(() => { if (state.status === "idle") void loadAll(); }, [state.status]);
+  useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   // The line's options live here, behind ⋯ in the top bar (PETTY-71) — as a drawer's do on its own screen.
   const [opts, setOpts] = useState<LineOptionsStep | null>(null);
   const view = state.drawers.get(id);
