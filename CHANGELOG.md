@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-28
+
 ### Added
 - German, Spanish and French, next to English and Polish: the whole app, the Clerk sign-in forms and
   every email. A first visit follows the browser's language. A language switch sits at the top of the
@@ -125,7 +127,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.3.4...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/WawRepo/petty/releases/tag/v1.4.0
 [1.3.4]: https://github.com/WawRepo/petty/releases/tag/v1.3.4
 [1.3.3]: https://github.com/WawRepo/petty/releases/tag/v1.3.3
 [1.3.2]: https://github.com/WawRepo/petty/releases/tag/v1.3.2
