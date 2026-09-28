@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-09-28
+
 ### Added
 - With places, the Home picture shows them: your places on a ring round the home, and what is in each
   place in small bubbles round it. Tapping a place shows only its drawers, as its chip does, and the
@@ -167,7 +169,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/WawRepo/petty/releases/tag/v1.5.1
 [1.5.0]: https://github.com/WawRepo/petty/releases/tag/v1.5.0
 [1.4.2]: https://github.com/WawRepo/petty/releases/tag/v1.4.2
 [1.4.1]: https://github.com/WawRepo/petty/releases/tag/v1.4.1
