@@ -80,6 +80,10 @@ services:
       API_PREFIX: ""
       WEB_DIST: ""
     command: ["pnpm", "seed-demo"]
+    # The image ships no seeds (Dockerfile: only the operator scripts), so the demo's seed comes from
+    # this checkout; everything it imports (src/, the packages) is in the image.
+    volumes:
+      - ./apps/api/scripts/seed-demo.ts:/app/apps/api/scripts/seed-demo.ts:ro
     restart: "no"
 
 volumes:
