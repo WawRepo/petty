@@ -91,8 +91,24 @@ data:
 
 ## Suggested alerts
 
-- **API down:** the scrape target has been missing for 2 minutes.
-- **High error rate:** more than 1% of responses have a 5xx status for 5 minutes.
-- **Slow requests:** p95 of `petty_http_request_duration_seconds` is above 1 second for 10 minutes.
-- **Backup:** the last successful backup failed or is older than 26 hours, if you run the
-  backup job from `deploy/backup`.
+Starting points for a household-scale instance (PETTY-268). The queries work on the Prometheus scrape
+and on the OTLP push alike; with several instances, add `by (deployment_environment)`. The probes
+(`/api/health*`) are measured but are not traffic, so the traffic rules leave them out.
+
+| Alert | PromQL / LogQL | For |
+|---|---|---|
+| Down (scrape) | `up{job="petty"} == 0` | 2 min |
+| Down (OTLP push) | `absent_over_time(target_info{service_name="petty"}[5m])` | 2 min |
+| Restarts | `resets(petty_http_request_duration_seconds_count{route="/api/health/live"}[30m]) > 2` (needs a liveness probe on that path) | — |
+| Server errors | `sum(increase(petty_http_request_duration_seconds_count{status=~"5..", route!~"/api/health.*"}[15m])) > 4` | — |
+| Slow | `histogram_quantile(0.95, sum by (le) (rate(petty_http_request_duration_seconds_bucket{route!~"/api/health.*", route!="static"}[10m]))) > 1` | 10 min |
+| Emails failed | `increase(petty_mail_total{result="failed"}[30m]) > 0` | — |
+| Waiting for the database | `max(petty_pg_pool_clients{state="waiting"}) > 0` | 5 min |
+| Password guessing | `increase(petty_auth_events_total{event="login_fail"}[15m]) > 20` | — |
+| Sign-in limiter | `increase(petty_auth_events_total{event="rate_limited"}[15m]) > 0` | — |
+| Error logs (Loki) | `count_over_time({service_name="petty"} \| detected_level="error" [10m]) > 5` | — |
+
+Also worth a check from outside: an HTTP probe on `/api/health` that expects `"db":"up"`, and, if you
+run the backup job from `deploy/backup`, an alert when the last successful backup is older than
+26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`) appear after their first
+event, so treat "no data" as fine for those rules.
