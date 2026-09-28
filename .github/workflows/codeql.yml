@@ -13,6 +13,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   analyze:
+    # PETTY-255: as in ci.yml, the runs Dependabot starts are skipped while the repository is private.
+    if: ${{ !(github.event.repository.private && github.triggering_actor == 'dependabot[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Job-level permissions REPLACE the workflow-level set (unlisted scopes become none). Without

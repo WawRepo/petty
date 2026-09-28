@@ -6,6 +6,8 @@ on:
 # GitHub-hosted runners (PETTY-162): pull requests from forks never run on anyone's own hardware.
 permissions:
   contents: read
+# A newer run for the same branch or pull request cancels the older one: fast pushes, or several merges
+# in a row, leave one run on main.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -24,6 +26,9 @@ jobs:
           GITLEAKS_CONFIG: .gitleaks.toml
 
   test:
+    # PETTY-255: while the repository is private (paid minutes), the runs Dependabot starts are skipped;
+    # its updates are checked here on main after the merge. A re-run started by a person still runs.
+    if: ${{ !(github.event.repository.private && github.triggering_actor == 'dependabot[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -55,6 +60,7 @@ jobs:
 
   # The image as it ships, under deploy/compose, over real HTTP (tests/integration).
   integration:
+    if: ${{ !(github.event.repository.private && github.triggering_actor == 'dependabot[bot]') }} # as test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
