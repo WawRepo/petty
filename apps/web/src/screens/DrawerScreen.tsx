@@ -140,7 +140,10 @@ export function DrawerScreen() {
   // PETTY-269: back to Home plays the other way — this drawer's middle shrinks into its bubble there
   const morphBack = useMorphBack("/");
   const homeBubble = (d: string) => `.places-art .pa-bub:not(.off) > [data-vt="${d}"], .home-art .uc-bub:not(.off) [data-vt="${d}"]`;
-  const back = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)));
+  const HOME = '[data-testid="home"][data-status="ready"]';
+  // (TopBar hands its click event to onBack, so the trail's "land at the top" is its own function)
+  const back = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME);
+  const backToTop = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME, { top: true });
   const morph = useMorph();
   const toast = useToast();
   const { id = "" } = useParams();
@@ -330,7 +333,7 @@ export function DrawerScreen() {
         <section className="drawer-head" data-testid="drawer-head">
           {/* PETTY-269: the way back to Home at the level of this drawer's place */}
           {placesShown(pinsDoc) && placeOfView(view).length ? (
-            <PlaceTrail path={placeOfView(view)} onPick={(depth) => { setHomePlace(placeOfView(view).slice(0, depth).map(foldText)); back(); }} />
+            <PlaceTrail path={placeOfView(view)} onPick={(depth) => { setHomePlace(placeOfView(view).slice(0, depth).map(foldText)); backToTop(); }} />
           ) : null}
           {/* PETTY-250: the drawer's picture — its photo or icon in the middle, its lines around it in their kinds' colours */}
           {/* its bubbles are shortcuts: a line's opens the line (growing into its picture), the middle opens the options */}

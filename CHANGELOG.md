@@ -6,6 +6,40 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Back from a drawer held the old screen for almost a second when the drawer sits in a place (its
+  Home bubble is folded into the place's). Now Home shows at once.
+- A new page opens at its top: the privacy page and *Use Petty with AI* opened where the landing
+  page was scrolled to. A place on a drawer's trail takes you to Home at its top, where the total is.
+- The footer's *Third-party notices* link said "This page does not exist" after the first visit.
+- *Change vault passphrase* and *Make a new recovery code* lost what you typed: focus sat on a hidden
+  field. In every sheet, focus now stays in the field you type in.
+- The keypad stops at the currency's decimals ("1234.5699999 PLN" was refused only at Review), and
+  "Enter an amount." shows under the amount, not under the comment.
+- Home search finds a drawer by its name or place, with everything in it, and an item by its
+  currency or unit.
+- A drawer's card leads with its largest amount, in the same order as the totals. Amounts of one
+  currency typed as "eur" and "EUR", or with different decimals, add up correctly on the card.
+- A dimmed card (outside the place you picked) hides all its amounts, not only the first.
+- *Move up* and *Move down* are off at the ends of the list, for items and for places. *Move* for a
+  place starts from its own parent (Save moved it to the top level), and Save with no change does nothing.
+- Settings: *Sign out* asks first, as the account menu does; *Delete account* looks like the
+  dangerous button it is; a too-short export password is marked on the password field.
+- Members: the buttons wrap onto a new row instead of squeezing a label into four lines, and
+  *Remove* comes last.
+- An entry's options have *Cancel*, and *Reverse this entry* is no longer a solid red block.
+- `/reset` with no token, or a link cut short, says the link is not valid instead of showing a form
+  that could only fail.
+- The landing page's screenshot viewer keeps Tab inside, holds the page behind it still, and keeps
+  focus on the button you used.
+- `/device` keeps its form while it checks a typed code, marks the field with the error, and
+  *Denied* has a way back.
+- *Use Petty with AI*: the command line's first run calls `~/.local/bin/petty`, which is not on a
+  Mac's PATH, and a line says how to add it. The example settings block lost its copy button: its
+  paths are made up.
+- The privacy page no longer mentions Clerk on a Petty that does not use it.
+- *Lock now* no longer throws an error in the background.
+
 ## [1.5.5] — 2026-09-28
 
 ### Added

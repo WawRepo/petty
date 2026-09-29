@@ -205,3 +205,15 @@ export async function openSettings(page: Page): Promise<void> {
   await page.getByTestId("account-menu").click();
   await page.getByRole("dialog").getByRole("button", { name: "Settings" }).click();
 }
+
+/** Drawers made through the app's own store (dev build, signed in and unlocked), each with its place. */
+export async function makeDrawers(page: Page, list: [string, string[]][]): Promise<void> {
+  const made = await page.evaluate(async (list) => {
+    const url = performance.getEntriesByType("resource").map((e) => e.name).filter((n) => /\/src\/lib\/drawers\.ts(\?|$)/.test(n)).at(-1);
+    if (!url) return 0;
+    const m = (await import(url)) as { createDrawer: (name: string, tags: readonly string[]) => Promise<string> };
+    for (const [name, place] of list) await m.createDrawer(name, place);
+    return list.length;
+  }, list);
+  expect(made, "the drawers must be made in the app's own store").toBe(list.length);
+}

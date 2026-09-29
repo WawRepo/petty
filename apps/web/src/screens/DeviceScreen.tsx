@@ -120,17 +120,17 @@ export function DeviceScreen() {
     <>
       <TopBar title={t("device.title")} onBack={back} />
       <main className="stack" data-testid="device-screen">
-        {phase === "enter" ? (
+        {/* PETTY-279: the form stays while a typed code is checked, and its field carries the error */}
+        {phase === "enter" || (phase === "loading" && typed) ? (
           <form className="card" onSubmit={submitCode} noValidate>
             <p className="hint mt0">{t("device.enterBody")}</p>
             <TextField label={t("device.code")} value={typed} autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="BCDF-GHJK-LMNP"
-              data-testid="device-code" onChange={(e) => setTyped(e.target.value)} />
-            {error ? <div className="error" role="alert">{error}</div> : null}
-            <div className="actions"><Button type="submit" data-testid="device-continue">{t("device.continue")}</Button></div>
+              data-testid="device-code" onChange={(e) => { setTyped(e.target.value); setError(null); }} error={error} />
+            <div className="actions"><Button type="submit" busy={phase === "loading"} data-testid="device-continue">{t("device.continue")}</Button></div>
           </form>
         ) : null}
 
-        {phase === "loading" ? <p className="hint" role="status">{t("device.checking")}</p> : null}
+        {phase === "loading" && !typed ? <p className="hint" role="status">{t("device.checking")}</p> : null}
 
         {phase === "mismatch" ? <p className="warn-box danger" role="alert" data-testid="device-mismatch">{t("device.mismatch")}</p> : null}
 
@@ -174,6 +174,7 @@ export function DeviceScreen() {
           <section className="card" role="status" data-testid="device-denied">
             <h2 className="h-card">{t("device.deniedTitle")}</h2>
             <p className="hint m0">{t("device.deniedBody")}</p>
+            <div className="actions"><Link className="btn btn-secondary" to="/">{t("app.done")}</Link></div>
           </section>
         ) : null}
       </main>

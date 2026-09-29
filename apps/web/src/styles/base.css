@@ -58,8 +58,10 @@ main { flex: 1; padding: 8px calc(16px + env(safe-area-inset-right, 0px)) 16px c
 .btn-danger-ghost { background: none; color: var(--danger); border: 1px solid transparent; margin-top: 8px; }
 .btn-danger-ghost:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); }
 .btn-ghost { background: none; color: var(--accent); padding: 10px 8px; min-height: 44px; width: auto; font-size: 14px; }
-.actions { display: flex; gap: 10px; margin-top: 16px; }
-.actions .btn { flex: 1; }
+/* PETTY-279: buttons share a row while their labels fit on one line, and wrap to the next row
+   instead of squeezing (fit-content: a label wider than the whole row still wraps inside its button) */
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.actions .btn { flex: 1 1 0; min-width: fit-content; }
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
 .sheet { background: var(--bg); width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px)); max-height: 92vh; max-height: 92dvh; overflow-y: auto; animation: sheet-up 0.18s ease-out; }
 .sheet h2 { margin: 0 0 16px; font-size: 19px; }
@@ -145,7 +147,7 @@ button.tag-chip[aria-pressed="true"] .tag-count { color: var(--accent-text); opa
 .others-toggle .chev { margin-left: auto; }
 .row.dim { padding: 10px 16px; min-height: 0; box-shadow: none; background: transparent; border-style: dashed; }
 .row.dim .rowtitle { font-weight: 500; font-size: 15px; }
-.row.dim .rowsub, .row.dim .rowwarn, .row.dim .degraded, .row.dim .verify-badge, .row.dim .row-thumb, .row.dim .tile, .row.dim .rowamount, .row.dim .rowmeta { display: none; }
+.row.dim .rowsub, .row.dim .rowwarn, .row.dim .degraded, .row.dim .verify-badge, .row.dim .row-thumb, .row.dim .tile, .row.dim .rowamount, .row.dim .rowamount-more, .row.dim .rowmeta { display: none; }
 .row.dim { align-items: center; }
 .search-hits { list-style: none; margin: 0; padding: 4px 0 6px; background: var(--card); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--shadow); }
 .search-hits li + li { border-top: 1px solid var(--border); }
@@ -256,7 +258,8 @@ h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;
 .entry.pending { border-style: dashed; }
 /* Phase 13: utility classes (a strict CSP forbids inline style attributes) */
 .p0 { padding: 0; } .m0 { margin: 0; } .mb0 { margin-bottom: 0; } .mb2 { margin-bottom: 2px; } .mb4 { margin-bottom: 4px; } .mb6 { margin-bottom: 6px; } .mb8 { margin-bottom: 8px; } .mb10 { margin-bottom: 10px; } .mb12 { margin-bottom: 12px; } .mb16 { margin-bottom: 16px; }
-.mt4 { margin-top: 4px; } .mt6 { margin-top: 6px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; }
+.no-scroll { overflow: hidden; }
+.mt0 { margin-top: 0; } .mt4 { margin-top: 4px; } .mt6 { margin-top: 6px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; }
 .my4 { margin: 4px 0; } .my6 { margin: 6px 0; } .my10 { margin: 10px 0; }
 .block { display: block; } .wrap { flex-wrap: wrap; } .tc { text-align: center; } .fs13 { font-size: 13px; } .fw600 { font-weight: 600; } .fw700 { font-weight: 700; }
 .h-card { font-size: 15px; margin: 0 0 8px; }
@@ -276,7 +279,7 @@ h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;
 .plain-btn { background: none; border: none; padding: 0; cursor: pointer; }
 .negative-text { color: var(--danger); }
 .card.problem { border-color: var(--danger); }
-.hint.m0 { margin: 0; } .hint.mb4 { margin: 0 0 4px; } .hint.mb2 { margin: 0 0 2px; } .hint.mb6 { margin: 0 0 6px; } .hint.mb8 { margin: 0 0 8px; } .hint.mb10 { margin: 0 0 10px; } .hint.mb12 { margin: 0 0 12px; } .hint.my4 { margin: 4px 0; } .hint.my6 { margin: 6px 0; } .hint.mt6 { margin: 6px 0 0; }
+.hint.m0 { margin: 0; } .hint.mt0 { margin-top: 0; } .hint.mb4 { margin: 0 0 4px; } .hint.mb2 { margin: 0 0 2px; } .hint.mb6 { margin: 0 0 6px; } .hint.mb8 { margin: 0 0 8px; } .hint.mb10 { margin: 0 0 10px; } .hint.mb12 { margin: 0 0 12px; } .hint.my4 { margin: 4px 0; } .hint.my6 { margin: 6px 0; } .hint.mt6 { margin: 6px 0 0; }
 
 /* Landing page (visitors at "/") */
 html, body { overflow-x: clip; }

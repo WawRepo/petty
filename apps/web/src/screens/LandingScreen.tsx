@@ -149,17 +149,34 @@ function Shot({ shot, className, lazy = false }: { shot: { light: string; dark: 
 function ShotOverlay({ shot, index, count, onClose, onStep }: { shot: { light: string; dark: string; alt: string }; index: number; count: number; onClose: () => void; onStep: (d: -1 | 1) => void }) {
   const { t } = useTranslation();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // The latest callbacks, without running the effect again: each step renders new ones, and the effect
+  // used to hand focus back to the opener and then to Close on every step (PETTY-279).
+  const cb = useRef({ onClose, onStep });
+  useEffect(() => { cb.current = { onClose, onStep }; });
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); else if (e.key === "ArrowRight") onStep(1); else if (e.key === "ArrowLeft") onStep(-1); };
+    // PETTY-279: a dialog keeps Tab inside it, and the page behind it does not scroll
+    document.documentElement.classList.add("no-scroll");
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cb.current.onClose();
+      else if (e.key === "ArrowRight") cb.current.onStep(1);
+      else if (e.key === "ArrowLeft") cb.current.onStep(-1);
+      else if (e.key === "Tab") {
+        const items = [...(bodyRef.current?.querySelectorAll<HTMLElement>("button") ?? [])];
+        const i = items.indexOf(document.activeElement as HTMLElement);
+        e.preventDefault();
+        items[(i + (e.shiftKey ? -1 : 1) + items.length) % items.length]?.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); opener?.focus(); };
-  }, [onClose, onStep]);
+    return () => { document.removeEventListener("keydown", onKey); document.documentElement.classList.remove("no-scroll"); opener?.focus(); };
+  }, []);
   // Portal (PETTY-142): a direct child of main.landing would pick up the page's 480 px column rule.
   return createPortal(
     <div className="shot-overlay" role="dialog" aria-modal="true" aria-label={shot.alt} onClick={onClose} data-testid="shot-overlay">
-      <div className="shot-overlay-body" onClick={(e) => e.stopPropagation()}>
+      <div className="shot-overlay-body" ref={bodyRef} onClick={(e) => e.stopPropagation()}>
         <Shot shot={shot} className="shot-big" />
         <p className="shot-caption">{shot.alt} · {index + 1}/{count}</p>
         <div className="shot-controls">

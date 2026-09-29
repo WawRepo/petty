@@ -87,7 +87,7 @@ test("withdraw with confirm step, negative warning and red balance; Adjust with 
   await expect(page.getByTestId("line-balance")).toHaveText("15.00");
   await page.getByTestId("entry-row").first().getByRole("button", { name: "Entry options" }).click();
   await page.getByRole("button", { name: "Reverse this entry" }).click();
-  await page.getByRole("button", { name: "Reverse", exact: true }).click();
+  await page.getByRole("dialog", { name: "Reverse this entry?" }).getByRole("button", { name: "Reverse this entry" }).click();
   await expect(page.getByTestId("line-balance")).toHaveText("10.00");
   await expect(page.getByTestId("entry-row").first()).toContainText("Reverse · cancels an earlier entry");
   await expect(page.getByTestId("entry-row").nth(1)).toHaveClass(/reversed/);

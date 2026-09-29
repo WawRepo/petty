@@ -13,6 +13,7 @@ import { api } from "../lib/api.js";
 import { BackupSection } from "../components/BackupSection.js";
 import { AccessTokens } from "../components/AccessTokens.js";
 import { Sheet } from "../components/Sheet.js";
+import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
 import { addPasskey, changePassphrase, makeRecoveryCode, openWithPasskey, openWithPassphrase, removePasskey, setPassphrase, storeRecoveryCode } from "../lib/custody.js";
@@ -40,6 +41,7 @@ export function SettingsScreen() {
   const back = useBack("/");
   const auth = useAuth();
   const toast = useToast();
+  const [leaving, setLeaving] = useState(false);
   const [safety, setSafety] = useState("");
   const [tagsOpen, setTagsOpen] = useState(false);
   const [joinLink, setJoinLink] = useState<string | null>(null);
@@ -243,7 +245,8 @@ export function SettingsScreen() {
           <p className="hint">{t("settings.safetyNumberHint")}</p>
           <div className="actions">
             <Button variant="secondary" onClick={() => { void lockNow().then(() => { toast(t("auth.lock.locked")); nav("/unlock", { replace: true }); }); }}>{t("auth.lock.now")}</Button>
-            <Button variant="secondary" onClick={() => { void signOut().then(() => nav("/", { replace: true })); }}>{t("auth.signOut")}</Button>
+            {/* PETTY-279: asks first, as the account menu does */}
+            <Button variant="secondary" onClick={() => setLeaving(true)} data-testid="settings-sign-out">{t("auth.signOut")}</Button>
           </div>
           {me?.vault
             ? <p className="mt12 mb0"><Button variant="ghost" onClick={() => setCp(true)}>{t("settings.changePassphrase")}</Button></p>
@@ -251,8 +254,11 @@ export function SettingsScreen() {
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => { closeRc(); setRc(true); }} data-testid="new-recovery-code">{t("settings.recovery.new")}</Button></p>
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button></p>
           {me?.is_admin ? <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/admin")} data-testid="admin-link">{t("admin.link")}</Button></p> : null}
-          <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/settings/delete")}>{t("settings.deleteAccount")}</Button></p>
+          {/* PETTY-279: the one link that destroys something looks like it, and stands apart */}
+          <p className="mt16 mb0"><Button variant="danger-ghost" onClick={() => nav("/settings/delete")}>{t("settings.deleteAccount")}</Button></p>
         </section>
+        <ConfirmSheet open={leaving} title={t("home.signOutTitle")} body={t("home.signOutBody")} confirmLabel={t("auth.signOut")} danger={false} onClose={() => setLeaving(false)}
+          onConfirm={async () => { await signOut(); nav("/", { replace: true }); }} />
         {appVersion() ? <p className="hint mt12 mb0" data-testid="app-version">Petty {appVersion()}</p> : null}
       </main>
       <Sheet open={pkAdd} title={t("settings.passkey.add")} onClose={() => setPkAdd(false)}>

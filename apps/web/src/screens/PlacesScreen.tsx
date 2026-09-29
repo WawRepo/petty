@@ -183,6 +183,9 @@ export function PlacesScreen() {
   }
   const s = sheet;
   const name = s ? s.path[s.path.length - 1]! : "";
+  // where the place stands among its siblings: the first cannot go up, nor the last down (PETTY-279)
+  const siblings = s ? (s.path.length > 1 ? findNodeIn(tree, s.path.slice(0, -1))?.children ?? [] : tree) : [];
+  const at = s ? siblings.findIndex((c) => samePath([...s.path.slice(0, -1), c.name], s.path)) : -1;
   return (
     <>
       <TopBar title={t("places.title")} onBack={back} />
@@ -223,9 +226,9 @@ export function PlacesScreen() {
             <div className="menu">
               <Button variant="secondary" onClick={() => setSheet({ kind: "add", path: s.path })} data-testid="place-add-inside">{t("places.addInside")}</Button>
               <Button variant="secondary" onClick={() => setSheet({ kind: "rename", path: s.path })}>{t("places.rename")}</Button>
-              <Button variant="secondary" onClick={() => { setMoveTo(null); setSheet({ kind: "move", path: s.path }); }} data-testid="place-move">{t("places.move")}</Button>
-              <Button variant="secondary" onClick={() => { setSheet(null); void savePlaceTree(shiftPlace(tree, s.path, -1)); }}>{t("places.moveUp")}</Button>
-              <Button variant="secondary" onClick={() => { setSheet(null); void savePlaceTree(shiftPlace(tree, s.path, 1)); }}>{t("places.moveDown")}</Button>
+              <Button variant="secondary" onClick={() => { setMoveTo(s.path.length > 1 ? s.path.slice(0, -1) : null); setSheet({ kind: "move", path: s.path }); }} data-testid="place-move">{t("places.move")}</Button>
+              <Button variant="secondary" disabled={at <= 0} onClick={() => { setSheet(null); void savePlaceTree(shiftPlace(tree, s.path, -1)); }}>{t("places.moveUp")}</Button>
+              <Button variant="secondary" disabled={at < 0 || at >= siblings.length - 1} onClick={() => { setSheet(null); void savePlaceTree(shiftPlace(tree, s.path, 1)); }}>{t("places.moveDown")}</Button>
               <Button variant="danger-ghost" onClick={() => setSheet({ kind: "delete", path: s.path })} data-testid="place-delete">{t("places.delete")}</Button>
             </div>
           </Sheet>
@@ -239,7 +242,8 @@ export function PlacesScreen() {
             <PlacePicker tree={tree} value={moveTo} onChange={setMoveTo} exclude={s.path} emptyLabel={t("places.topLevel")} testId="move-picker" />
             <div className="actions">
               <Button variant="secondary" onClick={() => setSheet(null)}>{t("app.cancel")}</Button>
-              <Button onClick={async () => { setSheet(null); await doMove(s.path, moveTo ?? []); }} data-testid="place-move-confirm">{t("app.save")}</Button>
+              {/* the parent it is in already is no move (movePlace would call it a name taken there) */}
+              <Button onClick={async () => { setSheet(null); if (!samePath(moveTo ?? [], s.path.slice(0, -1))) await doMove(s.path, moveTo ?? []); }} data-testid="place-move-confirm">{t("app.save")}</Button>
             </div>
           </Sheet>
           <ConfirmSheet open={s.kind === "delete"} title={t("places.delete")} body={t("places.deleteBody", { name, parent: s.path.length > 1 ? placeLabelOf(s.path.slice(0, -1)) : t("places.topLevel") })} confirmLabel={t("places.delete")} onClose={() => setSheet(null)}

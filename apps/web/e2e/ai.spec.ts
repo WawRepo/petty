@@ -19,6 +19,11 @@ test("the AI page explains the setup with this Petty's own address, and is linke
   await expect(page.getByTestId("ai-install-unix")).toContainText(`curl -fsSL ${origin}/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs`);
   await expect(page.getByTestId("ai-install-unix")).toContainText(`--print-config ${api}`);
   await expect(page.getByTestId("ai-install-windows")).toContainText(`Invoke-WebRequest ${origin}/downloads/petty-mcp.mjs`);
+  // PETTY-279: the example block has made-up paths, so it has no copy button (S13); and the command line's
+  // first run names its file, since ~/.local/bin is not on a Mac's PATH, and says how to add it (S12)
+  await expect(page.getByRole("button", { name: "Copy the settings block" })).toHaveCount(0);
+  await expect(page.getByTestId("ai-cli-unix")).toContainText(`~/.local/bin/petty auth login --host ${origin}`);
+  await expect(page.getByTestId("ai-cli-path")).toContainText('export PATH="$HOME/.local/bin:$PATH"');
   await expect(page.getByTestId("ai-tools").locator("li")).toHaveCount(13);
   await expect(page.getByTestId("ai-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
   expect((await page.request.get("/downloads/petty-mcp.mjs")).status()).toBe(200);

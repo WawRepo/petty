@@ -724,13 +724,13 @@
     "notTitle": "Contra qué no puede protegerte Petty",
     "not": [
       "Quien sirve este sitio web podría servir una versión que robe tu frase de contraseña. Las reglas estrictas del navegador reducen este riesgo, pero no lo eliminan.",
-      "Cuando el inicio de sesión pasa por Clerk, Clerk decide quién puede iniciar sesión. Quien controle Clerk podría iniciar sesión como tú, pero aun así necesitaría tu frase de contraseña o tu llave de acceso para abrir tus cajones. Su código va integrado en esta aplicación en una versión fija y nunca se carga desde otro lugar.",
       "Un token de acceso que creas para una herramienta (Ajustes → Tokens de acceso) lee todos los cajones que puedes abrir, incluidos los que se compartan contigo más adelante, y un token con permiso de escritura puede añadir movimientos y editar etiquetas y lugares. Quien tenga la cadena del token tiene ese acceso hasta que caduque o lo revoques. Trátalo como una llave.",
       "Cualquier persona con quien compartas un cajón puede leer y copiar todo su contenido. Quitarla solo le impide el acceso futuro.",
       "Un miembro con permiso de escritura también puede dañar el historial de un cajón (la aplicación muestra entonces esos registros como manipulados, pero su contenido se pierde). Comparte con personas de confianza.",
       "Un fallo de seguridad en la propia aplicación.",
       "Una frase de contraseña olvidada sin código de recuperación: nadie puede ayudarte, por diseño."
     ],
+    "notClerk": "Cuando el inicio de sesión pasa por Clerk, Clerk decide quién puede iniciar sesión. Quien controle Clerk podría iniciar sesión como tú, pero aun así necesitaría tu frase de contraseña o tu llave de acceso para abrir tus cajones. Su código va integrado en esta aplicación en una versión fija y nunca se carga desde otro lugar.",
     "source": "Petty es software libre (AGPL-3.0). Lee el código fuente o ejecútalo por tu cuenta:"
   },
   "admin": {
@@ -1289,7 +1289,6 @@
     "windows": "Windows (PowerShell)",
     "manual": "O descarga el archivo y muévelo tú a esa carpeta:",
     "example": "El bloque que se muestra se parece a este, con tus propias rutas:",
-    "copyConfig": "Copiar el bloque de configuración",
     "claudeCode": "Para Claude Code, lo mismo en un solo comando:",
     "cliTitle": "2c. La línea de comandos: petty",
     "cliIntro": "Un programa para tu terminal, tus scripts y los agentes de IA que ejecutan comandos (Claude Code, Codex). El programa inicia sesión a través de una página de este Petty en tu navegador, como gh auth login: no hay que copiar ningún token.",
@@ -1300,6 +1299,7 @@
       "Después prueba petty drawers, o petty help para ver el resto. Para completar con la tecla Tab, ejecuta petty completion -s zsh (o bash, fish, powershell)."
     ],
     "cliDownload": "Descargar petty.mjs",
+    "cliPath": "Si el terminal dice «command not found: petty», ~/.local/bin no está en tu PATH. Añade export PATH=\"$HOME/.local/bin:$PATH\" a ~/.zshrc (Mac) o ~/.bashrc (Linux) y abre un terminal nuevo.",
     "askTitle": "3. Pregunta",
     "ask": [
       "¿Qué hay en el cajón de la cocina?",

@@ -30,6 +30,8 @@ services:
   # `make demo`: the production image on http://localhost:3300 with a seeded household (profile "demo").
   # Port 3300, not 3000: the e2e suite starts the dev API on 3000 and would otherwise reuse this container.
   # Cookies are not marked Secure and the proxy is not trusted, because this is plain http on localhost.
+  # So the app sees Docker's gateway as every client's address (the /device page shows it): a demo-only
+  # quirk; a real deployment sits behind its proxy with TRUST_PROXY=true (docs/deploy.md).
   # The image is PULLED from GHCR (the published image), never built here: a local build of the whole
   # workspace takes ~10 minutes on a laptop. PETTY_TAG picks a version; "latest" follows the last deploy.
   # `make demo-local` builds the image from the working tree instead (arm64 native on Apple silicon, ~10 min cold, fast after).

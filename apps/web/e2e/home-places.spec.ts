@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, loginAndUnlock, openSettings, signupWithKeys, test } from "./fixtures.js";
+import { expect, loginAndUnlock, makeDrawers, openSettings, signupWithKeys, test } from "./fixtures.js";
 
 /**
  * PETTY-257: with places, the Home picture is the place tree. The places stand on the first ring round the
@@ -8,16 +8,6 @@ import { expect, loginAndUnlock, openSettings, signupWithKeys, test } from "./fi
  * goes one level down; the middle and the corner bubbles go back up. Settings can switch the picture off.
  * The drawers are made through the app's own store (dev build), each with its place.
  */
-async function makeDrawers(page: Page, list: [string, string[]][]) {
-  const made = await page.evaluate(async (list) => {
-    const url = performance.getEntriesByType("resource").map((e) => e.name).filter((n) => /\/src\/lib\/drawers\.ts(\?|$)/.test(n)).at(-1);
-    if (!url) return 0;
-    const m = (await import(url)) as { createDrawer: (name: string, tags: readonly string[]) => Promise<string> };
-    for (const [name, place] of list) await m.createDrawer(name, place);
-    return list.length;
-  }, list);
-  expect(made, "the drawers must be made in the app's own store").toBe(list.length);
-}
 const art = (page: Page) => page.getByTestId("places-art");
 /** The names on the bubbles in view of one kind, in the order they are drawn. */
 const shown = (page: Page, kind: string) => art(page).locator(`.pa-bub.${kind}:not(.off) .uc-bub-tip`).allTextContents();

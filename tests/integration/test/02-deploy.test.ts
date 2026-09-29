@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { API, ORIGIN, compose, testEnv } from "../lib.js";
 
@@ -54,6 +55,23 @@ describe("deployment", () => {
     expect(mjs.status).toBe(200);
     expect((await mjs.text()).length).toBeGreaterThan(100_000);
     expect((await fetch(`${ORIGIN}/ai`)).status).toBe(200);
+  });
+
+  it("a file of its own is that file, also once the service worker answers navigations (PETTY-279)", async () => {
+    const notices = await fetch(`${ORIGIN}/THIRD_PARTY_NOTICES.md`);
+    expect(notices.status).toBe(200);
+    const text = await notices.text();
+    expect(text).toContain("Third-party notices");
+    expect(text).not.toContain("<div id=\"root\"");
+    // The shipped worker's rule: a navigation to an address it denies goes to the network; any other gets
+    // the app shell. It used to deny only /api and /downloads, so the footer's notices link showed the app.
+    const sw = await (await fetch(`${ORIGIN}/sw.js`)).text();
+    const list = /denylist:(\[\/.*?\])\}/.exec(sw)?.[1];
+    expect(list, "the service worker has a navigation denylist").toBeTruthy();
+    const deny = runInNewContext(list!) as RegExp[];
+    const shell = (path: string) => !deny.some((r) => r.test(path));
+    for (const file of ["/THIRD_PARTY_NOTICES.md", "/robots.txt", "/downloads/petty.mjs", "/api/health"]) expect(shell(file), file).toBe(false);
+    for (const route of ["/", "/privacy", "/drawers/0b6f4b4e-8c1e-4f7a-9d0e-2b1a3c4d5e6f", "/device?code=BCDF-GHJK-LMNP", "/join/abc_DEF-123"]) expect(shell(route), route).toBe(true);
   });
 
   it("API answers are never cached, and a malformed id is a 404 (PETTY-193)", async () => {

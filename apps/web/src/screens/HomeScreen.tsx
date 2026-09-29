@@ -83,13 +83,19 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const w = drawerWarnings(view);
   const attention = w.problems > 0 || w.chain !== "ok" || w.negative || w.skipped > 0;
   useEffect(() => { if (view.summary.has_photo && !view.photo && view.key) void loadPhoto(view.summary.id); }, [view.summary.has_photo, view.photo, view.key, view.summary.id]);
-  // One amount per currency, in the order the lines appear; the first is the card's headline, the rest are counted in the meta row.
-  const subtotals = view.doc ? Object.entries(view.doc.lines.reduce<Record<string, { amount: number; exponent: number }>>((acc, l) => {
-    if (l.kind !== "money" || !lineCounted(l)) return acc;
-    const cur = acc[l.currency] ?? { amount: 0, exponent: l.exponent };
-    acc[l.currency] = { amount: cur.amount + lineBalance(view, l.id), exponent: Math.max(cur.exponent, l.exponent) };
-    return acc;
-  }, {})) : [];
+  // One amount per currency, summed as the Home and drawer totals sum it (one code, "eur" is "EUR", at
+  // the finer exponent); the first is the card's headline, the rest are counted in the meta row. In
+  // their order too, largest first (PETTY-279: the card led with another currency).
+  const sums = new Map<string, { amount: number; exponent: number }>();
+  for (const l of view.doc?.lines ?? []) {
+    if (l.kind !== "money" || !lineCounted(l)) continue;
+    const code = normalizeCurrencyCode(l.currency), cur = sums.get(code), bal = lineBalance(view, l.id);
+    const exp = Math.max(cur?.exponent ?? 0, l.exponent);
+    sums.set(code, { amount: (cur ? cur.amount * 10 ** (exp - cur.exponent) : 0) + bal * 10 ** (exp - l.exponent), exponent: exp });
+  }
+  const subtotals = [...sums];
+  const maxExp = Math.max(0, ...subtotals.map(([, v]) => v.exponent));
+  subtotals.sort(([ac, a], [bc, b]) => b.amount * 10 ** (maxExp - b.exponent) - a.amount * 10 ** (maxExp - a.exponent) || ac.localeCompare(bc));
   const head = subtotals[0];
   return (
     <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} aria-label={t("drawer.open", { name })} data-testid="drawer-row">
@@ -99,10 +105,10 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
         {view.error ? <span className="degraded" role="status">{t(`home.degradedReason.${view.error}`)}</span> : (
           <>
             {/* Every currency on the card (PETTY-120, audit F13): the first as the headline, the others under it. */}
-            {head ? <span className={`rowamount${head[1].amount < 0 ? " negative" : ""}`} data-testid="row-amount">{formatAmount(head[1].amount, head[1].exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(head[0])}</span></span> : null}
+            {head ? <span className={`rowamount${head[1].amount < 0 ? " negative" : ""}`} data-testid="row-amount">{formatAmount(head[1].amount, head[1].exponent, i18n.language)} <span className="cur">{head[0]}</span></span> : null}
             {subtotals.length > 1 ? (
               <span className="rowamount-more" data-testid="row-amount-more">
-                {subtotals.slice(1).map(([code, c]) => <span key={code} className={c.amount < 0 ? "negative" : undefined}>{formatAmount(c.amount, c.exponent, i18n.language)} <span className="cur">{normalizeCurrencyCode(code)}</span></span>)}
+                {subtotals.slice(1).map(([code, c]) => <span key={code} className={c.amount < 0 ? "negative" : undefined}>{formatAmount(c.amount, c.exponent, i18n.language)} <span className="cur">{code}</span></span>)}
               </span>
             ) : null}
             <span className="rowmeta">
@@ -257,7 +263,8 @@ export function HomeScreen() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
         </button>
       } />
-      <main>
+      {/* data-status: a screen going back to Home waits for "ready" — then its picture is drawn, or will not be (PETTY-279) */}
+      <main data-testid="home" data-status={state.status}>
         {state.status === "failed" ? <p className="error" role="alert">{t("home.loadFailed")} <Button variant="ghost" onClick={() => void loadAll()}>{t("app.retry")}</Button></p> : null}
         {state.status === "loading" ? <HomeSkeleton /> : null}
         <OfflineBanner />
@@ -268,7 +275,7 @@ export function HomeScreen() {
             <input ref={searchRef} type="search" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }}
               placeholder={t("home.search.placeholder")} aria-label={t("home.search.label")} autoComplete="off" enterKeyHint="search" />
             <button type="button" className="search-clear" aria-label={t("home.search.close")} onClick={closeSearch}>✕</button>
-            {active ? <p className="hint m0 search-count" role="status" data-testid="search-count">{result.lines ? t("home.search.count", { lines: result.lines, drawers: result.drawers }) : t("home.search.none")}</p> : null}
+            {active ? <p className="hint m0 search-count" role="status" data-testid="search-count">{result.drawers ? t("home.search.count", { lines: result.lines, drawers: result.drawers }) : t("home.search.none")}</p> : null}
           </div>
         ) : null}
         {state.status === "ready" ? <PendingArea /> : null}
@@ -348,7 +355,7 @@ export function HomeScreen() {
             return (
               <div className={`flip-item drawer-group${hits ? " has-hits" : ""}`} key={id} data-flip-id={id} data-testid="drawer-group">
                 <DrawerRow view={v} counted={!excluded.has(id)} dim={!hits} place={placeText(id)} />
-                {hits ? <SearchHits view={v} lines={hits} /> : inTag && v.error ? <p className="hint m0 search-unavailable">{t("home.search.unavailable")}</p> : null}
+                {hits ? (hits.length ? <SearchHits view={v} lines={hits} /> : null) : inTag && v.error ? <p className="hint m0 search-unavailable">{t("home.search.unavailable")}</p> : null}
               </div>
             );
           })}

@@ -312,7 +312,8 @@ export function loadAll(): Promise<void> {
 }
 /** For screens that load on first sight: reads the live store, so one render's several effects start one load. */
 export function loadIfIdle(): void {
-  if (state.status === "idle") void loadAll();
+  // PETTY-279: a screen still on view as the vault locks ("Lock now") must not try, and throw, while locked
+  if (state.status === "idle" && getAuth().status === "unlocked") void loadAll();
 }
 
 async function loadOnce(): Promise<void> {

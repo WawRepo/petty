@@ -42,7 +42,7 @@ test("encrypted export → import into another account: same drawers, balances, 
   await keypad(pageA, "Add", "5");
   await pageA.getByTestId("entry-row").first().getByRole("button", { name: "Entry options" }).click();
   await pageA.getByRole("button", { name: "Reverse this entry" }).click();
-  await pageA.getByRole("button", { name: "Reverse", exact: true }).click();
+  await pageA.getByRole("dialog", { name: "Reverse this entry?" }).getByRole("button", { name: "Reverse this entry" }).click();
   await expect(pageA.getByTestId("line-balance")).toHaveText("60.00");
   await pageA.goto(`/drawers/${drawerId}`);
   await pageA.getByRole("button", { name: "Confirm state" }).click();

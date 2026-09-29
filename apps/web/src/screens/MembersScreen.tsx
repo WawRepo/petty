@@ -138,11 +138,12 @@ export function MembersScreen() {
               {m.user_id !== meId ? (
                 <>
                   <p className={st === "changed" ? "error my6" : "hint my6"} role={st === "changed" ? "alert" : undefined} data-testid="pin-status">{t(`members.status.${st}`)}</p>
-                  <div className="actions actions mt8 wrap">
+                  <div className="actions mt8">
                     {st !== "confirmed" && m.keys ? <Button variant="secondary" onClick={() => void confirmPin(m.user_id, m.keys!).then(() => toast(t("members.status.confirmed")))}>{st === "changed" ? t("members.acceptNew") : t("members.confirm")}</Button> : null}
-                    {isOwner ? <Button variant="danger-ghost" onClick={() => setConfirm({ kind: "remove", m })}>{t("members.remove")}</Button> : null}
                     {isOwner && m.role === "write" && !pending ? <Button variant="secondary" onClick={() => void offerTransfer(id, m.user_id)}>{t("members.makeOwner")}</Button> : null}
                     {isOwner && pending?.to_user_id === m.user_id ? <Button variant="secondary" onClick={() => void cancelTransfer(id)}>{t("pending.cancel")}</Button> : null}
+                    {/* the one that takes something away comes last (PETTY-279) */}
+                    {isOwner ? <Button variant="danger-ghost" onClick={() => setConfirm({ kind: "remove", m })}>{t("members.remove")}</Button> : null}
                   </div>
                   {pending?.to_user_id === m.user_id ? <p className="hint" data-testid="transfer-pending">{t("members.transferPending", { name: m.display_name })}</p> : null}
                 </>

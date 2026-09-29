@@ -73,7 +73,7 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
       const k = e.key === "." || e.key === "," ? dec : e.key === "Backspace" ? "⌫" : e.key;
       if (k !== "⌫" && k !== dec && !/^[0-9]$/.test(k)) return;
       e.preventDefault();
-      setAmount((v) => applyKey(v, k, dec, exponent > 0)); setError(null);
+      setAmount((v) => applyKey(v, k, dec, exponent > 0, 12, exponent)); setError(null);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -125,9 +125,12 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
         <span className="hint block mb4 fw600">{op === "adjust" ? t("line.entry.real", { noun, unit }) : t("line.entry.amount", { unit })}</span>
         <output data-testid="amount-display" aria-label={t("line.entry.amount", { unit })}>{amount}</output>
       </div>
-      <Keypad value={amount} onChange={(v) => { setAmount(v); setError(null); }} allowDecimal={exponent > 0} />
+      {/* PETTY-279: the amount's problem shows under the amount, not under the optional comment
+          (outside the polite region above: an alert inside it would be read out twice) */}
+      {error ? <p className="error tc mt0" role="alert" data-testid="amount-error">{error}</p> : null}
+      <Keypad value={amount} onChange={(v) => { setAmount(v); setError(null); }} allowDecimal={exponent > 0} maxDecimals={exponent} />
       <span className="sr-only">{decimalSeparator(locale)}</span>
-      <TextField label={t("line.entry.comment")} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("line.entry.commentPlaceholder")} error={error} maxLength={500} />
+      <TextField label={t("line.entry.comment")} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("line.entry.commentPlaceholder")} maxLength={500} />
       <div className="actions">
         <Button variant="secondary" onClick={onClose}>{t("app.cancel")}</Button>
         <Button onClick={review}>{t("line.entry.review")}</Button>
@@ -163,7 +166,7 @@ export function LineScreen() {
   const { id = "", lineId = "" } = useParams();
   // PETTY-269: back to the drawer plays the other way — the line's bubble shrinks into its place in the drawer's picture
   const morphBack = useMorphBack(`/drawers/${id}`);
-  const back = () => morphBack(vtName("l", lineId), `.drawer-art .uc-bub:not(.off) [data-vt="${vtName("l", lineId)}"]`);
+  const back = () => morphBack(vtName("l", lineId), `.drawer-art .uc-bub:not(.off) [data-vt="${vtName("l", lineId)}"]`, '[data-testid="drawer-art"]');
   const state = useDrawers();
   const [op, setOp] = useState<Op | null>(null);
   const [picked, setPicked] = useState<LedgerEntry | null>(null);
@@ -271,11 +274,14 @@ export function LineScreen() {
       <Sheet open={picked !== null && !confirmReverse} title={t("line.row.options")} onClose={() => setPicked(null)}>
         {picked ? <p className="hint">{t(`line.ops.${picked.entry.op}`)} · {signed(line, picked.entry.op === "adjust" ? (picked.entry.delta_hint ?? 0) : picked.entry.amount, locale)} {unit} · {t("line.row.by", { name: memberName(view, picked.entry.author_id) })}</p> : null}
         {rev && !rev.ok ? <p className="hint" data-testid="reverse-refused">{t(`line.reverse.refused.${rev.code}`)}</p> : null}
-        <div className="menu">
-          {canWrite ? <Button variant="danger" disabled={!rev?.ok} onClick={() => setConfirmReverse(true)}>{t("line.reverse.action")}</Button> : null}
+        {/* PETTY-279: not a solid red block with no way out; the next sheet asks before anything happens */}
+        <div className="actions">
+          <Button variant="secondary" onClick={() => setPicked(null)}>{t("app.cancel")}</Button>
+          {canWrite ? <Button variant="danger-ghost" disabled={!rev?.ok} onClick={() => setConfirmReverse(true)}>{t("line.reverse.action")}</Button> : null}
         </div>
       </Sheet>
-      <ConfirmSheet open={confirmReverse} title={t("line.reverse.title")} body={t("line.reverse.body")} confirmLabel={t("line.ops.reverse")} onClose={() => { setConfirmReverse(false); setPicked(null); }} onConfirm={doReverse} />
+      {/* the button says what it does ("Reverse this entry"), not the operation's name */}
+      <ConfirmSheet open={confirmReverse} title={t("line.reverse.title")} body={t("line.reverse.body")} confirmLabel={t("line.reverse.action")} onClose={() => { setConfirmReverse(false); setPicked(null); }} onConfirm={doReverse} />
       {options}
     </>
   );

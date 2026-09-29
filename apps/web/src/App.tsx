@@ -1,6 +1,6 @@
-import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from "react";
+import { Component, lazy, Suspense, useLayoutEffect, type ErrorInfo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router";
 import { ToastProvider } from "./components/Toast.js";
 import { useAuth } from "./lib/session.js";
 import { ClerkGate } from "./ClerkGate.js";
@@ -109,10 +109,22 @@ function Guard({ need, children }: { need: "anonymous" | "locked" | "unlocked" |
 
 function Loading() { return <PageSkeleton />; }
 
+/**
+ * A new page opens at its top (PETTY-279: /privacy opened where the landing page was scrolled to).
+ * Back and forward (POP) keep the place the browser restores.
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const type = useNavigationType();
+  useLayoutEffect(() => { if (type !== "POP") window.scrollTo(0, 0); }, [pathname, type]);
+  return null;
+}
+
 export function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <div className="app">
           <Crash>
           <ClerkGate>

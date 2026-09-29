@@ -71,6 +71,11 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   await page.reload();
   const diag = await page.evaluate(async () => ({ keys: await caches.keys(), hasIndex: !!(await caches.match("/index.html", { ignoreSearch: true })), controller: !!navigator.serviceWorker.controller }));
   expect(diag, JSON.stringify({ diag, swErrors })).toMatchObject({ hasIndex: true, controller: true });
+  // PETTY-279: with the worker in charge, a file of its own (the notices, linked from the footer) is that
+  // file — the worker used to answer it with the app shell, which then said "This page does not exist"
+  await page.goto("/THIRD_PARTY_NOTICES.md");
+  await expect(page.locator("body")).toContainText("Third-party notices");
+  await expect(page.locator("#root")).toHaveCount(0);
   // PETTY-195: go offline only once this online load has shown (and so cached) the drawers
   await page.goto("/");
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" })).toBeVisible({ timeout: 15_000 });

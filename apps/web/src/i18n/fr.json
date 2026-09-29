@@ -724,13 +724,13 @@
     "notTitle": "Ce contre quoi Petty ne peut pas protéger",
     "not": [
       "Quiconque héberge ce site pourrait diffuser une version qui vole votre phrase secrète. Des règles strictes du navigateur réduisent ce risque, elles ne le suppriment pas.",
-      "Quand la connexion passe par Clerk, c’est Clerk qui décide qui peut se connecter. Quiconque contrôle Clerk pourrait se connecter en votre nom, mais aurait encore besoin de votre phrase secrète ou de votre clé d’accès pour ouvrir vos tiroirs. Son code est intégré à cette application dans une version figée et n’est jamais chargé depuis ailleurs.",
       "Un jeton d’accès que vous créez pour un outil (Réglages → Jetons d’accès) peut lire chaque tiroir que vous pouvez ouvrir, y compris les tiroirs partagés avec vous plus tard, et un jeton en écriture peut ajouter des opérations et modifier les étiquettes et les lieux. Quiconque détient la chaîne du jeton a cet accès jusqu’à son expiration ou jusqu’à ce que vous le révoquiez. Traitez-le comme une clé.",
       "Toute personne avec qui vous partagez un tiroir peut lire et copier tout ce qu’il contient. La retirer ne coupe que l’accès futur.",
       "Un membre avec accès en écriture peut aussi endommager l’historique d’un tiroir (l’application signale alors ces enregistrements comme altérés, mais leur contenu est perdu). Partagez avec des personnes de confiance.",
       "Une faille de sécurité dans l’application elle-même.",
       "Une phrase secrète oubliée sans code de récupération : personne ne peut vous aider, et c’est voulu."
     ],
+    "notClerk": "Quand la connexion passe par Clerk, c’est Clerk qui décide qui peut se connecter. Quiconque contrôle Clerk pourrait se connecter en votre nom, mais aurait encore besoin de votre phrase secrète ou de votre clé d’accès pour ouvrir vos tiroirs. Son code est intégré à cette application dans une version figée et n’est jamais chargé depuis ailleurs.",
     "source": "Petty est un logiciel libre (AGPL-3.0). Lisez ou exécutez le code source vous-même :"
   },
   "admin": {
@@ -1289,7 +1289,6 @@
     "windows": "Windows (PowerShell)",
     "manual": "Ou téléchargez le fichier et placez-le vous-même dans ce dossier :",
     "example": "Le bloc affiché ressemble à ceci, avec vos propres chemins :",
-    "copyConfig": "Copier le bloc de configuration",
     "claudeCode": "Pour Claude Code, la même chose en une seule commande :",
     "cliTitle": "2c. La ligne de commande : petty",
     "cliIntro": "Un programme pour votre terminal, vos scripts et les agents d’IA qui lancent des commandes (Claude Code, Codex). Il se connecte via une page de ce Petty dans votre navigateur, comme gh auth login : aucun jeton à copier.",
@@ -1300,6 +1299,7 @@
       "Essayez ensuite petty drawers, ou petty help pour le reste. Pour la complétion avec la touche Tab, lancez petty completion -s zsh (ou bash, fish, powershell)."
     ],
     "cliDownload": "Télécharger petty.mjs",
+    "cliPath": "Si le terminal affiche « command not found: petty », ~/.local/bin n’est pas dans votre PATH. Ajoutez export PATH=\"$HOME/.local/bin:$PATH\" à ~/.zshrc (Mac) ou ~/.bashrc (Linux), puis ouvrez un nouveau terminal.",
     "askTitle": "3. Demander",
     "ask": [
       "Qu’y a-t-il dans mon tiroir de la cuisine ?",

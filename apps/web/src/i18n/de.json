@@ -724,13 +724,13 @@
     "notTitle": "Wovor Petty nicht schützen kann",
     "not": [
       "Wer diese Website ausliefert, könnte eine Version ausliefern, die deine Passphrase stiehlt. Strenge Browser-Regeln verringern das Risiko, beseitigen es aber nicht.",
-      "Läuft die Anmeldung über Clerk, entscheidet Clerk, wer sich anmelden darf. Wer Clerk kontrolliert, könnte sich als du anmelden, bräuchte aber weiterhin deine Passphrase oder deinen Passkey, um deine Schubladen zu öffnen. Der Code von Clerk ist in einer festen Version in diese App eingebaut und wird nie von anderswo geladen.",
       "Ein Zugriffstoken, das du für ein Tool erstellst (Einstellungen → Zugriffstokens), liest jede Schublade, die du öffnen kannst, auch solche, die erst später mit dir geteilt werden, und ein Token mit Schreibrecht kann Buchungen hinzufügen sowie Tags und Orte ändern. Wer die Zeichenfolge des Tokens hat, hat diesen Zugriff, bis das Token abläuft oder du es widerrufst. Behandle es wie einen Schlüssel.",
       "Alle, mit denen du eine Schublade teilst, können alles darin lesen und kopieren. Entfernst du sie, endet nur der künftige Zugriff.",
       "Ein Mitglied mit Schreibzugriff kann auch den Verlauf einer Schublade beschädigen (die App zeigt diese Einträge dann als manipuliert an, aber ihr Inhalt ist weg). Teile nur mit Menschen, denen du vertraust.",
       "Eine Sicherheitslücke in dieser App selbst.",
       "Eine vergessene Passphrase ohne Wiederherstellungscode: Niemand kann helfen – das ist so gewollt."
     ],
+    "notClerk": "Läuft die Anmeldung über Clerk, entscheidet Clerk, wer sich anmelden darf. Wer Clerk kontrolliert, könnte sich als du anmelden, bräuchte aber weiterhin deine Passphrase oder deinen Passkey, um deine Schubladen zu öffnen. Der Code von Clerk ist in einer festen Version in diese App eingebaut und wird nie von anderswo geladen.",
     "source": "Petty ist freie Software (AGPL-3.0). Lies den Quellcode oder betreibe Petty selbst:"
   },
   "admin": {
@@ -1289,7 +1289,6 @@
     "windows": "Windows (PowerShell)",
     "manual": "Oder lade die Datei herunter und verschiebe sie selbst in diesen Ordner:",
     "example": "Der ausgegebene Block sieht so aus, mit deinen eigenen Pfaden:",
-    "copyConfig": "Einstellungsblock kopieren",
     "claudeCode": "Für Claude Code dasselbe in einem Befehl:",
     "cliTitle": "2c. Die Kommandozeile: petty",
     "cliIntro": "Ein Programm für dein Terminal, deine Skripte und KI-Agenten, die Befehle ausführen (Claude Code, Codex). Es meldet sich über eine Seite dieses Petty in deinem Browser an, wie gh auth login: Du musst kein Token kopieren.",
@@ -1300,6 +1299,7 @@
       "Probiere dann petty drawers aus, alles Weitere zeigt petty help. Für die Tab-Vervollständigung führe petty completion -s zsh aus (oder bash, fish, powershell)."
     ],
     "cliDownload": "petty.mjs herunterladen",
+    "cliPath": "Meldet das Terminal „command not found: petty“, ist ~/.local/bin nicht im PATH. Füge export PATH=\"$HOME/.local/bin:$PATH\" zu ~/.zshrc (Mac) oder ~/.bashrc (Linux) hinzu und öffne ein neues Terminal.",
     "askTitle": "3. Fragen",
     "ask": [
       "Was ist in meiner Küchenschublade?",

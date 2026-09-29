@@ -724,13 +724,13 @@
     "notTitle": "Przed czym Petty nie chroni",
     "not": [
       "Kto udostępnia tę stronę, mógłby podsunąć wersję, która wykrada hasło sejfu. Ścisłe reguły przeglądarki zawężają to ryzyko, ale go nie usuwają.",
-      "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła sejfu lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
       "Token dostępu, który tworzysz dla narzędzia (Ustawienia → Tokeny dostępu), czyta każdą szufladę, którą możesz otworzyć, także szuflady udostępnione Ci później, a token z prawem zapisu może dodawać wpisy i zmieniać tagi oraz miejsca. Kto ma ten token, ma ten dostęp, dopóki token nie wygaśnie albo go nie unieważnisz. Traktuj go jak klucz.",
       "Każdy, z kim dzielisz szufladę, może przeczytać i skopiować całą jej zawartość. Usunięcie odcina tylko przyszły dostęp.",
       "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz.",
       "Błąd bezpieczeństwa w samej aplikacji.",
       "Zapomniane hasło sejfu bez kodu odzyskiwania: nikt nie pomoże — celowo."
     ],
+    "notClerk": "Gdy logowanie działa przez Clerk, to Clerk decyduje, kto może się zalogować. Kto kontroluje Clerk, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebuje Twojego hasła sejfu lub klucza dostępu. Jego kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
     "source": "Petty to wolne oprogramowanie (AGPL-3.0). Przeczytaj kod lub uruchom go samodzielnie:"
   },
   "admin": {
@@ -1289,7 +1289,6 @@
     "windows": "Windows (PowerShell)",
     "manual": "Albo pobierz plik i przenieś go do tego folderu samodzielnie:",
     "example": "Wypisany blok wygląda tak, z Twoimi ścieżkami:",
-    "copyConfig": "Skopiuj blok ustawień",
     "claudeCode": "W Claude Code to samo jednym poleceniem:",
     "cliTitle": "2c. Wiersz poleceń: petty",
     "cliIntro": "Jeden program do terminala, skryptów i agentów AI, które uruchamiają polecenia (Claude Code, Codex). Loguje się przez stronę tego Petty w przeglądarce, jak gh auth login: bez kopiowania tokenu.",
@@ -1300,6 +1299,7 @@
       "Potem wypróbuj petty drawers albo petty help, żeby zobaczyć resztę. Uzupełnianie klawiszem Tab włączysz poleceniem petty completion -s zsh (albo bash, fish, powershell)."
     ],
     "cliDownload": "Pobierz petty.mjs",
+    "cliPath": "Terminal pisze „command not found: petty”? Folderu ~/.local/bin nie ma w PATH. Dopisz export PATH=\"$HOME/.local/bin:$PATH\" do ~/.zshrc (Mac) albo ~/.bashrc (Linux) i otwórz nowy terminal.",
     "askTitle": "3. Zapytaj",
     "ask": [
       "Co jest w szufladzie w kuchni?",

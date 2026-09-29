@@ -31,10 +31,24 @@ export function ResetScreen() {
       toast(t("auth.reset.done"));
       nav("/login", { replace: true });
     } catch (err) {
-      if (err instanceof ApiError && err.code === "ResetInvalid") setErrors({ form: t("auth.reset.invalid") });
+      // a link cut short fails the body's own check (ValidationError), not the token lookup
+      if (err instanceof ApiError && (err.code === "ResetInvalid" || err.code === "ValidationError")) setErrors({ form: t("auth.reset.invalid") });
       else if (err instanceof NetworkError) setErrors({ form: t("errors.network") });
       else setErrors({ form: t("errors.unknown") });
     } finally { setBusy(false); }
+  }
+
+  // PETTY-279: no token, or one too short to be one (a link cut in the mail): say so, instead of a form that cannot work
+  if (token.length < 16) {
+    return (
+      <>
+        <TopBar title={t("auth.reset.newTitle")} />
+        <main>
+          <p className="error" role="alert" data-testid="reset-invalid">{t("auth.reset.invalid")}</p>
+          <p><Button variant="secondary" onClick={() => nav("/login")}>{t("auth.reset.toLogin")}</Button></p>
+        </main>
+      </>
+    );
   }
 
   return (

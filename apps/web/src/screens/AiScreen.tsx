@@ -30,7 +30,8 @@ export function AiScreen() {
   const claudeCode = `claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=${api} -- node ~/.petty/petty-mcp.mjs`;
   // PETTY-274: the command line signs in through this Petty's /device page, so no token is pasted anywhere
   const cli = `${location.origin}/downloads/petty.mjs`;
-  const cliUnix = `mkdir -p ~/.local/bin && curl -fsSL ${cli} -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty\npetty auth login --host ${location.origin}`;
+  // PETTY-279: ~/.local/bin is not on macOS's PATH by default, so the first run names the file itself
+  const cliUnix = `mkdir -p ~/.local/bin && curl -fsSL ${cli} -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty\n~/.local/bin/petty auth login --host ${location.origin}`;
   const cliWindows = `New-Item -ItemType Directory -Force "$HOME\\.petty" | Out-Null; Invoke-WebRequest ${cli} -OutFile "$HOME\\.petty\\petty.mjs"\nnode "$HOME\\.petty\\petty.mjs" auth login --host ${location.origin}`;
   const list = (key: string) => (t(key, { returnObjects: true }) as string[]).map((s, i) => <li key={i} className="mb6">{s}</li>);
   const copy = (text: string) => { void navigator.clipboard?.writeText(text).then(() => toast(t("app.copied"))); };
@@ -64,8 +65,8 @@ export function AiScreen() {
           <p className="hint mb4">{t("ai.manual")}</p>
           <p className="m0 mb12"><a className="btn btn-secondary" href="/downloads/petty-mcp.mjs" download="petty-mcp.mjs">{t("ai.download")}</a></p>
           <p className="hint mb4">{t("ai.example")}</p>
-          <pre className="codeblock" data-testid="ai-config">{config}</pre>
-          <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(config)}>{t("ai.copyConfig")}</Button></p>
+          {/* an example only (its paths are made up), so it has no copy button: --print-config prints the real one */}
+          <pre className="codeblock mb12" data-testid="ai-config">{config}</pre>
           <p className="hint mb4">{t("ai.claudeCode")}</p>
           <pre className="codeblock">{claudeCode}</pre>
           <p className="mt4 mb0"><Button variant="secondary" onClick={() => copy(claudeCode)}>{t("app.copy")}</Button></p>
@@ -77,6 +78,7 @@ export function AiScreen() {
           <p className="hint mb4">{t("ai.unix")}</p>
           <pre className="codeblock" data-testid="ai-cli-unix">{cliUnix}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliUnix)}>{t("app.copy")}</Button></p>
+          <p className="hint mb12" data-testid="ai-cli-path">{t("ai.cliPath")}</p>
           <p className="hint mb4">{t("ai.windows")}</p>
           <pre className="codeblock" data-testid="ai-cli-windows">{cliWindows}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliWindows)}>{t("app.copy")}</Button></p>

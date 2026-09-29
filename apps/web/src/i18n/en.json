@@ -724,13 +724,13 @@
     "notTitle": "What Petty cannot defend against",
     "not": [
       "Whoever serves this website could serve a version that steals your passphrase. Strict browser rules narrow this, they do not remove it.",
-      "When sign-in runs through Clerk, Clerk decides who may sign in. Whoever controls Clerk could sign in as you, but still needs your passphrase or passkey to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
       "An access token you make for a tool (Settings → Access tokens) reads every drawer you can open, including drawers shared with you later, and a writing token can add entries and edit tags and places. Whoever holds the token string has that access until it expires or you revoke it. Treat it like a key.",
       "Anyone you share a drawer with can read and copy everything in it. Removing them stops future access only.",
       "A member with write access can also damage a drawer's history (the app then shows those records as tampered, but their content is gone). Share with people you trust.",
       "A security bug in this app itself.",
       "A forgotten passphrase with no recovery code: nobody can help, by design."
     ],
+    "notClerk": "When sign-in runs through Clerk, Clerk decides who may sign in. Whoever controls Clerk could sign in as you, but still needs your passphrase or passkey to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
     "source": "Petty is free software (AGPL-3.0). Read or run the source yourself:"
   },
   "admin": {
@@ -1289,7 +1289,6 @@
     "windows": "Windows (PowerShell)",
     "manual": "Or download the file and move it into that folder yourself:",
     "example": "The printed block looks like this, with your own paths:",
-    "copyConfig": "Copy the settings block",
     "claudeCode": "For Claude Code, the same as one command:",
     "cliTitle": "2c. The command line: petty",
     "cliIntro": "One program for your terminal, your scripts, and AI agents that run commands (Claude Code, Codex). It signs in through a page of this Petty in your browser, like gh auth login: no token to copy.",
@@ -1300,6 +1299,7 @@
       "Then try petty drawers, or petty help for the rest. For Tab completion, run petty completion -s zsh (or bash, fish, powershell)."
     ],
     "cliDownload": "Download petty.mjs",
+    "cliPath": "If the terminal says “command not found: petty”, ~/.local/bin is not on your PATH. Add export PATH=\"$HOME/.local/bin:$PATH\" to ~/.zshrc (Mac) or ~/.bashrc (Linux), then open a new terminal.",
     "askTitle": "3. Ask",
     "ask": [
       "What is in my kitchen drawer?",

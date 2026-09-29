@@ -23,6 +23,8 @@ export type LineOptionsStep = "options" | "rename" | "currency" | "unit" | "text
  */
 export function LineOptions({ view, line, open, startAt = "options", onClose, onDeleted }: { view: DrawerView; line: Line; open: boolean; startAt?: LineOptionsStep; onClose: () => void; onDeleted?: () => void }) {
   const { t } = useTranslation();
+  const place = view.doc?.lines.findIndex((l) => l.id === line.id) ?? -1;
+  const lineCount = view.doc?.lines.length ?? 0;
   const toast = useToast();
   const [what, setWhat] = useState<LineOptionsStep>(startAt);
   useEffect(() => { if (open) setWhat(startAt); }, [open, startAt]);
@@ -62,8 +64,9 @@ export function LineOptions({ view, line, open, startAt = "options", onClose, on
             </>
           );
         })() : null}
-        {canWrite ? <Button variant="secondary" onClick={() => { close(); void run(() => mutateDocument(view.summary.id, [{ type: "move_up", line_id: line.id }])); }}>{t("drawer.line.moveUp")}</Button> : null}
-        {canWrite ? <Button variant="secondary" onClick={() => { close(); void run(() => mutateDocument(view.summary.id, [{ type: "move_down", line_id: line.id }])); }}>{t("drawer.line.moveDown")}</Button> : null}
+        {/* PETTY-279: the first item cannot go up, nor the last one down */}
+        {canWrite ? <Button variant="secondary" disabled={place === 0} onClick={() => { close(); void run(() => mutateDocument(view.summary.id, [{ type: "move_up", line_id: line.id }])); }}>{t("drawer.line.moveUp")}</Button> : null}
+        {canWrite ? <Button variant="secondary" disabled={place === lineCount - 1} onClick={() => { close(); void run(() => mutateDocument(view.summary.id, [{ type: "move_down", line_id: line.id }])); }}>{t("drawer.line.moveDown")}</Button> : null}
         {canWrite ? <Button variant="danger-ghost" onClick={() => setWhat("delete")}>{t("drawer.line.delete")}</Button> : null}
       </div>
     </Sheet>

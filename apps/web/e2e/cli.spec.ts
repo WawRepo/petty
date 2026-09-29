@@ -75,6 +75,9 @@ test("Deny on the /device page: the command line stops and is not signed in", as
   await expect(page.getByTestId("device-denied")).toBeVisible();
   expect(await login.done).toBe(3);
   expect(login.err()).toContain("denied on the page");
+  // PETTY-279: not a dead end
+  await page.getByTestId("device-denied").getByRole("link", { name: "Done" }).click();
+  await expect(page.getByTestId("drawers-header").or(page.getByTestId("home-empty"))).toBeVisible();
 });
 
 test("signed out, the /device link leads through sign-in and unlock back to the request", async ({ page }) => {

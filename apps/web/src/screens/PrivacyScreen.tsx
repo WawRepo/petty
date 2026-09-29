@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { isClerk } from "../lib/authConfig.js";
 import { useBack } from "../lib/nav.js";
 import { TopBar } from "../components/TopBar.js";
 import { SOURCE_URL } from "../lib/links.js";
@@ -15,7 +16,7 @@ export function PrivacyScreen() {
         <p>{t("privacy.intro")}</p>
         <section className="card"><h2 className="h-card">{t("privacy.seesTitle")}</h2><ul className="list mb0">{list("privacy.sees")}</ul></section>
         <section className="card"><h2 className="h-card">{t("privacy.defendsTitle")}</h2><ul className="list mb0">{list("privacy.defends")}</ul></section>
-        <section className="card"><h2 className="h-card">{t("privacy.notTitle")}</h2><ul className="list mb0">{list("privacy.not")}</ul></section>
+        <section className="card"><h2 className="h-card">{t("privacy.notTitle")}</h2><ul className="list mb0">{list("privacy.not")}{isClerk() ? <li>{t("privacy.notClerk")}</li> : null}</ul></section>
         <p className="hint">{t("privacy.source")} <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="privacy-source">{t("app.sourceCode")}</a></p>
       </main>
     </>
