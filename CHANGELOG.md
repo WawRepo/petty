@@ -6,6 +6,8 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+## [1.5.6] — 2026-09-29
+
 ### Changed
 - One word for what a drawer holds: **item** (the app said "line", "row" and "item"). The drawer
   check is **Checked**: *Mark as checked*, *Not checked yet*, *Checked · 3 days ago*. The entry
@@ -293,7 +295,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.5...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.6...HEAD
+[1.5.6]: https://github.com/WawRepo/petty/releases/tag/v1.5.6
 [1.5.5]: https://github.com/WawRepo/petty/releases/tag/v1.5.5
 [1.5.4]: https://github.com/WawRepo/petty/releases/tag/v1.5.4
 [1.5.3]: https://github.com/WawRepo/petty/releases/tag/v1.5.3
