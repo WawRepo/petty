@@ -28,7 +28,8 @@ export function AccessTokens({ me }: { me: Me }) {
   const [open, setOpen] = useState(false);
   const { tokens, reload } = useAccessTokens(true);
   const [name, setName] = useState("");
-  const [write, setWrite] = useState(true);
+  // PETTY-281 (S30): a new token only reads until you switch changes on — the least it needs
+  const [write, setWrite] = useState(false);
   const [days, setDays] = useState<number>(90);
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,7 +37,7 @@ export function AccessTokens({ me }: { me: Me }) {
   const [made, setMade] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<{ id: string; name: string } | null>(null);
 
-  const close = () => { setOpen(false); setName(""); setPass(""); setError(null); setWrite(true); setDays(90); };
+  const close = () => { setOpen(false); setName(""); setPass(""); setError(null); setWrite(false); setDays(90); };
 
   async function create() {
     setBusy(true);

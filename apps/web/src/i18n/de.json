@@ -7,13 +7,11 @@
     "save": "Speichern",
     "close": "Schließen",
     "done": "Fertig",
-    "continue": "Weiter",
     "retry": "Erneut versuchen",
     "copy": "Kopieren",
     "copied": "Kopiert",
     "crashed": "Diese Seite konnte nicht geladen werden. Lade sie neu, um die aktuelle Version von Petty zu bekommen.",
     "reload": "Neu laden",
-    "offline": "Du bist offline.",
     "yes": "Ja",
     "no": "Nein",
     "sourceCode": "Quellcode",
@@ -21,7 +19,6 @@
   },
   "nav": {
     "settings": "Einstellungen",
-    "home": "Schubladen",
     "account": "Konto"
   },
   "auth": {
@@ -34,13 +31,14 @@
       "tooMany": "Zu viele Versuche. Warte ein paar Minuten.",
       "forgot": "Passwort vergessen?",
       "noAccount": "Noch kein Konto? Petty gibt es vorerst nur auf Einladung.",
-      "about": "Was ist Petty?"
+      "about": "Was ist Petty?",
+      "afterDevice": "Melde dich an, um das Kommandozeilen-Tool zu erlauben, das in deinem Terminal wartet."
     },
     "reset": {
       "title": "Anmeldepasswort zurücksetzen",
-      "body": "Das setzt nur das Anmeldepasswort zurück. Der Tresor bleibt unberührt: Deine Daten öffnet nur deine Tresor-Passphrase oder dein Wiederherstellungscode. Sind beide verloren, bitte ein anderes Mitglied einer geteilten Schublade, sie erneut mit dir zu teilen.",
-      "send": "Link zum Zurücksetzen senden",
-      "sent": "Falls es zu dieser Adresse ein Konto gibt, ist ein Link zum Zurücksetzen unterwegs. Er funktioniert einmal, eine Stunde lang.",
+      "body": "Das setzt nur das Anmeldepasswort zurück. Der Tresor bleibt unberührt: Deine Daten öffnet nur dein Passkey, deine Tresor-Passphrase oder dein Wiederherstellungscode. Verlierst du alle drei, bitte ein Mitglied einer geteilten Schublade, sie noch einmal mit dir zu teilen.",
+      "send": "Link senden",
+      "sent": "Falls es zu dieser Adresse ein Konto gibt, ist ein Link zum Zurücksetzen unterwegs. Er funktioniert einmal, 1 Stunde lang.",
       "ok": "Verstanden",
       "emailInvalid": "Gib deine E-Mail-Adresse ein.",
       "newTitle": "Neues Anmeldepasswort",
@@ -50,7 +48,7 @@
       "mismatch": "Die beiden Passwörter stimmen nicht überein.",
       "submit": "Passwort festlegen",
       "done": "Anmeldepasswort geändert. Melde dich mit dem neuen an.",
-      "invalid": "Dieser Link ist ungültig, schon benutzt oder älter als eine Stunde. Fordere einen neuen an.",
+      "invalid": "Dieser Link ist ungültig, schon benutzt oder älter als 1 Stunde. Fordere einen neuen an.",
       "toLogin": "Zurück zur Anmeldung"
     },
     "join": {
@@ -77,10 +75,10 @@
       },
       "explainer": {
         "title": "So funktioniert der Tresor – in einer Minute gelesen",
-        "password": "Mit dem Anmeldepasswort meldest du dich an. Wenn du es vergisst, können wir es per E-Mail zurücksetzen.",
-        "passphrase": "Die Tresor-Passphrase verschlüsselt deine Bargeld-Aufzeichnungen auf deinem Handy. Wir sehen sie nie und können sie nicht zurücksetzen. Lass sie von deinem Passwortmanager speichern, wenn er fragt.",
+        "password": "Mit dem Anmeldepasswort meldest du dich an. Wenn du es vergisst, kannst du es per E-Mail zurücksetzen.",
+        "passphrase": "Die Tresor-Passphrase öffnet deinen verschlüsselten Tresor. Petty sieht sie nie, und niemand kann sie zurücksetzen. Lass sie von deinem Passwortmanager speichern, wenn er fragt.",
         "recovery": "Danach bekommst du einen Wiederherstellungscode. Schreib ihn auf Papier. Er ist der einzige andere Weg hinein, wenn du alle Passkeys verlierst oder die Passphrase vergisst.",
-        "passkey": "Ein Passkey auf diesem Gerät (Face ID, Touch ID, Windows Hello) öffnet deine Bargeld-Aufzeichnungen. Wir sehen ihn nie. Auf einem neuen Gerät kann dein Handy einmal zustimmen, oder du fügst dort einen Passkey hinzu."
+        "passkey": "Ein Passkey auf diesem Gerät (Face ID, Touch ID, Windows Hello) öffnet deine Schubladen. Petty sieht ihn nie. Auf einem neuen Gerät kann dein Handy einmal zustimmen, oder du fügst dort einen Passkey hinzu."
       },
       "passkeyHint": "Dein Gerät fragt nach Face ID, Touch ID, Windows Hello oder einer PIN. Du musst dir nichts merken.",
       "usePassphrase": "Stattdessen eine Passphrase verwenden",
@@ -112,7 +110,7 @@
       "recoverWrong": "Dieser Code hat den Tresor nicht geöffnet.",
       "recoverDone": "Tresor-Passphrase geändert. Entsperre mit der neuen.",
       "loginPassword": "Dein Anmeldepasswort",
-      "managerHint": "Dein Passwortmanager kann diese Passphrase speichern. Sie bleibt verschlüsselt auf deinem Gerät, wie deine gespeicherten Passwörter.",
+      "managerHint": "Dein Passwortmanager kann diese Passphrase speichern, wie deine anderen Passwörter. Synchronisiert er, landet die Passphrase auch in seiner Cloud.",
       "passkey": "Mit Passkey entsperren",
       "passkeyWrong": "Der Passkey hat den Tresor nicht geöffnet.",
       "passkeyNoPrf": "Dieser Browser kann den Passkey hier nicht verwenden. Nutze deine Passphrase.",
@@ -137,22 +135,21 @@
       "title": "Tresor einrichten",
       "submit": "Tresor erstellen",
       "displayName": "Name (optional)",
-      "displayNameHint": "So sehen dich die Menschen, mit denen du Schubladen teilst. Bleibt das Feld leer, wird dein Clerk-Name verwendet.",
+      "displayNameHint": "So sehen dich die Menschen, mit denen du Schubladen teilst. Lässt du das Feld leer, wird der Name aus deiner Anmeldung verwendet.",
       "already": "Dieses Konto hat schon einen Tresor. Lade die App neu.",
       "explainer": {
-        "identity": "Du bist angemeldet. Der Tresor ist ein zweites, eigenes Schloss: Er öffnet deine Schubladen auf diesem Gerät und verlässt es nie."
+        "identity": "Du bist angemeldet. Der Tresor ist ein zweites, eigenes Schloss: Er öffnet deine Schubladen auf diesem Gerät. Der Server bewahrt nur eine verschlossene Kopie davon auf."
       },
       "passkeyAccount": "Petty-Tresor"
     }
   },
   "home": {
     "signOutTitle": "Abmelden?",
-    "signOutBody": "Um wieder hineinzukommen, brauchst du dein Anmeldepasswort und deine Tresor-Passphrase.",
+    "signOutBody": "Um wieder hineinzukommen, meldest du dich erneut an und öffnest den Tresor mit deinem Passkey oder deiner Passphrase.",
     "empty": "Noch keine Schubladen.",
-    "emptyHint": "Leg eine an, um dein Bargeld zu erfassen.",
+    "emptyHint": "Leg eine für jeden Ort an, wo du Bargeld oder Dinge aufbewahrst.",
     "count": "{count, plural, one {# Schublade} other {# Schubladen}}",
     "addDrawer": "Schublade hinzufügen",
-    "comingSoon": "Schubladen kommen im nächsten Schritt.",
     "totals": "Gesamtwert",
     "totalsIn": "Gesamtwert · {tag}",
     "across": "{count, plural, one {Aus # Schublade} other {Aus # Schubladen}}",
@@ -162,14 +159,14 @@
     "tags": {
       "label": "Nach Ort filtern",
       "all": "Alle",
-      "elsewhere": "Anderswo"
+      "elsewhere": "Kein Ort"
     },
     "notInTotal": "Nicht in deiner Summe",
     "search": {
       "open": "Alle Schubladen durchsuchen",
       "close": "Suche schließen",
-      "label": "Posten und Tags in allen Schubladen suchen",
-      "placeholder": "Namen oder Tags suchen, z. B. Reisepass",
+      "label": "Schubladen, Orte, Posten und Tags durchsuchen",
+      "placeholder": "Namen, Orte oder Tags suchen, z. B. Reisepass",
       "count": "{lines, plural, one {# Posten} other {# Posten}} in {drawers, plural, one {# Schublade} other {# Schubladen}}",
       "none": "Keine Treffer.",
       "hitsIn": "Treffer in {name}",
@@ -179,20 +176,18 @@
     "incomplete": "Einige Schubladen konnten nicht gelesen werden. Die Summe ist unvollständig.",
     "addDrawerTitle": "Schublade hinzufügen",
     "drawerName": "Name",
-    "drawerNamePlaceholder": "z. B. Küche",
+    "drawerNamePlaceholder": "z. B. Geldkassette",
     "add": "Hinzufügen",
-    "lines": "{count, plural, one {# Posten} other {# Posten}}",
-    "degraded": "Diese Schublade konnte nicht entschlüsselt werden.",
     "loadFailed": "Deine Schubladen konnten nicht geladen werden.",
-    "warn": "Bitte prüfen",
+    "warn": "Bitte ansehen",
     "degradedReason": {
-      "no_key": "Du hast noch keinen Schlüssel für diese Schublade.",
+      "no_key": "Du hast noch keinen Schlüssel für diese Schublade. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "sender_unknown": "Den Schlüssel hat jemand geteilt, den du noch nicht kennst.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
-      "unwrap_failed": "Der Schlüssel der Schublade konnte nicht entpackt werden.",
-      "decrypt_failed": "Diese Schublade konnte nicht entschlüsselt werden.",
-      "bad_document": "Das Dokument der Schublade ist ungültig.",
-      "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty geschrieben."
+      "unwrap_failed": "Diese Schublade konnte auf diesem Gerät nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
+      "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
+      "bad_document": "Die Daten dieser Schublade sind beschädigt. Der Eigentümer kann eine frühere Version wiederherstellen.",
+      "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty gespeichert. Lade die Seite neu, um Petty zu aktualisieren."
     },
     "otherDrawers": "{count, plural, one {Weitere Schublade} other {Weitere Schubladen}}",
     "picture": {
@@ -205,13 +200,13 @@
     "home": {
       "title": "Startbildschirm",
       "places": "Orte anzeigen",
-      "placesHint": "Schubladen nach Zimmer gruppieren und die Orts-Chips anzeigen. Aus: eine einfache Liste.",
-      "verification": "Bestätigungen anzeigen",
-      "verificationHint": "Die Leiste „Bestand bestätigen“ in Schubladen, ihr Verlauf und die „Bestätigt“-Abzeichen. Schalte das aus, wenn du nie zählst und bestätigst.",
+      "placesHint": "Schubladen nach Zimmern gruppieren und die Orts-Chips anzeigen. Aus: eine einfache Liste.",
+      "verification": "Prüfungen anzeigen",
+      "verificationHint": "Die Leiste „Als geprüft markieren“ in Schubladen, ihr Verlauf und die Abzeichen „Geprüft“. Schalte das aus, wenn du nie zählst, was drin ist.",
       "totals": "Summen anzeigen",
-      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die „In der Summe“-Chips in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und jeder Posten enthält.",
+      "totalsHint": "Die Karte „Gesamtwert“ und die Zwischensummen auf dem Startbildschirm, die Summenkarte und die Chips „In der Summe“ in einer Schublade. Schalte das aus, um nur zu sehen, was jede Schublade und jeder Posten enthält.",
       "picture": "Bild anzeigen",
-      "pictureHint": "Das Zuhause mit deinen Orten und Schubladen drumherum, auf dem Startbildschirm. Tippe auf einen Ort, um nur seine Schubladen zu sehen."
+      "pictureHint": "Ein Bild deiner Orte und Schubladen oben auf dem Startbildschirm. Tippe auf einen Ort, um nur seine Schubladen zu sehen."
     },
     "language": "Sprache",
     "theme": {
@@ -223,7 +218,7 @@
     "account": "Konto",
     "signedInAs": "Angemeldet als {email}",
     "safetyNumber": "Deine Sicherheitsnummer",
-    "safetyNumberHint": "Vergleiche sie persönlich mit allen, mit denen du eine Schublade teilst.",
+    "safetyNumberHint": "Vergleiche sie persönlich oder am Telefon mit allen, mit denen du eine Schublade teilst.",
     "joinLink": "Jemanden zu Petty einladen",
     "joinLinkHint": "Erstellt einen einmaligen Link (7 Tage gültig). Schick ihn der Person selbst und teile eine Schublade mit ihr, sobald sie ein Konto hat.",
     "joinLinkCreate": "Einladungslink erstellen",
@@ -239,7 +234,7 @@
       "add": "Passkey hinzufügen",
       "remove": "Entfernen",
       "unsupported": "Dieser Browser unterstützt Passkeys nicht so, wie Petty es braucht (Firefox noch nicht). Versuch es mit Safari, Chrome oder Edge.",
-      "addHint": "Gib die Tresor-Passphrase ein. Dann fragt dein Gerät nach Face ID, Touch ID, einer PIN oder einem Sicherheitsschlüssel.",
+      "addHint": "Gib unten ein, was verlangt wird. Dann fragt dein Gerät nach Face ID, Touch ID, einer PIN oder einem Sicherheitsschlüssel.",
       "removeHint": "Der Passkey „{name}“ öffnet den Tresor dann nicht mehr. Deine anderen Passkeys, die Passphrase und der Wiederherstellungscode funktionieren weiter.",
       "added": "Passkey eingerichtet. Ab jetzt kannst du damit entsperren.",
       "removed": "Passkey entfernt.",
@@ -282,9 +277,8 @@
     "decimal": "Dezimalkomma"
   },
   "errors": {
-    "network": "Der Server ist nicht erreichbar.",
-    "unknown": "Etwas ist schiefgelaufen.",
-    "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+    "network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuch es noch einmal.",
+    "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
     "storageFull": "Dein Speicher ist voll. Entferne Fotos oder Schubladen, die du nicht mehr brauchst. In den Einstellungen siehst du, wie viel du belegst.",
     "ownerStorageFull": "Der Eigentümer dieser Schublade hat keinen Speicher mehr frei, deshalb wurde die Änderung nicht gespeichert. Bitte ihn, Platz freizugeben.",
     "photoTooLarge": "Dieses Foto ist zu groß. Wähle ein kleineres."
@@ -311,10 +305,9 @@
     "countedHint": "Schalte das für Geld aus, das du nur verwahrst, etwa eine Vereinskasse. Das ändert nur deine eigene Ansicht.",
     "rename": "Schublade umbenennen",
     "tags": "Ort",
-    "tagsPlaceholder": "Küche Regal",
-    "tagsHint": "Durch Leerzeichen getrennte Wörter, vom Zimmer bis zur Kiste, z. B. „Küche Regal“. Bis zu 5 Wörter. Alle, die die Schublade teilen, sehen das.",
+    "placeIs": "Ort: {place}",
     "delete": "Schublade löschen",
-    "deleteConfirm": "„{name}“ mit allen Posten und dem ganzen Verlauf löschen? Das lässt sich nicht rückgängig machen.",
+    "deleteConfirm": "„{name}“ mit allen Posten und ihrem Verlauf löschen? Das lässt sich nicht rückgängig machen.",
     "deleteBtn": "Löschen",
     "deleteType": "Gib zur Bestätigung den Namen der Schublade ein",
     "photoAdd": "Foto hinzufügen",
@@ -325,7 +318,6 @@
     "photoFailed": "Das Bild konnte nicht gelesen werden. Versuch es mit einem anderen Foto.",
     "addLine": "Posten hinzufügen",
     "noLines": "Diese Schublade hat noch keine Posten.",
-    "editedBy": "Zuletzt bearbeitet von {name}",
     "dragHandle": "{name} verschieben: ziehen oder die Pfeiltasten nutzen",
     "lineOptions": "Optionen für {name}",
     "open": "{name} öffnen",
@@ -340,13 +332,13 @@
       "currency": "Währung",
       "currencyHint": "Drei Buchstaben, zum Beispiel EUR, USD oder GBP.",
       "unit": "Einheit (optional)",
-      "unitPlaceholder": "z. B. Glaskugeln",
+      "unitPlaceholder": "z. B. Stück",
       "startingBalance": "Anfangssaldo",
       "startingCount": "Anfangsbestand",
       "text": "Text (optional)",
       "textPlaceholder": "z. B. Nummer, Ablaufdatum, Standort…",
       "namePlaceholder": {
-        "money": "z. B. USD Küche",
+        "money": "z. B. Einkaufsgeld",
         "countable": "z. B. Glaskugeln",
         "single": "z. B. Reisepass"
       },
@@ -371,19 +363,18 @@
       "deleteHistory": "{count, plural, one {# Buchung im Verlauf wird mitgelöscht.} other {# Buchungen im Verlauf werden mitgelöscht.}} Das lässt sich nicht rückgängig machen.",
       "deleteNoHistory": "Das lässt sich nicht rückgängig machen.",
       "kindLocked": "Die Art lässt sich nur ändern, solange der Posten keine Buchungen hat.",
-      "countable": "Zählbar",
       "items": "Stk.",
       "lastEntry": "Letzte Buchung {when}",
       "noEntries": "Noch keine Buchungen",
       "tagsKnown": "Tags in dieser Schublade",
       "tagsNone": "Noch keine Tags. Gib unten einen ein.",
-      "tagsNew": "Neuer Tag",
+      "tagsNew": "Tag erstellen",
       "tagsAdd": "Tag hinzufügen",
       "tagsCount": "{count} von {max} Tags",
       "tagsFull": "Dieser Posten hat schon {max} Tags, mehr sind nicht möglich."
     },
     "errors": {
-      "opsDropped": "Jemand hat diese Schublade inzwischen geändert. Deine Änderung konnte nicht übernommen werden.",
+      "opsDropped": "Jemand hat diese Schublade inzwischen geändert, deshalb wurde deine Änderung nicht übernommen. Versuch es noch einmal.",
       "amountInvalid": "Gib einen gültigen Betrag ein.",
       "countInteger": "Stückzahlen sind ganze Zahlen.",
       "nameRequired": "Ein Name ist erforderlich.",
@@ -394,6 +385,7 @@
     "tagNoItemsYet": "Noch keine Posten",
     "tagNoItemsYetLong": "Noch kein Posten hat diesen Tag. Füge ihn über „Posten wählen“ hinzu.",
     "tagMore": "+{count} weitere",
+    "tagHolder": "{drawer}: {items}",
     "tagRowName": "{tag}, {count, plural, one {# Posten} other {# Posten}}",
     "tagDetailReadOnly": "schreibgeschützt",
     "tagChooseItems": "Posten wählen",
@@ -402,11 +394,11 @@
     "tagMerge": "Zusammenführen",
     "tagOpenItem": "{item} in {drawer} öffnen",
     "tagHiddenReadOnly": "Geteilte Schubladen, die du nur lesen kannst, werden nicht angezeigt.",
-    "tagNew": "Neuer Tag",
+    "tagNew": "Tag erstellen",
+    "tagNewTitle": "Neues Tag",
     "tagName": "Name des Tags",
     "tagItemsTitle": "Posten mit dem Tag {tag}",
     "tagPickItems": "Posten mit diesem Tag",
-    "tagPickOne": "Wähle mindestens einen Posten.",
     "tagItemFull": "hat schon {max} Tags",
     "tagNoItems": "Diese Schublade hat noch keine Posten. Füge zuerst einen hinzu.",
     "tagsManageHint": "Eine Tag-Liste für alle deine Schubladen.",
@@ -414,7 +406,7 @@
     "tagItemIn": "{item} in {drawer}",
     "tagRewriteFailed": "{count, plural, one {# Schublade wurde nicht aktualisiert. Versuch es noch einmal.} other {# Schubladen wurden nicht aktualisiert. Versuch es noch einmal.}}",
     "tagRewriteReadOnly": "{count, plural, one {# geteilte Schublade ist schreibgeschützt und behält den alten Tag.} other {# geteilte Schubladen sind schreibgeschützt und behalten den alten Tag.}}",
-    "tagsEmpty": "Du hast noch keine Tags. Tippe auf „Neuer Tag“, um einen anzulegen.",
+    "tagsEmpty": "Du hast noch keine Tags. Leg mit „Tag erstellen“ einen an.",
     "tagsManage": "Tags verwalten",
     "tagRename": "Umbenennen",
     "tagRemove": "Tag entfernen",
@@ -436,41 +428,44 @@
   },
   "line": {
     "noText": "Noch kein Text.",
-    "balance": "Saldo",
-    "count": "Bestand",
-    "comingSoon": "Hinzufügen, Entnehmen und Korrigieren kommen im nächsten Schritt.",
     "history": "Verlauf",
     "noEntries": "Noch keine Buchungen.",
     "loadOlder": "Ältere laden",
     "olderLoaded": "Älterer Verlauf",
-    "sinceCount": "Seit der letzten Zählung",
     "ops": {
       "add": "Hinzufügen",
       "withdraw": "Entnehmen",
       "adjust": "Korrigieren",
       "reverse": "Stornieren"
     },
+    "opName": {
+      "add": "Zugang",
+      "withdraw": "Entnahme",
+      "adjust": "Korrektur",
+      "reverse": "Stornierung"
+    },
     "entry": {
       "title": {
         "add": "Hinzufügen",
         "withdraw": "Entnehmen",
-        "adjust": "Korrigieren – gezählten {noun} eingeben"
+        "adjust": "Korrigieren"
       },
       "amount": "Betrag ({unit})",
-      "real": "Tatsächlicher {noun} ({unit})",
+      "real": "Was du gezählt hast ({unit})",
       "noun": {
         "balance": "Saldo",
         "count": "Bestand"
       },
       "comment": "Kommentar (optional)",
       "commentPlaceholder": "z. B. Geburtstagsgeschenk",
+      "commentPlaceholderAdjust": "z. B. am Sonntag gezählt",
       "review": "Prüfen",
-      "confirmTitle": "Bestätigen",
-      "operation": "Vorgang",
+      "confirmTitle": "Prüfen und speichern",
+      "operation": "Art",
       "current": "Aktueller {noun}",
       "change": "Änderung",
       "new": "Neuer {noun}",
-      "confirm": "Bestätigen",
+      "confirm": "Speichern",
       "saved": "Gespeichert",
       "negativeWarning": "Damit sinkt der Saldo auf {amount}. Vielleicht liegt hier mehr Bargeld als erfasst, oder der Betrag stimmt nicht.",
       "zero": "Gib einen Betrag ein.",
@@ -491,7 +486,7 @@
         "adjust_not_reversible": "Eine Korrektur lässt sich nicht stornieren. War die Zählung falsch, zähl noch einmal.",
         "reverse_not_reversible": "Eine Stornierung lässt sich nicht stornieren.",
         "already_reversed": "Diese Buchung wurde schon storniert.",
-        "before_checkpoint": "Schon durch eine spätere Zählung abgeglichen."
+        "before_checkpoint": "Eine spätere Korrektur deckt diese Buchung schon ab."
       }
     },
     "recount": {
@@ -504,7 +499,7 @@
       "broken": "Die Verknüpfungen im Verlauf passen nicht zusammen. Vielleicht wurden Buchungen entfernt oder geändert.",
       "truncated": "Der Verlauf ist kürzer als beim letzten Mal. Vielleicht wurden Buchungen entfernt.",
       "acknowledge": "So akzeptieren",
-      "skipped": "{count, plural, one {# Buchung wird im Saldo ignoriert, weil sie gegen die Regeln verstößt.} other {# Buchungen werden im Saldo ignoriert, weil sie gegen die Regeln verstoßen.}}",
+      "skipped": "{count, plural, one {# Buchung fließt nicht in den Saldo ein, weil sie gegen die Regeln verstößt.} other {# Buchungen fließen nicht in den Saldo ein, weil sie gegen die Regeln verstoßen.}}",
       "negative": "Negativer Saldo. Zähl diesen Posten nach und korrigiere ihn."
     }
   },
@@ -512,37 +507,38 @@
     "justNow": "gerade eben"
   },
   "verify": {
-    "notYet": "Noch nicht gezählt",
-    "verified": "Bestätigt · {when}",
-    "changed": "Bestätigung nötig · Geändert {when}",
+    "notYet": "Noch nicht geprüft",
+    "verified": "Geprüft · {when}",
+    "changed": "Erneut prüfen · geändert {when}",
     "bar": {
-      "never": "Geld gezählt? Bestätige, was drin ist, dann sehen alle, wann zuletzt geprüft wurde.",
-      "verified": "Bestätigt {when}",
-      "stale": "Bestätigt {when}, aber seitdem hat sich etwas geändert.",
+      "never": "Gezählt, was drin ist? Markiere die Schublade als geprüft, dann sehen alle, wann sie zuletzt geprüft wurde.",
+      "verified": "Geprüft {when}",
+      "stale": "Geprüft {when}, aber seitdem hat sich etwas geändert.",
       "withComment": " – {comment}"
     },
-    "confirm": "Bestand bestätigen",
+    "confirm": "Als geprüft markieren",
     "history": "Verlauf ({count})",
     "hide": "Ausblenden",
-    "historyTitle": "Verlauf der Bestätigungen",
+    "historyTitle": "Prüfverlauf",
     "sheet": {
-      "title": "Bestand der Schublade bestätigen",
-      "hint": "Mit dem Bestätigen sagst du, dass du diese Schublade wirklich geprüft hast: Jeder Saldo unten stimmt mit dem echten Bargeld überein, und jedes Einzelstück ist da. Kein Saldo ändert sich dadurch – stimmt ein Posten nicht, schließ dieses Fenster und korrigiere zuerst diesen Posten.",
-      "lines": "Posten",
+      "title": "Schublade als geprüft markieren",
+      "hint": "Markiere sie erst, wenn du hineingeschaut hast: Alle Bestände unten stimmen mit dem überein, was da ist, und jedes Einzelstück ist vorhanden. Kein Saldo ändert sich dadurch. Stimmt ein Posten nicht, schließ dieses Fenster und korrigiere zuerst diesen Posten.",
+      "lines": "Bestände",
       "none": "keine",
       "items": "Einzelstücke",
       "present": "{name} ist vorhanden",
       "comment": "Kommentar (optional)",
       "commentPlaceholder": "z. B. mit Alex gezählt",
-      "confirm": "Bestätigen"
+      "confirm": "Als geprüft markieren"
     },
-    "toast": "Schublade bestätigt",
+    "toast": "Schublade geprüft",
     "row": {
-      "title": "Bestätigt",
+      "title": "Geprüft",
       "by": "von {name}",
       "missing": "Fehlt: {names}",
       "present": "vorhanden",
-      "absent": "fehlt"
+      "absent": "fehlt",
+      "item": "{name}: {value}"
     }
   },
   "pending": {
@@ -573,15 +569,15 @@
     },
     "safety": "Sicherheitsnummer",
     "status": {
-      "confirmed": "Bestätigt",
+      "confirmed": "Verglichen",
       "unconfirmed": "Noch nicht verglichen",
-      "changed": "SCHLÜSSEL GEÄNDERT – vergleiche neu, bevor du etwas teilst",
-      "unpinned": "Kein Schlüssel"
+      "changed": "Der Schlüssel dieser Person hat sich geändert. Vergleiche die Sicherheitsnummern noch einmal, bevor du etwas teilst.",
+      "unpinned": "Noch nicht eingerichtet"
     },
-    "confirm": "Ich habe diese Nummer verglichen",
+    "confirm": "Nummern stimmen überein",
     "acceptNew": "Neuen Schlüssel akzeptieren",
     "remove": "Entfernen",
-    "removeConfirm": "{name} aus dieser Schublade entfernen? Was die Person schon gesehen hat, behält sie; der Schlüssel wird ersetzt, damit sie nichts Neues mehr lesen kann.",
+    "removeConfirm": "{name} aus dieser Schublade entfernen? Was die Person schon gesehen hat, behält sie. Die Schublade bekommt einen neuen Schlüssel, sodass sie nichts lesen kann, was später hinzukommt.",
     "makeOwner": "Zum Eigentümer machen",
     "leave": "Schublade verlassen",
     "leaveConfirm": "Diese Schublade verlassen? Um zurückzukommen, brauchst du eine neue Einladung.",
@@ -595,12 +591,11 @@
     "lookup": "Suchen",
     "notFound": "Kein Petty-Konto mit dieser E-Mail. Schick zuerst einen Einladungslink.",
     "noKeys": "Diese Person hat ihr Konto noch nicht fertig eingerichtet.",
-    "found": "{name}",
     "role": "Rolle",
-    "roleWrite": "Bearbeiter – kann buchen, Posten bearbeiten und den Bestand bestätigen",
+    "roleWrite": "Bearbeiter – kann hinzufügen und entnehmen, Posten bearbeiten und die Schublade als geprüft markieren",
     "roleRead": "Leser – sieht alles, kann nichts ändern und nichts exportieren",
     "compare": "Ich habe diese Sicherheitsnummer mit {name} persönlich oder am Telefon verglichen",
-    "blockedChanged": "Der Schlüssel dieser Person hat sich seit deiner letzten Bestätigung geändert. Akzeptiere zuerst unter Mitglieder den neuen Schlüssel.",
+    "blockedChanged": "Der Schlüssel dieser Person hat sich geändert, seit du ihn zuletzt verglichen hast. Akzeptiere zuerst unter Mitglieder den neuen Schlüssel.",
     "send": "Einladen",
     "sent": "Einladung gesendet",
     "joinLink": "Einladungslink senden",
@@ -611,8 +606,7 @@
   "rotation": {
     "running": "Schlüssel der Schublade wird ersetzt… {done} von {total} Buchungen neu verschlüsselt.",
     "needed": "Ein Mitglied wurde entfernt. Der Schlüssel der Schublade wird ersetzt, sobald ein Bearbeiter sie das nächste Mal öffnet.",
-    "keyChanged": "Der Schlüssel von {names} hat sich geändert. Prüfe die Sicherheitsnummer unter Mitglieder, bevor du etwas teilst.",
-    "cannot": "Der Schlüssel kann nicht ersetzt werden: Bestätige zuerst unter Mitglieder den Schlüssel jedes Mitglieds."
+    "keyChanged": "Der Schlüssel von {names} hat sich geändert. Prüfe die Sicherheitsnummer unter Mitglieder, bevor du etwas teilst."
   },
   "offline": {
     "banner": "Du bist offline. Änderungen werden auf diesem Gerät gespeichert und gesendet, sobald du wieder verbunden bist.",
@@ -623,7 +617,7 @@
     "report": {
       "title": "Während du weg warst",
       "foreign": "{amount} von {name} in {line}",
-      "recount": "Deine Zählung in {line} wurde nicht gespeichert – der Posten hat sich inzwischen geändert. Zähl noch einmal.",
+      "recount": "Deine Zählung in {line} wurde nicht gespeichert: Der Posten hat sich inzwischen geändert. Zähl noch einmal.",
       "reverseRefused": "Deine Stornierung in {line} wurde nicht gespeichert: {reason}",
       "opsDropped": "Eine Änderung an „{drawer}“ konnte nicht übernommen werden: Jemand hat die Schublade inzwischen geändert.",
       "failed": "Eine Änderung an „{drawer}“ konnte nicht gesendet werden.",
@@ -633,9 +627,9 @@
     }
   },
   "install": {
-    "title": "Zum Startbildschirm hinzufügen",
+    "title": "App installieren",
     "why": "Installiert öffnet sich Petty wie eine App, behält seine Schlüssel und Offline-Daten und funktioniert ohne Netz.",
-    "nudge": "Füge Petty zu deinem Startbildschirm hinzu, damit es auch offline funktioniert.",
+    "nudge": "Installiere Petty, damit es auch offline funktioniert.",
     "ios": "Füge Petty zu deinem Home-Bildschirm hinzu, damit es auch offline funktioniert: Teilen → Zum Home-Bildschirm.",
     "manual": "Nutze das Menü deines Browsers: „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
     "installed": "Petty ist auf diesem Gerät installiert.",
@@ -647,10 +641,10 @@
     "title": "Backup",
     "hint": "Ein Export enthält jede Schublade, die dir gehört oder die du bearbeiten darfst, mit Fotos und dem ganzen Verlauf. Bewahre die Datei an einem Ort auf, dem du vertraust.",
     "exportEncrypted": "Exportieren (verschlüsselt)",
-    "exportPlain": "Als Klartext exportieren…",
+    "exportPlain": "Unverschlüsselt exportieren…",
     "import": "Aus Datei importieren",
     "password": "Export-Passwort",
-    "passwordHint": "Mindestens 12 Zeichen. Unabhängig von deiner Tresor-Passphrase; nötig, um diese Datei überall zu öffnen, auch ohne Konto.",
+    "passwordHint": "Mindestens 12 Zeichen, anders als deine Tresor-Passphrase. Es öffnet diese Datei überall, auch ohne Konto. Niemand kann es wiederherstellen.",
     "passwordRepeat": "Export-Passwort wiederholen",
     "passwordMismatch": "Die Passwörter stimmen nicht überein.",
     "passwordShort": "Mindestens 12 Zeichen.",
@@ -658,12 +652,12 @@
     "exporting": "Wird vorbereitet…",
     "exported": "Export fertig",
     "skipped": "{count, plural, one {# schreibgeschützte Schublade wurde} other {# schreibgeschützte Schubladen wurden}} ausgelassen.",
-    "plainTitle": "Als Klartext exportieren?",
+    "plainTitle": "Unverschlüsselt exportieren?",
     "plainWarning": "Diese Datei enthält jeden Saldo, jede Buchung, jeden Kommentar und jedes Foto unverschlüsselt. Wer die Datei bekommt, kann alles lesen. Nimm lieber den verschlüsselten Export, außer du weißt, wofür du diesen brauchst.",
     "plainConfirm": "Unverschlüsselt exportieren",
     "importTitle": "Importieren",
-    "importHint": "Erstellt aus der Datei neue Schubladen, die dir gehören. Die ursprünglichen Autoren bleiben als Beschriftung erhalten; jede importierte Buchung wird von dir signiert und mit [imported] markiert.",
-    "importPassword": "Passwort der Datei",
+    "importHint": "Erstellt aus der Datei neue Schubladen, die dir gehören. Jede Buchung behält den Namen ihres Autors als Text, wird von dir signiert und mit [imported] markiert.",
+    "importPassword": "Export-Passwort",
     "importFile": "Datei auswählen",
     "importing": "{drawer} wird importiert: {done} von {total} Buchungen…",
     "imported": "{count, plural, one {# Schublade} other {# Schubladen}} importiert",
@@ -675,7 +669,7 @@
     "title": "Konto löschen",
     "intro": "Das lässt sich nicht rückgängig machen. Entscheide für jede Schublade, die dir gehört und die andere nutzen, was mit ihr passiert.",
     "erased": "Was gelöscht wird: deine privaten Schlüssel, deine Sitzungen, deine E-Mail und dein Name sowie jede Schublade, die nur dir gehört.",
-    "kept": "Was bleibt: Buchungen, die du in Schubladen geschrieben hast, die andere Mitglieder behalten – sie sind deren Kassenbuch, verschlüsselt mit einem Schlüssel, den sie besitzen. Dein Name daran wird zu „Gelöschter Nutzer“. Deine öffentlichen Schlüssel bleiben, damit sich diese Buchungen weiter prüfen lassen.",
+    "kept": "Was bleibt: die Buchungen, die du in Schubladen geschrieben hast, die andere Mitglieder behalten. Sie gehören zu den Aufzeichnungen dieser Mitglieder, verschlüsselt mit einem Schlüssel, den sie besitzen. Dein Name daran wird zu „Gelöschter Nutzer“, und deine öffentlichen Schlüssel bleiben, damit sich diese Buchungen weiter prüfen lassen.",
     "sharedTitle": "Geteilte Schubladen, die dir gehören",
     "sole": "{count, plural, one {# Schublade, die nur dir gehört, wird gelöscht.} other {# Schubladen, die nur dir gehören, werden gelöscht.}}",
     "memberships": "Du verlässt {count, plural, one {# Schublade, in der du Mitglied bist} other {# Schubladen, in denen du Mitglied bist}}.",
@@ -695,30 +689,30 @@
     "summaryUndecided": "{drawer}: noch nicht entschieden"
   },
   "pins": {
-    "rolledBackTitle": "Deine Liste vertrauenswürdiger Schlüssel fehlt auf dem Server",
-    "rolledBack": "Dieses Gerät hat zuletzt Version {seen} deiner Liste vertrauenswürdiger Schlüssel gesehen; der Server hat jetzt Version {server}. Das kann ein wiederhergestelltes Backup sein – oder jemand will dich dazu bringen, neuen Schlüsseln zu vertrauen. Bis du neu beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
-    "startOver": "Verstanden, neu beginnen"
+    "rolledBackTitle": "Der Server hat eine ältere Kopie deiner vertrauenswürdigen Schlüssel",
+    "rolledBack": "Dieses Gerät hat zuletzt Version {seen} deiner Liste vertrauenswürdiger Schlüssel gesehen; der Server hat jetzt Version {server}. Das kann ein wiederhergestelltes Backup sein – oder jemand will dich dazu bringen, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
+    "startOver": "Neue Schlüsselliste beginnen"
   },
   "privacy": {
     "link": "Datenschutz und Sicherheit",
     "title": "Datenschutz und Sicherheit",
-    "intro": "Petty verschlüsselt deine Schubladen auf deinem Gerät. Der Server speichert verschlüsselte Daten, die er nicht öffnen kann. Hier steht genau, was er sehen kann und was nicht.",
+    "intro": "Petty verschlüsselt den Inhalt deiner Schubladen auf deinem Gerät. Der Server speichert verschlüsselte Daten, die er nicht öffnen kann. Hier steht genau, was er sehen kann und was nicht.",
     "seesTitle": "Was der Server sehen kann",
     "sees": [
       "Deine E-Mail-Adresse und deinen Anzeigenamen, ebenso die der Menschen, mit denen du teilst.",
       "Wie viele Schubladen du hast und wie viele Posten jede enthält.",
       "Wer welche Schublade mit wem teilt, und in welcher Rolle.",
-      "Wann jede Buchung geschrieben wurde, von wem, zu welchem Posten und ob es eine Zählung oder eine Stornierung war – nie den Betrag, den Kommentar oder den Namen des Postens.",
+      "Wann jede Buchung geschrieben wurde, von wem, in welchem Posten und ob es eine Zählung oder eine Stornierung war. Nie den Betrag, den Kommentar oder den Namen des Postens.",
       "Die Größe jedes verschlüsselten Datensatzes, aufgerundet auf Schritte von 256 Byte.",
-      "Über Backups entscheidet dein Betreiber: Diese App bringt keine mit. Sichert dein Betreiber die Datenbank, enthält eine Kopie dieselben verschlüsselten Daten, deine E-Mail-Adresse und deinen verschlüsselten Tresor – frag nach, wie lange Kopien aufbewahrt werden, auch nachdem ein Konto gelöscht wurde.",
+      "Petty selbst macht keine Backups. Sichert die Person, die dieses Petty betreibt, die Datenbank, enthält eine Kopie dieselben verschlüsselten Daten, deine E-Mail-Adresse und deinen verschlossenen Tresor. Frag sie, wie lange Kopien aufbewahrt werden, auch nachdem ein Konto gelöscht wurde.",
       "Lässt du den Passwortmanager deines Browsers die Tresor-Passphrase speichern, hat dieser Manager (und seine Cloud-Synchronisierung) sie ebenfalls. Das ist deine Entscheidung, nicht die des Servers."
     ],
     "defendsTitle": "Wovor Petty schützt",
     "defends": [
       "Wer die Datenbank oder ein Backup liest: Schubladeninhalte, Fotos und Tresore sind nur verschlüsselte Daten. Die oben genannten Konto- und Aktivitätsdaten sind trotzdem sichtbar.",
       "Wer die Datenbank verändert: Verschobene, vertauschte oder gelöschte Buchungen werden erkannt.",
-      "Ein kompromittierter Server: Er hat keine Schlüssel und kann keine Schubladeninhalte lesen.",
-      "Ein verlorenes Handy: Ohne die Passphrase bleibt der Tresor gesperrt, und nach 24 Stunden sperrt er sich selbst.",
+      "Der Server allein: Er hat keine Schlüssel und kann deine Schubladen nicht lesen, außer er verändert auch die App, die er ausliefert (siehe unten).",
+      "Ein verlorenes Handy: Ein gesperrter Tresor braucht deinen Passkey oder deine Passphrase, und ein offener Tresor sperrt sich 24 Stunden nach dem Entsperren selbst.",
       "Ein entferntes Mitglied: Nach dem Entfernen wird der Schlüssel der Schublade ersetzt; was danach geschrieben wird, kann es nicht lesen."
     ],
     "notTitle": "Wovor Petty nicht schützen kann",
@@ -728,9 +722,9 @@
       "Alle, mit denen du eine Schublade teilst, können alles darin lesen und kopieren. Entfernst du sie, endet nur der künftige Zugriff.",
       "Ein Mitglied mit Schreibzugriff kann auch den Verlauf einer Schublade beschädigen (die App zeigt diese Einträge dann als manipuliert an, aber ihr Inhalt ist weg). Teile nur mit Menschen, denen du vertraust.",
       "Eine Sicherheitslücke in dieser App selbst.",
-      "Eine vergessene Passphrase ohne Wiederherstellungscode: Niemand kann helfen – das ist so gewollt."
+      "Der Verlust aller Passkeys, deiner Passphrase und deines Wiederherstellungscodes: Niemand kann helfen – das ist so gewollt."
     ],
-    "notClerk": "Läuft die Anmeldung über Clerk, entscheidet Clerk, wer sich anmelden darf. Wer Clerk kontrolliert, könnte sich als du anmelden, bräuchte aber weiterhin deine Passphrase oder deinen Passkey, um deine Schubladen zu öffnen. Der Code von Clerk ist in einer festen Version in diese App eingebaut und wird nie von anderswo geladen.",
+    "notClerk": "Läuft die Anmeldung über einen externen Dienst (Clerk), entscheidet dieser Dienst, wer sich anmelden darf. Wer ihn kontrolliert, könnte sich als du anmelden, bräuchte aber weiterhin deinen Passkey oder deine Passphrase, um deine Schubladen zu öffnen. Sein Code ist in einer festen Version in diese App eingebaut und wird nie von anderswo geladen.",
     "source": "Petty ist freie Software (AGPL-3.0). Lies den Quellcode oder betreibe Petty selbst:"
   },
   "admin": {
@@ -754,7 +748,8 @@
       "block": "Gesperrt. Die Sitzungen sind beendet.",
       "unblock": "Entsperrt.",
       "revoke": "Auf allen Geräten abgemeldet.",
-      "admin": "Admin-Status geändert."
+      "makeAdmin": "Ist jetzt Admin.",
+      "removeAdmin": "Ist kein Admin mehr."
     },
     "confirm": {
       "block": {
@@ -767,10 +762,15 @@
         "body": "Jedes Gerät muss sich neu anmelden. Sonst ändert sich nichts.",
         "ok": "Abmelden"
       },
-      "admin": {
-        "title": "Admin-Status von {name} ändern?",
+      "makeAdmin": {
+        "title": "{name} zum Admin machen?",
         "body": "Admins können Konten sperren und Einladungen senden. Die Schubladen anderer können sie trotzdem nicht lesen.",
-        "ok": "Ändern"
+        "ok": "Zum Admin machen"
+      },
+      "removeAdmin": {
+        "title": "{name} die Admin-Rechte entziehen?",
+        "body": "Die Person kann dann keine Konten mehr sperren und keine Einladungen mehr senden. Sonst ändert sich nichts.",
+        "ok": "Rechte entziehen"
       }
     }
   },
@@ -778,7 +778,7 @@
     "slogan": "Kleine Beträge. Große Gelassenheit.",
     "tagline": "Alles, was du aufbewahrst, an seinem Platz – geteilt mit den Menschen, die du wählst, Ende-zu-Ende-verschlüsselt.",
     "sub": "Bargeld in der Keksdose, Werkzeug im Keller, Pässe im Safe: Gib jeder Schublade ihren Ort, trag ein, was drin ist, und teile sie mit den Menschen, die sie nutzen.",
-    "how": "Wie Petty verschlüsselt",
+    "how": "Wie Petty Geheimnisse wahrt",
     "uses": {
       "title": "Eine Idee, viele Möglichkeiten",
       "sub": "Orte enthalten Schubladen, Schubladen enthalten Posten – Geld, Dinge oder Notizen. Ordne sie an, wie du willst: Dieselben drei Bausteine passen zu allem, was du aufbewahrst.",
@@ -837,7 +837,7 @@
         "trip": {
           "chip": "Reisekasse",
           "title": "Reisekosten mit Freunden teilen",
-          "body": "Eine Schublade pro Reise, eine Zeile pro Person. Alle tragen ein, was sie bezahlt haben, und niemand kann es heimlich ändern.",
+          "body": "Eine Schublade pro Reise, ein Posten pro Person. Alle tragen ein, was sie bezahlt haben, und niemand kann es heimlich ändern.",
           "places": {
             "trips": "Reisen",
             "malaysia": "Malaysia",
@@ -876,22 +876,22 @@
         "accounts": {
           "chip": "Jährlicher Kontocheck",
           "title": "Geld, das du fast vergessen hättest",
-          "body": "Eine Schublade pro Konto, einmal im Jahr geprüft: Bestätige den Saldo, und das Datum wird gleich mit vermerkt.",
+          "body": "Eine Schublade pro Konto, einmal im Jahr geprüft: Markiere sie als geprüft, und das Datum bleibt vermerkt.",
           "places": {
             "paperwork": "Unterlagen"
           },
           "drawers": {
             "pension": {
               "name": "Altersvorsorge",
-              "meta": "Bestätigt am 2. Jan."
+              "meta": "Geprüft am 2. Jan."
             },
             "brokerage": {
               "name": "Depot",
-              "meta": "Bestätigt am 2. Jan."
+              "meta": "Geprüft am 2. Jan."
             },
             "savings": {
               "name": "Sparkonto",
-              "meta": "Bestätigt am 2. Jan."
+              "meta": "Geprüft am 2. Jan."
             }
           },
           "items": {
@@ -915,7 +915,7 @@
         "cash": {
           "chip": "Bargeld zu Hause",
           "title": "Jeder Schein an seinem Platz",
-          "body": "Damit fing Petty an: Bargeld im ganzen Haus, jede Kassette und jeder Umschlag in seinem Zimmer, gezählt und bestätigt.",
+          "body": "Damit fing Petty an: Bargeld im ganzen Haus, jede Kassette und jeder Umschlag in seinem Zimmer, gezählt und geprüft.",
           "places": {
             "home": "Zuhause",
             "kitchen": "Küche",
@@ -924,7 +924,7 @@
           "drawers": {
             "tin": {
               "name": "Geldkassette",
-              "meta": "Heute bestätigt"
+              "meta": "Heute geprüft"
             },
             "envelope": {
               "name": "Umschlag",
@@ -950,7 +950,7 @@
         "lent": {
           "chip": "Verliehen",
           "title": "Wissen, wer deine Bohrmaschine hat",
-          "body": "Verliehenes und Geliehenes bekommt eigene Schubladen: Jede Zeile zeigt, wer es hat und seit wann.",
+          "body": "Verliehenes und Geliehenes bekommt eigene Schubladen: Jeder Posten zeigt, wer es hat und seit wann.",
           "places": {
             "home": "Zuhause",
             "garage": "Garage"
@@ -1031,7 +1031,6 @@
         }
       }
     },
-    "beta": "Du hast eine Einladung? Melde dich oben an.",
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Startbildschirm: die Summe, die Orte als Bild und die Schubladen, nach Ort gruppiert",
@@ -1044,11 +1043,11 @@
     "features": {
       "private": {
         "title": "Privat von Grund auf",
-        "body": "Deine Schubladen werden auf deinem Gerät verschlüsselt. Der Server sieht immer nur verschlüsselte Daten."
+        "body": "Der Inhalt deiner Schubladen wird auf deinem Gerät verschlüsselt. Der Server speichert nur Daten, die er nicht lesen kann."
       },
       "shared": {
         "title": "Mit Menschen teilen, denen du vertraust",
-        "body": "Alle, die mit dem Bargeld zu tun haben, sehen dieselbe Schublade. Bearbeiter erfassen Buchungen, Leser schauen nur zu."
+        "body": "Alle, die eine Schublade nutzen, sehen dieselbe. Bearbeiter erfassen Buchungen, Leser schauen nur zu."
       },
       "places": {
         "title": "Orte statt Stapel",
@@ -1056,11 +1055,11 @@
       },
       "currencies": {
         "title": "Währungen und Dinge",
-        "body": "Euro und Dollar nebeneinander – dazu zählbare Dinge wie Schlüssel oder Dokumente. Versieh jeden Posten mit Tags und filtere danach."
+        "body": "Euro und Dollar nebeneinander, dazu zählbare Dinge wie Schlüssel oder Dokumente. Versieh jeden Posten mit Tags und filtere danach."
       },
       "verify": {
-        "title": "Zählen, bestätigen, nie löschen",
-        "body": "Nach dem echten Zählen bestätigst du den Bestand der Schublade. Fehler werden storniert, nie gelöscht; der Verlauf bleibt ehrlich."
+        "title": "Zählen, prüfen, stornieren",
+        "body": "Nach dem echten Zählen markierst du die Schublade als geprüft. Eine falsche Buchung wird durch eine neue ausgeglichen, und die alte bleibt im Verlauf."
       },
       "passkey": {
         "title": "Passkey zuerst, läuft offline",
@@ -1069,54 +1068,53 @@
     },
     "cryptoTitle": "Wie Petty Geheimnisse wahrt",
     "crypto": {
-      "device": "Alles wird auf deinem Gerät verschlüsselt (AES-256), bevor es gesendet wird. Namen, Beträge, Kommentare, Fotos – einfach alles.",
-      "server": "Der Server speichert verschlossene Kisten, die er nicht öffnen kann. Wir könnten dir deine Daten nicht zeigen, selbst wenn wir wollten.",
-      "safety": "Jedes Mitglied hat eine Sicherheitsnummer. Vergleiche sie einmal persönlich, dann kann sich niemand unbemerkt dazwischenschalten.",
+      "device": "Der Inhalt deiner Schubladen wird auf deinem Gerät verschlüsselt (AES-256), bevor er gesendet wird: Namen, Beträge, Kommentare und Fotos.",
+      "server": "Der Server speichert verschlossene Kisten, die er nicht öffnen kann. Er sieht aber deine E-Mail-Adresse, deinen Namen und wann gebucht wird.",
+      "safety": "Jedes Mitglied hat eine Sicherheitsnummer. Vergleiche sie einmal persönlich oder am Telefon, dann kann niemand unbemerkt einen eigenen Schlüssel unterschieben.",
       "recovery": "Ein Passkey oder eine Passphrase öffnet deine Daten; ein einmaliger Wiederherstellungscode ist der Ersatzschlüssel. Zurücksetzen können wir nichts davon.",
       "chain": "Buchungen bilden eine Kette, die Manipulation sichtbar macht: Wird der Verlauf gekürzt oder geändert, fällt das auf."
     },
     "stepsTitle": "So funktioniert es",
     "steps": {
       "one": "Leg für jeden Ort, an dem du Bargeld oder Dinge aufbewahrst, eine Schublade an, ordne sie ihrem Zimmer oder Regal zu und trag ein, was jetzt darin ist.",
-      "two": "Füge Beträge mit zwei Fingertipps hinzu oder entnimm sie, wann immer Geld fließt. Storniere Fehler.",
-      "three": "Zähl die Schublade ab und zu und bestätige sie. Teile sie mit den Menschen, die sie nutzen."
+      "two": "Trag mit ein paar Fingertipps ein, was hinzukommt oder entnommen wird. Storniere Fehler.",
+      "three": "Zähl ab und zu, was in einer Schublade ist, und markiere sie als geprüft. Teile sie mit den Menschen, die sie nutzen."
     },
     "faqTitle": "Fragen",
     "faq": {
       "see": {
         "q": "Könnt ihr mein Geld sehen?",
-        "a": "Nein. Beträge und Namen werden auf deinem Gerät verschlüsselt. Der Server speichert unlesbare Kisten, und das lässt sich im Browser überprüfen."
+        "a": "Nein. Beträge und Namen werden auf deinem Gerät verschlüsselt, und der Server speichert Daten, die er nicht lesen kann. Er sieht aber deine E-Mail-Adresse, deinen Namen und wann gebucht wird."
       },
       "places": {
-        "q": "Kann ich Schubladen nach Zimmer gruppieren?",
-        "a": "Ja. Orte bilden einen Baum – Haus › Küche › Regal –, und jede Schublade gehört zu genau einem davon. Der Startbildschirm gruppiert nach Zimmer und zeigt deine Orte rund um das Zuhause: Tippe auf einen, um nur seine Schubladen zu sehen. Ziehst du einen Ort in ein anderes Zimmer, ziehen seine Schubladen mit."
+        "q": "Kann ich Schubladen nach Zimmern gruppieren?",
+        "a": "Ja. Orte bilden einen Baum – Haus › Küche › Regal –, und jede Schublade gehört zu genau einem davon. Der Startbildschirm gruppiert nach Zimmern und zeigt deine Orte rund um das Zuhause: Tippe auf einen, um nur seine Schubladen zu sehen. Ziehst du einen Ort in ein anderes Zimmer, ziehen seine Schubladen mit."
       },
       "lost": {
         "q": "Was, wenn ich meinen Passkey verliere oder die Passphrase vergesse?",
-        "a": "Ein anderer Passkey, die Passphrase oder der Wiederherstellungscode öffnet den Tresor. Ist alles verloren, kann niemand – auch wir nicht – deine Daten entschlüsseln; ein Mitglied einer geteilten Schublade kann sie erneut mit dir teilen."
+        "a": "Ein anderer Passkey, die Passphrase oder der Wiederherstellungscode öffnet den Tresor. Verlierst du alle drei, kann niemand deine Daten öffnen, auch wir nicht. Ein Mitglied einer geteilten Schublade kann sie noch einmal mit dir teilen."
       },
       "undo": {
         "q": "Kann ich eine Änderung an einer Schublade rückgängig machen?",
-        "a": "Ja. Buchungen werden nie gelöscht: Ein Fehler wird durch eine neue Buchung storniert. Änderungen an Namen, Posten, Tags und Orten werden 30 Tage aufbewahrt, und der Eigentümer der Schublade kann eine frühere Version wiederherstellen."
+        "a": "Ja. Eine falsche Buchung wird durch eine neue ausgeglichen, und die alte bleibt im Verlauf. Änderungen an Namen, Posten, Tags und Orten werden 30 Tage aufbewahrt, und der Eigentümer der Schublade kann eine frühere Version wiederherstellen."
       },
       "cost": {
         "q": "Was kostet das?",
-        "a": "Petty ist freie Software (AGPL-3.0) – du kannst deine eigene Instanz kostenlos betreiben. Falls der Betreiber einer gehosteten Instanz je Geld dafür verlangt, muss er es dir vorher klar sagen."
+        "a": "Petty ist freie Software (AGPL-3.0): Du kannst dein eigenes Petty kostenlos betreiben. Verlangt die Person, die ein gehostetes Petty betreibt, je Geld dafür, muss sie es dir vorher klar sagen."
       },
       "phone": {
         "q": "Gibt es eine App fürs Handy?",
         "a": "Petty wird aus dem Browser installiert (Zum Home-Bildschirm) und funktioniert offline wie eine native App, auf iPhone und Android."
       }
     },
-    "footer": "© 2026 Petty · Ende-zu-Ende-verschlüsselte Haushaltskasse",
-    "invite": "Du willst eine Einladung? Schreib uns",
+    "footer": "© 2026 Petty · alles, was du aufbewahrst, Ende-zu-Ende-verschlüsselt",
     "made": "Entwickelt in Polen",
     "create": "Tresor erstellen",
     "getInvite": "Einladung anfragen",
     "betaOpen": "Ohne Kreditkarte, ohne Installation.",
     "betaInvite": "Dieses Petty gibt es nur auf Einladung: Frag ein Mitglied oder schreib uns.",
     "again": "Bereit? Es dauert nur eine Minute.",
-    "againInvite": "Du hast eine Einladung? Melde dich an und richte deinen Tresor ein.",
+    "againInvite": "Du hast eine Einladung? Öffne den Link in deiner E-Mail, um dein Konto zu erstellen.",
     "shotOpen": "Vergrößern: {name}",
     "shotPrev": "Vorheriger Screenshot",
     "shotNext": "Nächster Screenshot"
@@ -1170,25 +1168,28 @@
   },
   "places": {
     "title": "Orte",
-    "hint": "Zimmer, Regale, Kisten: ein Baum. Eine Schublade gehört zu genau einem Ort. Benennst du einen Ort um oder verschiebst ihn, ziehen seine Schubladen mit.",
+    "hint": "Zimmer, Regale, Kisten, ineinander verschachtelt. Eine Schublade gehört zu genau einem Ort. Benennst du einen Ort um oder verschiebst ihn, ziehen seine Schubladen mit.",
     "empty": "Noch keine Orte. Leg zuerst ein Zimmer an.",
     "add": "Ort hinzufügen",
     "addInside": "Ort darin hinzufügen",
     "rename": "Umbenennen",
+    "renameTitle": "„{name}“ umbenennen",
     "move": "Verschieben nach…",
+    "moveTitle": "„{name}“ verschieben nach…",
     "moveUp": "Nach oben",
     "moveDown": "Nach unten",
     "delete": "Löschen",
+    "deleteTitle": "„{name}“ löschen?",
     "deleteBody": "Schubladen in „{name}“ werden nach „{parent}“ verschoben. Orte darin rücken eine Ebene nach oben.",
     "topLevel": "Oberste Ebene",
     "none": "Kein Ort",
     "newHere": "Neuer Ort in {parent}",
-    "newTop": "Neuer Ort auf oberster Ebene",
+    "newTop": "Neuer Ort",
     "name": "Name",
     "exists": "Hier gibt es schon einen Ort mit diesem Namen.",
     "count": "{count, plural, one {# Schublade} other {# Schubladen}}",
     "manage": "Orte verwalten",
-    "manageHint": "Zimmer, Regale und Kisten als Baum. Füge sie hinzu, benenne sie um, verschiebe und sortiere sie; die Schubladen ziehen mit.",
+    "manageHint": "Zimmer, Regale und Kisten, ineinander verschachtelt. Füge sie hinzu, benenne sie um, verschiebe und sortiere sie; die Schubladen ziehen mit.",
     "choose": "Ort",
     "options": "Optionen für {name}",
     "expand": "{name} aufklappen",
@@ -1204,31 +1205,31 @@
   },
   "notFound": {
     "title": "Diese Seite gibt es nicht",
-    "body": "Der Link ist vielleicht veraltet, falsch geschrieben oder führt zu einer Schublade, auf die du keinen Zugriff mehr hast.",
-    "home": "Zur Startseite",
+    "body": "Der Link ist vielleicht veraltet oder falsch geschrieben, oder er führt zu einer Schublade, auf die du keinen Zugriff mehr hast.",
+    "home": "Startseite",
     "drawers": "Zu meinen Schubladen"
   },
   "tokens": {
     "title": "Zugriffstokens",
-    "hint": "Für deine eigenen Tools, etwa einen Server für Claude Desktop. Ein Token trägt eine Kopie deiner Schubladenschlüssel; der Server sieht immer nur die Namenshälfte und kann es nicht öffnen.",
+    "hint": "Für deine eigenen Tools, etwa die Erweiterung für Claude Desktop. Ein Token enthält eine Kopie deiner Schubladenschlüssel. Der Server speichert nur die ID des Tokens, nie seinen geheimen Teil, und kann es deshalb nicht öffnen.",
     "new": "Neues Token",
     "name": "Name",
     "defaultName": "Mein Assistent",
-    "mayWriteSwitch": "Darf Buchungen hinzufügen",
-    "mayWriteHint": "Aus: Das Token kann nur lesen. An: Es kann Buchungen hinzufügen, und sie laufen unter deinem Namen.",
-    "expiry": "Läuft ab",
+    "mayWriteSwitch": "Änderungen erlauben",
+    "mayWriteHint": "Aus: Das Token kann nur lesen. An: Es kann auch Buchungen hinzufügen, Tags ändern und Schubladen verschieben, in deinem Namen.",
+    "expiry": "Gültigkeit",
     "days": "{count, plural, one {# Tag} other {# Tage}}",
-    "never": "Nie",
+    "never": "Unbegrenzt",
     "create": "Token erstellen",
     "madeTitle": "Kopiere dein Token jetzt",
-    "madeBody": "Es wird nur einmal angezeigt. Füge es in dein Tool ein. Widerrufen stoppt die weitere Nutzung, macht aber nicht ungelesen, was schon gelesen wurde.",
-    "mayWrite": "Darf Buchungen hinzufügen",
+    "madeBody": "Es wird nur einmal angezeigt. Füge es in dein Tool ein. Widerrufen stoppt das Tool sofort, kann aber nicht zurückholen, was es schon gelesen hat.",
+    "mayWrite": "Darf ändern",
     "mayRead": "Nur lesen",
     "used": "zuletzt genutzt: {when}",
     "neverUsed": "nie genutzt",
     "revoke": "Widerrufen",
     "revokeNamed": "Token {name} widerrufen",
-    "revokeBody": "„{name}“ widerrufen? Das Tool funktioniert sofort nicht mehr. Was es schon gelesen hat, bleibt gelesen.",
+    "revokeBody": "„{name}“ widerrufen? Das Tool funktioniert sofort nicht mehr. Was es schon gelesen hat, lässt sich nicht zurückholen.",
     "passphraseOrPasskey": "Leer lassen, um stattdessen deinen Passkey zu verwenden.",
     "addonTitle": "In Claude Desktop verwenden",
     "addonBody": "Lade die Erweiterung herunter, doppelklicke sie und klicke auf Installieren. Claude Desktop fragt dann nach zwei Dingen: der Adresse unten und dem Token oben.",
@@ -1237,20 +1238,20 @@
   },
   "device": {
     "title": "Kommandozeilen-Tool anmelden",
-    "enterBody": "Gib den Code ein, den dein Terminal nach petty auth login zeigt.",
+    "enterBody": "Gib den Code ein, den dein Terminal nach `petty auth login` zeigt.",
     "code": "Code",
     "continue": "Weiter",
     "checking": "Code wird geprüft…",
     "notACode": "Das ist kein Code. Ein Code hat 12 Buchstaben, etwa BCDF-GHJK-LMNP.",
-    "unknown": "Zu diesem Code gibt es keine offene Anfrage. Sie ist vielleicht nach 15 Minuten abgelaufen oder wurde schon verwendet. Führe petty auth login noch einmal aus.",
+    "unknown": "Zu diesem Code gibt es keine offene Anfrage. Sie ist vielleicht nach 15 Minuten abgelaufen oder wurde schon verwendet. Führe `petty auth login` noch einmal aus.",
     "tooMany": "Zu viele Versuche. Warte ein paar Minuten und versuche es dann noch einmal.",
-    "mismatch": "Diese Anfrage passt nicht zu ihrem Code: Sie wurde auf dem Weg hierher verändert. Erlaube sie nicht. Führe petty auth login noch einmal aus und sag der Person Bescheid, die dieses Petty betreibt.",
+    "mismatch": "Diese Anfrage passt nicht zu ihrem Code: Sie wurde auf dem Weg hierher verändert. Erlaube sie nicht. Führe `petty auth login` noch einmal aus und sag der Person Bescheid, die dieses Petty betreibt.",
     "askTitle": "„{name}“ erlauben?",
     "checkCode": "Prüfe, ob dein Terminal diesen Code zeigt:",
     "asked": "Angefragt {when}.",
     "askedFrom": "Angefragt {when} von {ip}.",
     "onlyYours": "Erlaube es nur, wenn du es gerade eben selbst gestartet hast. Das Tool bekommt eine Kopie deiner Schubladenschlüssel: Es kann jede Schublade lesen, die du öffnen kannst.",
-    "readOnly": "Es möchte nur lesen. Buchungen hinzufügen kann es nicht.",
+    "readOnly": "Es möchte nur lesen. Ändern kann es nichts.",
     "allow": "Erlauben",
     "deny": "Ablehnen",
     "doneTitle": "Erlaubt",
@@ -1262,11 +1263,11 @@
   "ai": {
     "link": "Petty mit KI nutzen",
     "title": "Petty mit KI nutzen",
-    "intro": "Frag eine KI-App nach deinen Schubladen oder lass sie eine Buchung für dich hinzufügen. Ein kleines Programm auf deinem eigenen Computer speichert ein Zugriffstoken, öffnet dort deine Schlüssel und gibt der App ein paar Tools. Der Petty-Server sieht weiterhin nur verschlüsselte Daten.",
+    "intro": "Frag eine KI-App nach deinen Schubladen oder lass sie eine Buchung für dich hinzufügen. Ein kleines Programm auf deinem eigenen Computer speichert ein Zugriffstoken, öffnet dort deine Schlüssel und gibt der App ein paar Tools. Der Petty-Server kann deine Schubladen weiterhin nicht lesen; das KI-Unternehmen kann lesen, was die Tools abrufen.",
     "tokenTitle": "1. Zugriffstoken erstellen",
     "tokenSteps": [
       "Öffne Einstellungen → Zugriffstokens → Neues Token.",
-      "Gib ihm einen Namen und wähle, ob es Buchungen hinzufügen darf.",
+      "Gib ihm einen Namen und wähle, ob du Änderungen erlaubst.",
       "Bestätige mit deinem Passkey oder deiner Tresor-Passphrase.",
       "Kopiere das Token. Es wird nur einmal angezeigt."
     ],
@@ -1274,15 +1275,15 @@
     "desktopSteps": [
       "Installiere Claude Desktop von claude.ai/download und melde dich an, falls noch nicht geschehen.",
       "Erstelle ein Zugriffstoken (Schritt 1) und halte es bereit.",
-      "Lade unten die Erweiterung herunter. Doppelklicke petty.mcpb (oder zieh die Datei auf das Fenster von Claude Desktop) und klicke auf Installieren.",
+      "Lade unten die Erweiterung herunter. Doppelklicke `petty.mcpb` (oder zieh die Datei auf das Fenster von Claude Desktop) und klicke auf Installieren.",
       "Claude Desktop fragt nach zwei Dingen: Füge diese Petty-Adresse und dein Token ein und speichere. Später kannst du beides unter Claude Desktop → Einstellungen → Erweiterungen → Petty ändern.",
       "Starte einen neuen Chat und frag: „Was ist in meinen Schubladen?“ Erlaube auf einem Mac den Netzwerkzugriff, falls gefragt, und starte Claude Desktop dann neu."
     ],
     "otherTitle": "2b. Andere KI-Apps (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [
       "Installiere Node 20 oder neuer.",
-      "Führe unten die beiden Befehle für deinen Computer aus. Der erste speichert petty-mcp.mjs in einem Ordner .petty in deinem Home-Ordner; der zweite gibt den Einstellungsblock mit dem echten Pfad dieser Datei aus.",
-      "Füge den ausgegebenen Block in die MCP-Einstellungen der App ein und setze dein Token anstelle von petty_pat_… ein."
+      "Führe unten die beiden Befehle für deinen Computer aus. Der erste speichert `petty-mcp.mjs` in einem Ordner `.petty` in deinem Home-Ordner; der zweite gibt den Einstellungsblock mit dem echten Pfad dieser Datei aus.",
+      "Füge den ausgegebenen Block in die MCP-Einstellungen der App ein und setze dein Token dort ein, wo `petty_pat_…` steht."
     ],
     "download": "petty-mcp.mjs herunterladen",
     "unix": "macOS oder Linux (Terminal)",
@@ -1291,15 +1292,15 @@
     "example": "Der ausgegebene Block sieht so aus, mit deinen eigenen Pfaden:",
     "claudeCode": "Für Claude Code dasselbe in einem Befehl:",
     "cliTitle": "2c. Die Kommandozeile: petty",
-    "cliIntro": "Ein Programm für dein Terminal, deine Skripte und KI-Agenten, die Befehle ausführen (Claude Code, Codex). Es meldet sich über eine Seite dieses Petty in deinem Browser an, wie gh auth login: Du musst kein Token kopieren.",
+    "cliIntro": "Ein Programm für dein Terminal, deine Skripte und KI-Agenten, die Befehle ausführen (Claude Code, Codex). Es meldet sich über eine Seite dieses Petty in deinem Browser an, wie `gh auth login`: Du musst kein Token kopieren.",
     "cliSteps": [
       "Installiere Node 20 oder neuer.",
       "Führe unten die Befehle für deinen Computer aus. Der letzte zeigt einen Code und öffnet dieses Petty in deinem Browser.",
       "Prüfe, ob die Seite denselben Code zeigt, und erlaube es.",
-      "Probiere dann petty drawers aus, alles Weitere zeigt petty help. Für die Tab-Vervollständigung führe petty completion -s zsh aus (oder bash, fish, powershell)."
+      "Probiere dann `petty drawers` aus, alles Weitere zeigt `petty help`. Für die Tab-Vervollständigung führe `petty completion -s zsh` aus (oder bash, fish, powershell)."
     ],
     "cliDownload": "petty.mjs herunterladen",
-    "cliPath": "Meldet das Terminal „command not found: petty“, ist ~/.local/bin nicht im PATH. Füge export PATH=\"$HOME/.local/bin:$PATH\" zu ~/.zshrc (Mac) oder ~/.bashrc (Linux) hinzu und öffne ein neues Terminal.",
+    "cliPath": "Meldet das Terminal „command not found: petty“, ist `~/.local/bin` nicht im PATH. Füge `export PATH=\"$HOME/.local/bin:$PATH\"` zu `~/.zshrc` (Mac) oder `~/.bashrc` (Linux) hinzu und öffne ein neues Terminal.",
     "askTitle": "3. Fragen",
     "ask": [
       "Was ist in meiner Küchenschublade?",
@@ -1332,7 +1333,7 @@
     "honestTitle": "Gut zu wissen",
     "honest": [
       "Das Token und deine Schlüssel bleiben auf deinem Computer. Der Server sieht nie die geheime Hälfte des Tokens.",
-      "Was du fragst, erreicht das KI-Modell, weil du es gefragt hast.",
+      "Was du fragst und die Schubladendaten, die die Tools lesen, gehen an das KI-Unternehmen. Die Verschlüsselung von Petty deckt das nicht ab.",
       "Text aus deinen Schubladen bekommt das Modell als zitierte Daten, und jede Änderung ist ein eigenes Tool, das die App dich bestätigen lassen kann.",
       "Um das zu beenden, widerrufe das Token unter Einstellungen → Zugriffstokens.",
       "Eine Handy-App kann dieses Programm noch nicht ausführen."

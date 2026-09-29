@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useLayoutEffect, type ErrorInfo, type ReactNode } from "react";
+import { Component, lazy, Suspense, useEffect, useLayoutEffect, type ErrorInfo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router";
 import { ToastProvider } from "./components/Toast.js";
@@ -120,11 +120,33 @@ function ScrollToTop() {
   return null;
 }
 
+/**
+ * The tab's title names the screen (PETTY-281: every tab said "Petty"). It comes from the route, never
+ * from a screen's own title: a drawer's or an item's name is decrypted content, and a tab title is
+ * written to the browser's history on disk (rule 1). So those screens, and Home, stay "Petty".
+ */
+const TAB_TITLES: readonly (readonly [RegExp, string])[] = [
+  [/^\/settings\/delete$/, "delete.title"], [/^\/settings$/, "settings.title"], [/^\/places$/, "places.title"],
+  [/^\/drawers\/[^/]+\/members$/, "members.title"], [/^\/privacy$/, "privacy.title"], [/^\/ai$/, "ai.title"],
+  [/^\/login/, "auth.login.title"], [/^\/join/, "auth.join.title"], [/^\/reset/, "auth.reset.newTitle"],
+  [/^\/unlock$/, "auth.unlock.title"], [/^\/setup$/, "auth.setup.title"], [/^\/device$/, "device.title"], [/^\/admin$/, "admin.title"],
+];
+function TabTitle() {
+  const { pathname } = useLocation();
+  const { t, i18n } = useTranslation();
+  useEffect(() => {
+    const key = TAB_TITLES.find(([re]) => re.test(pathname))?.[1];
+    document.title = key ? `${t(key)} · ${t("app.name")}` : t("app.name");
+  }, [pathname, t, i18n.language]);
+  return null;
+}
+
 export function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <TabTitle />
         <div className="app">
           <Crash>
           <ClerkGate>

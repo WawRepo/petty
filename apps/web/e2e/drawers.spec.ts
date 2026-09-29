@@ -16,7 +16,7 @@ async function lineOption(page: Page, name: string, option: string) {
   await page.getByRole("button", { name: option, exact: true }).click();
 }
 async function addMoneyLine(page: Page, name: string, currency: string, start: string) {
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill(name);
   await page.getByLabel("Currency", { exact: true }).fill(currency);
   await page.getByLabel("Starting balance").fill(start);
@@ -33,13 +33,13 @@ test("create a drawer with money, countable and single lines; totals across two 
   await addDrawer(page, "Kitchen");
   await addMoneyLine(page, "PLN kitchen", "pln", "1 234,56");
   await addMoneyLine(page, "Euros", "EUR", "20");
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByRole("button", { name: "Countable" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Glass balls");
   await page.getByLabel("Unit (optional)").fill("balls");
   await page.getByLabel("Starting count").fill("56");
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByRole("button", { name: "Single item" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Passport");
   await page.getByLabel("Text (optional)").fill("expires 2031");
@@ -48,7 +48,7 @@ test("create a drawer with money, countable and single lines; totals across two 
   await expect(page.getByTestId("line-row").nth(0)).toContainText("1,234.56 PLN");
   await expect(page.getByTestId("line-row").nth(2)).toContainText("56 balls");
   // a countable refuses decimals
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByRole("button", { name: "Countable" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Bad");
   await page.getByLabel("Starting count").fill("1.5");
@@ -145,7 +145,7 @@ test("keyboard-only reorder with Move down / Move up; rename; currency relabel k
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back" }).click();
   // delete with history count: back on the drawer afterwards
-  await lineOption(page, "Alpha", "Delete line");
+  await lineOption(page, "Alpha", "Delete item");
   await expect(page.getByRole("dialog")).toContainText("1 entry of history");
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect.poll(() => lineNames(page)).toEqual(["B", "C"]);
@@ -271,7 +271,7 @@ test("a drawer whose ciphertext was tampered with shows as degraded and the tota
   await corruptDocument(bad);
   await page.goto("/");
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Good" })).toContainText("5.00 EUR");
-  await expect(page.getByTestId("drawer-row").nth(1)).toContainText("Could not decrypt this drawer.");
+  await expect(page.getByTestId("drawer-row").nth(1)).toContainText("This drawer could not be opened.");
   await expect(page.getByTestId("totals-incomplete")).toBeVisible();
   await expect(page.getByTestId("home-totals")).toContainText("5.00 EUR");
   void good;
@@ -306,7 +306,7 @@ test("home search: one word finds the matching lines in every drawer, shown unde
   const user = await signupWithKeys("seeker");
   await loginAndUnlock(page, user);
   const addSingle = async (name: string, text: string) => {
-    await page.getByRole("button", { name: "Add line" }).click();
+    await page.getByRole("button", { name: "Add item" }).click();
     await page.getByRole("button", { name: "Single item" }).click();
     await page.getByLabel("Name", { exact: true }).fill(name);
     await page.getByLabel("Text (optional)").fill(text);
@@ -324,8 +324,8 @@ test("home search: one word finds the matching lines in every drawer, shown unde
   await expect(page.getByTestId("drawer-row")).toHaveCount(3);
   // open the search, type, wait for the debounce
   await page.getByTestId("home-search-toggle").click();
-  await expect(page.getByLabel("Search items and tags in every drawer")).toBeFocused();
-  await page.getByLabel("Search items and tags in every drawer").fill("PASS");
+  await expect(page.getByLabel("Search drawers, places, items and tags")).toBeFocused();
+  await page.getByLabel("Search drawers, places, items and tags").fill("PASS");
   await expect(page.getByTestId("search-count")).toHaveText("2 items in 2 drawers");
   const groups = page.getByTestId("drawer-group");
   // PETTY-117: search mode is the results only — the drawers that answer, no totals, chips or non-matching rows
@@ -338,7 +338,7 @@ test("home search: one word finds the matching lines in every drawer, shown unde
   const serious = (await new AxeBuilder({ page }).analyze()).violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(serious, JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })))).toEqual([]);
   // accent-insensitive; narrows to one drawer
-  await page.getByLabel("Search items and tags in every drawer").fill("gróc");
+  await page.getByLabel("Search drawers, places, items and tags").fill("gróc");
   await expect(page.getByTestId("search-count")).toHaveText("1 item in 1 drawer");
   await expect(page.getByTestId("search-hit")).toHaveText(["Groceries20.00 EUR"]);
   // a hit opens the line
@@ -347,9 +347,9 @@ test("home search: one word finds the matching lines in every drawer, shown unde
   await page.getByRole("button", { name: "Back" }).click();
   // Escape clears and hides the field; the list is back to normal
   await page.getByTestId("home-search-toggle").click();
-  await page.getByLabel("Search items and tags in every drawer").fill("zzz");
+  await page.getByLabel("Search drawers, places, items and tags").fill("zzz");
   await expect(page.getByTestId("search-count")).toHaveText("Nothing matches.");
-  await page.getByLabel("Search items and tags in every drawer").press("Escape");
+  await page.getByLabel("Search drawers, places, items and tags").press("Escape");
   await expect(page.getByTestId("home-search")).toHaveCount(0);
   await expect(page.getByTestId("drawer-group")).toHaveCount(0);
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Car" })).not.toHaveClass(/dim/);
@@ -392,7 +392,7 @@ test("places: an ordered path groups drawers under a room, chips drill down, the
   await expect(groups.nth(1)).toContainText("shed");
   await expect(groups.nth(1).getByTestId("sub-place")).toHaveText("Outside");
   await expect(groups.nth(1).getByTestId("drawer-row")).toHaveCount(1);
-  await expect(groups.nth(2)).toContainText("Elsewhere");
+  await expect(groups.nth(2)).toContainText("No place");
   await expect(groups.nth(2).getByTestId("drawer-row")).toContainText("Car");
   await expect(pageA.getByTestId("drawer-row")).toHaveCount(3);
   await expect(pageA.getByTestId("row-place")).toHaveCount(0); // the group header says it; no chips on the rows
@@ -424,9 +424,9 @@ test("places: an ordered path groups drawers under a room, chips drill down, the
   await expect(bar.getByRole("button", { name: /^Outside/ })).toHaveAttribute("aria-pressed", "true");
   // search works inside the selected place
   await pageA.getByTestId("home-search-toggle").click();
-  await pageA.getByLabel("Search items and tags in every drawer").fill("cash");
+  await pageA.getByLabel("Search drawers, places, items and tags").fill("cash");
   await expect(pageA.getByTestId("search-count")).toHaveText("Nothing matches.");
-  await pageA.getByLabel("Search items and tags in every drawer").press("Escape");
+  await pageA.getByLabel("Search drawers, places, items and tags").press("Escape");
   // tapping a selected chip goes back above it
   await bar.getByRole("button", { name: /^shed/ }).click();
   await expect(pageA.getByTestId("tag-group")).toHaveCount(3);
@@ -634,7 +634,7 @@ test("places editor (PETTY-67/68): plus and minus on a row; drag like the drawer
   await expect(names).toHaveText(["Home", "Kitchen", "Bar"]);
 });
 
-test("verification is optional (PETTY-83): the switch hides the Confirm state bar, the history and the badges; on again brings them back", async ({ page }) => {
+test("verification is optional (PETTY-83): the switch hides the Mark as checked bar, the history and the badges; on again brings them back", async ({ page }) => {
   const u = await signupWithKeys("vera");
   await loginAndUnlock(page, u);
   await addDrawer(page, "Tin"); await addMoneyLine(page, "Cash", "PLN", "10");
@@ -643,14 +643,14 @@ test("verification is optional (PETTY-83): the switch hides the Confirm state ba
   await expect(page.getByTestId("verify-badge")).toHaveCount(1);
   await openSettings(page);
   // PETTY-127: a real switch whose accessible name is the title only; the hint is its description
-  await expect(page.getByTestId("verification-switch")).toHaveAccessibleName("Show verification");
-  await expect(page.getByTestId("verification-switch")).toHaveAccessibleDescription(/Confirm state/);
+  await expect(page.getByTestId("verification-switch")).toHaveAccessibleName("Show checks");
+  await expect(page.getByTestId("verification-switch")).toHaveAccessibleDescription(/Mark as checked/);
   await page.getByTestId("verification-switch").uncheck();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("verify-badge")).toHaveCount(0);
   await page.getByRole("button", { name: "Open Tin" }).click();
   await expect(page.getByTestId("verify-bar")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Confirm state" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Mark as checked" })).toHaveCount(0);
   await page.getByRole("button", { name: "Back" }).click();
   await openSettings(page);
   await page.getByTestId("verification-switch").check();
@@ -751,7 +751,7 @@ test("reader (PETTY-115): a read-only member sees why there are no write control
   await loginAndUnlock(pageB, bob);
   await pageB.getByTestId("drawer-row").filter({ hasText: "Kitchen" }).click();
   await expect(pageB.getByTestId("readonly-hint")).toHaveText("You can view this drawer, not change it. Ask alice for write access.");
-  await expect(pageB.getByRole("button", { name: "Add line" })).toHaveCount(0);
+  await expect(pageB.getByRole("button", { name: "Add item" })).toHaveCount(0);
   await pageB.getByTestId("line-row").first().click();
   await expect(pageB.getByTestId("line-balance")).toBeVisible();
   await expect(pageB.getByTestId("readonly-hint")).toBeVisible();
@@ -766,7 +766,7 @@ test("add line (PETTY-124): the currency starts filled and quick chips set it; t
   await loginAndUnlock(page, user);
   await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
   await addDrawer(page, "Tin");
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("EUR"); // en-GB, nothing used yet
   await page.getByTestId("currency-quick").getByRole("button", { name: "GBP" }).click();
   await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("GBP");
@@ -774,7 +774,7 @@ test("add line (PETTY-124): the currency starts filled and quick chips set it; t
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByTestId("line-name").filter({ hasText: "Cash" })).toBeVisible();
   // The next line in this drawer proposes the drawer's currency.
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("GBP");
   await expect(page.getByTestId("currency-quick").getByRole("button").first()).toHaveText("GBP");
 });
@@ -961,13 +961,13 @@ test("tags per person (PETTY-152): one list across drawers, kept without items, 
   // PETTY-154: the home search finds items by tag, in every drawer, and shows their tags
   await page.goto("/");
   await page.getByTestId("home-search-toggle").click();
-  await page.getByLabel("Search items and tags in every drawer").fill("FOO");
+  await page.getByLabel("Search drawers, places, items and tags").fill("FOO");
   await expect(page.getByTestId("search-count")).toHaveText("2 items in 2 drawers");
   await expect(page.getByTestId("search-hit")).toHaveCount(2);
   await expect(page.getByTestId("search-hit-tags").first()).toHaveText("food");
-  await page.getByLabel("Search items and tags in every drawer").fill("emerg");
+  await page.getByLabel("Search drawers, places, items and tags").fill("emerg");
   await expect(page.getByTestId("search-count")).toHaveText("Nothing matches."); // a tag on no item finds nothing
-  await page.getByLabel("Search items and tags in every drawer").press("Escape");
+  await page.getByLabel("Search drawers, places, items and tags").press("Escape");
   for (const [drawer, item] of [["Kitchen", "Jar"], ["Office", "Petty box"]] as const) {
     await page.goto("/");
     await page.getByTestId("drawer-row").filter({ hasText: drawer }).click();

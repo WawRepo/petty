@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useBack } from "../lib/nav.js";
+import { CodeText } from "../components/CodeText.js";
 import { Button } from "../components/Button.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
@@ -33,7 +34,7 @@ export function AiScreen() {
   // PETTY-279: ~/.local/bin is not on macOS's PATH by default, so the first run names the file itself
   const cliUnix = `mkdir -p ~/.local/bin && curl -fsSL ${cli} -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty\n~/.local/bin/petty auth login --host ${location.origin}`;
   const cliWindows = `New-Item -ItemType Directory -Force "$HOME\\.petty" | Out-Null; Invoke-WebRequest ${cli} -OutFile "$HOME\\.petty\\petty.mjs"\nnode "$HOME\\.petty\\petty.mjs" auth login --host ${location.origin}`;
-  const list = (key: string) => (t(key, { returnObjects: true }) as string[]).map((s, i) => <li key={i} className="mb6">{s}</li>);
+  const list = (key: string) => (t(key, { returnObjects: true }) as string[]).map((s, i) => <li key={i} className="mb6"><CodeText text={s} /></li>);
   const copy = (text: string) => { void navigator.clipboard?.writeText(text).then(() => toast(t("app.copied"))); };
   return (
     <>
@@ -73,12 +74,12 @@ export function AiScreen() {
         </section>
         <section className="card" data-testid="ai-cli">
           <h2 className="h-card">{t("ai.cliTitle")}</h2>
-          <p className="hint">{t("ai.cliIntro")}</p>
+          <p className="hint"><CodeText text={t("ai.cliIntro")} /></p>
           <ol className="list">{list("ai.cliSteps")}</ol>
           <p className="hint mb4">{t("ai.unix")}</p>
           <pre className="codeblock" data-testid="ai-cli-unix">{cliUnix}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliUnix)}>{t("app.copy")}</Button></p>
-          <p className="hint mb12" data-testid="ai-cli-path">{t("ai.cliPath")}</p>
+          <p className="hint mb12" data-testid="ai-cli-path"><CodeText text={t("ai.cliPath")} /></p>
           <p className="hint mb4">{t("ai.windows")}</p>
           <pre className="codeblock" data-testid="ai-cli-windows">{cliWindows}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliWindows)}>{t("app.copy")}</Button></p>

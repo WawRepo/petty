@@ -8,7 +8,7 @@ async function makeDrawer(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const id = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Cash");
   await page.getByLabel("Currency", { exact: true }).fill("EUR");
   await page.getByLabel("Starting balance").fill("100");
@@ -54,19 +54,19 @@ test("invite by email with safety number; no access before accept; reader sees e
   await acceptViaUi(pageB);
   await pageB.getByRole("button", { name: "Open Kitchen" }).click();
   await expect(pageB.getByTestId("line-row").first()).toContainText("100.00 EUR");
-  await expect(pageB.getByRole("button", { name: "Add line" })).toBeVisible();
+  await expect(pageB.getByRole("button", { name: "Add item" })).toBeVisible();
   // bob's Members screen: alice is confirmed (he compared at accept)
   await pageB.getByRole("button", { name: "Drawer options" }).click();
   await pageB.getByRole("button", { name: "Members" }).click();
-  await expect(pageB.getByTestId("member-card").filter({ hasText: "alice" }).getByTestId("pin-status")).toHaveText("Confirmed");
+  await expect(pageB.getByTestId("member-card").filter({ hasText: "alice" }).getByTestId("pin-status")).toHaveText("Compared");
   // carol as reader
   await inviteViaUi(pageA, id, carol, "read");
   await loginAndUnlock(pageC, carol);
   await acceptViaUi(pageC);
   await pageC.getByRole("button", { name: "Open Kitchen" }).click();
   await expect(pageC.getByTestId("line-row").first()).toContainText("100.00 EUR");
-  await expect(pageC.getByRole("button", { name: "Add line" })).toHaveCount(0);
-  await expect(pageC.getByRole("button", { name: "Confirm state" })).toHaveCount(0);
+  await expect(pageC.getByRole("button", { name: "Add item" })).toHaveCount(0);
+  await expect(pageC.getByRole("button", { name: "Mark as checked" })).toHaveCount(0);
   await pageC.getByRole("button", { name: "Open Cash" }).click();
   await expect(pageC.getByTestId("entry-row")).toHaveCount(1);
   await expect(pageC.getByRole("button", { name: "Add", exact: true })).toHaveCount(0);
@@ -109,7 +109,7 @@ test("revoke rotates the key: the removed member's old key cannot open anything 
   await pageA.getByRole("button", { name: "Add", exact: true }).click();
   await pageA.getByRole("group").getByRole("button", { name: "7", exact: true }).click();
   await pageA.getByRole("button", { name: "Review" }).click();
-  await pageA.getByRole("button", { name: "Confirm" }).click();
+  await pageA.getByRole("button", { name: "Save", exact: true }).click();
   await expect(pageA.getByTestId("line-balance")).toHaveText("107.00");
   const exp = (await aliceApi.call("GET", `/drawers/${id}/export`)).json as { entries: Array<{ id: string; line_id: string; author_id: string; key_version: number; nonce: string; ciphertext: string }> };
   expect(exp.entries.every((e) => e.key_version === 2)).toBe(true);
@@ -143,7 +143,7 @@ test("a replaced public key is detected against the pin: loud warning, inviting 
   await loginAndUnlock(pageB, bob);
   await acceptViaUi(pageB);
   await pageA.goto(`/drawers/${id}/members`);
-  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).toHaveText("Confirmed");
+  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).toHaveText("Compared");
   // the server (or an attacker with DB access) swaps bob's published keys for its own
   const evil = await signupWithKeys("evil");
   const bobId = (await apiClient(bob)).id;
@@ -154,7 +154,7 @@ test("a replaced public key is detected against the pin: loud warning, inviting 
   await expect(pageA.getByTestId("key-changed")).toContainText("The key of bob has changed");
   await pageA.goto(`/drawers/${id}/members`);
   const bobCard = pageA.getByTestId("member-card").filter({ hasText: "bob" });
-  await expect(bobCard.getByTestId("pin-status")).toContainText("KEY CHANGED");
+  await expect(bobCard.getByTestId("pin-status")).toContainText("Their key changed.");
   // inviting bob to another drawer is blocked
   await pageA.goto("/");
   const other = await makeDrawer(pageA, "Attic");
@@ -169,7 +169,7 @@ test("a replaced public key is detected against the pin: loud warning, inviting 
   // accept the new key (after comparing out of band) → allowed again
   await pageA.goto(`/drawers/${id}/members`);
   await bobCard.getByRole("button", { name: "Accept the new key" }).click();
-  await expect(bobCard.getByTestId("pin-status")).toHaveText("Confirmed");
+  await expect(bobCard.getByTestId("pin-status")).toHaveText("Compared");
   await pageA.goto(`/drawers/${other}/members`);
   await pageA.getByRole("button", { name: "Invite someone" }).click();
   await pageA.getByLabel("Their email").fill(bob.email);
@@ -216,7 +216,7 @@ test("a lost or rolled-back trusted-keys document is loud, suspends first-sight 
   await loginAndUnlock(pageB, bob);
   await acceptViaUi(pageB);
   await pageA.goto(`/drawers/${id}/members`);
-  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).toHaveText("Confirmed");
+  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).toHaveText("Compared");
   // the server "loses" alice's document (a rolled-back backup, or a malicious operator)
   const aliceId = (await apiClient(alice)).id;
   await dbQuery("delete from user_docs where user_id = $1", [aliceId]);
@@ -224,7 +224,7 @@ test("a lost or rolled-back trusted-keys document is loud, suspends first-sight 
   await expect(pageA.getByTestId("pins-rolled-back")).toBeVisible();
   // bob is NOT silently re-pinned as confirmed
   await pageA.goto(`/drawers/${id}/members`);
-  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).not.toHaveText("Confirmed");
+  await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).not.toHaveText("Compared");
   // sharing is refused while the warning stands
   await pageA.goto("/");
   const other = await makeDrawer(pageA, "Attic");
@@ -238,7 +238,7 @@ test("a lost or rolled-back trusted-keys document is loud, suspends first-sight 
   await pageA.keyboard.press("Escape");
   // acknowledge → back to normal
   await pageA.goto("/");
-  await pageA.getByRole("button", { name: "I understand, start over" }).click();
+  await pageA.getByRole("button", { name: "Start a new list of trusted keys" }).click();
   await expect(pageA.getByTestId("pins-rolled-back")).toHaveCount(0);
   await ctxA.close(); await ctxB.close();
 });

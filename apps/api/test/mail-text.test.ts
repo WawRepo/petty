@@ -9,13 +9,13 @@ describe("mail texts", () => {
       joinLink: m.joinLink("Ina", "https://p.test/join#TOKEN"),
       invitationWrite: m.invitation("Ina", "write", "https://p.test"),
       invitationRead: m.invitation("Ina", "read", "https://p.test"),
-      relinked: m.relinked("https://p.test"),
+      relinked: m.relinked("https://p.test", "ops@p.test"),
       revoked: m.revoked("Ina"),
       transferOffered: m.transferOffered("Ina", "https://p.test"),
       transferDone: m.transferDone("Ina"),
       passwordReset: m.passwordReset("https://p.test/reset#TOKEN"),
-      passwordChanged: m.passwordChanged(),
-      vaultReplaced: m.vaultReplaced(),
+      passwordChanged: m.passwordChanged("ops@p.test"),
+      vaultReplaced: m.vaultReplaced("ops@p.test"),
       handedOver: m.handedOver("Ina"),
     };
   };
@@ -33,6 +33,13 @@ describe("mail texts", () => {
       expect(s.passwordReset.text).toContain("https://p.test/reset#TOKEN");
       for (const name of ["invitationWrite", "relinked", "transferOffered"] as const) expect(s[name].text).toContain("https://p.test/");
       expect(s.invitationWrite.text).not.toBe(s.invitationRead.text);
+      // PETTY-281: "tell someone" names who, when the instance has a contact address — and says nothing of it when not
+      for (const name of ["relinked", "passwordChanged", "vaultReplaced"] as const) expect(s[name].text, `${locale} ${name}`).toContain("ops@p.test");
+      const m = MAIL[locale];
+      for (const text of [m.relinked("https://p.test", "").text, m.passwordChanged("").text, m.vaultReplaced("").text]) {
+        expect(text).not.toContain("undefined");
+        expect(text).not.toMatch(/ \n| {2}/); // no dangling sentence where the address would go
+      }
     });
   }
   it("an unknown or missing language falls back to English", () => {

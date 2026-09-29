@@ -1,9 +1,9 @@
-import { useId, type InputHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes, type ReactNode } from "react";
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string | undefined;
-  error?: string | null | undefined;
+  error?: ReactNode;
 }
 /** Every field has a real <label>; errors are linked with aria-describedby (spec: Accessibility). */
 export function TextField({ label, hint, error, id, ...rest }: Props) {

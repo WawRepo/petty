@@ -235,10 +235,10 @@ export function PlacesScreen() {
           <PromptSheet open={s.kind === "add"} title={s.path.length ? t("places.newHere", { parent: placeLabelOf(s.path) }) : t("places.newTop")} label={t("places.name")} onClose={() => setSheet(null)}
             validate={(v) => (v.trim() ? null : t("drawer.errors.nameRequired"))}
             onSave={async (v) => { try { await savePlaceTree(addPlace(tree, s.path, v).tree); } catch (e) { if (e instanceof PlaceExists) throw new Error(t("places.exists")); throw e; } }} />
-          <PromptSheet open={s.kind === "rename"} title={t("places.rename")} label={t("places.name")} initial={name} onClose={() => setSheet(null)}
+          <PromptSheet open={s.kind === "rename"} title={t("places.renameTitle", { name })} label={t("places.name")} initial={name} onClose={() => setSheet(null)}
             validate={(v) => (v.trim() ? null : t("drawer.errors.nameRequired"))}
             onSave={async (v) => { try { await doRename(s.path, v); } catch (e) { if (e instanceof PlaceExists) throw new Error(t("places.exists")); throw e; } }} />
-          <Sheet open={s.kind === "move"} title={t("places.move")} onClose={() => setSheet(null)}>
+          <Sheet open={s.kind === "move"} title={t("places.moveTitle", { name })} onClose={() => setSheet(null)}>
             <PlacePicker tree={tree} value={moveTo} onChange={setMoveTo} exclude={s.path} emptyLabel={t("places.topLevel")} testId="move-picker" />
             <div className="actions">
               <Button variant="secondary" onClick={() => setSheet(null)}>{t("app.cancel")}</Button>
@@ -246,7 +246,7 @@ export function PlacesScreen() {
               <Button onClick={async () => { setSheet(null); if (!samePath(moveTo ?? [], s.path.slice(0, -1))) await doMove(s.path, moveTo ?? []); }} data-testid="place-move-confirm">{t("app.save")}</Button>
             </div>
           </Sheet>
-          <ConfirmSheet open={s.kind === "delete"} title={t("places.delete")} body={t("places.deleteBody", { name, parent: s.path.length > 1 ? placeLabelOf(s.path.slice(0, -1)) : t("places.topLevel") })} confirmLabel={t("places.delete")} onClose={() => setSheet(null)}
+          <ConfirmSheet open={s.kind === "delete"} title={t("places.deleteTitle", { name })} body={t("places.deleteBody", { name, parent: s.path.length > 1 ? placeLabelOf(s.path.slice(0, -1)) : t("places.topLevel") })} confirmLabel={t("places.delete")} onClose={() => setSheet(null)}
             onConfirm={() => doDelete(s.path)} />
         </>
       ) : null}

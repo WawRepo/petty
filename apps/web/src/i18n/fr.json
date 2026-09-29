@@ -7,13 +7,11 @@
     "save": "Enregistrer",
     "close": "Fermer",
     "done": "Terminé",
-    "continue": "Continuer",
     "retry": "Réessayer",
     "copy": "Copier",
     "copied": "Copié",
     "crashed": "Cette page n’a pas pu se charger. Rechargez-la pour obtenir la version actuelle de Petty.",
     "reload": "Recharger",
-    "offline": "Vous êtes hors ligne.",
     "yes": "Oui",
     "no": "Non",
     "sourceCode": "Code source",
@@ -21,7 +19,6 @@
   },
   "nav": {
     "settings": "Réglages",
-    "home": "Tiroirs",
     "account": "Compte"
   },
   "auth": {
@@ -34,11 +31,12 @@
       "tooMany": "Trop de tentatives. Patientez quelques minutes.",
       "forgot": "Mot de passe oublié ?",
       "noAccount": "Pas encore de compte ? Petty fonctionne sur invitation pour l’instant.",
-      "about": "Qu’est-ce que Petty ?"
+      "about": "Qu’est-ce que Petty ?",
+      "afterDevice": "Connectez-vous pour autoriser l’outil en ligne de commande qui attend dans votre terminal."
     },
     "reset": {
       "title": "Réinitialiser le mot de passe de connexion",
-      "body": "Seul le mot de passe de connexion est réinitialisé. Le coffre n’est jamais touché : seuls votre phrase secrète du coffre ou votre code de récupération ouvrent vos données. Si vous avez perdu les deux, demandez à un autre membre d’un tiroir partagé de le partager à nouveau avec vous.",
+      "body": "Seul le mot de passe de connexion est réinitialisé. Le coffre n’est jamais touché : vos données ne s’ouvrent qu’avec votre clé d’accès, votre phrase secrète du coffre ou votre code de récupération. Si vous les perdez tous, demandez à un membre d’un tiroir partagé de le partager à nouveau avec vous.",
       "send": "Envoyer le lien",
       "sent": "Si un compte existe pour cette adresse, un lien de réinitialisation vient d’y être envoyé. Il fonctionne une fois, pendant une heure.",
       "ok": "Compris",
@@ -77,10 +75,10 @@
       },
       "explainer": {
         "title": "Le coffre en une minute de lecture",
-        "password": "Le mot de passe de connexion vous connecte. Si vous l’oubliez, nous pouvons le réinitialiser par e-mail.",
-        "passphrase": "La phrase secrète du coffre chiffre vos données sur votre téléphone. Nous ne la voyons jamais et ne pouvons pas la réinitialiser. Laissez votre gestionnaire de mots de passe l’enregistrer quand il le propose.",
+        "password": "Le mot de passe de connexion vous connecte. Si vous l’oubliez, vous pouvez le réinitialiser par e-mail.",
+        "passphrase": "La phrase secrète du coffre ouvre votre coffre chiffré. Petty ne la voit jamais et personne ne peut la réinitialiser. Laissez votre gestionnaire de mots de passe l’enregistrer quand il le propose.",
         "recovery": "Vous recevrez ensuite un code de récupération. Notez-le sur papier. C’est le seul autre moyen d’entrer si vous perdez toutes vos clés d’accès ou oubliez la phrase secrète.",
-        "passkey": "Une clé d’accès sur cet appareil (Face ID, Touch ID, Windows Hello) ouvre vos données. Nous ne la voyons jamais. Sur un nouvel appareil, votre téléphone peut donner son accord une fois, ou vous y ajoutez une clé d’accès."
+        "passkey": "Une clé d’accès sur cet appareil (Face ID, Touch ID, Windows Hello) ouvre vos tiroirs. Petty ne la voit jamais. Sur un nouvel appareil, votre téléphone peut donner son accord une fois, ou vous y ajoutez une clé d’accès."
       },
       "passkeyHint": "Votre appareil demandera Face ID, Touch ID, Windows Hello ou un code PIN. Rien à retenir.",
       "usePassphrase": "Utiliser plutôt une phrase secrète",
@@ -112,7 +110,7 @@
       "recoverWrong": "Ce code n’a pas ouvert le coffre.",
       "recoverDone": "Phrase secrète du coffre modifiée. Déverrouillez avec la nouvelle.",
       "loginPassword": "Votre mot de passe de connexion",
-      "managerHint": "Votre gestionnaire de mots de passe peut garder cette phrase secrète. Elle reste chiffrée sur votre appareil, comme vos mots de passe enregistrés.",
+      "managerHint": "Votre gestionnaire de mots de passe peut garder cette phrase secrète, comme vos autres mots de passe. S’il se synchronise, la phrase secrète est aussi envoyée dans son cloud.",
       "passkey": "Déverrouiller avec une clé d’accès",
       "passkeyWrong": "La clé d’accès n’a pas ouvert le coffre.",
       "passkeyNoPrf": "Ce navigateur ne peut pas utiliser la clé d’accès ici. Utilisez votre phrase secrète.",
@@ -129,7 +127,7 @@
       "notNow": "Plus tard"
     },
     "lock": {
-      "now": "Verrouiller maintenant",
+      "now": "Verrouiller",
       "locked": "Coffre verrouillé."
     },
     "signOut": "Se déconnecter",
@@ -137,39 +135,38 @@
       "title": "Configurer votre coffre",
       "submit": "Créer le coffre",
       "displayName": "Nom (facultatif)",
-      "displayNameHint": "Le nom que voient les personnes avec qui vous partagez des tiroirs. Si vous le laissez vide, votre nom Clerk est utilisé.",
+      "displayNameHint": "Le nom que voient les personnes avec qui vous partagez des tiroirs. Si vous le laissez vide, le nom de votre compte de connexion est utilisé.",
       "already": "Ce compte a déjà un coffre. Rechargez l’application.",
       "explainer": {
-        "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil et ne le quitte jamais."
+        "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil. Le serveur n’en garde qu’une copie verrouillée."
       },
       "passkeyAccount": "Coffre Petty"
     }
   },
   "home": {
     "signOutTitle": "Se déconnecter ?",
-    "signOutBody": "Pour revenir, il vous faudra votre mot de passe de connexion et votre phrase secrète du coffre.",
+    "signOutBody": "Pour revenir, il faudra vous reconnecter, puis ouvrir le coffre avec votre clé d’accès ou votre phrase secrète.",
     "empty": "Aucun tiroir pour l’instant.",
-    "emptyHint": "Ajoutez-en un pour commencer à suivre votre argent.",
+    "emptyHint": "Ajoutez-en un pour chaque endroit où vous gardez de l’argent ou des objets.",
     "count": "{count, plural, one {# tiroir} other {# tiroirs}}",
     "addDrawer": "Ajouter un tiroir",
-    "comingSoon": "Les tiroirs arrivent à la prochaine étape.",
     "totals": "Valeur totale",
     "totalsIn": "Valeur totale · {tag}",
-    "across": "{count, plural, one {Sur # tiroir} other {Sur # tiroirs}}",
+    "across": "{count, plural, one {Dans # tiroir} other {Dans # tiroirs}}",
     "drawersTitle": "Tiroirs",
     "items": "{count, plural, one {# élément} other {# éléments}}",
     "currencies": "{count, plural, one {# devise} other {# devises}}",
     "tags": {
       "label": "Filtrer par lieu",
       "all": "Tous",
-      "elsewhere": "Ailleurs"
+      "elsewhere": "Sans lieu"
     },
     "notInTotal": "Hors de votre total",
     "search": {
       "open": "Rechercher dans tous les tiroirs",
       "close": "Fermer la recherche",
-      "label": "Rechercher des éléments et des étiquettes dans chaque tiroir",
-      "placeholder": "Noms ou étiquettes, p. ex. passeport",
+      "label": "Rechercher des tiroirs, des lieux, des éléments et des étiquettes",
+      "placeholder": "Noms, lieux ou étiquettes, p. ex. passeport",
       "count": "{lines, plural, one {# élément} other {# éléments}} dans {drawers, plural, one {# tiroir} other {# tiroirs}}",
       "none": "Aucun résultat.",
       "hitsIn": "Résultats dans {name}",
@@ -179,20 +176,18 @@
     "incomplete": "Certains tiroirs n’ont pas pu être lus. Le total est incomplet.",
     "addDrawerTitle": "Ajouter un tiroir",
     "drawerName": "Nom",
-    "drawerNamePlaceholder": "p. ex. Cuisine",
+    "drawerNamePlaceholder": "p. ex. Boîte à sous",
     "add": "Ajouter",
-    "lines": "{count, plural, one {# ligne} other {# lignes}}",
-    "degraded": "Impossible de déchiffrer ce tiroir.",
     "loadFailed": "Impossible de charger vos tiroirs.",
     "warn": "Attention requise",
     "degradedReason": {
-      "no_key": "Vous n’avez pas encore de clé pour ce tiroir.",
+      "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
-      "unwrap_failed": "La clé du tiroir n’a pas pu être ouverte.",
-      "decrypt_failed": "Impossible de déchiffrer ce tiroir.",
-      "bad_document": "Le document du tiroir n’est pas valide.",
-      "unknown_schema": "Ce tiroir a été écrit par une version plus récente de Petty."
+      "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
+      "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
+      "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
+      "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour."
     },
     "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}",
     "picture": {
@@ -206,12 +201,12 @@
       "title": "Écran d’accueil",
       "places": "Afficher les lieux",
       "placesHint": "Regroupe les tiroirs par pièce et affiche les pastilles de lieu. Désactivé : une simple liste.",
-      "verification": "Afficher les confirmations",
-      "verificationHint": "La barre « Confirmer l’état » des tiroirs, son historique et les badges de confirmation. Désactivez l’option si vous ne comptez et ne confirmez jamais.",
+      "verification": "Afficher les contrôles",
+      "verificationHint": "La barre « C’est contrôlé » des tiroirs, son historique et les badges « Contrôlé ». Désactivez l’option si vous ne comptez jamais ce que contiennent vos tiroirs.",
       "totals": "Afficher les totaux",
-      "totalsHint": "La carte « Valeur totale » et les sous-totaux de l’écran d’accueil, la carte des totaux et les pastilles « dans le total » d’un tiroir. Désactivez l’option pour ne voir que ce que contient chaque tiroir et chaque ligne.",
+      "totalsHint": "La carte « Valeur totale » et les sous-totaux de l’écran d’accueil, la carte des totaux et les pastilles « Dans le total » d’un tiroir. Désactivez l’option pour ne voir que ce que contient chaque tiroir et chaque élément.",
       "picture": "Afficher l’illustration",
-      "pictureHint": "La maison avec vos lieux et vos tiroirs autour, sur l’écran d’accueil. Touchez un lieu pour ne voir que ses tiroirs."
+      "pictureHint": "Une illustration de vos lieux et de vos tiroirs en haut de l’écran d’accueil. Touchez un lieu pour ne voir que ses tiroirs."
     },
     "language": "Langue",
     "theme": {
@@ -223,7 +218,7 @@
     "account": "Compte",
     "signedInAs": "Connecté en tant que {email}",
     "safetyNumber": "Votre numéro de sécurité",
-    "safetyNumberHint": "Comparez-le en face à face avec toute personne qui partage un tiroir avec vous.",
+    "safetyNumberHint": "Comparez-le en personne ou par téléphone avec toute personne qui partage un tiroir avec vous.",
     "joinLink": "Inviter quelqu’un sur Petty",
     "joinLinkHint": "Crée un lien à usage unique (valable 7 jours). Envoyez-le vous-même à la personne, puis partagez un tiroir avec elle une fois son compte créé.",
     "joinLinkCreate": "Créer un lien d’invitation",
@@ -239,7 +234,7 @@
       "add": "Ajouter une clé d’accès",
       "remove": "Supprimer",
       "unsupported": "Ce navigateur ne gère pas les clés d’accès comme Petty en a besoin (Firefox, pas encore). Essayez Safari, Chrome ou Edge.",
-      "addHint": "Saisissez la phrase secrète du coffre. Votre appareil demandera ensuite Face ID, Touch ID, un code PIN ou une clé de sécurité.",
+      "addHint": "Saisissez ce qui est demandé ci-dessous. Votre appareil demandera ensuite Face ID, Touch ID, un code PIN ou une clé de sécurité.",
       "removeHint": "La clé d’accès « {name} » n’ouvrira plus le coffre. Vos autres clés d’accès, la phrase secrète et le code de récupération continuent de fonctionner.",
       "added": "Clé d’accès configurée. Vous pouvez désormais déverrouiller avec elle.",
       "removed": "Clé d’accès supprimée.",
@@ -282,9 +277,8 @@
     "decimal": "Séparateur décimal"
   },
   "errors": {
-    "network": "Impossible de joindre le serveur.",
-    "unknown": "Une erreur s’est produite.",
-    "sessionExpired": "Votre session a expiré. Reconnectez-vous.",
+    "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "unknown": "Une erreur s’est produite. Réessayez.",
     "storageFull": "Votre espace de stockage est plein. Supprimez les photos ou les tiroirs dont vous n’avez plus besoin. Les Réglages indiquent l’espace utilisé.",
     "ownerStorageFull": "Le propriétaire de ce tiroir n’a plus d’espace, la modification n’a donc pas été enregistrée. Demandez-lui de libérer de la place.",
     "photoTooLarge": "Cette photo est trop grande. Choisissez-en une plus petite."
@@ -299,7 +293,7 @@
       "all": "Tous les éléments",
       "notInTotal": "Hors total",
       "countsToward": "{included, plural, one {# élément sur {total} compte dans ce total} other {# éléments sur {total} comptent dans ce total}}",
-      "none": "Pas encore de ligne d’argent"
+      "none": "Pas encore d’élément de type Argent"
     },
     "filter": {
       "all": "Tous",
@@ -307,14 +301,13 @@
       "excluded": "Hors total",
       "allTags": "Toutes les étiquettes"
     },
-    "counted": "Compte dans mon total",
+    "counted": "Inclus dans mon total",
     "countedHint": "Désactivez pour l’argent que vous gardez seulement pour d’autres, comme la caisse d’un club. Seul votre affichage change.",
     "rename": "Renommer le tiroir",
     "tags": "Lieu",
-    "tagsPlaceholder": "cuisine étagère",
-    "tagsHint": "Des mots séparés par des espaces, de la pièce jusqu’à la boîte, p. ex. « cuisine étagère ». 5 mots au maximum. Tous ceux qui partagent le tiroir le voient.",
+    "placeIs": "Lieu : {place}",
     "delete": "Supprimer le tiroir",
-    "deleteConfirm": "Supprimer « {name} » avec toutes ses lignes et son historique ? Cette action est irréversible.",
+    "deleteConfirm": "Supprimer « {name} » avec tous ses éléments et leur historique ? Cette action est irréversible.",
     "deleteBtn": "Supprimer",
     "deleteType": "Saisissez le nom du tiroir pour confirmer",
     "photoAdd": "Ajouter une photo",
@@ -323,9 +316,8 @@
     "photoAlt": "Photo : {name}",
     "photoProcessing": "Préparation de la photo…",
     "photoFailed": "Impossible de lire cette image. Essayez une autre photo.",
-    "addLine": "Ajouter une ligne",
-    "noLines": "Aucune ligne dans ce tiroir pour l’instant.",
-    "editedBy": "Dernière modification par {name}",
+    "addLine": "Ajouter un élément",
+    "noLines": "Aucun élément dans ce tiroir pour l’instant.",
     "dragHandle": "Déplacer {name} : faites glisser ou utilisez les flèches du clavier",
     "lineOptions": "Options pour {name}",
     "open": "Ouvrir {name}",
@@ -340,13 +332,13 @@
       "currency": "Devise",
       "currencyHint": "Trois lettres, par exemple EUR, USD ou GBP.",
       "unit": "Unité (facultatif)",
-      "unitPlaceholder": "p. ex. boules de verre",
+      "unitPlaceholder": "p. ex. pièces",
       "startingBalance": "Solde initial",
       "startingCount": "Quantité initiale",
       "text": "Texte (facultatif)",
       "textPlaceholder": "p. ex. numéro, date d’expiration, emplacement…",
       "namePlaceholder": {
-        "money": "p. ex. USD cuisine",
+        "money": "p. ex. Courses",
         "countable": "p. ex. Boules de verre",
         "single": "p. ex. Passeport"
       },
@@ -355,7 +347,7 @@
     "line": {
       "icon": "Icône",
       "tags": "Étiquettes",
-      "counted": "Compte dans le total",
+      "counted": "Inclus dans le total",
       "countedHint": "Désactivez pour ce qui n’est pas de l’argent liquide, comme des pièces d’or. Le changement vaut pour tous ceux qui partagent le tiroir.",
       "included": "Dans le total",
       "excluded": "Hors total",
@@ -366,12 +358,11 @@
       "editText": "Modifier le texte",
       "moveUp": "Monter",
       "moveDown": "Descendre",
-      "delete": "Supprimer la ligne",
+      "delete": "Supprimer l’élément",
       "deleteConfirm": "Supprimer « {name} » ?",
-      "deleteHistory": "{count, plural, one {# opération de l’historique disparaît} other {# opérations de l’historique disparaissent}} avec elle. Cette action est irréversible.",
+      "deleteHistory": "{count, plural, one {# opération de l’historique disparaît avec lui.} other {# opérations de l’historique disparaissent avec lui.}} Cette action est irréversible.",
       "deleteNoHistory": "Cette action est irréversible.",
-      "kindLocked": "Le type ne peut être changé que si la ligne n’a encore aucune opération.",
-      "countable": "Quantité",
+      "kindLocked": "Le type ne peut être changé que si l’élément n’a encore aucune opération.",
       "items": "pcs",
       "lastEntry": "Dernière opération {when}",
       "noEntries": "Aucune opération",
@@ -380,10 +371,10 @@
       "tagsNew": "Nouvelle étiquette",
       "tagsAdd": "Ajouter une étiquette",
       "tagsCount": "{count, plural, one {# étiquette} other {# étiquettes}} sur {max}",
-      "tagsFull": "Cette ligne a {max} étiquettes, le maximum possible."
+      "tagsFull": "Cet élément a {max} étiquettes, le maximum possible."
     },
     "errors": {
-      "opsDropped": "Quelqu’un a modifié ce tiroir entre-temps. Votre modification n’a pas pu être appliquée.",
+      "opsDropped": "Quelqu’un a modifié ce tiroir entre-temps, votre modification n’a donc pas été appliquée. Réessayez.",
       "amountInvalid": "Saisissez un montant valide.",
       "countInteger": "Les quantités sont des nombres entiers.",
       "nameRequired": "Un nom est requis.",
@@ -394,6 +385,7 @@
     "tagNoItemsYet": "Aucun élément pour l’instant",
     "tagNoItemsYetLong": "Aucun élément n’a encore cette étiquette. Utilisez Choisir des éléments pour l’ajouter.",
     "tagMore": "{count, plural, one {+# autre} other {+# autres}}",
+    "tagHolder": "{drawer} : {items}",
     "tagRowName": "{tag}, {count, plural, one {# élément} other {# éléments}}",
     "tagDetailReadOnly": "lecture seule",
     "tagChooseItems": "Choisir des éléments",
@@ -402,11 +394,11 @@
     "tagMerge": "Fusionner",
     "tagOpenItem": "Ouvrir {item} dans {drawer}",
     "tagHiddenReadOnly": "Les tiroirs partagés que vous pouvez seulement lire ne sont pas listés.",
-    "tagNew": "Nouvelle étiquette",
+    "tagNew": "Nouvelle",
+    "tagNewTitle": "Nouvelle étiquette",
     "tagName": "Nom de l’étiquette",
     "tagItemsTitle": "Éléments avec l’étiquette {tag}",
     "tagPickItems": "Éléments avec cette étiquette",
-    "tagPickOne": "Choisissez au moins un élément.",
     "tagItemFull": "a déjà {max} étiquettes",
     "tagNoItems": "Ce tiroir n’a pas encore d’élément. Ajoutez d’abord un élément.",
     "tagsManageHint": "Une seule liste d’étiquettes pour tous vos tiroirs.",
@@ -414,7 +406,7 @@
     "tagItemIn": "{item} dans {drawer}",
     "tagRewriteFailed": "{count, plural, one {# tiroir n’a pas été mis à jour. Réessayez.} other {# tiroirs n’ont pas été mis à jour. Réessayez.}}",
     "tagRewriteReadOnly": "{count, plural, one {# tiroir partagé est en lecture seule et garde l’ancienne étiquette.} other {# tiroirs partagés sont en lecture seule et gardent l’ancienne étiquette.}}",
-    "tagsEmpty": "Vous n’avez pas encore d’étiquette. Touchez Nouvelle étiquette pour en créer une.",
+    "tagsEmpty": "Vous n’avez pas encore d’étiquette. Créez-en une avec le bouton Nouvelle.",
     "tagsManage": "Gérer les étiquettes",
     "tagRename": "Renommer",
     "tagRemove": "Supprimer l’étiquette",
@@ -436,113 +428,117 @@
   },
   "line": {
     "noText": "Pas encore de texte.",
-    "balance": "Solde",
-    "count": "Quantité",
-    "comingSoon": "Ajouter, Retirer et Ajuster arrivent à la prochaine étape.",
     "history": "Historique",
     "noEntries": "Aucune opération pour l’instant.",
     "loadOlder": "Charger les plus anciennes",
     "olderLoaded": "Historique plus ancien",
-    "sinceCount": "Depuis le dernier comptage",
     "ops": {
       "add": "Ajouter",
       "withdraw": "Retirer",
       "adjust": "Ajuster",
-      "reverse": "Annuler l’opération"
+      "reverse": "Inverser"
+    },
+    "opName": {
+      "add": "Ajout",
+      "withdraw": "Retrait",
+      "adjust": "Ajustement",
+      "reverse": "Inversion"
     },
     "entry": {
       "title": {
         "add": "Ajouter",
         "withdraw": "Retirer",
-        "adjust": "Ajuster — saisissez {noun, select, solde {le solde compté} other {la quantité comptée}}"
+        "adjust": "Ajuster"
       },
       "amount": "Montant ({unit})",
-      "real": "{noun, select, solde {Solde réel} other {Quantité réelle}} ({unit})",
+      "real": "Ce que vous avez compté ({unit})",
       "noun": {
         "balance": "solde",
         "count": "quantité"
       },
       "comment": "Commentaire (facultatif)",
       "commentPlaceholder": "p. ex. cadeau d’anniversaire",
+      "commentPlaceholderAdjust": "p. ex. compté dimanche",
       "review": "Vérifier",
-      "confirmTitle": "Confirmer",
-      "operation": "Opération",
+      "confirmTitle": "Vérifier et enregistrer",
+      "operation": "Type",
       "current": "{noun, select, solde {Solde actuel} other {Quantité actuelle}}",
       "change": "Variation",
       "new": "{noun, select, solde {Nouveau solde} other {Nouvelle quantité}}",
-      "confirm": "Confirmer",
+      "confirm": "Enregistrer",
       "saved": "Enregistré",
       "negativeWarning": "Le solde passera à {amount}. Il y a peut-être plus d’argent ici qu’enregistré, ou le montant est erroné.",
       "zero": "Saisissez un montant.",
       "invalid": "Saisissez un montant valide."
     },
     "row": {
-      "reversed": "annulée",
-      "cancels": "annule une opération antérieure",
+      "reversed": "inversé",
+      "cancels": "compense une opération antérieure",
       "adjustHint": "({delta})",
       "by": "par {name}",
       "options": "Options de l’opération"
     },
     "reverse": {
-      "action": "Annuler cette opération",
-      "title": "Annuler cette opération ?",
+      "action": "Inverser",
+      "title": "Inverser cette opération ?",
       "body": "Une nouvelle opération du montant opposé sera ajoutée. Les deux restent dans l’historique.",
       "refused": {
-        "adjust_not_reversible": "Un ajustement ne peut pas être annulé. Si le comptage était faux, recomptez.",
-        "reverse_not_reversible": "Une annulation ne peut pas être annulée.",
-        "already_reversed": "Cette opération a déjà été annulée.",
-        "before_checkpoint": "Déjà prise en compte par un comptage ultérieur."
+        "adjust_not_reversible": "Un ajustement ne peut pas être inversé. Si le comptage était faux, recomptez.",
+        "reverse_not_reversible": "Une inversion ne peut pas être inversée.",
+        "already_reversed": "Cette opération a déjà été inversée.",
+        "before_checkpoint": "Un ajustement ultérieur tient déjà compte de cette opération."
       }
     },
     "recount": {
-      "title": "La ligne a changé",
+      "title": "L’élément a changé",
       "body": "Quelqu’un a ajouté une opération depuis votre comptage. Recomptez et saisissez la nouvelle valeur.",
       "ok": "OK"
     },
     "warn": {
-      "problems": "{count, plural, one {# opération n’a pas pu être lue ou vérifiée. Son montant n’est pas compté dans le solde.} other {# opérations n’ont pas pu être lues ou vérifiées. Leur montant n’est pas compté dans le solde.}}",
+      "problems": "{count, plural, one {# opération n’a pas pu être lue ou vérifiée. Son montant n’est pas compté dans le solde.} other {# opérations n’ont pas pu être lues ou vérifiées. Leurs montants ne sont pas comptés dans le solde.}}",
       "broken": "Les liens de l’historique ne correspondent pas. Des opérations ont peut-être été supprimées ou modifiées.",
       "truncated": "L’historique est plus court que lors de votre dernière consultation. Des opérations ont peut-être été supprimées.",
       "acknowledge": "Accepter tel quel",
       "skipped": "{count, plural, one {# opération n’est pas prise en compte dans le solde, car elle enfreint les règles.} other {# opérations ne sont pas prises en compte dans le solde, car elles enfreignent les règles.}}",
-      "negative": "Solde négatif. Comptez cette ligne et ajustez-la."
+      "negative": "Solde négatif. Comptez cet élément et ajustez-le."
     }
   },
   "time": {
     "justNow": "à l’instant"
   },
   "verify": {
-    "notYet": "Pas encore compté",
-    "verified": "Confirmé · {when}",
-    "changed": "À confirmer · Modifié {when}",
+    "notYet": "Pas encore contrôlé",
+    "verified": "Contrôlé · {when}",
+    "changed": "À recontrôler · modifié {when}",
     "bar": {
-      "never": "Argent compté ? Confirmez le contenu, et tout le monde verra la date du dernier contrôle.",
-      "verified": "Confirmé {when}",
-      "stale": "Confirmé {when}, mais quelque chose a changé depuis.",
+      "never": "Vous avez compté ce qu’il contient ? Marquez le tiroir comme contrôlé, et tout le monde verra la date du dernier contrôle.",
+      "verified": "Contrôlé {when}",
+      "stale": "Contrôlé {when}, mais quelque chose a changé depuis.",
       "withComment": " — {comment}"
     },
-    "confirm": "Confirmer l’état",
+    "confirm": "C’est contrôlé",
     "history": "Historique ({count})",
     "hide": "Masquer",
-    "historyTitle": "Historique des confirmations",
+    "historyTitle": "Historique des contrôles",
     "sheet": {
-      "title": "Confirmer l’état du tiroir",
-      "hint": "Confirmer signifie que vous avez vérifié ce tiroir physiquement : chaque solde ci-dessous correspond à l’argent réel et chaque objet est bien là. Aucun solde n’est modifié — si une ligne ne tombe pas juste, fermez cette fenêtre et utilisez d’abord Ajuster sur cette ligne.",
-      "lines": "Lignes",
+      "title": "Marquer le tiroir comme contrôlé",
+      "hint": "Ne le marquez comme contrôlé qu’après avoir regardé à l’intérieur : chaque montant ci-dessous correspond à ce qui s’y trouve, et chaque objet est bien là. Aucun solde n’est modifié. Si un élément ne tombe pas juste, fermez cette fenêtre et ajustez d’abord cet élément.",
+      "lines": "Montants",
       "none": "aucune",
       "items": "Objets",
       "present": "{name} est bien là",
       "comment": "Commentaire (facultatif)",
       "commentPlaceholder": "p. ex. compté avec Alex",
-      "confirm": "Confirmer"
+      "confirm": "C’est contrôlé"
     },
-    "toast": "Tiroir confirmé",
+    "toast": "Tiroir contrôlé",
     "row": {
-      "title": "Confirmé",
+      "title": "Contrôlé",
       "by": "par {name}",
       "missing": "Il manque : {names}",
       "present": "sur place",
-      "absent": "introuvable"
+      "absent": "introuvable",
+      "item": "{name} : {value}"
     }
   },
   "pending": {
@@ -573,15 +569,15 @@
     },
     "safety": "Numéro de sécurité",
     "status": {
-      "confirmed": "Confirmé",
+      "confirmed": "Comparé",
       "unconfirmed": "Pas encore comparé",
-      "changed": "CLÉ MODIFIÉE — comparez à nouveau avant de partager quoi que ce soit",
-      "unpinned": "Aucune clé"
+      "changed": "Sa clé a changé. Comparez à nouveau les numéros de sécurité avant de partager.",
+      "unpinned": "Pas encore configuré"
     },
-    "confirm": "J’ai comparé ce numéro",
+    "confirm": "Même numéro",
     "acceptNew": "Accepter la nouvelle clé",
     "remove": "Retirer",
-    "removeConfirm": "Retirer {name} de ce tiroir ? Cette personne garde ce qu’elle a déjà vu ; la clé sera remplacée pour qu’elle ne puisse rien lire de nouveau.",
+    "removeConfirm": "Retirer {name} de ce tiroir ? Cette personne garde ce qu’elle a déjà vu. Le tiroir reçoit une nouvelle clé : elle ne pourra rien lire de ce qui sera ajouté ensuite.",
     "makeOwner": "Transférer la propriété",
     "leave": "Quitter le tiroir",
     "leaveConfirm": "Quitter ce tiroir ? Il vous faudra une nouvelle invitation pour revenir.",
@@ -595,12 +591,11 @@
     "lookup": "Rechercher",
     "notFound": "Aucun compte Petty avec cet e-mail. Envoyez-lui d’abord un lien d’invitation.",
     "noKeys": "Cette personne n’a pas fini de configurer son compte.",
-    "found": "{name}",
     "role": "Rôle",
-    "roleWrite": "Éditeur — peut saisir des opérations, modifier les lignes et confirmer l’état",
+    "roleWrite": "Éditeur — peut ajouter et retirer, modifier les éléments et marquer le tiroir comme contrôlé",
     "roleRead": "Lecteur — voit tout, ne peut rien modifier ni exporter",
     "compare": "J’ai comparé ce numéro de sécurité avec {name} en personne ou par téléphone",
-    "blockedChanged": "La clé de cette personne a changé depuis votre dernière confirmation. Acceptez d’abord la nouvelle clé dans Membres.",
+    "blockedChanged": "La clé de cette personne a changé depuis votre dernière comparaison. Acceptez d’abord la nouvelle clé dans Membres.",
     "send": "Inviter",
     "sent": "Invitation envoyée",
     "joinLink": "Envoyer un lien d’invitation",
@@ -611,8 +606,7 @@
   "rotation": {
     "running": "Remplacement de la clé du tiroir… Opérations rechiffrées : {done} sur {total}.",
     "needed": "Un membre a été retiré. La clé du tiroir sera remplacée la prochaine fois qu’un éditeur ouvrira ce tiroir.",
-    "keyChanged": "Clé modifiée pour {names}. Vérifiez les numéros de sécurité dans Membres avant de partager quoi que ce soit.",
-    "cannot": "Impossible de remplacer la clé : confirmez d’abord la clé de chaque membre dans Membres."
+    "keyChanged": "Clé modifiée pour {names}. Vérifiez les numéros de sécurité dans Membres avant de partager quoi que ce soit."
   },
   "offline": {
     "banner": "Vous êtes hors ligne. Les modifications sont enregistrées sur cet appareil et envoyées dès la reconnexion.",
@@ -623,8 +617,8 @@
     "report": {
       "title": "Pendant votre absence",
       "foreign": "{amount} par {name} sur {line}",
-      "recount": "Votre comptage sur {line} n’a pas été enregistré — la ligne a changé entre-temps. Recomptez.",
-      "reverseRefused": "Votre annulation sur {line} n’a pas été enregistrée : {reason}",
+      "recount": "Votre comptage sur {line} n’a pas été enregistré : l’élément a changé entre-temps. Recomptez.",
+      "reverseRefused": "Votre inversion sur {line} n’a pas été enregistrée : {reason}",
       "opsDropped": "Une modification de « {drawer} » n’a pas pu être appliquée : quelqu’un l’a modifié entre-temps.",
       "failed": "Une modification de « {drawer} » n’a pas pu être envoyée.",
       "storageFull": "Une modification de « {drawer} » n’a pas été enregistrée : votre espace de stockage est plein.",
@@ -633,9 +627,9 @@
     }
   },
   "install": {
-    "title": "Ajouter à l’écran d’accueil",
+    "title": "Installer l’application",
     "why": "Une fois installé, Petty s’ouvre comme une application, garde ses clés et ses données hors ligne, et fonctionne sans réseau.",
-    "nudge": "Ajoutez Petty à votre écran d’accueil pour qu’il fonctionne hors ligne.",
+    "nudge": "Installez Petty pour qu’il continue de fonctionner hors ligne.",
     "ios": "Ajoutez Petty à votre écran d’accueil pour qu’il fonctionne hors ligne : Partager → Sur l’écran d’accueil.",
     "manual": "Utilisez le menu de votre navigateur : « Installer l’application » ou « Ajouter à l’écran d’accueil ».",
     "installed": "Petty est installé sur cet appareil.",
@@ -647,10 +641,10 @@
     "title": "Sauvegarde",
     "hint": "Un export contient chaque tiroir dont vous êtes propriétaire ou éditeur, avec les photos et tout l’historique. Gardez le fichier en lieu sûr.",
     "exportEncrypted": "Exporter (chiffré)",
-    "exportPlain": "Exporter en clair…",
+    "exportPlain": "Exporter sans chiffrement…",
     "import": "Importer un fichier",
     "password": "Mot de passe de l’export",
-    "passwordHint": "Au moins 12 caractères. Indépendant de votre phrase secrète du coffre ; nécessaire pour ouvrir ce fichier n’importe où, même sans compte.",
+    "passwordHint": "Au moins 12 caractères, différent de votre phrase secrète du coffre. Il ouvre ce fichier n’importe où, même sans compte. Personne ne peut le récupérer.",
     "passwordRepeat": "Répétez le mot de passe de l’export",
     "passwordMismatch": "Les mots de passe ne correspondent pas.",
     "passwordShort": "Au moins 12 caractères.",
@@ -658,12 +652,12 @@
     "exporting": "Préparation…",
     "exported": "Export prêt",
     "skipped": "{count, plural, one {# tiroir en lecture seule a été exclu.} other {# tiroirs en lecture seule ont été exclus.}}",
-    "plainTitle": "Exporter en clair ?",
+    "plainTitle": "Exporter sans chiffrement ?",
     "plainWarning": "Ce fichier contiendra chaque solde, opération, commentaire et photo sans chiffrement. Quiconque obtient le fichier peut tout lire. Préférez l’export chiffré, sauf si vous savez pourquoi vous en avez besoin.",
-    "plainConfirm": "Exporter en clair",
+    "plainConfirm": "Exporter",
     "importTitle": "Importer",
-    "importHint": "Crée de nouveaux tiroirs à partir du fichier, dont vous êtes propriétaire. Les auteurs d’origine restent comme simples libellés ; chaque opération importée est signée par vous et marquée [imported].",
-    "importPassword": "Mot de passe du fichier",
+    "importHint": "Crée de nouveaux tiroirs à partir du fichier, dont vous êtes propriétaire. Chaque opération garde le nom de son auteur sous forme de texte, est signée par vous et marquée [imported].",
+    "importPassword": "Mot de passe de l’export",
     "importFile": "Choisir un fichier",
     "importing": "Importation de {drawer} : opération {done} sur {total}…",
     "imported": "{count, plural, one {# tiroir importé} other {# tiroirs importés}}",
@@ -675,7 +669,7 @@
     "title": "Supprimer le compte",
     "intro": "Cette action est irréversible. Décidez du sort de chaque tiroir dont vous êtes propriétaire et que d’autres utilisent.",
     "erased": "Ce qui est effacé : vos clés privées, vos sessions, votre e-mail et votre nom, et chaque tiroir dont vous êtes le seul propriétaire.",
-    "kept": "Ce qui reste : les opérations que vous avez saisies dans des tiroirs que d’autres membres conservent — c’est leur registre, chiffré avec une clé qu’ils détiennent. Votre nom y devient « Utilisateur supprimé ». Vos clés publiques restent, pour que ces opérations puissent encore être vérifiées.",
+    "kept": "Ce qui reste : les opérations que vous avez saisies dans des tiroirs que d’autres membres conservent. Ce sont les registres de ces membres, chiffrés avec une clé qu’ils détiennent. Votre nom y devient « Utilisateur supprimé », et vos clés publiques restent pour que ces opérations puissent encore être vérifiées.",
     "sharedTitle": "Tiroirs partagés dont vous êtes propriétaire",
     "sole": "{count, plural, one {# tiroir dont vous êtes le seul propriétaire sera supprimé.} other {# tiroirs dont vous êtes le seul propriétaire seront supprimés.}}",
     "memberships": "Vous quitterez {count, plural, one {# tiroir} other {# tiroirs}} dont vous êtes membre.",
@@ -695,30 +689,30 @@
     "summaryUndecided": "{drawer} : pas encore décidé"
   },
   "pins": {
-    "rolledBackTitle": "Votre liste de clés de confiance a disparu du serveur",
-    "rolledBack": "Sur cet appareil, votre liste de clés de confiance était en version {seen} ; le serveur a maintenant la version {server}. Il peut s’agir d’une sauvegarde restaurée, ou de quelqu’un qui tente de vous faire accepter de nouvelles clés. Tant que vous ne recommencez pas à zéro, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
-    "startOver": "J’ai compris, recommencer à zéro"
+    "rolledBackTitle": "Le serveur a une copie plus ancienne de vos clés de confiance",
+    "rolledBack": "Sur cet appareil, votre liste de clés de confiance était en version {seen} ; le serveur a maintenant la version {server}. Il peut s’agir d’une sauvegarde restaurée, ou de quelqu’un qui tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "startOver": "Commencer une nouvelle liste"
   },
   "privacy": {
     "link": "Confidentialité et sécurité",
     "title": "Confidentialité et sécurité",
-    "intro": "Petty chiffre vos tiroirs sur votre appareil. Le serveur stocke des données chiffrées qu’il ne peut pas ouvrir. Voici exactement ce qu’il peut voir, et ce qu’il ne peut pas voir.",
+    "intro": "Petty chiffre le contenu de vos tiroirs sur votre appareil. Le serveur stocke des données chiffrées qu’il ne peut pas ouvrir. Voici exactement ce qu’il peut voir, et ce qu’il ne peut pas voir.",
     "seesTitle": "Ce que le serveur peut voir",
     "sees": [
       "Votre e-mail et votre nom affiché, ainsi que ceux des personnes avec qui vous partagez des tiroirs.",
-      "Combien de tiroirs vous avez et combien de lignes contient chacun.",
+      "Combien de tiroirs vous avez et combien d’éléments contient chacun.",
       "Qui partage quel tiroir avec qui, et avec quel rôle.",
-      "Quand chaque opération a été enregistrée, par qui, sur quelle ligne, et s’il s’agissait d’un comptage ou d’une annulation — jamais le montant, le commentaire ni le nom de la ligne.",
+      "Quand chaque opération a été enregistrée, par qui, dans quel élément, et s’il s’agissait d’un comptage ou d’une inversion. Jamais le montant, le commentaire ni le nom de l’élément.",
       "La taille de chaque enregistrement chiffré, arrondie au multiple de 256 octets supérieur.",
-      "Les sauvegardes dépendent de votre hébergeur : cette application n’en fait aucune. Si votre hébergeur sauvegarde la base de données, une copie contient les mêmes données chiffrées, votre e-mail et votre coffre chiffré — demandez-lui combien de temps les copies sont conservées, y compris après la suppression d’un compte.",
+      "Petty ne fait lui-même aucune sauvegarde. Si la personne qui gère ce Petty sauvegarde la base de données, une copie contient les mêmes données chiffrées, votre e-mail et votre coffre verrouillé. Demandez-lui combien de temps les copies sont conservées, y compris après la suppression d’un compte.",
       "Si vous laissez le gestionnaire de mots de passe de votre navigateur enregistrer la phrase secrète du coffre, ce gestionnaire (et sa synchronisation dans le cloud) la détient aussi. C’est votre choix, pas celui du serveur."
     ],
     "defendsTitle": "Ce contre quoi Petty protège",
     "defends": [
       "Quiconque lit la base de données ou une sauvegarde : le contenu des tiroirs, les photos et les coffres ne sont que des données chiffrées. Cette personne voit toutefois les détails de compte et d’activité listés ci-dessus.",
       "Quiconque modifie la base de données : les opérations déplacées, échangées ou supprimées sont détectées.",
-      "Un serveur compromis : il ne détient aucune clé et ne peut pas lire le contenu des tiroirs.",
-      "Un téléphone perdu : le coffre reste verrouillé sans la phrase secrète et se verrouille de lui-même au bout de 24 heures.",
+      "Le serveur seul : il ne détient aucune clé et ne peut pas lire vos tiroirs, sauf s’il modifie aussi l’application qu’il diffuse (voir ci-dessous).",
+      "Un téléphone perdu : un coffre verrouillé exige votre clé d’accès ou votre phrase secrète, et un coffre ouvert se verrouille de lui-même 24 heures après son déverrouillage.",
       "Un membre retiré : après son retrait, la clé du tiroir est remplacée ; il ne peut rien lire de ce qui est écrit ensuite."
     ],
     "notTitle": "Ce contre quoi Petty ne peut pas protéger",
@@ -728,9 +722,9 @@
       "Toute personne avec qui vous partagez un tiroir peut lire et copier tout ce qu’il contient. La retirer ne coupe que l’accès futur.",
       "Un membre avec accès en écriture peut aussi endommager l’historique d’un tiroir (l’application signale alors ces enregistrements comme altérés, mais leur contenu est perdu). Partagez avec des personnes de confiance.",
       "Une faille de sécurité dans l’application elle-même.",
-      "Une phrase secrète oubliée sans code de récupération : personne ne peut vous aider, et c’est voulu."
+      "Perdre toutes vos clés d’accès, votre phrase secrète et votre code de récupération : personne ne peut vous aider, et c’est voulu."
     ],
-    "notClerk": "Quand la connexion passe par Clerk, c’est Clerk qui décide qui peut se connecter. Quiconque contrôle Clerk pourrait se connecter en votre nom, mais aurait encore besoin de votre phrase secrète ou de votre clé d’accès pour ouvrir vos tiroirs. Son code est intégré à cette application dans une version figée et n’est jamais chargé depuis ailleurs.",
+    "notClerk": "Quand la connexion passe par un service externe (Clerk), c’est ce service qui décide qui peut se connecter. Quiconque le contrôle pourrait se connecter en votre nom, mais aurait encore besoin de votre clé d’accès ou de votre phrase secrète pour ouvrir vos tiroirs. Son code est intégré à cette application dans une version figée et n’est jamais chargé depuis ailleurs.",
     "source": "Petty est un logiciel libre (AGPL-3.0). Lisez ou exécutez le code source vous-même :"
   },
   "admin": {
@@ -754,7 +748,8 @@
       "block": "Compte bloqué. Ses sessions sont fermées.",
       "unblock": "Compte débloqué.",
       "revoke": "Déconnexion effectuée sur tous les appareils.",
-      "admin": "Statut admin modifié."
+      "makeAdmin": "Droits admin accordés.",
+      "removeAdmin": "Droits admin retirés."
     },
     "confirm": {
       "block": {
@@ -767,10 +762,15 @@
         "body": "Chaque appareil devra se reconnecter. Rien d’autre ne change.",
         "ok": "Déconnecter"
       },
-      "admin": {
-        "title": "Changer le statut admin pour {name} ?",
-        "body": "Les administrateurs peuvent bloquer des comptes et envoyer des invitations. Ils ne peuvent toujours pas lire les tiroirs de qui que ce soit.",
-        "ok": "Changer"
+      "makeAdmin": {
+        "title": "Nommer {name} admin ?",
+        "body": "Les admins peuvent bloquer des comptes et envoyer des invitations. Ils ne peuvent pas pour autant lire les tiroirs de qui que ce soit.",
+        "ok": "Nommer admin"
+      },
+      "removeAdmin": {
+        "title": "Retirer les droits admin à {name} ?",
+        "body": "Cette personne ne pourra plus bloquer de comptes ni envoyer d’invitations. Rien d’autre ne change.",
+        "ok": "Retirer les droits"
       }
     }
   },
@@ -778,7 +778,7 @@
     "slogan": "Petites sommes. Grande tranquillité.",
     "tagline": "Tout ce que vous gardez, à sa place — partagé avec qui vous choisissez, chiffré de bout en bout.",
     "sub": "L’argent dans la boîte de la cuisine, les outils au sous-sol, les passeports dans le coffre-fort : donnez à chaque tiroir sa place, notez ce qu’il contient et partagez-le avec ceux qui s’en servent.",
-    "how": "Comment c’est chiffré",
+    "how": "Comment Petty garde vos secrets",
     "uses": {
       "title": "Une idée, mille usages",
       "sub": "Les lieux contiennent des tiroirs, les tiroirs des éléments — argent, objets ou notes. Organisez-les comme vous voulez : ces trois mêmes briques conviennent à tout ce que vous gardez.",
@@ -837,7 +837,7 @@
         "trip": {
           "chip": "Cagnotte de voyage",
           "title": "Partagez un voyage entre amis",
-          "body": "Un tiroir par voyage, une ligne par personne. Chacun ajoute ce qu’il a payé, et personne ne peut le modifier en douce.",
+          "body": "Un tiroir par voyage, un élément par personne. Chacun ajoute ce qu’il a payé, et personne ne peut le modifier en douce.",
           "places": {
             "trips": "Voyages",
             "malaysia": "Malaisie",
@@ -876,22 +876,22 @@
         "accounts": {
           "chip": "Point annuel",
           "title": "L’argent que vous aviez oublié",
-          "body": "Un tiroir par compte, vérifié une fois par an : confirmez le solde, et la date reste enregistrée avec lui.",
+          "body": "Un tiroir par compte, contrôlé une fois par an : marquez-le comme contrôlé, et la date reste enregistrée avec lui.",
           "places": {
             "paperwork": "Papiers"
           },
           "drawers": {
             "pension": {
               "name": "Retraite",
-              "meta": "Confirmée le 2 janv."
+              "meta": "Contrôlée le 2 janv."
             },
             "brokerage": {
               "name": "Compte-titres",
-              "meta": "Confirmé le 2 janv."
+              "meta": "Contrôlé le 2 janv."
             },
             "savings": {
               "name": "Épargne",
-              "meta": "Confirmée le 2 janv."
+              "meta": "Contrôlée le 2 janv."
             }
           },
           "items": {
@@ -915,7 +915,7 @@
         "cash": {
           "chip": "Espèces à la maison",
           "title": "Chaque billet à sa place",
-          "body": "Là où Petty a commencé : des espèces un peu partout dans la maison, chaque boîte et chaque enveloppe dans sa pièce, comptées et confirmées.",
+          "body": "Là où Petty a commencé : des espèces un peu partout dans la maison, chaque boîte et chaque enveloppe dans sa pièce, comptées et contrôlées.",
           "places": {
             "home": "Maison",
             "kitchen": "Cuisine",
@@ -924,7 +924,7 @@
           "drawers": {
             "tin": {
               "name": "Boîte à sous",
-              "meta": "Confirmée aujourd’hui"
+              "meta": "Contrôlée aujourd’hui"
             },
             "envelope": {
               "name": "Enveloppe",
@@ -950,7 +950,7 @@
         "lent": {
           "chip": "Objets prêtés",
           "title": "Qui a votre perceuse ?",
-          "body": "Ce que vous avez prêté ou emprunté a ses propres tiroirs : chaque ligne dit qui l’a et depuis quand.",
+          "body": "Ce que vous avez prêté ou emprunté a ses propres tiroirs : chaque élément dit qui l’a et depuis quand.",
           "places": {
             "home": "Maison",
             "garage": "Garage"
@@ -1031,11 +1031,10 @@
         }
       }
     },
-    "beta": "Vous avez une invitation ? Connectez-vous ci-dessus.",
     "shotsTitle": "Captures d’écran",
     "shots": {
       "home": "Écran d’accueil : le total, les lieux en illustration et les tiroirs regroupés par lieu",
-      "drawer": "Un tiroir : où il se trouve, ses lignes en illustration, deux totaux et des étiquettes",
+      "drawer": "Un tiroir : où il se trouve, ses éléments en illustration, deux totaux et des étiquettes",
       "items": "Un tiroir d’objets : des outils comptés à la pièce, des clés et une lampe de poche en objets uniques",
       "entry": "Saisie d’un retrait sur le pavé numérique",
       "places": "Lieux : pièces, étagères et boîtes, en arbre à réorganiser par glisser-déposer"
@@ -1044,11 +1043,11 @@
     "features": {
       "private": {
         "title": "Privé dès la conception",
-        "body": "Vos tiroirs sont chiffrés sur votre appareil. Le serveur ne voit jamais que des données chiffrées."
+        "body": "Le contenu de vos tiroirs est chiffré sur votre appareil. Le serveur ne stocke que des données qu’il ne peut pas lire."
       },
       "shared": {
         "title": "Partagez avec des personnes de confiance",
-        "body": "Tous ceux qui touchent à l’argent voient le même tiroir. Les éditeurs ajoutent des opérations ; les lecteurs regardent seulement."
+        "body": "Tous ceux qui utilisent un tiroir voient le même. Les éditeurs ajoutent des opérations ; les lecteurs regardent seulement."
       },
       "places": {
         "title": "Des lieux, pas des tas",
@@ -1056,11 +1055,11 @@
       },
       "currencies": {
         "title": "Devises et objets",
-        "body": "Euro et dollar côte à côte — et aussi des objets à compter, comme des clés ou des documents. Étiquetez n’importe quelle ligne et filtrez par étiquette."
+        "body": "Euro et dollar côte à côte, et aussi des objets à compter, comme des clés ou des documents. Étiquetez n’importe quel élément et filtrez par étiquette."
       },
       "verify": {
-        "title": "Compter, confirmer, ne jamais effacer",
-        "body": "Après un vrai comptage, confirmez l’état du tiroir. Les erreurs sont annulées, jamais supprimées ; l’historique reste honnête."
+        "title": "Compter, contrôler, inverser",
+        "body": "Après un vrai comptage, marquez le tiroir comme contrôlé. Une opération erronée est corrigée par une nouvelle, et l’ancienne reste dans l’historique."
       },
       "passkey": {
         "title": "Clé d’accès en priorité, fonctionne hors ligne",
@@ -1069,23 +1068,23 @@
     },
     "cryptoTitle": "Comment Petty garde vos secrets",
     "crypto": {
-      "device": "Tout est chiffré sur votre appareil (AES-256) avant d’être envoyé. Noms, montants, commentaires, photos — absolument tout.",
-      "server": "Le serveur stocke des boîtes verrouillées qu’il ne peut pas ouvrir. Nous ne pourrions pas vous montrer vos données, même si nous le voulions.",
-      "safety": "Chaque membre a un numéro de sécurité. Comparez-le une fois en personne, et personne ne pourra s’interposer en silence.",
-      "recovery": "Une clé d’accès ou une phrase secrète ouvre vos données ; un code de récupération à usage unique sert de clé de secours. Nous ne pouvons réinitialiser ni l’une ni l’autre.",
+      "device": "Le contenu de vos tiroirs est chiffré sur votre appareil (AES‑256) avant d’être envoyé : noms, montants, commentaires et photos.",
+      "server": "Le serveur stocke des boîtes verrouillées qu’il ne peut pas ouvrir. Il voit tout de même votre e-mail, votre nom et le moment de chaque opération.",
+      "safety": "Chaque membre a un numéro de sécurité. Comparez-le une fois en personne ou par téléphone, et personne ne pourra glisser discrètement sa propre clé à la place.",
+      "recovery": "Une clé d’accès ou une phrase secrète ouvre vos données ; un code de récupération à usage unique sert de clé de secours. Nous ne pouvons en réinitialiser aucun.",
       "chain": "Les opérations forment une chaîne qui révèle toute altération : supprimer ou modifier l’historique se détecte."
     },
     "stepsTitle": "Comment ça marche",
     "steps": {
       "one": "Créez un tiroir pour chaque endroit où vous gardez de l’argent ou des objets, rangez-le dans sa pièce ou sur son étagère, et notez ce qu’il contient maintenant.",
-      "two": "Ajoutez ou retirez en deux gestes dès que l’argent bouge. Annulez les erreurs.",
-      "three": "Comptez le tiroir de temps en temps et confirmez-le. Partagez-le avec ceux qui s’en servent."
+      "two": "Ajoutez ou retirez en quelques gestes dès que quelque chose bouge. Inversez les opérations erronées.",
+      "three": "De temps en temps, comptez ce que contient un tiroir et marquez-le comme contrôlé. Partagez-le avec ceux qui s’en servent."
     },
     "faqTitle": "Questions",
     "faq": {
       "see": {
         "q": "Pouvez-vous voir mon argent ?",
-        "a": "Non. Les montants et les noms sont chiffrés sur votre appareil. Le serveur stocke des boîtes illisibles, et cela se vérifie dans le navigateur."
+        "a": "Non. Les montants et les noms sont chiffrés sur votre appareil, et le serveur stocke des données qu’il ne peut pas lire. Il voit en revanche votre e-mail, votre nom et le moment de chaque opération."
       },
       "places": {
         "q": "Puis-je regrouper les tiroirs par pièce ?",
@@ -1093,30 +1092,29 @@
       },
       "lost": {
         "q": "Et si je perds ma clé d’accès ou oublie la phrase secrète ?",
-        "a": "Une autre clé d’accès, la phrase secrète ou le code de récupération ouvre le coffre. Si vous avez tout perdu, personne — nous compris — ne peut déchiffrer vos données ; un membre d’un tiroir partagé peut le partager à nouveau avec vous."
+        "a": "Une autre clé d’accès, la phrase secrète ou le code de récupération ouvre le coffre. Si vous les perdez tous, personne ne peut ouvrir vos données, pas même nous. Un membre d’un tiroir partagé peut le partager à nouveau avec vous."
       },
       "undo": {
         "q": "Puis-je annuler une modification d’un tiroir ?",
-        "a": "Oui. Les opérations ne sont jamais effacées : une erreur est annulée par une nouvelle opération. Les modifications des noms, éléments, étiquettes et lieux sont conservées 30 jours, et le propriétaire du tiroir peut rétablir une version précédente."
+        "a": "Oui. Une opération erronée est corrigée par une nouvelle opération, et l’ancienne reste dans l’historique. Les modifications des noms, éléments, étiquettes et lieux sont conservées 30 jours, et le propriétaire du tiroir peut rétablir une version précédente."
       },
       "cost": {
         "q": "Combien ça coûte ?",
-        "a": "Petty est un logiciel libre (AGPL-3.0) — vous pouvez héberger le vôtre gratuitement. Si quelqu’un qui gère une instance hébergée la rend un jour payante, il doit d’abord vous en informer clairement."
+        "a": "Petty est un logiciel libre (AGPL-3.0) : vous pouvez héberger le vôtre gratuitement. Si la personne qui gère un Petty hébergé le rend un jour payant, elle doit d’abord vous en informer clairement."
       },
       "phone": {
         "q": "Existe-t-il une application mobile ?",
         "a": "Petty s’installe depuis le navigateur (Ajouter à l’écran d’accueil) et fonctionne hors ligne comme une application native, sur iPhone et Android."
       }
     },
-    "footer": "© 2026 Petty · l’argent du foyer, chiffré de bout en bout",
-    "invite": "Envie d’une invitation ? Écrivez-nous",
+    "footer": "© 2026 Petty · tout ce que vous gardez, chiffré de bout en bout",
     "made": "Conçu en Pologne",
     "create": "Créer votre coffre",
     "getInvite": "Obtenir une invitation",
     "betaOpen": "Sans carte bancaire, rien à installer.",
     "betaInvite": "Ce Petty fonctionne sur invitation : demandez à un membre ou écrivez-nous.",
     "again": "On y va ? Ça prend une minute.",
-    "againInvite": "Vous avez une invitation ? Connectez-vous et configurez votre coffre.",
+    "againInvite": "Vous avez une invitation ? Ouvrez le lien reçu par e-mail pour créer votre compte.",
     "shotOpen": "Agrandir : {name}",
     "shotPrev": "Capture précédente",
     "shotNext": "Capture suivante"
@@ -1170,25 +1168,28 @@
   },
   "places": {
     "title": "Lieux",
-    "hint": "Pièces, étagères, boîtes : un seul arbre. Un tiroir se trouve dans un seul lieu. Renommez ou déplacez un lieu, et ses tiroirs suivent.",
+    "hint": "Pièces, étagères, boîtes, les unes dans les autres. Un tiroir se trouve dans un seul lieu. Renommez ou déplacez un lieu, et ses tiroirs suivent.",
     "empty": "Aucun lieu pour l’instant. Ajoutez une pièce pour commencer.",
     "add": "Ajouter un lieu",
     "addInside": "Ajouter un lieu à l’intérieur",
     "rename": "Renommer",
+    "renameTitle": "Renommer « {name} »",
     "move": "Déplacer vers…",
+    "moveTitle": "Déplacer « {name} » vers…",
     "moveUp": "Monter",
     "moveDown": "Descendre",
     "delete": "Supprimer",
+    "deleteTitle": "Supprimer « {name} » ?",
     "deleteBody": "Les tiroirs de « {name} » seront déplacés vers : {parent}. Les lieux qu’il contient remontent d’un niveau.",
     "topLevel": "Premier niveau",
     "none": "Aucun lieu",
     "newHere": "Nouveau lieu dans {parent}",
-    "newTop": "Nouveau lieu de premier niveau",
+    "newTop": "Nouveau lieu",
     "name": "Nom",
     "exists": "Un lieu portant ce nom existe déjà ici.",
     "count": "{count, plural, one {# tiroir} other {# tiroirs}}",
     "manage": "Gérer les lieux",
-    "manageHint": "Pièces, étagères et boîtes, en arbre. Ajoutez-les, renommez-les, déplacez-les et réordonnez-les ; les tiroirs suivent.",
+    "manageHint": "Pièces, étagères et boîtes, les unes dans les autres. Ajoutez-les, renommez-les, déplacez-les et réordonnez-les ; les tiroirs suivent.",
     "choose": "Lieu",
     "options": "Options pour {name}",
     "expand": "Déplier {name}",
@@ -1204,31 +1205,31 @@
   },
   "notFound": {
     "title": "Cette page n’existe pas",
-    "body": "Le lien est peut-être ancien, mal saisi, ou mène à un tiroir auquel vous n’avez plus accès.",
-    "home": "Aller à l’accueil",
+    "body": "Le lien est peut-être ancien ou mal saisi, ou il mène à un tiroir auquel vous n’avez plus accès.",
+    "home": "Page d’accueil",
     "drawers": "Aller à mes tiroirs"
   },
   "tokens": {
     "title": "Jetons d’accès",
-    "hint": "Pour vos propres outils, comme un serveur pour Claude Desktop. Un jeton contient une copie de vos clés de tiroir ; le serveur n’en voit jamais que la partie qui sert d’identifiant et ne peut pas l’ouvrir.",
+    "hint": "Pour vos propres outils, comme l’extension Claude Desktop. Un jeton contient une copie de vos clés de tiroir. Le serveur ne stocke que l’identifiant du jeton, jamais son secret : il ne peut donc pas l’ouvrir.",
     "new": "Nouveau jeton",
     "name": "Nom",
     "defaultName": "Mon assistant",
-    "mayWriteSwitch": "Peut ajouter des opérations",
-    "mayWriteHint": "Désactivé : le jeton peut seulement lire. Activé : il peut ajouter des opérations, et elles sont à votre nom.",
+    "mayWriteSwitch": "Peut modifier",
+    "mayWriteHint": "Désactivé : le jeton peut seulement lire. Activé : il peut aussi ajouter des opérations, modifier les étiquettes et déplacer des tiroirs, en votre nom.",
     "expiry": "Expiration",
     "days": "{count, plural, one {# jour} other {# jours}}",
     "never": "Jamais",
     "create": "Créer le jeton",
     "madeTitle": "Copiez votre jeton maintenant",
-    "madeBody": "Il ne s’affiche qu’une fois. Collez-le dans votre outil. Le révoquer empêche tout usage futur, mais n’efface pas ce qui a déjà été lu.",
-    "mayWrite": "Peut ajouter des opérations",
+    "madeBody": "Il ne s’affiche qu’une fois. Collez-le dans votre outil. Le révoquer arrête aussitôt l’outil, mais ne peut pas reprendre ce qu’il a déjà lu.",
+    "mayWrite": "Peut modifier",
     "mayRead": "Lecture seule",
     "used": "utilisé {when}",
     "neverUsed": "jamais utilisé",
     "revoke": "Révoquer",
     "revokeNamed": "Révoquer le jeton {name}",
-    "revokeBody": "Révoquer « {name} » ? L’outil cesse aussitôt de fonctionner. Ce qu’il a déjà lu reste lu.",
+    "revokeBody": "Révoquer « {name} » ? L’outil cesse aussitôt de fonctionner. Ce qu’il a déjà lu ne peut pas être repris.",
     "passphraseOrPasskey": "Laissez vide pour utiliser plutôt votre clé d’accès.",
     "addonTitle": "L’utiliser dans Claude Desktop",
     "addonBody": "Téléchargez l’extension, double-cliquez dessus et cliquez sur Installer. Claude Desktop demande alors deux choses : l’adresse ci-dessous et le jeton ci-dessus.",
@@ -1237,20 +1238,20 @@
   },
   "device": {
     "title": "Connecter un outil en ligne de commande",
-    "enterBody": "Saisissez le code affiché par votre terminal après petty auth login.",
+    "enterBody": "Saisissez le code affiché par votre terminal après `petty auth login`.",
     "code": "Code",
     "continue": "Continuer",
     "checking": "Vérification du code…",
     "notACode": "Ce n’est pas un code. Un code compte 12 lettres, comme BCDF-GHJK-LMNP.",
-    "unknown": "Aucune demande en attente ne correspond à ce code. Elle a peut-être expiré au bout de 15 minutes, ou elle a déjà servi. Relancez petty auth login.",
+    "unknown": "Aucune demande en attente ne correspond à ce code. Elle a peut-être expiré au bout de 15 minutes, ou elle a déjà servi. Relancez `petty auth login`.",
     "tooMany": "Trop de tentatives. Patientez quelques minutes, puis réessayez.",
-    "mismatch": "Cette demande ne correspond pas à son code : elle a été modifiée en chemin. Ne l’autorisez pas. Relancez petty auth login et prévenez la personne qui gère ce Petty.",
+    "mismatch": "Cette demande ne correspond pas à son code : elle a été modifiée en chemin. Ne l’autorisez pas. Relancez `petty auth login` et prévenez la personne qui gère ce Petty.",
     "askTitle": "Autoriser « {name} » ?",
     "checkCode": "Vérifiez que votre terminal affiche ce code :",
     "asked": "Demande envoyée {when}.",
     "askedFrom": "Demande envoyée {when}, depuis {ip}.",
     "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie de vos clés de tiroir : il pourra lire tous les tiroirs que vous pouvez ouvrir.",
-    "readOnly": "Il ne demande qu’un accès en lecture. Il ne peut pas ajouter d’opérations.",
+    "readOnly": "Il ne demande qu’un accès en lecture. Il ne peut rien modifier.",
     "allow": "Autoriser",
     "deny": "Refuser",
     "doneTitle": "Autorisé",
@@ -1262,11 +1263,11 @@
   "ai": {
     "link": "Utiliser Petty avec l’IA",
     "title": "Utiliser Petty avec l’IA",
-    "intro": "Interrogez une application d’IA sur vos tiroirs, ou demandez-lui d’ajouter une opération pour vous. Un petit programme sur votre propre ordinateur détient un jeton d’accès, y ouvre vos clés et donne quelques outils à l’application. Le serveur Petty ne voit toujours que des données chiffrées.",
+    "intro": "Interrogez une application d’IA sur vos tiroirs, ou demandez-lui d’ajouter une opération pour vous. Un petit programme sur votre propre ordinateur détient un jeton d’accès, y ouvre vos clés et donne quelques outils à l’application. Le serveur Petty ne peut toujours pas lire vos tiroirs ; l’entreprise d’IA peut lire ce que les outils récupèrent.",
     "tokenTitle": "1. Créer un jeton d’accès",
     "tokenSteps": [
       "Ouvrez Réglages → Jetons d’accès → Nouveau jeton.",
-      "Donnez-lui un nom et choisissez s’il peut ajouter des opérations.",
+      "Donnez-lui un nom et choisissez s’il peut modifier vos tiroirs.",
       "Confirmez avec votre clé d’accès ou votre phrase secrète du coffre.",
       "Copiez le jeton. Il ne s’affiche qu’une seule fois."
     ],
@@ -1274,15 +1275,15 @@
     "desktopSteps": [
       "Installez Claude Desktop depuis claude.ai/download et connectez-vous, si ce n’est pas déjà fait.",
       "Créez un jeton d’accès (étape 1) et gardez-le sous les yeux.",
-      "Téléchargez l’extension ci-dessous. Double-cliquez sur petty.mcpb (ou faites-le glisser sur la fenêtre de Claude Desktop) et cliquez sur Installer.",
+      "Téléchargez l’extension ci-dessous. Double-cliquez sur `petty.mcpb` (ou faites-le glisser sur la fenêtre de Claude Desktop) et cliquez sur Installer.",
       "Claude Desktop demande deux choses : collez cette adresse Petty et votre jeton, puis enregistrez. Vous pourrez les modifier plus tard dans Claude Desktop → Paramètres → Extensions → Petty.",
       "Ouvrez une nouvelle conversation et demandez : « Qu’y a-t-il dans mes tiroirs ? » Sur Mac, autorisez l’accès au réseau si on vous le demande, puis redémarrez Claude Desktop."
     ],
     "otherTitle": "2b. Autres applications d’IA (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [
       "Installez Node 20 ou une version plus récente.",
-      "Lancez ci-dessous les deux commandes adaptées à votre ordinateur. La première enregistre petty-mcp.mjs dans un dossier .petty de votre dossier personnel ; la seconde affiche le bloc de configuration avec le vrai chemin de ce fichier.",
-      "Collez le bloc affiché dans les réglages MCP de l’application, et mettez votre jeton à la place de petty_pat_…."
+      "Lancez ci-dessous les deux commandes adaptées à votre ordinateur. La première enregistre `petty-mcp.mjs` dans un dossier `.petty` de votre dossier personnel ; la seconde affiche le bloc de configuration avec le vrai chemin de ce fichier.",
+      "Collez le bloc affiché dans les réglages MCP de l’application, et mettez votre jeton à la place de `petty_pat_…`"
     ],
     "download": "Télécharger petty-mcp.mjs",
     "unix": "macOS ou Linux (Terminal)",
@@ -1291,15 +1292,15 @@
     "example": "Le bloc affiché ressemble à ceci, avec vos propres chemins :",
     "claudeCode": "Pour Claude Code, la même chose en une seule commande :",
     "cliTitle": "2c. La ligne de commande : petty",
-    "cliIntro": "Un programme pour votre terminal, vos scripts et les agents d’IA qui lancent des commandes (Claude Code, Codex). Il se connecte via une page de ce Petty dans votre navigateur, comme gh auth login : aucun jeton à copier.",
+    "cliIntro": "Un programme pour votre terminal, vos scripts et les agents d’IA qui lancent des commandes (Claude Code, Codex). Il se connecte via une page de ce Petty dans votre navigateur, comme `gh auth login` : aucun jeton à copier.",
     "cliSteps": [
       "Installez Node 20 ou une version plus récente.",
       "Lancez ci-dessous les commandes pour votre ordinateur. La dernière affiche un code et ouvre ce Petty dans votre navigateur.",
       "Vérifiez que la page affiche le même code, puis autorisez la demande.",
-      "Essayez ensuite petty drawers, ou petty help pour le reste. Pour la complétion avec la touche Tab, lancez petty completion -s zsh (ou bash, fish, powershell)."
+      "Essayez ensuite `petty drawers`, ou `petty help` pour le reste. Pour la complétion avec la touche Tab, lancez `petty completion -s zsh` (ou bash, fish, powershell)."
     ],
     "cliDownload": "Télécharger petty.mjs",
-    "cliPath": "Si le terminal affiche « command not found: petty », ~/.local/bin n’est pas dans votre PATH. Ajoutez export PATH=\"$HOME/.local/bin:$PATH\" à ~/.zshrc (Mac) ou ~/.bashrc (Linux), puis ouvrez un nouveau terminal.",
+    "cliPath": "Si le terminal affiche « command not found: petty », `~/.local/bin` n’est pas dans votre PATH. Ajoutez `export PATH=\"$HOME/.local/bin:$PATH\"` à `~/.zshrc` (Mac) ou `~/.bashrc` (Linux), puis ouvrez un nouveau terminal.",
     "askTitle": "3. Demander",
     "ask": [
       "Qu’y a-t-il dans mon tiroir de la cuisine ?",
@@ -1332,7 +1333,7 @@
     "honestTitle": "Bon à savoir",
     "honest": [
       "Le jeton et vos clés restent sur votre ordinateur. Le serveur ne voit jamais la moitié secrète du jeton.",
-      "Tout ce que vous demandez parvient au modèle d’IA, puisque c’est à lui que vous le demandez.",
+      "Ce que vous demandez et les données des tiroirs lues par les outils sont transmis à l’entreprise d’IA. Le chiffrement de Petty ne les protège pas.",
       "Le texte de vos tiroirs est présenté au modèle comme des données citées, et chaque modification passe toujours par un outil distinct que l’application peut vous demander d’approuver.",
       "Pour tout arrêter, révoquez le jeton dans Réglages → Jetons d’accès.",
       "Une application sur téléphone ne peut pas encore exécuter ce programme."

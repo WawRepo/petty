@@ -66,7 +66,7 @@ test("a drawer created while the drawers reload stays, and its screen keeps work
   await reloadDone(page);
   await expect(page.getByText("Something went wrong.")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Shed" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add line" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add item" })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Shed" })).toHaveCount(1);
 });

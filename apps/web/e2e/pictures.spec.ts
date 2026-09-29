@@ -17,7 +17,7 @@ async function addDrawer(page: Page, name: string): Promise<string> {
   return /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
 }
 async function addLine(page: Page, kind: "Money" | "Countable" | "Single item", name: string, fill: Record<string, string>) {
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByRole("group").getByRole("button", { name: kind }).click();
   await page.getByLabel("Name", { exact: true }).fill(name);
   for (const [label, value] of Object.entries(fill)) await page.getByLabel(label, { exact: label === "Currency" }).fill(value);
@@ -26,7 +26,7 @@ async function addLine(page: Page, kind: "Money" | "Countable" | "Single item", 
   await expect(page.getByRole("dialog")).toBeHidden(); // the sheet closes once the starting amount is saved too
 }
 /** A picture's bubble, found by the name it shows on hover. */
-const bubble = (page: Page, picture: string, name: string) => page.getByTestId(picture).locator(".uc-bub-hit").filter({ hasText: name });
+const bubble = (page: Page, picture: string, name: string) => page.getByTestId(picture).locator(".uc-bub, .pa-bub").filter({ has: page.locator(".uc-bub-tip", { hasText: name }) }).locator(".uc-bub-hit");
 /** Counts calls to the View Transitions API, so a test can tell the morph ran. */
 async function countMorphs(page: Page) {
   await page.evaluate(() => {

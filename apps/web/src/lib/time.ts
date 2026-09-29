@@ -1,5 +1,8 @@
 import type { TFunction } from "i18next";
 
+/** The locale dates are written in: the app's English is British ("colour"), so its dates are too (PETTY-281). */
+export const dateLocale = (lang: string): string => (lang === "en" ? "en-GB" : lang);
+
 /**
  * "3 days ago" / "3 dni temu" via Intl.RelativeTimeFormat — plural forms come
  * from the locale data, never from string joining (spec: i18n). Under a
@@ -15,5 +18,5 @@ export function relativeTime(iso: string, locale: string, t: TFunction, now = Da
   if (hours < 24) return rtf.format(-hours, "hour");
   const days = Math.floor(hours / 24);
   if (days < 30) return rtf.format(-days, "day");
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(dateLocale(locale), { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
 }

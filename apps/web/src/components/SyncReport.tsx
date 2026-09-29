@@ -20,7 +20,7 @@ export function SyncReport() {
       case "foreign": {
         const { v, l, name } = line(it);
         const amount = l?.kind === "money" ? `${it.amount >= 0 ? "+" : "−"}${formatMoney(Math.abs(it.amount), l.exponent, l.currency, i18n.language)}` : `${it.amount >= 0 ? "+" : "−"}${formatCount(Math.abs(it.amount), i18n.language)}`;
-        return t("offline.report.foreign", { amount: it.op === "adjust" ? `${t("line.ops.adjust")} → ${amount.slice(1)}` : amount, name: v ? memberName(v, it.author_id) : "?", line: name });
+        return t("offline.report.foreign", { amount: it.op === "adjust" ? `${t("line.opName.adjust")} → ${amount.slice(1)}` : amount, name: v ? memberName(v, it.author_id) : "?", line: name });
       }
       case "recount": return t("offline.report.recount", { line: line(it).name });
       case "reverse_refused": return t("offline.report.reverseRefused", { line: line(it).name, reason: t(`line.reverse.refused.${it.reason}`) });

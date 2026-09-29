@@ -7,7 +7,7 @@ async function makeLine(page: Page, drawer: string, line: string, currency: stri
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: drawer })).toBeVisible();
   const drawerId = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill(line);
   await page.getByLabel("Currency", { exact: true }).fill(currency);
   await page.getByLabel("Starting balance").fill(start);
@@ -29,7 +29,7 @@ async function entry(page: Page, op: "Add" | "Withdraw" | "Adjust", digits: stri
 const balance = (page: Page) => page.getByTestId("line-balance").textContent();
 /** Click Confirm and wait until the server has answered: the confirm summary is gone (sheet closed, or replaced by the recount prompt). */
 async function confirmEntry(page: Page) {
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
 }
 
@@ -79,7 +79,7 @@ test("withdraw with confirm step, negative warning and red balance; Adjust with 
   await page.getByRole("button", { name: "Load older" }).click();
   await expect(page.getByTestId("entry-row")).toHaveCount(4);
   await page.getByTestId("entry-row").nth(1).getByRole("button", { name: "Entry options" }).click();
-  await expect(page.getByTestId("reverse-refused")).toContainText("Already reconciled by a later count");
+  await expect(page.getByTestId("reverse-refused")).toContainText("A later Adjust already covers this entry");
   await page.keyboard.press("Escape");
   // add 5, reverse it, try again
   await entry(page, "Add", "5");

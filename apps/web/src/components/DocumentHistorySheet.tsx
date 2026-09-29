@@ -4,6 +4,7 @@ import { Button } from "./Button.js";
 import { Sheet } from "./Sheet.js";
 import { useToast } from "./Toast.js";
 import { documentHistory, restoreDocument, type DocumentVersion } from "../lib/drawers.js";
+import { dateLocale } from "../lib/time.js";
 
 /**
  * Earlier versions of a drawer (PETTY-194): the owner can put one back after a bad change, for
@@ -47,12 +48,12 @@ export function DocumentHistorySheet({ open, drawerId, onClose }: { open: boolea
               <span>
                 <span className="switch-label">{v.name ?? t("drawer.history.unreadable")}</span>
                 <span className="hint m0">
-                  {new Date(v.replacedAt).toLocaleString(i18n.language)}
+                  {new Date(v.replacedAt).toLocaleString(dateLocale(i18n.language))}
                   {v.lines !== null ? ` · ${t("drawer.history.lines", { count: v.lines })}` : ""}
                   {v.byToken ? ` · ${t("drawer.history.byTool")}` : ""}
                 </span>
               </span>
-              {v.name !== null ? <Button variant="ghost" busy={busy === v.id} onClick={() => { void restore(v); }} aria-label={t("drawer.history.restoreNamed", { when: new Date(v.replacedAt).toLocaleString(i18n.language) })}>{t("drawer.history.restore")}</Button> : null}
+              {v.name !== null ? <Button variant="ghost" busy={busy === v.id} onClick={() => { void restore(v); }} aria-label={t("drawer.history.restoreNamed", { when: new Date(v.replacedAt).toLocaleString(dateLocale(i18n.language)) })}>{t("drawer.history.restore")}</Button> : null}
             </li>
           ))}
         </ul>

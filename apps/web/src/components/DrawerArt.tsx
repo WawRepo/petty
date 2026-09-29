@@ -85,7 +85,7 @@ function Hit({ name, vt, up = false, onClick, onEnter }: { name: string; vt?: st
         if (vt) (e.currentTarget.parentElement as HTMLElement).style.viewTransitionName = vt;
         onClick();
       }}>
-      <span className="uc-bub-tip">{name}</span>
+      {name ? <span className="uc-bub-tip">{name}</span> : null}
     </button>
   );
 }
@@ -142,7 +142,8 @@ export function DrawerArt({ drawerId, lines, center, icon, color, centerName, on
 }) {
   const ring = useRing(lines.length);
   // PETTY-269: every line shows its name, so the ring is flatter and wider, with room above and below it
-  const geo = { rot: ring.rot, rx: 32, ry: 25, wobble: ring.slots >= 4 ? 0.08 : 0 };
+  // PETTY-280 (M7): ry 30, not 25: the top bubble of one or three lines touched the middle one
+  const geo = { rot: ring.rot, rx: 32, ry: 30, wobble: ring.slots >= 4 ? 0.08 : 0 };
   const side = (slot: number): Side => {
     const a = ((geo.rot + (360 / ring.slots) * slot) * Math.PI) / 180;
     if (Math.sin(a) < -0.5) return "above";
@@ -325,7 +326,8 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
-    const fit = (width: number) => setW(Math.max(250, Math.min(400, Math.round(width))));
+    // PETTY-280 (M8): on a phone the picture is drawn a size smaller, so the first drawer is in view sooner
+    const fit = (width: number) => setW(Math.max(250, Math.min(width < 360 ? 280 : 400, Math.round(width))));
     fit(el.getBoundingClientRect().width);
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(([e]) => { if (e) fit(e.contentRect.width); });
@@ -343,8 +345,23 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
   const viewKey = placeKey(view.path);
   const [turn, setTurn] = useState({ view: viewKey, by: 0 });
   const by = turn.view === viewKey ? turn.by : 0;
-  if (w === null) return <div className="places-art-wrap" ref={wrap} />;
-  const L = placesLayout(view, trail, w, by);
+  // the names fade in only after a change of view: the picture's first view shows them at once (and a
+  // name keeps its class while its view stays, so a re-render does not start its fade again)
+  const [firstView] = useState(() => `${viewKey}:${by}`);
+  const fadeIn = `${viewKey}:${by}` !== firstView;
+  const L = w === null ? null : placesLayout(view, trail, w, by);
+  // PETTY-280 (M5): a picture that gets shorter keeps its height until its bubbles have landed (0.75 s):
+  // cut at once, the card snapped shorter and the bubbles still on their way drew over what is below it.
+  const [held, setHeld] = useState<number | null>(null);
+  const target = L?.h ?? 0;
+  useEffect(() => {
+    if (held === null || target >= held) { setHeld(target); return; }
+    const id = window.setTimeout(() => setHeld(target), 760);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new height starts the wait
+  }, [target]);
+  if (w === null || !L) return <div className="places-art-wrap" ref={wrap} />;
+  const height = held !== null && held > L.h ? held : L.h;
 
   // every place and drawer, in one order that does not change with the view (a moved node would not glide)
   const all: { key: string; parent: string | null; item: Item }[] = [];
@@ -370,14 +387,16 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
   };
   const at = (sp: Spot): CSSProperties => ({ transform: `translate3d(${sp.x}px, ${sp.y}px, 0)` });
   const sizeOf = (sp: Spot, shown: boolean) => (shown ? sp.size : Math.min(12, sp.size));
+  // keyed by the view: a name is drawn anew where its bubble lands and fades in then, rather than riding
+  // the bubble across the picture over other discs (PETTY-280, M6)
   const label = (sp: Spot | undefined, size: number, text: string) =>
-    sp?.label ? <span className={`pa-label ${sp.label}`} style={{ "--off": `${size / 2 + 4}px` } as CSSProperties}>{text}</span> : null;
+    sp?.label ? <span key={`${viewKey}:${by}`} className={`pa-label ${sp.label}${fadeIn ? " enter" : ""}`} style={{ "--off": `${size / 2 + 4}px` } as CSSProperties}>{text}</span> : null;
   const up = (sp: Spot) => sp.y < L.cy - 8;
   const parentPath = trail.length ? trail[trail.length - 1]! : null;
 
   return (
     <div className="places-art-wrap" ref={wrap}>
-      <div className="places-art" aria-hidden="true" data-testid="places-art" data-view={view.path.join("/")} data-count={countIn(view)} style={{ width: L.w, height: L.h }}>
+      <div className="places-art" aria-hidden="true" data-testid="places-art" data-view={view.path.join("/")} data-count={countIn(view)} style={{ width: L.w, height }}>
         <span className="pa-lines" key={`${viewKey}:${by}`}>
           <span className="pa-halo" style={{ left: L.cx - L.rx * 1.2, top: L.cy - L.rx * 1.2, width: L.rx * 2.4, height: L.rx * 2.4 }} />
           <span className="pa-orbit" style={{ left: L.cx - L.rx, top: L.cy - L.ry, width: L.rx * 2, height: L.ry * 2 }} />
@@ -391,8 +410,9 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
               <span key={key} className={`pa-bub ${sp?.kind ?? "sat"} ${colorClass(d.color)}${shown ? "" : " off"}`} style={at(where)} data-key={key}>
                 <PaDisc size={size} vt={vt}>
                   <PIcon name={d.icon} />
-                  {shown ? <Hit name={d.name} vt={vt} up={up(where)} onClick={() => onDrawer(d.id)} /> : null}
+                  {shown ? <Hit name="" vt={vt} up={up(where)} onClick={() => onDrawer(d.id)} /> : null}
                 </PaDisc>
+                {shown ? <Tip text={d.name} size={size} up={up(where)} /> : null}
                 {label(sp, size, d.name)}
               </span>
             );
@@ -404,8 +424,9 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
             <span key={key} className={`pa-bub ${kind}${shown ? "" : " off"}`} style={at(where)} data-key={key}>
               <PaDisc size={size}>
                 {p.path.length ? <MapPin size={22} strokeWidth={1.8} aria-hidden="true" /> : <PIcon name="home" />}
-                {shown && pick ? <Hit name={tip} up={up(where)} onClick={pick} /> : null}
+                {shown && pick ? <Hit name="" up={up(where)} onClick={pick} /> : null}
               </PaDisc>
+              {shown && pick ? <Tip text={tip} size={size} up={kind === "center" || up(where)} /> : null}
               {label(sp, size, sp?.text ?? p.name)}
             </span>
           );
@@ -424,6 +445,15 @@ export function PlacesArt({ root, selected, onPick, onDrawer, backName }: {
       </div>
     </div>
   );
+}
+
+/**
+ * A bubble's name on hover, beside its disc rather than inside it: a disc scales while it glides to a new
+ * size, and a name inside it grew or shrank with it (PETTY-280, M16). `up`: above the disc — the middle's
+ * too, whose own name is under it.
+ */
+function Tip({ text, size, up }: { text: string; size: number; up: boolean }) {
+  return text ? <span className={`uc-bub-tip pa-tip${up ? " up" : ""}`} style={{ "--r": `${size / 2}px` } as CSSProperties} aria-hidden="true">{text}</span> : null;
 }
 
 /**

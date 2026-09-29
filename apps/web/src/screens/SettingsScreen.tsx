@@ -30,6 +30,7 @@ import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
 import { promptInstall, useInstallState } from "../lib/install.js";
 import { pictureShown, placesShown, setPictureShown, setPlacesShown, setTotalsShown, setVerificationShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { appVersion, isClerk } from "../lib/authConfig.js";
+import { dateLocale } from "../lib/time.js";
 
 export function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -215,7 +216,7 @@ export function SettingsScreen() {
                 <li key={p.id} className="passkey-row" data-testid="passkey-row">
                   <span>
                     <span className="switch-label">{p.label || t("settings.passkey.unnamed")}</span>
-                    <span className="hint m0">{t("settings.passkey.addedOn", { date: new Date(p.created_at).toLocaleDateString(i18n.language) })}</span>
+                    <span className="hint m0">{t("settings.passkey.addedOn", { date: new Date(p.created_at).toLocaleDateString(dateLocale(i18n.language)) })}</span>
                   </span>
                   <Button variant="ghost" onClick={() => { setPkErr({}); setPkLp(""); setPkRemove(p); }} aria-label={t("settings.passkey.removeNamed", { name: p.label || t("settings.passkey.unnamed") })}>{t("settings.passkey.remove")}</Button>
                 </li>

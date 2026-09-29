@@ -50,8 +50,8 @@ Check that the page shows the same code, then allow it there.
 Waiting… (Ctrl-C stops)
 ```
 
-On the page (signed in and unlocked) check that the code is the same, choose whether it may add
-entries and when it ends, and press **Allow**. Letting it add entries asks for your vault passphrase
+On the page (signed in and unlocked) check that the code is the same, choose whether it can make
+changes and when it ends, and press **Allow**. Letting it make changes asks for your vault passphrase
 or passkey, as a token made in Settings does. The terminal then says `Signed in`.
 
 - **No browser on this machine** (a server over SSH): `--no-browser` prints the address. Open it on

@@ -7,7 +7,7 @@ async function makeLine(page: Page, drawer: string): Promise<{ drawerId: string;
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: drawer })).toBeVisible();
   const drawerId = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Cash");
   await page.getByLabel("Currency", { exact: true }).fill("EUR");
   await page.getByLabel("Starting balance").fill("100");
@@ -22,7 +22,7 @@ async function add(page: Page, digits: string, op: "Add" | "Adjust" = "Add") {
   await page.getByRole("button", { name: op, exact: true }).click();
   for (const d of digits) await page.getByRole("group").getByRole("button", { name: d, exact: true }).click();
   await page.getByRole("button", { name: "Review" }).click();
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
 }
 async function pair(browser: import("@playwright/test").Browser) {

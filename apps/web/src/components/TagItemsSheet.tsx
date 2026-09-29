@@ -49,7 +49,7 @@ export function TagItemsSheet({ open, tag, items, onClose, onSaved }: Props) {
   }
 
   return (
-    <Sheet open={open} title={tag ? t("drawer.tagItemsTitle", { tag: tag.label }) : t("drawer.tagNew")} onClose={onClose}>
+    <Sheet open={open} title={tag ? t("drawer.tagItemsTitle", { tag: tag.label }) : t("drawer.tagNewTitle")} onClose={onClose}>
       <div data-testid="tag-items">
         {tag ? null : (
           <TextField label={t("drawer.tagName")} value={name} maxLength={MAX_TAG_LENGTH} autoComplete="off" data-testid="tag-items-name"

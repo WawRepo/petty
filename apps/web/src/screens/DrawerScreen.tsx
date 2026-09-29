@@ -6,7 +6,7 @@ import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent
 import { ConfirmStateSheet } from "../components/ConfirmStateSheet.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
 import { SyncReport } from "../components/SyncReport.js";
-import { relativeTime } from "../lib/time.js";
+import { dateLocale, relativeTime } from "../lib/time.js";
 import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { PromptSheet } from "../components/PromptSheet.js";
@@ -32,6 +32,7 @@ import { PlaceTrail } from "../components/PlaceTrail.js";
 import { processPhoto } from "../lib/photo.js";
 import { storageErrorKey } from "../lib/storage.js";
 import { ApiError } from "../lib/api.js";
+import { DrawerSkeleton } from "../components/Skeleton.js";
 
 type Kind = Line["kind"];
 
@@ -189,7 +190,8 @@ export function DrawerScreen() {
   useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   useEffect(() => { if (view?.summary.has_photo && !view.photo && view.key) void loadPhoto(id); }, [view?.summary.has_photo, view?.photo, view?.key, id]);
 
-  if (state.status === "loading" || state.status === "idle") return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;
+  // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
+  if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} /><DrawerSkeleton /></>;
   if (!view) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
   if (!view.doc) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="error" role="alert">{t(`home.degradedReason.${view.error ?? "decrypt_failed"}`)}</p>{view.error === "sender_key_changed" ? <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button> : null}</main></>;
   const doc = view.doc;
@@ -222,8 +224,9 @@ export function DrawerScreen() {
   const verificationSummary = (v: Verification) => v.lines.map((vl) => {
     const l = doc.lines.find((x) => x.id === vl.line_id);
     if (!l) return null;
-    if (l.kind === "single") return `${l.name}: ${vl.present === false ? t("verify.row.absent") : t("verify.row.present")}`;
-    return `${l.name}: ${quantityLabel(l, vl.balance ?? 0, i18n.language, t)}`;
+    // the colon is the language's own (French puts a space before it): a key, not code (PETTY-281)
+    if (l.kind === "single") return t("verify.row.item", { name: l.name, value: vl.present === false ? t("verify.row.absent") : t("verify.row.present") });
+    return t("verify.row.item", { name: l.name, value: quantityLabel(l, vl.balance ?? 0, i18n.language, t) });
   }).filter(Boolean).join(" · ");
 
   async function run(fn: () => Promise<void>) {
@@ -387,7 +390,7 @@ export function DrawerScreen() {
                 <div className={`entry${missing.length ? " flagged" : ""}`} key={v.id} role="listitem" data-testid="verification-row">
                   <div className="left">
                     <span className="op adjust">{t("verify.row.title")}</span>
-                    <span className="meta">{d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" })} · {d.toLocaleTimeString(i18n.language, { hour: "numeric", minute: "2-digit" })} · {t("verify.row.by", { name: memberName(view, v.author_id) })}{v.comment ? ` · ${v.comment}` : ""}</span>
+                    <span className="meta">{d.toLocaleDateString(dateLocale(i18n.language), { month: "short", day: "numeric", year: "numeric" })} · {d.toLocaleTimeString(dateLocale(i18n.language), { hour: "numeric", minute: "2-digit" })} · {t("verify.row.by", { name: memberName(view, v.author_id) })}{v.comment ? ` · ${v.comment}` : ""}</span>
                     {missing.length ? <span className="missing">{t("verify.row.missing", { names: missing.join(", ") })}</span> : null}
                     <span className="meta">{verificationSummary(v)}</span>
                   </div>
@@ -451,7 +454,7 @@ export function DrawerScreen() {
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("rename")}>{t("drawer.rename")}</Button> : null}
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("icon")} data-testid="drawer-icon">{t("drawer.iconColor")}</Button> : null}
           {canWrite ? <Button variant="secondary" onClick={() => setSheet("lineTags")} data-testid="manage-tags">{t("drawer.tagsManage")}</Button> : null}
-          {canWrite ? <Button variant="secondary" onClick={() => setSheet("tags")} data-testid="drawer-tags">{tagsOf(doc).length ? `${t("drawer.tags")}: ${placeLabel(tagsOf(doc))}` : t("drawer.tags")}</Button> : null}
+          {canWrite ? <Button variant="secondary" onClick={() => setSheet("tags")} data-testid="drawer-tags">{tagsOf(doc).length ? t("drawer.placeIs", { place: placeLabel(tagsOf(doc)) }) : t("drawer.tags")}</Button> : null}
           {canWrite ? <Button variant="secondary" busy={photoBusy} onClick={() => { setSheet(null); fileRef.current?.click(); }} data-testid="drawer-photo-add">{photoBusy ? t("drawer.photoProcessing") : view.summary.has_photo ? t("drawer.photoChange") : t("drawer.photoAdd")}</Button> : null}
           {canWrite && view.summary.has_photo ? <Button variant="secondary" onClick={() => { setSheet(null); void run(() => removePhoto(id)); }}>{t("drawer.photoRemove")}</Button> : null}
           {isOwner ? <Button variant="secondary" onClick={() => setSheet("history")} data-testid="drawer-history">{t("drawer.history.title")}</Button> : null}

@@ -8,7 +8,7 @@ async function keypad(page: Page, op: "Add" | "Withdraw" | "Adjust", digits: str
   for (const d of digits) await page.getByRole("group").getByRole("button", { name: d === "." ? "Decimal point" : d, exact: true }).click();
   if (comment) await page.getByLabel("Comment (optional)").fill(comment);
   await page.getByRole("button", { name: "Review" }).click();
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
 }
 
@@ -24,12 +24,12 @@ test("encrypted export → import into another account: same drawers, balances, 
   await pageA.getByRole("button", { name: "Save" }).click();
   await expect(pageA.getByRole("heading", { name: "Kitchen" })).toBeVisible();
   const drawerId = /\/drawers\/([0-9a-f-]+)/.exec(pageA.url())![1]!;
-  await pageA.getByRole("button", { name: "Add line" }).click();
+  await pageA.getByRole("button", { name: "Add item" }).click();
   await pageA.getByLabel("Name", { exact: true }).fill("PLN kitchen");
   await pageA.getByLabel("Currency", { exact: true }).fill("PLN");
   await pageA.getByLabel("Starting balance").fill("100");
   await pageA.getByRole("button", { name: "Add", exact: true }).click();
-  await pageA.getByRole("button", { name: "Add line" }).click();
+  await pageA.getByRole("button", { name: "Add item" }).click();
   await pageA.getByRole("button", { name: "Single item" }).click();
   await pageA.getByLabel("Name", { exact: true }).fill("Passport");
   await pageA.getByRole("button", { name: "Add", exact: true }).click();
@@ -45,9 +45,9 @@ test("encrypted export → import into another account: same drawers, balances, 
   await pageA.getByRole("dialog", { name: "Reverse this entry?" }).getByRole("button", { name: "Reverse this entry" }).click();
   await expect(pageA.getByTestId("line-balance")).toHaveText("60.00");
   await pageA.goto(`/drawers/${drawerId}`);
-  await pageA.getByRole("button", { name: "Confirm state" }).click();
+  await pageA.getByRole("button", { name: "Mark as checked" }).click();
   await pageA.getByLabel("Comment (optional)").fill("counted");
-  await pageA.getByRole("button", { name: "Confirm", exact: true }).click();
+  await pageA.getByRole("dialog").getByRole("button", { name: "Mark as checked" }).click();
   await expect(pageA.getByTestId("verify-bar")).toHaveAttribute("data-status", "verified");
   // carol is a reader: export forbidden server-side, and her settings export skips the drawer
   await shareViaApi(alice, drawerId, carol, "read");
@@ -72,9 +72,9 @@ test("encrypted export → import into another account: same drawers, balances, 
   expect(opened.drawers[0]!.entries).toHaveLength(5);
   expect(opened.drawers[0]!.photo_b64).toBeTruthy();
   // plain export: warned, then readable
-  await pageA.getByRole("button", { name: "Export as plain text…" }).click();
+  await pageA.getByRole("button", { name: "Export unencrypted…" }).click();
   await expect(pageA.getByRole("dialog")).toContainText("unencrypted");
-  const [plain] = await Promise.all([pageA.waitForEvent("download"), pageA.getByRole("button", { name: "Export unencrypted" }).click()]);
+  const [plain] = await Promise.all([pageA.waitForEvent("download"), pageA.getByRole("button", { name: "Export unencrypted", exact: true }).click()]);
   expect(plain.suggestedFilename()).toContain("PLAINTEXT");
   expect(readFileSync((await plain.path())!, "utf8")).toContain("pizza");
   // import into bob's (empty) account
@@ -82,10 +82,10 @@ test("encrypted export → import into another account: same drawers, balances, 
   await loginAndUnlock(pageB, bob);
   await pageB.goto("/settings");
   await pageB.locator("#import-input").setInputFiles({ name: "export.petty.json", mimeType: "application/json", buffer: Buffer.from(encText) });
-  await pageB.getByLabel("Password of the file").fill("wrong password 12345");
+  await pageB.getByLabel("Export password").fill("wrong password 12345");
   await pageB.getByRole("button", { name: "Import", exact: true }).click();
   await expect(pageB.getByRole("alert")).toContainText("did not open the file");
-  await pageB.getByLabel("Password of the file").fill("export password 2026");
+  await pageB.getByLabel("Export password").fill("export password 2026");
   await pageB.getByRole("button", { name: "Import", exact: true }).click();
   await expect(pageB.locator(".toast")).toHaveText("1 drawer imported", { timeout: 30_000 });
   await expect(pageB.getByTestId("drawer-row")).toHaveCount(1);

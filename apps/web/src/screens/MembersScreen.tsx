@@ -77,6 +77,7 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
         <TextField label={t("invite.email")} type="email" inputMode="email" value={email} onChange={(e) => { setEmail(e.target.value); setFound(null); }} error={error} autoFocus />
         {!found ? (
           <div className="actions">
+            <Button variant="secondary" onClick={onClose}>{t("app.cancel")}</Button>
             <Button variant="secondary" type="submit">{t("invite.lookup")}</Button>
             {error === t("invite.notFound") ? <Button variant="secondary" busy={busy} onClick={() => void sendJoinLink()} title={t("invite.joinLinkHint")}>{t("invite.joinLink")}</Button> : null}
           </div>
@@ -89,15 +90,20 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
           <p className="safety" data-testid="invite-safety">{safety}</p>
           {already ? <p className="error" role="alert">{t("invite.alreadyMember")}</p> : null}
           {status === "changed" ? <p className="error" role="alert" data-testid="invite-blocked">{t("invite.blockedChanged")}</p> : null}
-          <fieldset className="fieldset-plain">
-            <legend className="hint mb6 fw600">{t("invite.role")}</legend>
-            <label className="block mb6"><input type="radio" name="role" checked={role === "write"} onChange={() => setRole("write")} /> {t("invite.roleWrite")}</label>
-            <label className="block"><input type="radio" name="role" checked={role === "read"} onChange={() => setRole("read")} /> {t("invite.roleRead")}</label>
-          </fieldset>
-          <label className="block mb12"><input type="checkbox" checked={compared} onChange={(e) => setCompared(e.target.checked)} /> {t("invite.compare", { name: found.display_name })}</label>
+          {/* PETTY-280 (S16): someone already in the drawer gets no form to fill, only the way out */}
+          {already ? null : (
+            <>
+              <fieldset className="fieldset-plain">
+                <legend className="hint mb6 fw600">{t("invite.role")}</legend>
+                <label className="check-row mb6"><input type="radio" name="role" checked={role === "write"} onChange={() => setRole("write")} /><span>{t("invite.roleWrite")}</span></label>
+                <label className="check-row"><input type="radio" name="role" checked={role === "read"} onChange={() => setRole("read")} /><span>{t("invite.roleRead")}</span></label>
+              </fieldset>
+              <label className="check-row mb12"><input type="checkbox" checked={compared} onChange={(e) => setCompared(e.target.checked)} /><span>{t("invite.compare", { name: found.display_name })}</span></label>
+            </>
+          )}
           <div className="actions">
             <Button variant="secondary" onClick={onClose}>{t("app.cancel")}</Button>
-            <Button busy={busy} disabled={!compared || already || status === "changed"} onClick={() => void invite()}>{t("invite.send")}</Button>
+            {already ? null : <Button busy={busy} disabled={!compared || status === "changed"} onClick={() => void invite()}>{t("invite.send")}</Button>}
           </div>
         </div>
       ) : null}

@@ -21,7 +21,7 @@ drawn in `--accent` on a tinted tile) and any mockup should use these and nothin
 | `--accent` | `#2f6f4f` | `#4c9c72` | primary buttons, selected chips, icons, "verified" |
 | `--accent-text` | `#ffffff` | `#0b1210` | text on accent |
 | `--danger` / `--withdraw` | `#b3432b` | `#e0725a` | delete, negative amounts, withdraw |
-| `--adjust` | `#8a6d1f` | `#d4ac3f` | "needs verification", adjust entries |
+| `--adjust` | `#8a6d1f` | `#d4ac3f` | "check again", adjust entries |
 | `--k-money` | `#2e7a4f` | `#5fb88a` | a money line's tile and dot |
 | `--k-things` | `#2f63a8` | `#7fa9e8` | a counted line's tile and dot |
 | `--k-notes` | `#9a5f12` | `#e0a95a` | a single item's tile and dot |

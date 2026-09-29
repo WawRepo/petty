@@ -17,7 +17,7 @@ function InvitationCard({ inv }: { inv: Invitation }) {
       <p className="mb6">{t("pending.invitation", { name: inv.inviter.display_name, role: t(`pending.role.${inv.role}`) })}</p>
       <p className="hint mb2">{t("pending.safety")}</p>
       <p className="safety" data-testid="inviter-safety">{safety}</p>
-      <label className="block my10"><input type="checkbox" checked={compared} onChange={(e) => setCompared(e.target.checked)} /> {t("pending.compare", { name: inv.inviter.display_name })}</label>
+      <label className="check-row my10"><input type="checkbox" checked={compared} onChange={(e) => setCompared(e.target.checked)} /><span>{t("pending.compare", { name: inv.inviter.display_name })}</span></label>
       <div className="actions">
         <Button variant="secondary" busy={busy} onClick={() => { setBusy(true); void declineInvitation(inv.id).finally(() => setBusy(false)); }}>{t("pending.decline")}</Button>
         <Button busy={busy} disabled={!compared} onClick={async () => { setBusy(true); try { if (inv.inviter.keys) await confirmPin(inv.inviter.id, inv.inviter.keys); await acceptInvitation(inv.id); } finally { setBusy(false); } }}>{t("pending.accept")}</Button>

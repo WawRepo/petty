@@ -9,7 +9,7 @@ async function makeDrawer(page: Page, name: string, withLine = true): Promise<st
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const id = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
   if (withLine) {
-    await page.getByRole("button", { name: "Add line" }).click();
+    await page.getByRole("button", { name: "Add item" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Cash");
     await page.getByLabel("Currency", { exact: true }).fill("EUR");
     await page.getByLabel("Starting balance").fill("100");

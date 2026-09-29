@@ -27,7 +27,7 @@ test("a deep link's back button goes to the screen's parent instead of leaving t
   await expect(page.getByTestId("home-empty")).toBeVisible();
 });
 
-test("Settings offers 'Add to home screen' even after the nudge was dismissed", async ({ page }) => {
+test("Settings offers 'Install the app' even after the nudge was dismissed", async ({ page }) => {
   const user = await signupViaApi("installer");
   await loginAndUnlock(page, user);
   await page.evaluate(() => localStorage.setItem("petty.installNudge", "no"));
@@ -35,7 +35,7 @@ test("Settings offers 'Add to home screen' even after the nudge was dismissed", 
   await expect(page.getByTestId("install-nudge")).toHaveCount(0);
   await openSettings(page);
   const section = page.getByTestId("install-section");
-  await expect(section.getByRole("heading", { name: "Add to home screen" })).toBeVisible();
+  await expect(section.getByRole("heading", { name: "Install the app" })).toBeVisible();
   // Headless Chromium fires no beforeinstallprompt, so the manual instructions show.
   await expect(section).toContainText("Add to Home Screen");
 });

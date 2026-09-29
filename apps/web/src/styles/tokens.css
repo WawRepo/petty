@@ -2,6 +2,9 @@
   --bg: #f5f3ef; --card: #ffffff; --text: #1c1a17; --muted: #5f5a50;
   --border: #e5e0d8; --accent: #2f6f4f; --accent-text: #ffffff;
   --danger: #b3432b; --add: #2f6f4f; --withdraw: #b3432b; --adjust: #8a6d1f; --on-adjust: #ffffff; --on-op: #ffffff;
+  /* PETTY-280: text on a danger button; a field's border (3:1 against the page, WCAG 1.4.11); the dim
+     behind a sheet; a phone frame on the landing; a place's pill in the landing demo */
+  --on-danger: #ffffff; --field-border: #8f897f; --overlay: rgba(0,0,0,0.45); --bezel: #1c1a17; --place-pill: #2f6f4f;
   --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
   --radius: 16px;
   --focus: 0 0 0 3px rgba(47,111,79,0.45);
@@ -17,6 +20,7 @@
     --bg: #151412; --card: #201e1b; --text: #f0ece4; --muted: #a8a094;
     --border: #332f2a; --accent: #4c9c72; --accent-text: #0b1210;
     --danger: #e0725a; --add: #4c9c72; --withdraw: #e0725a; --adjust: #d4ac3f; --on-adjust: #1c1a17; --on-op: #0b1210;
+    --on-danger: #1c1a17; --field-border: #716a60; --overlay: rgba(0,0,0,0.6); --bezel: #4a453e; --place-pill: #5fb88a;
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
     --focus: 0 0 0 3px rgba(76,156,114,0.55);
     --k-money: #5fb88a; --k-things: #7fa9e8; --k-notes: #e0a95a;
@@ -30,6 +34,7 @@
   --bg: #151412; --card: #201e1b; --text: #f0ece4; --muted: #a8a094;
   --border: #332f2a; --accent: #4c9c72; --accent-text: #0b1210;
   --danger: #e0725a; --add: #4c9c72; --withdraw: #e0725a; --adjust: #d4ac3f; --on-adjust: #1c1a17; --on-op: #0b1210;
+  --on-danger: #1c1a17; --field-border: #716a60; --overlay: rgba(0,0,0,0.6); --bezel: #4a453e; --place-pill: #5fb88a;
   --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
   --focus: 0 0 0 3px rgba(76,156,114,0.55);
   --k-money: #5fb88a; --k-things: #7fa9e8; --k-notes: #e0a95a;

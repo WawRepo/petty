@@ -52,7 +52,7 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   await page.getByRole("button", { name: "Add drawer" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Kitchen");
   await page.getByRole("button", { name: "Save" }).click();
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Cash");
   await page.getByLabel("Currency", { exact: true }).fill("EUR");
   await page.getByLabel("Starting balance").fill("12");

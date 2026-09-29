@@ -39,7 +39,7 @@ export function TagManager({ open, onClose, drawerId }: Props) {
     if (!hs.length) return t("drawer.tagNoItemsYet");
     const part = (h: TagHolder) => {
       const names = h.lines.slice(0, 2).map((l) => l.name).join(", ");
-      return `${h.drawerName}: ${names}${h.lines.length > 2 ? ` ${t("drawer.tagMore", { count: h.lines.length - 2 })}` : ""}`;
+      return t("drawer.tagHolder", { drawer: h.drawerName, items: `${names}${h.lines.length > 2 ? ` ${t("drawer.tagMore", { count: h.lines.length - 2 })}` : ""}` });
     };
     const rest = hs.slice(2).reduce((n, h) => n + h.lines.length, 0);
     return hs.slice(0, 2).map(part).join(" · ") + (rest ? ` · ${t("drawer.tagMore", { count: rest })}` : "");

@@ -22,7 +22,7 @@ async function addDrawerWithLine(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const id = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Cash");
   await page.getByLabel("Currency", { exact: true }).fill("PLN");
   await page.getByLabel("Starting balance").fill("10");
@@ -41,6 +41,9 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   await openSettings(page);
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Desktop assistant");
+  // PETTY-281: a new token only reads until you switch changes on
+  await expect(page.getByTestId("token-write")).not.toBeChecked();
+  await page.getByTestId("token-write").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
@@ -50,7 +53,7 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   await expect(page.getByTestId("token-addon")).toHaveAttribute("href", "/downloads/petty.mcpb");
   await page.getByTestId("token-done").click();
   await expect(page.getByTestId("token-row")).toHaveCount(1);
-  await expect(page.getByTestId("token-row")).toContainText("May add entries");
+  await expect(page.getByTestId("token-row")).toContainText("Can make changes");
 
   // the tool: only the id half travels
   const split = splitPatToken(token);
@@ -102,6 +105,7 @@ test("NR-1 (PETTY-181): a token the owner did not make, or one whose key was swa
   await openSettings(page);
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Real one");
+  await page.getByTestId("token-write").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   await expect(page.getByTestId("token-value")).toBeVisible();
@@ -144,6 +148,7 @@ test("NR-4 (PETTY-184): an entry a token signs with its own key shows clean in t
   await openSettings(page);
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Writer");
+  await page.getByTestId("token-write").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();

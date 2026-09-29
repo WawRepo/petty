@@ -20,6 +20,8 @@ import { useToast } from "../components/Toast.js";
 import { acknowledgeChain, appendEntry, lineFold, loadOlder, memberName, RecountRequired, reverseFor, ReverseRefused, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
 import { storageErrorKey } from "../lib/storage.js";
+import { dateLocale } from "../lib/time.js";
+import { LineSkeleton } from "../components/Skeleton.js";
 
 type Op = Exclude<EntryOp, "reverse">;
 type MoneyOrCount = Exclude<Line, { kind: "single" }>;
@@ -104,7 +106,7 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
     return (
       <Sheet open title={t("line.entry.confirmTitle")} onClose={onClose}>
         <div className="confirm-summary" data-testid="confirm-summary">
-          <div className="cline"><span className="k">{t("line.entry.operation")}</span><span>{t(`line.ops.${op}`)}</span></div>
+          <div className="cline"><span className="k">{t("line.entry.operation")}</span><span>{t(`line.opName.${op}`)}</span></div>
           <div className="cline"><span className="k">{t("line.entry.current", { noun })}</span><span>{fmt(line, current, locale)} {unit}</span></div>
           <div className="cline"><span className="k">{t("line.entry.change")}</span><span>{signed(line, delta, locale)} {unit}</span></div>
           {comment ? <div className="cline"><span className="k">{t("line.entry.comment")}</span><span>{comment}</span></div> : null}
@@ -130,7 +132,7 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
       {error ? <p className="error tc mt0" role="alert" data-testid="amount-error">{error}</p> : null}
       <Keypad value={amount} onChange={(v) => { setAmount(v); setError(null); }} allowDecimal={exponent > 0} maxDecimals={exponent} />
       <span className="sr-only">{decimalSeparator(locale)}</span>
-      <TextField label={t("line.entry.comment")} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("line.entry.commentPlaceholder")} maxLength={500} />
+      <TextField label={t("line.entry.comment")} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t(op === "adjust" ? "line.entry.commentPlaceholderAdjust" : "line.entry.commentPlaceholder")} maxLength={500} />
       <div className="actions">
         <Button variant="secondary" onClick={onClose}>{t("app.cancel")}</Button>
         <Button onClick={review}>{t("line.entry.review")}</Button>
@@ -145,14 +147,14 @@ function EntryRow({ view, line, e, reversed, onOpen, fresh = false }: { view: Dr
   const toast = useToast();
   const p = e.entry;
   const d = new Date(e.received_at);
-  const when = `${d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" })} · ${d.toLocaleTimeString(i18n.language, { hour: "numeric", minute: "2-digit" })}`;
+  const when = `${d.toLocaleDateString(dateLocale(i18n.language), { month: "short", day: "numeric", year: "numeric" })} · ${d.toLocaleTimeString(dateLocale(i18n.language), { hour: "numeric", minute: "2-digit" })}`;
   const author = memberName(view, p.author_id);
   const amountText = p.op === "adjust" ? `${fmt(line, p.amount, i18n.language)}${p.delta_hint !== null ? ` ${t("line.row.adjustHint", { delta: signed(line, p.delta_hint, i18n.language) })}` : ""}` : signed(line, p.amount, i18n.language);
   return (
     <div className={`entry${reversed ? " reversed" : ""}${pending ? " pending" : ""}${fresh ? " fresh" : ""}`} data-testid="entry-row" data-entry-id={p.id} data-pending={pending || undefined}>
       <button type="button" className="avatar-btn" aria-label={t("line.row.by", { name: author })} onClick={() => toast(author)}><span className="avatar">{initial(author)}</span></button>
       <button type="button" className="left plain-btn" onClick={onOpen} aria-label={t("line.row.options")}>
-        <span className={`op ${p.op}`}>{t(`line.ops.${p.op}`)}{reversed ? ` · ${t("line.row.reversed")}` : ""}{p.op === "reverse" ? ` · ${t("line.row.cancels")}` : ""}{pending ? ` · ${t("offline.pendingEntry")}` : ""}</span>
+        <span className={`op ${p.op}`}>{t(`line.opName.${p.op}`)}{reversed ? ` · ${t("line.row.reversed")}` : ""}{p.op === "reverse" ? ` · ${t("line.row.cancels")}` : ""}{pending ? ` · ${t("offline.pendingEntry")}` : ""}</span>
         <span className="meta">{when}{p.comment ? ` · ${p.comment}` : ""}</span>
       </button>
       <div className="right"><div className="delta">{amountText}</div></div>
@@ -186,7 +188,8 @@ export function LineScreen() {
   const view = state.drawers.get(id);
   const line = view?.doc?.lines.find((l) => l.id === lineId);
   const f = useMemo(() => (view && line && line.kind !== "single" ? lineFold(view, lineId) : null), [view, line, lineId]);
-  if (!view || !line) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;
+  // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
+  if (!view || !line) return <><TopBar title="" titleAs="p" onBack={back} /><LineSkeleton /></>;
   const optionsButton = <button type="button" className="icon-btn" aria-label={t("drawer.lineOptions", { name: line.name })} onClick={() => setOpts("options")} data-testid="line-options">⋯</button>;
   const options = <LineOptions view={view} line={line} open={opts !== null} startAt={opts ?? "options"} onClose={() => setOpts(null)} onDeleted={back} />;
   const canWrite = view.summary.role !== "read";
@@ -214,7 +217,7 @@ export function LineScreen() {
       </>
     );
   }
-  if (!f) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;
+  if (!f) return <><TopBar title="" titleAs="p" onBack={back} /><LineSkeleton /></>;
   const locale = i18n.language;
   const window_ = view.entries.get(lineId) ?? [];
   const hist = view.history.get(lineId);
@@ -272,7 +275,7 @@ export function LineScreen() {
       </main>
       {op ? <EntrySheet view={view} line={line} op={op} onClose={() => setOp(null)} onSaved={(entryId) => { setOp(null); showNewest(entryId); }} /> : null}
       <Sheet open={picked !== null && !confirmReverse} title={t("line.row.options")} onClose={() => setPicked(null)}>
-        {picked ? <p className="hint">{t(`line.ops.${picked.entry.op}`)} · {signed(line, picked.entry.op === "adjust" ? (picked.entry.delta_hint ?? 0) : picked.entry.amount, locale)} {unit} · {t("line.row.by", { name: memberName(view, picked.entry.author_id) })}</p> : null}
+        {picked ? <p className="hint">{t(`line.opName.${picked.entry.op}`)} · {signed(line, picked.entry.op === "adjust" ? (picked.entry.delta_hint ?? 0) : picked.entry.amount, locale)} {unit} · {t("line.row.by", { name: memberName(view, picked.entry.author_id) })}</p> : null}
         {rev && !rev.ok ? <p className="hint" data-testid="reverse-refused">{t(`line.reverse.refused.${rev.code}`)}</p> : null}
         {/* PETTY-279: not a solid red block with no way out; the next sheet asks before anything happens */}
         <div className="actions">

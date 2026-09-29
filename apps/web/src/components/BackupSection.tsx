@@ -77,7 +77,7 @@ export function BackupSection() {
       <h2 className="h-card">{t("backup.title")}</h2>
       <p className="hint mb12">{t("backup.hint")}</p>
       {progress ? <p className="warn-box" role="status" data-testid="import-progress">{t("backup.importing", progress)}</p> : null}
-      <div className="menu">
+      <div className="actions mt0">
         <Button variant="secondary" onClick={() => { setPw(""); setPw2(""); setError(null); setPwError(null); setSheet("password"); }}>{t("backup.exportEncrypted")}</Button>
         <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" id="import-input" aria-label={t("backup.importFile")} onChange={(e) => void onFile(e.target.files?.[0])} />
         <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={progress !== null}>{t("backup.import")}</Button>

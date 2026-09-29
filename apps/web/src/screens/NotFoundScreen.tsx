@@ -12,9 +12,9 @@ export function NotFoundScreen() {
   const signedIn = auth.status === "unlocked" || auth.status === "locked";
   return (
     <>
-      <TopBar title={t("app.name")} brand />
+      <TopBar title={t("app.name")} brand titleAs="p" />
       <main>
-        <h2 className="landing-h2" data-testid="not-found">{t("notFound.title")}</h2>
+        <h1 className="landing-h2" data-testid="not-found">{t("notFound.title")}</h1>
         <p className="hint">{t("notFound.body")}</p>
         <div className="actions">
           <Button onClick={() => nav("/", { replace: true })}>{t(signedIn ? "notFound.drawers" : "notFound.home")}</Button>

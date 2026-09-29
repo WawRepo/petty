@@ -85,7 +85,7 @@ async function setLineIcon(page: Page, name: string, label: string) {
 }
 
 async function addLine(page: Page, kind: "money" | "countable" | "single", name: string, extra: Record<string, string>) {
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   if (kind === "single") await page.getByRole("group").getByRole("button", { name: "Single item" }).click();
   if (kind === "countable") await page.getByRole("group").getByRole("button", { name: "Countable" }).click();
   await page.getByLabel("Name", { exact: true }).fill(name);
@@ -93,8 +93,8 @@ async function addLine(page: Page, kind: "money" | "countable" | "single", name:
   await page.getByRole("button", { name: "Add", exact: true }).click();
 }
 async function confirmState(page: Page) {
-  await page.getByRole("button", { name: "Confirm state" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Confirm", exact: true }).click();
+  await page.getByRole("button", { name: "Mark as checked" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Mark as checked" }).click();
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 15_000 });
 }
 
@@ -137,7 +137,7 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     await sp.getByLabel("Comment (optional)").fill(N.comment);
     const lineUrl = new URL(sp.url()).pathname;
     await sp.getByRole("button", { name: "Review" }).click();
-    await sp.getByRole("button", { name: "Confirm", exact: true }).click();
+    await sp.getByRole("button", { name: "Save", exact: true }).click();
     await expect(sp.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
     await sp.getByRole("button", { name: "Back" }).click();
     await confirmState(sp);

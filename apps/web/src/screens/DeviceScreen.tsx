@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 import { DeviceRequestView, type DeviceRequestView as Request } from "@petty/protocol";
 import { deviceUserCode, normalizeDeviceCode, sealDeviceToken, WrongPassphrase } from "@petty/crypto";
+import { CodeText } from "../components/CodeText.js";
 import { Button } from "../components/Button.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
@@ -123,16 +124,16 @@ export function DeviceScreen() {
         {/* PETTY-279: the form stays while a typed code is checked, and its field carries the error */}
         {phase === "enter" || (phase === "loading" && typed) ? (
           <form className="card" onSubmit={submitCode} noValidate>
-            <p className="hint mt0">{t("device.enterBody")}</p>
+            <p className="hint mt0"><CodeText text={t("device.enterBody")} /></p>
             <TextField label={t("device.code")} value={typed} autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="BCDF-GHJK-LMNP"
-              data-testid="device-code" onChange={(e) => { setTyped(e.target.value); setError(null); }} error={error} />
+              data-testid="device-code" onChange={(e) => { setTyped(e.target.value); setError(null); }} error={error ? <CodeText text={error} /> : null} />
             <div className="actions"><Button type="submit" busy={phase === "loading"} data-testid="device-continue">{t("device.continue")}</Button></div>
           </form>
         ) : null}
 
         {phase === "loading" && !typed ? <p className="hint" role="status">{t("device.checking")}</p> : null}
 
-        {phase === "mismatch" ? <p className="warn-box danger" role="alert" data-testid="device-mismatch">{t("device.mismatch")}</p> : null}
+        {phase === "mismatch" ? <p className="warn-box danger" role="alert" data-testid="device-mismatch"><CodeText text={t("device.mismatch")} /></p> : null}
 
         {phase === "ask" && req ? (
           <section className="card" data-testid="device-ask">

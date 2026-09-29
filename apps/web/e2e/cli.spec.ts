@@ -70,7 +70,7 @@ test("Deny on the /device page: the command line stops and is not signed in", as
   const login = petty(["auth", "login", "--host", origin, "--no-browser", "--read-only"], configDir());
   const { url } = await asked(login);
   await page.goto(url);
-  await expect(page.getByText("It asks to read only. It cannot add entries.")).toBeVisible();
+  await expect(page.getByText("It asks to read only. It cannot change anything.")).toBeVisible();
   await page.getByTestId("device-deny").click();
   await expect(page.getByTestId("device-denied")).toBeVisible();
   expect(await login.done).toBe(3);
@@ -87,6 +87,8 @@ test("signed out, the /device link leads through sign-in and unlock back to the 
   const { url, code } = await asked(login);
   await page.goto(url);
   await expect(page).toHaveURL(/\/login$/);
+  // PETTY-281 (F15): the sign-in page says why it is there
+  await expect(page.getByTestId("login-after-device")).toHaveText("Sign in to allow the command-line tool that is waiting in your terminal.");
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Login password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();

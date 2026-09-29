@@ -128,7 +128,9 @@ export function LandingScreen() {
         <a className="btn btn-ghost" href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
         <a className="btn btn-ghost" href="/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" data-testid="landing-notices">{t("app.thirdPartyNotices")}</a>
         <p className="hint m0">{t("landing.made")}{contact ? <> · <a className="landing-mail" href={`mailto:${contact}`}>{contact}</a></> : null}</p>
-        <p className="hint m0">{t("landing.footer")} · {t("landing.slogan")}{appVersion() ? <> · {appVersion()}</> : null}</p>
+        {/* PETTY-280 (F26): the slogan on its own line, the version kept with it, no lone "·" at a line's end */}
+        <p className="hint m0">{t("landing.footer")}</p>
+        <p className="hint m0">{t("landing.slogan")}{appVersion() ? <span className="nobr"> · {appVersion()}</span> : null}</p>
       </footer>
     </main>
   );

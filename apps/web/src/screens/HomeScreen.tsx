@@ -11,7 +11,7 @@ import { PendingArea } from "../components/PendingArea.js";
 import { OfflineBanner } from "../components/OfflineBanner.js";
 import { SyncReport } from "../components/SyncReport.js";
 import { Nudges } from "../components/Nudges.js";
-import { HomeSkeleton } from "../components/Skeleton.js";
+import { HomeSkeleton, rememberHomeShape } from "../components/Skeleton.js";
 import { PinsWarning } from "../components/PinsWarning.js";
 import { excludedFromTotal, pictureShown, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TagChip } from "../components/TagChip.js";
@@ -255,6 +255,15 @@ export function HomeScreen() {
   );
   const result = searchDrawers(visibleIds.map((id) => state.drawers.get(id)).filter((v): v is DrawerView => !!v), searching ? debounced : "");
   const active = searching && debounced.trim() !== "";
+  // PETTY-280 (M11): the skeleton's size next time: the top card's height as drawn, and whether chips show
+  useEffect(() => {
+    if (state.status !== "ready" || searching) return;
+    const frame = requestAnimationFrame(() => {
+      const top = document.querySelector('[data-testid="home-totals"], .home-picture');
+      rememberHomeShape(top ? Math.round(top.getBoundingClientRect().height) : 0, !!document.querySelector('[data-testid="tag-bar"]'));
+    });
+    return () => cancelAnimationFrame(frame);
+  });
   const totalCard = state.status === "ready" && !active && showTotals && counted && (tot.byCurrency.length > 0 || tot.incomplete);
   return (
     <>

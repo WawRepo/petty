@@ -7,13 +7,11 @@
     "save": "Save",
     "close": "Close",
     "done": "Done",
-    "continue": "Continue",
     "retry": "Try again",
     "copy": "Copy",
     "copied": "Copied",
     "crashed": "This page could not load. Reload to get the current version of Petty.",
     "reload": "Reload",
-    "offline": "You are offline.",
     "yes": "Yes",
     "no": "No",
     "sourceCode": "Source code",
@@ -21,7 +19,6 @@
   },
   "nav": {
     "settings": "Settings",
-    "home": "Drawers",
     "account": "Account"
   },
   "auth": {
@@ -34,13 +31,14 @@
       "tooMany": "Too many attempts. Wait a few minutes.",
       "forgot": "Forgot your password?",
       "noAccount": "No account yet? Petty is invite-only for now.",
-      "about": "What is Petty?"
+      "about": "What is Petty?",
+      "afterDevice": "Sign in to allow the command-line tool that is waiting in your terminal."
     },
     "reset": {
       "title": "Reset login password",
-      "body": "This resets the login password only. It never touches the vault: only your vault passphrase or your recovery code opens your data. If both are lost, ask another member of a shared drawer to re-share it.",
+      "body": "This resets the login password only. It never touches the vault: only your passkey, vault passphrase or recovery code opens your data. If you lose all of them, ask a member of a shared drawer to share it with you again.",
       "send": "Send reset link",
-      "sent": "If that address has an account, a reset link is on its way. It works once, for one hour.",
+      "sent": "If that address has an account, a reset link is on its way. It works once, for 1 hour.",
       "ok": "Understood",
       "emailInvalid": "Enter your email address.",
       "newTitle": "New login password",
@@ -50,7 +48,7 @@
       "mismatch": "The two passwords differ.",
       "submit": "Set password",
       "done": "Login password changed. Sign in with the new one.",
-      "invalid": "This link is invalid, used or older than one hour. Ask for a new one.",
+      "invalid": "This link is invalid, used or older than 1 hour. Ask for a new one.",
       "toLogin": "Back to sign in"
     },
     "join": {
@@ -77,10 +75,10 @@
       },
       "explainer": {
         "title": "How the vault works, one minute to read",
-        "password": "The login password signs you in. If you forget it, we can reset it by email.",
-        "passphrase": "The vault passphrase encrypts your cash records on your phone. We never see it and cannot reset it. Let your password manager save it when asked.",
+        "password": "The login password signs you in. If you forget it, you can reset it by email.",
+        "passphrase": "The vault passphrase opens your encrypted vault. Petty never sees it and nobody can reset it. Let your password manager save it when asked.",
         "recovery": "Next you get a recovery code. Write it on paper. It is the only other way in if you lose every passkey or forget the passphrase.",
-        "passkey": "A passkey on this device (Face ID, Touch ID, Windows Hello) opens your cash records. We never see it. On a new device your phone can approve once, or you add a passkey there."
+        "passkey": "A passkey on this device (Face ID, Touch ID, Windows Hello) opens your drawers. Petty never sees it. On a new device your phone can approve once, or you add a passkey there."
       },
       "passkeyHint": "Your device will ask for Face ID, Touch ID, Windows Hello or a PIN. Nothing to remember.",
       "usePassphrase": "Use a passphrase instead",
@@ -112,7 +110,7 @@
       "recoverWrong": "That code did not open the vault.",
       "recoverDone": "Vault passphrase changed. Unlock with the new one.",
       "loginPassword": "Your login password",
-      "managerHint": "Your password manager can keep this passphrase. It stays encrypted on your device, like your saved passwords.",
+      "managerHint": "Your password manager can keep this passphrase, like your other passwords. If it syncs, the passphrase goes to its cloud too.",
       "passkey": "Unlock with passkey",
       "passkeyWrong": "The passkey did not open the vault.",
       "passkeyNoPrf": "This browser cannot use the passkey here. Use your passphrase.",
@@ -137,22 +135,21 @@
       "title": "Set up your vault",
       "submit": "Create vault",
       "displayName": "Name (optional)",
-      "displayNameHint": "How the people you share drawers with see you. Your Clerk name is used if left empty.",
+      "displayNameHint": "How the people you share drawers with see you. If you leave it empty, the name from your sign-in is used.",
       "already": "This account already has a vault. Reload the app.",
       "explainer": {
-        "identity": "You are signed in. The vault is a second, separate lock: it opens your drawers on this device and never leaves it."
+        "identity": "You are signed in. The vault is a second, separate lock: it opens your drawers on this device. The server keeps only a locked copy of it."
       },
       "passkeyAccount": "Petty vault"
     }
   },
   "home": {
     "signOutTitle": "Sign out?",
-    "signOutBody": "To get back in you will need your login password and your vault passphrase.",
+    "signOutBody": "To get back in, you sign in again and open the vault with your passkey or passphrase.",
     "empty": "No drawers yet.",
-    "emptyHint": "Add one to start tracking cash.",
+    "emptyHint": "Add one for each place you keep cash or things.",
     "count": "{count, plural, one {# drawer} other {# drawers}}",
     "addDrawer": "Add drawer",
-    "comingSoon": "Drawers arrive in the next step.",
     "totals": "Total value",
     "totalsIn": "Total value · {tag}",
     "across": "{count, plural, one {Across # drawer} other {Across # drawers}}",
@@ -162,14 +159,14 @@
     "tags": {
       "label": "Filter by place",
       "all": "All",
-      "elsewhere": "Elsewhere"
+      "elsewhere": "No place"
     },
     "notInTotal": "Not in your total",
     "search": {
       "open": "Search all drawers",
       "close": "Close search",
-      "label": "Search items and tags in every drawer",
-      "placeholder": "Search names or tags, e.g. passport",
+      "label": "Search drawers, places, items and tags",
+      "placeholder": "Search names, places or tags, e.g. passport",
       "count": "{lines, plural, one {# item} other {# items}} in {drawers, plural, one {# drawer} other {# drawers}}",
       "none": "Nothing matches.",
       "hitsIn": "Matches in {name}",
@@ -179,20 +176,18 @@
     "incomplete": "Some drawers could not be read. The total is incomplete.",
     "addDrawerTitle": "Add drawer",
     "drawerName": "Name",
-    "drawerNamePlaceholder": "e.g. Kitchen",
+    "drawerNamePlaceholder": "e.g. Cash tin",
     "add": "Add",
-    "lines": "{count, plural, one {# line} other {# lines}}",
-    "degraded": "Could not decrypt this drawer.",
     "loadFailed": "Could not load your drawers.",
     "warn": "Needs attention",
     "degradedReason": {
-      "no_key": "You have no key for this drawer yet.",
+      "no_key": "You have no key for this drawer yet. Ask its owner to share it again.",
       "sender_unknown": "The key was shared by someone you have not seen before.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
-      "unwrap_failed": "The drawer key could not be unwrapped.",
-      "decrypt_failed": "Could not decrypt this drawer.",
-      "bad_document": "The drawer document is not valid.",
-      "unknown_schema": "This drawer was written by a newer version of Petty."
+      "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
+      "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
+      "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
+      "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty."
     },
     "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}",
     "picture": {
@@ -206,12 +201,12 @@
       "title": "Home screen",
       "places": "Show places",
       "placesHint": "Group drawers by room and show the place chips. Off: one plain list.",
-      "verification": "Show verification",
-      "verificationHint": "The “Confirm state” bar on drawers, its history and the verified badges. Turn off if you never count and confirm.",
+      "verification": "Show checks",
+      "verificationHint": "The “Mark as checked” bar on drawers, its history and the “Checked” badges. Turn it off if you never count what is inside.",
       "totals": "Show totals",
-      "totalsHint": "The Total value card and the subtotals on the home screen, the totals card and the “in total” chips on a drawer. Turn off to see only what each drawer and line holds.",
+      "totalsHint": "The Total value card and the subtotals on Home, the totals card and the “In total” chips on a drawer. Turn it off to see only what each drawer and item holds.",
       "picture": "Show the picture",
-      "pictureHint": "The home with your places and drawers around it, on the home screen. Tap a place to see only its drawers."
+      "pictureHint": "A picture of your places and drawers at the top of Home. Tap a place to see only its drawers."
     },
     "language": "Language",
     "theme": {
@@ -223,7 +218,7 @@
     "account": "Account",
     "signedInAs": "Signed in as {email}",
     "safetyNumber": "Your safety number",
-    "safetyNumberHint": "Compare it in person with anyone you share a drawer with.",
+    "safetyNumberHint": "Compare it in person or by phone with anyone you share a drawer with.",
     "joinLink": "Invite someone to Petty",
     "joinLinkHint": "Creates a one-time link (valid 7 days). Send it to the person yourself, then share a drawer with them once they have an account.",
     "joinLinkCreate": "Create join link",
@@ -239,7 +234,7 @@
       "add": "Add passkey",
       "remove": "Remove",
       "unsupported": "This browser does not support passkeys the way Petty needs (Firefox does not yet). Try Safari, Chrome or Edge.",
-      "addHint": "Enter the vault passphrase. Then your device asks for Face ID, Touch ID, a PIN or a security key.",
+      "addHint": "Enter what is asked below. Then your device asks for Face ID, Touch ID, a PIN or a security key.",
       "removeHint": "Passkey “{name}” will no longer open the vault. Your other passkeys, the passphrase and the recovery code keep working.",
       "added": "Passkey set up. You can unlock with it from now on.",
       "removed": "Passkey removed.",
@@ -282,9 +277,8 @@
     "decimal": "Decimal point"
   },
   "errors": {
-    "network": "Could not reach the server.",
-    "unknown": "Something went wrong.",
-    "sessionExpired": "Your session ended. Sign in again.",
+    "network": "Could not reach the server. Check your connection and try again.",
+    "unknown": "Something went wrong. Try again.",
     "storageFull": "Your storage is full. Remove photos or drawers you no longer need. Settings shows how much you use.",
     "ownerStorageFull": "This drawer's owner has no storage left, so the change was not saved. Ask them to free some space.",
     "photoTooLarge": "This photo is too large. Choose a smaller one."
@@ -299,7 +293,7 @@
       "all": "All items",
       "notInTotal": "Not in total",
       "countsToward": "{included, plural, one {# of {total} items counts toward this total} other {# of {total} items count toward this total}}",
-      "none": "No money lines yet"
+      "none": "No money items yet"
     },
     "filter": {
       "all": "All items",
@@ -311,10 +305,9 @@
     "countedHint": "Turn off for cash you only look after, like a club box. Only your own view changes.",
     "rename": "Rename drawer",
     "tags": "Place",
-    "tagsPlaceholder": "kitchen shelf",
-    "tagsHint": "Words separated by spaces, from the room down to the box, e.g. “kitchen shelf”. Up to 5 words. Everyone who shares the drawer sees it.",
+    "placeIs": "Place: {place}",
     "delete": "Delete drawer",
-    "deleteConfirm": "Delete “{name}” and all its lines and history? This cannot be undone.",
+    "deleteConfirm": "Delete “{name}” with all its items and their history? This cannot be undone.",
     "deleteBtn": "Delete",
     "deleteType": "Type the drawer's name to confirm",
     "photoAdd": "Add photo",
@@ -323,9 +316,8 @@
     "photoAlt": "Photo of {name}",
     "photoProcessing": "Preparing photo…",
     "photoFailed": "Could not read that image. Try a different photo.",
-    "addLine": "Add line",
-    "noLines": "No lines in this drawer yet.",
-    "editedBy": "Last edited by {name}",
+    "addLine": "Add item",
+    "noLines": "No items in this drawer yet.",
     "dragHandle": "Move {name}: drag, or use the arrow keys",
     "lineOptions": "Options for {name}",
     "open": "Open {name}",
@@ -340,13 +332,13 @@
       "currency": "Currency",
       "currencyHint": "Three letters, for example EUR, USD or GBP.",
       "unit": "Unit (optional)",
-      "unitPlaceholder": "e.g. glass balls",
+      "unitPlaceholder": "e.g. pieces",
       "startingBalance": "Starting balance",
       "startingCount": "Starting count",
       "text": "Text (optional)",
       "textPlaceholder": "e.g. number, expiry, location…",
       "namePlaceholder": {
-        "money": "e.g. USD kitchen",
+        "money": "e.g. Groceries",
         "countable": "e.g. Glass balls",
         "single": "e.g. Passport"
       },
@@ -366,13 +358,12 @@
       "editText": "Edit text",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "delete": "Delete line",
+      "delete": "Delete item",
       "deleteConfirm": "Delete “{name}”?",
-      "deleteHistory": "{count, plural, one {# entry} other {# entries}} of history go with it. This cannot be undone.",
+      "deleteHistory": "{count, plural, one {# entry of history goes with it.} other {# entries of history go with it.}} This cannot be undone.",
       "deleteNoHistory": "This cannot be undone.",
-      "kindLocked": "The type can change only while the line has no entries.",
-      "countable": "Countable",
-      "items": "items",
+      "kindLocked": "The type can change only while the item has no entries.",
+      "items": "pcs",
       "lastEntry": "Last entry {when}",
       "noEntries": "No entries yet",
       "tagsKnown": "Tags in this drawer",
@@ -380,10 +371,10 @@
       "tagsNew": "New tag",
       "tagsAdd": "Add tag",
       "tagsCount": "{count} of {max} tags",
-      "tagsFull": "This line has {max} tags, the most it can have."
+      "tagsFull": "This item has {max} tags, the most it can have."
     },
     "errors": {
-      "opsDropped": "Someone changed this drawer meanwhile. Your change could not be applied.",
+      "opsDropped": "Someone changed this drawer meanwhile, so your change was not applied. Try it again.",
       "amountInvalid": "Enter a valid amount.",
       "countInteger": "Counts are whole numbers.",
       "nameRequired": "A name is required.",
@@ -394,6 +385,7 @@
     "tagNoItemsYet": "No items yet",
     "tagNoItemsYetLong": "No item has this tag yet. Use Choose items to add it.",
     "tagMore": "+{count} more",
+    "tagHolder": "{drawer}: {items}",
     "tagRowName": "{tag}, {count, plural, one {# item} other {# items}}",
     "tagDetailReadOnly": "read-only",
     "tagChooseItems": "Choose items",
@@ -403,10 +395,10 @@
     "tagOpenItem": "Open {item} in {drawer}",
     "tagHiddenReadOnly": "Shared drawers you can only read are not listed.",
     "tagNew": "New tag",
+    "tagNewTitle": "New tag",
     "tagName": "Tag name",
     "tagItemsTitle": "Items tagged {tag}",
     "tagPickItems": "Items with this tag",
-    "tagPickOne": "Pick at least one item.",
     "tagItemFull": "already has {max} tags",
     "tagNoItems": "This drawer has no items yet. Add an item first.",
     "tagsManageHint": "One tag list for all your drawers.",
@@ -414,7 +406,7 @@
     "tagItemIn": "{item} in {drawer}",
     "tagRewriteFailed": "{count, plural, one {# drawer was not updated. Try again.} other {# drawers were not updated. Try again.}}",
     "tagRewriteReadOnly": "{count, plural, one {# shared drawer is read-only and keeps the old tag.} other {# shared drawers are read-only and keep the old tag.}}",
-    "tagsEmpty": "You have no tags yet. Tap New tag to make one.",
+    "tagsEmpty": "You have no tags yet. Make one with New tag.",
     "tagsManage": "Manage tags",
     "tagRename": "Rename",
     "tagRemove": "Remove tag",
@@ -436,15 +428,17 @@
   },
   "line": {
     "noText": "No text yet.",
-    "balance": "Balance",
-    "count": "Count",
-    "comingSoon": "Add, Withdraw and Adjust arrive in the next step.",
     "history": "History",
     "noEntries": "No entries yet.",
     "loadOlder": "Load older",
     "olderLoaded": "Older history",
-    "sinceCount": "Since the last count",
     "ops": {
+      "add": "Add",
+      "withdraw": "Withdraw",
+      "adjust": "Adjust",
+      "reverse": "Reverse"
+    },
+    "opName": {
       "add": "Add",
       "withdraw": "Withdraw",
       "adjust": "Adjust",
@@ -454,23 +448,24 @@
       "title": {
         "add": "Add",
         "withdraw": "Withdraw",
-        "adjust": "Adjust — enter the counted {noun}"
+        "adjust": "Adjust"
       },
       "amount": "Amount ({unit})",
-      "real": "Real {noun} ({unit})",
+      "real": "What you counted ({unit})",
       "noun": {
         "balance": "balance",
         "count": "count"
       },
       "comment": "Comment (optional)",
       "commentPlaceholder": "e.g. birthday gift",
+      "commentPlaceholderAdjust": "e.g. counted on Sunday",
       "review": "Review",
-      "confirmTitle": "Confirm",
-      "operation": "Operation",
+      "confirmTitle": "Check and save",
+      "operation": "Type",
       "current": "Current {noun}",
       "change": "Change",
       "new": "New {noun}",
-      "confirm": "Confirm",
+      "confirm": "Save",
       "saved": "Saved",
       "negativeWarning": "This takes the balance to {amount}. There may be more cash here than recorded, or the amount may be wrong.",
       "zero": "Enter an amount.",
@@ -491,58 +486,59 @@
         "adjust_not_reversible": "An Adjust cannot be reversed. If the count was wrong, count again.",
         "reverse_not_reversible": "A Reverse cannot be reversed.",
         "already_reversed": "This entry was already reversed.",
-        "before_checkpoint": "Already reconciled by a later count."
+        "before_checkpoint": "A later Adjust already covers this entry."
       }
     },
     "recount": {
-      "title": "The line changed",
+      "title": "The item changed",
       "body": "Someone added an entry since you counted. Count again and enter the new value.",
       "ok": "OK"
     },
     "warn": {
-      "problems": "{count, plural, one {# entry} other {# entries}} could not be read or verified. Its amount is not in the balance.",
+      "problems": "{count, plural, one {# entry could not be read or verified. Its amount is not in the balance.} other {# entries could not be read or verified. Their amounts are not in the balance.}}",
       "broken": "The history links do not match. Some entries may have been removed or changed.",
       "truncated": "The history is shorter than the last time you saw it. Entries may have been removed.",
       "acknowledge": "Accept as is",
-      "skipped": "{count, plural, one {# entry was} other {# entries were}} ignored by the balance because it breaks the rules.",
-      "negative": "Negative balance. Count this line and Adjust it."
+      "skipped": "{count, plural, one {# entry is left out of the balance because it breaks the rules.} other {# entries are left out of the balance because they break the rules.}}",
+      "negative": "Negative balance. Count this item and adjust it."
     }
   },
   "time": {
     "justNow": "just now"
   },
   "verify": {
-    "notYet": "Not counted yet",
-    "verified": "Verified · {when}",
-    "changed": "Needs verification · Changed {when}",
+    "notYet": "Not checked yet",
+    "verified": "Checked · {when}",
+    "changed": "Check again · changed {when}",
     "bar": {
-      "never": "Counted the cash? Confirm what is inside, and everyone sees when it was last checked.",
-      "verified": "Verified {when}",
-      "stale": "Verified {when}, but something changed since.",
+      "never": "Counted what is inside? Mark the drawer as checked, and everyone sees when it was last checked.",
+      "verified": "Checked {when}",
+      "stale": "Checked {when}, but something changed since.",
       "withComment": " — {comment}"
     },
-    "confirm": "Confirm state",
+    "confirm": "Mark as checked",
     "history": "History ({count})",
     "hide": "Hide",
-    "historyTitle": "Verification history",
+    "historyTitle": "Check history",
     "sheet": {
-      "title": "Confirm drawer state",
-      "hint": "Confirming means you have physically checked this drawer: every balance below matches the real cash and every item is present. This does not change any balance — if a line is off, close this and use Adjust on that line first.",
-      "lines": "Lines",
+      "title": "Mark the drawer as checked",
+      "hint": "Mark it only after you have looked inside: every amount below matches what is there, and every thing is present. This changes no balance. If an item is off, close this and adjust that item first.",
+      "lines": "Amounts",
       "none": "none",
-      "items": "Items",
+      "items": "Things",
       "present": "{name} is present",
       "comment": "Comment (optional)",
       "commentPlaceholder": "e.g. counted with Alex",
-      "confirm": "Confirm"
+      "confirm": "Mark as checked"
     },
-    "toast": "Drawer confirmed",
+    "toast": "Drawer checked",
     "row": {
-      "title": "Verified",
+      "title": "Checked",
       "by": "by {name}",
       "missing": "Missing: {names}",
       "present": "present",
-      "absent": "absent"
+      "absent": "absent",
+      "item": "{name}: {value}"
     }
   },
   "pending": {
@@ -573,15 +569,15 @@
     },
     "safety": "Safety number",
     "status": {
-      "confirmed": "Confirmed",
+      "confirmed": "Compared",
       "unconfirmed": "Not compared yet",
-      "changed": "KEY CHANGED — compare again before sharing anything",
-      "unpinned": "No key"
+      "changed": "Their key changed. Compare safety numbers again before you share.",
+      "unpinned": "Not set up yet"
     },
-    "confirm": "I compared this number",
+    "confirm": "Numbers match",
     "acceptNew": "Accept the new key",
     "remove": "Remove",
-    "removeConfirm": "Remove {name} from this drawer? They keep what they already saw; the key will be replaced so they cannot read anything new.",
+    "removeConfirm": "Remove {name} from this drawer? They keep what they already saw. The drawer gets a new key, so they cannot read anything added later.",
     "makeOwner": "Make owner",
     "leave": "Leave drawer",
     "leaveConfirm": "Leave this drawer? You will need a new invitation to come back.",
@@ -595,12 +591,11 @@
     "lookup": "Find",
     "notFound": "No Petty account with that email. Send them a join link first.",
     "noKeys": "This person has not finished setting up their account.",
-    "found": "{name}",
     "role": "Role",
-    "roleWrite": "Writer — can log operations, edit lines and confirm state",
+    "roleWrite": "Writer — can add and take out, edit items and mark the drawer checked",
     "roleRead": "Reader — can see everything, cannot change anything or export",
     "compare": "I compared this safety number with {name} in person or by phone",
-    "blockedChanged": "This person's key changed since you last confirmed it. Accept the new key in Members first.",
+    "blockedChanged": "This person's key changed since you last compared it. Accept the new key in Members first.",
     "send": "Invite",
     "sent": "Invitation sent",
     "joinLink": "Send a join link",
@@ -611,8 +606,7 @@
   "rotation": {
     "running": "Replacing the drawer key… {done} of {total} entries re-encrypted.",
     "needed": "A member was removed. The drawer key will be replaced the next time a writer opens this drawer.",
-    "keyChanged": "The key of {names} has changed. Check their safety number in Members before sharing anything.",
-    "cannot": "Cannot replace the key: confirm every member's key in Members first."
+    "keyChanged": "The key of {names} has changed. Check their safety number in Members before sharing anything."
   },
   "offline": {
     "banner": "You are offline. Changes are saved on this device and sent when you reconnect.",
@@ -623,7 +617,7 @@
     "report": {
       "title": "While you were away",
       "foreign": "{amount} by {name} on {line}",
-      "recount": "Your count on {line} was not saved — the line changed meanwhile. Count again.",
+      "recount": "Your count on {line} was not saved: the item changed meanwhile. Count again.",
       "reverseRefused": "Your reversal on {line} was not saved: {reason}",
       "opsDropped": "A change to “{drawer}” could not be applied: someone changed it meanwhile.",
       "failed": "A change to “{drawer}” could not be sent.",
@@ -633,11 +627,11 @@
     }
   },
   "install": {
-    "title": "Add to home screen",
+    "title": "Install the app",
     "why": "Installed, Petty opens like an app, keeps its keys and offline data, and works without a network.",
-    "nudge": "Add Petty to your home screen so it keeps working offline.",
+    "nudge": "Install Petty so it keeps working offline.",
     "ios": "Add Petty to your Home Screen so it keeps working offline: Share → Add to Home Screen.",
-    "manual": "Use your browser's menu: \"Install app\" or \"Add to Home Screen\".",
+    "manual": "Use your browser’s menu: “Install app” or “Add to Home Screen”.",
     "installed": "Petty is installed on this device.",
     "dismissedHint": "You can install later from this screen. Reload the page first.",
     "button": "Install Petty",
@@ -647,10 +641,10 @@
     "title": "Backup",
     "hint": "An export contains every drawer you own or write to, with photos and full history. Keep the file somewhere you trust.",
     "exportEncrypted": "Export (encrypted)",
-    "exportPlain": "Export as plain text…",
+    "exportPlain": "Export unencrypted…",
     "import": "Import from file",
     "password": "Export password",
-    "passwordHint": "At least 12 characters. Independent of your vault passphrase; needed to open this file anywhere, even without an account.",
+    "passwordHint": "At least 12 characters, different from your vault passphrase. It opens this file anywhere, even without an account. Nobody can recover it.",
     "passwordRepeat": "Repeat the export password",
     "passwordMismatch": "The passwords do not match.",
     "passwordShort": "At least 12 characters.",
@@ -658,12 +652,12 @@
     "exporting": "Preparing…",
     "exported": "Export ready",
     "skipped": "{count, plural, one {# read-only drawer was} other {# read-only drawers were}} left out.",
-    "plainTitle": "Export as plain text?",
+    "plainTitle": "Export unencrypted?",
     "plainWarning": "This file will hold every balance, entry, comment and photo unencrypted. Anyone who gets the file can read all of it. Prefer the encrypted export unless you know why you need this.",
     "plainConfirm": "Export unencrypted",
     "importTitle": "Import",
-    "importHint": "Creates new drawers from the file, owned by you. Original authors stay as labels; every imported entry is signed by you and marked [imported].",
-    "importPassword": "Password of the file",
+    "importHint": "Creates new drawers from the file, owned by you. Each entry keeps its author's name as text, is signed by you and marked [imported].",
+    "importPassword": "Export password",
     "importFile": "Choose file",
     "importing": "Importing {drawer}: {done} of {total} entries…",
     "imported": "{count, plural, one {# drawer} other {# drawers}} imported",
@@ -675,7 +669,7 @@
     "title": "Delete account",
     "intro": "This cannot be undone. Decide what happens to each drawer you own that other people use.",
     "erased": "What is erased: your private keys, your sessions, your email and name, and every drawer only you own.",
-    "kept": "What stays: entries you wrote in drawers that other members keep — they are those members' ledger, encrypted with a key they hold. Your name on them becomes “Deleted user”. Your public keys stay so those entries can still be verified.",
+    "kept": "What stays: the entries you wrote in drawers that other members keep. They are those members' records, encrypted with a key they hold. Your name on them becomes “Deleted user”, and your public keys stay so those entries can still be verified.",
     "sharedTitle": "Shared drawers you own",
     "sole": "{count, plural, one {# drawer only you own will be deleted.} other {# drawers only you own will be deleted.}}",
     "memberships": "You will leave {count, plural, one {# drawer} other {# drawers}} you are a member of.",
@@ -695,30 +689,30 @@
     "summaryUndecided": "{drawer}: not decided yet"
   },
   "pins": {
-    "rolledBackTitle": "Your list of trusted keys went missing on the server",
-    "rolledBack": "This device last saw version {seen} of your trusted-keys list; the server now has version {server}. That can be a restored backup, or someone trying to make you trust new keys. Until you start over, no new key is trusted automatically and you cannot share drawers.",
-    "startOver": "I understand, start over"
+    "rolledBackTitle": "The server has an older copy of your trusted keys",
+    "rolledBack": "This device last saw version {seen} of your trusted-keys list; the server now has version {server}. That can be a restored backup, or someone trying to make you trust new keys. Until you start a new list, no new key is trusted automatically and you cannot share drawers.",
+    "startOver": "Start a new list of trusted keys"
   },
   "privacy": {
     "link": "Privacy and security",
     "title": "Privacy and security",
-    "intro": "Petty encrypts your drawers on your device. The server stores ciphertext it cannot open. Here is exactly what it can and cannot see.",
+    "intro": "Petty encrypts what is in your drawers on your device. The server stores scrambled data it cannot open. Here is exactly what it can and cannot see.",
     "seesTitle": "What the server can see",
     "sees": [
       "Your email and display name, and those of people you share with.",
-      "How many drawers you have and how many lines each holds.",
+      "How many drawers you have and how many items each holds.",
       "Who shares which drawer with whom, and with which role.",
-      "When each entry was written, by whom, on which line, and whether it was a count or a reversal — never the amount, the comment or the line's name.",
+      "When each entry was written, by whom, in which item, and whether it was a count or a reversal. Never the amount, the comment or the item's name.",
       "The size of each encrypted record, rounded up to 256-byte steps.",
-      "Backups are your operator's choice: this app ships none. If your operator backs up the database, a copy holds the same ciphertext, your email and your encrypted vault — ask them how long copies are kept, including after an account is deleted.",
+      "Petty makes no backups itself. If the person who runs this Petty backs up the database, a copy holds the same scrambled data, your email and your locked vault. Ask them how long copies are kept, also after an account is deleted.",
       "If you let your browser's password manager save the vault passphrase, that manager (and its cloud sync) holds it too. That is your choice, not the server's."
     ],
     "defendsTitle": "What Petty defends against",
     "defends": [
-      "Anyone reading the database or a backup: drawer content, photos and vaults are ciphertext only. They still see the account and activity details listed above.",
+      "Anyone reading the database or a backup: drawer content, photos and vaults are scrambled data only. They still see the account and activity details listed above.",
       "Anyone changing the database: moved, swapped or deleted entries are detected.",
-      "A compromised server: it holds no keys and cannot read drawer content.",
-      "A lost phone: the vault stays locked without the passphrase and locks itself after 24 hours.",
+      "The server alone: it holds no keys and cannot read your drawers, unless it also changes the app it serves (see below).",
+      "A lost phone: a locked vault needs your passkey or passphrase, and an open vault locks itself 24 hours after you unlocked it.",
       "A removed member: after removal the drawer key is replaced; they cannot read anything written afterwards."
     ],
     "notTitle": "What Petty cannot defend against",
@@ -728,9 +722,9 @@
       "Anyone you share a drawer with can read and copy everything in it. Removing them stops future access only.",
       "A member with write access can also damage a drawer's history (the app then shows those records as tampered, but their content is gone). Share with people you trust.",
       "A security bug in this app itself.",
-      "A forgotten passphrase with no recovery code: nobody can help, by design."
+      "Losing every passkey, your passphrase and your recovery code: nobody can help, by design."
     ],
-    "notClerk": "When sign-in runs through Clerk, Clerk decides who may sign in. Whoever controls Clerk could sign in as you, but still needs your passphrase or passkey to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
+    "notClerk": "When sign-in runs through an outside service (Clerk), that service decides who may sign in. Whoever controls it could sign in as you, but would still need your passkey or passphrase to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
     "source": "Petty is free software (AGPL-3.0). Read or run the source yourself:"
   },
   "admin": {
@@ -754,7 +748,8 @@
       "block": "Blocked. Their sessions are gone.",
       "unblock": "Unblocked.",
       "revoke": "Signed out on every device.",
-      "admin": "Admin flag changed."
+      "makeAdmin": "Now an admin.",
+      "removeAdmin": "No longer an admin."
     },
     "confirm": {
       "block": {
@@ -767,10 +762,15 @@
         "body": "Every device must sign in again. Nothing else changes.",
         "ok": "Sign out"
       },
-      "admin": {
-        "title": "Change admin flag for {name}?",
+      "makeAdmin": {
+        "title": "Make {name} an admin?",
         "body": "Admins can block accounts and send invites. They still cannot read anyone's drawers.",
-        "ok": "Change"
+        "ok": "Make admin"
+      },
+      "removeAdmin": {
+        "title": "Remove {name} as an admin?",
+        "body": "They can no longer block accounts or send invites. Nothing else changes.",
+        "ok": "Remove admin"
       }
     }
   },
@@ -778,7 +778,7 @@
     "slogan": "Small amounts. Big peace of mind.",
     "tagline": "Everything you keep, in its place — shared with the people you choose, encrypted end to end.",
     "sub": "Cash in the kitchen tin, tools in the basement, passports in the safe: give every drawer its place, list what is inside, and share it with the people who use it.",
-    "how": "How it's encrypted",
+    "how": "How it keeps secrets",
     "uses": {
       "title": "One idea, many uses",
       "sub": "Places hold drawers, drawers hold items — money, things or notes. Arrange them any way you like; the same three pieces fit everything you keep.",
@@ -837,7 +837,7 @@
         "trip": {
           "chip": "Trip kitty",
           "title": "Share a trip with friends",
-          "body": "One drawer per trip, one row per person. Everyone adds what they paid, and nobody can quietly change it.",
+          "body": "One drawer per trip, one item per person. Everyone adds what they paid, and nobody can quietly change it.",
           "places": {
             "trips": "Trips",
             "malaysia": "Malaysia",
@@ -876,22 +876,22 @@
         "accounts": {
           "chip": "Yearly accounts",
           "title": "The money you forgot you had",
-          "body": "A drawer per account, checked once a year: confirm the balance and the date stays with it.",
+          "body": "A drawer per account, checked once a year: mark it as checked and the date stays with it.",
           "places": {
             "paperwork": "Paperwork"
           },
           "drawers": {
             "pension": {
               "name": "Pension",
-              "meta": "Confirmed 2 Jan"
+              "meta": "Checked 2 Jan"
             },
             "brokerage": {
               "name": "Brokerage",
-              "meta": "Confirmed 2 Jan"
+              "meta": "Checked 2 Jan"
             },
             "savings": {
               "name": "Savings",
-              "meta": "Confirmed 2 Jan"
+              "meta": "Checked 2 Jan"
             }
           },
           "items": {
@@ -915,7 +915,7 @@
         "cash": {
           "chip": "Cash at home",
           "title": "Every note in its place",
-          "body": "Where Petty started: cash around the house, each tin and envelope in its room, counted and confirmed.",
+          "body": "Where Petty started: cash around the house, each tin and envelope in its room, counted and checked.",
           "places": {
             "home": "Home",
             "kitchen": "Kitchen",
@@ -924,7 +924,7 @@
           "drawers": {
             "tin": {
               "name": "Cash tin",
-              "meta": "Confirmed today"
+              "meta": "Checked today"
             },
             "envelope": {
               "name": "Envelope",
@@ -950,7 +950,7 @@
         "lent": {
           "chip": "Lent out",
           "title": "Remember who has your drill",
-          "body": "Things you lent or borrowed get their own drawers: each row says who has it and since when.",
+          "body": "Things you lent or borrowed get their own drawers: each item says who has it and since when.",
           "places": {
             "home": "Home",
             "garage": "Garage"
@@ -1031,11 +1031,10 @@
         }
       }
     },
-    "beta": "Have an invite? Sign in above.",
     "shotsTitle": "Screenshots",
     "shots": {
       "home": "Home screen: the total, the places as a picture, and the drawers grouped by place",
-      "drawer": "A drawer: where it is, its lines as a picture, two totals, and tags",
+      "drawer": "A drawer: where it is, its items as a picture, two totals, and tags",
       "items": "A drawer of things: tools counted by the piece, keys and a torch as single items",
       "entry": "Recording a withdrawal on the keypad",
       "places": "Places: rooms, shelves and boxes as a tree you can drag"
@@ -1044,11 +1043,11 @@
     "features": {
       "private": {
         "title": "Private by design",
-        "body": "Your drawers are encrypted on your device. The server only ever sees ciphertext."
+        "body": "What is in your drawers is encrypted on your device. The server stores scrambled data it cannot read."
       },
       "shared": {
         "title": "Share with people you trust",
-        "body": "Everyone who touches the cash sees the same drawer. Writers add entries; readers only look."
+        "body": "Everyone who uses a drawer sees the same one. Writers add entries; readers only look."
       },
       "places": {
         "title": "Places, not piles",
@@ -1056,11 +1055,11 @@
       },
       "currencies": {
         "title": "Currencies and things",
-        "body": "Euro and dollar side by side — plus countable things like keys or documents. Tag any line and filter by tag."
+        "body": "Euro and dollar side by side, plus countable things like keys or documents. Tag any item and filter by tag."
       },
       "verify": {
-        "title": "Count, confirm, never erase",
-        "body": "After a real count, confirm the drawer state. Mistakes are reversed, never deleted; the history stays honest."
+        "title": "Count, check, reverse",
+        "body": "After a real count, mark the drawer as checked. A wrong entry is fixed by a new one, and the old one stays in the history."
       },
       "passkey": {
         "title": "Passkey first, works offline",
@@ -1069,23 +1068,23 @@
     },
     "cryptoTitle": "How it keeps secrets",
     "crypto": {
-      "device": "Everything is encrypted on your device (AES-256) before it is sent. Names, amounts, comments, photos — all of it.",
-      "server": "The server stores locked boxes it cannot open. We could not show you your data if we wanted to.",
-      "safety": "Every member has a safety number. Compare it once in person and no one can silently stand in the middle.",
-      "recovery": "A passkey or a passphrase opens your data; a one-time recovery code is the spare key. We can reset neither.",
+      "device": "What is in your drawers is encrypted on your device (AES-256) before it is sent: names, amounts, comments and photos.",
+      "server": "The server stores locked boxes it cannot open. It still sees your email, your name and when entries happen.",
+      "safety": "Every member has a safety number. Compare it once in person or by phone, and no one can quietly swap in their own key.",
+      "recovery": "A passkey or a passphrase opens your data; a one-time recovery code is the spare key. We cannot reset any of them.",
       "chain": "Entries form a tamper-evident chain: removing or changing history is detectable."
     },
     "stepsTitle": "How it works",
     "steps": {
-      "one": "Make a drawer for each place you keep cash or things, put it in its room or shelf, and list what is there now.",
-      "two": "Add or withdraw with two taps whenever money moves. Reverse mistakes.",
-      "three": "Count the drawer now and then and confirm it. Share it with the people who use it."
+      "one": "Make a drawer for each place you keep cash or things, put it in its room or on its shelf, and list what is there now.",
+      "two": "Add or withdraw with a few taps whenever something moves. Reverse mistakes.",
+      "three": "Now and then, count what is in a drawer and mark it as checked. Share it with the people who use it."
     },
     "faqTitle": "Questions",
     "faq": {
       "see": {
         "q": "Can you see my money?",
-        "a": "No. Amounts and names are encrypted on your device. The server stores unreadable boxes, and that is verifiable in the browser."
+        "a": "No. Amounts and names are encrypted on your device, and the server stores data it cannot read. It does see your email, your name and when entries happen."
       },
       "places": {
         "q": "Can I group drawers by room?",
@@ -1093,30 +1092,29 @@
       },
       "lost": {
         "q": "What if I lose my passkey or forget the passphrase?",
-        "a": "Another passkey, the passphrase or the recovery code opens the vault. If all are lost, nobody — including us — can decrypt your data; a drawer member can re-share a shared drawer with you."
+        "a": "Another passkey, the passphrase or the recovery code opens the vault. If you lose all of them, nobody can open your data, not even us. A member of a shared drawer can share it with you again."
       },
       "undo": {
         "q": "Can I undo a change to a drawer?",
-        "a": "Yes. Entries are never erased: a mistake is reversed by a new entry. Changes to names, items, tags and places are kept for 30 days, and the drawer's owner can put an earlier version back."
+        "a": "Yes. A wrong entry is fixed by a new entry, and the old one stays in the history. Changes to names, items, tags and places are kept for 30 days, and the drawer's owner can put an earlier version back."
       },
       "cost": {
         "q": "What does it cost?",
-        "a": "Petty is free software (AGPL-3.0) — you can run your own for nothing. If whoever runs a hosted instance ever charges for it, they must tell you clearly first."
+        "a": "Petty is free software (AGPL-3.0): you can run your own for nothing. If the person who runs a hosted Petty ever charges for it, they must tell you clearly first."
       },
       "phone": {
         "q": "Is there a phone app?",
         "a": "Petty installs from the browser (Add to Home Screen) and works offline like a native app, on iPhone and Android."
       }
     },
-    "footer": "© 2026 Petty · end-to-end encrypted household cash",
-    "invite": "Want an invite? Write to us",
+    "footer": "© 2026 Petty · everything you keep, encrypted end to end",
     "made": "Made in Poland",
     "create": "Create your vault",
     "getInvite": "Get an invite",
     "betaOpen": "No card, nothing to install.",
     "betaInvite": "This Petty is invite-only: ask a member, or write to us.",
     "again": "Ready? It takes a minute.",
-    "againInvite": "Have an invite? Sign in and set up your vault.",
+    "againInvite": "Have an invite? Open the link in your email to create your account.",
     "shotOpen": "Enlarge: {name}",
     "shotPrev": "Previous screenshot",
     "shotNext": "Next screenshot"
@@ -1170,25 +1168,28 @@
   },
   "places": {
     "title": "Places",
-    "hint": "Rooms, shelves, boxes: one tree. A drawer sits in one place. Rename or move a place and its drawers follow.",
+    "hint": "Rooms, shelves, boxes, each inside another. A drawer sits in one place. Rename or move a place and its drawers follow.",
     "empty": "No places yet. Add a room to start.",
     "add": "Add place",
     "addInside": "Add a place inside",
     "rename": "Rename",
+    "renameTitle": "Rename “{name}”",
     "move": "Move to…",
+    "moveTitle": "Move “{name}” to…",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "delete": "Delete",
+    "deleteTitle": "Delete “{name}”?",
     "deleteBody": "Drawers in “{name}” move to {parent}. Places inside it move up one level.",
     "topLevel": "Top level",
     "none": "No place",
     "newHere": "New place inside {parent}",
-    "newTop": "New top-level place",
+    "newTop": "New place",
     "name": "Name",
     "exists": "A place with this name is already here.",
     "count": "{count, plural, one {# drawer} other {# drawers}}",
     "manage": "Manage places",
-    "manageHint": "Rooms, shelves and boxes as a tree. Add, rename, move and reorder them; the drawers follow.",
+    "manageHint": "Rooms, shelves and boxes, each inside another. Add, rename, move and reorder them; the drawers follow.",
     "choose": "Place",
     "options": "Options for {name}",
     "expand": "Expand {name}",
@@ -1204,31 +1205,31 @@
   },
   "notFound": {
     "title": "This page does not exist",
-    "body": "The link may be old, mistyped, or for a drawer you no longer have access to.",
-    "home": "Go to the home page",
+    "body": "The link may be old or mistyped, or be for a drawer you no longer have access to.",
+    "home": "Home page",
     "drawers": "Go to my drawers"
   },
   "tokens": {
     "title": "Access tokens",
-    "hint": "For your own tools, like a Claude Desktop server. A token carries a copy of your drawer keys; the server only ever sees its name half and cannot open it.",
+    "hint": "For your own tools, like the Claude Desktop add-on. A token carries a copy of your drawer keys. The server stores only the token's ID, never its secret, so it cannot open it.",
     "new": "New token",
     "name": "Name",
     "defaultName": "My assistant",
-    "mayWriteSwitch": "May add entries",
-    "mayWriteHint": "Off: the token can only read. On: it can add entries, and they are yours.",
+    "mayWriteSwitch": "Can make changes",
+    "mayWriteHint": "Off: the token can only read. On: it can also add entries, change tags and move drawers, in your name.",
     "expiry": "Expires",
     "days": "{count, plural, one {# day} other {# days}}",
     "never": "Never",
     "create": "Create token",
     "madeTitle": "Copy your token now",
-    "madeBody": "This is shown once. Paste it into your tool. Revoking it stops future use, but it does not un-read what was already read.",
-    "mayWrite": "May add entries",
+    "madeBody": "This is shown once. Paste it into your tool. Revoking it stops the tool at once, but cannot take back what it already read.",
+    "mayWrite": "Can make changes",
     "mayRead": "Read only",
     "used": "used {when}",
     "neverUsed": "never used",
     "revoke": "Revoke",
     "revokeNamed": "Revoke token {name}",
-    "revokeBody": "Revoke “{name}”? The tool stops working at once. Data it already read stays read.",
+    "revokeBody": "Revoke “{name}”? The tool stops working at once. What it already read cannot be taken back.",
     "passphraseOrPasskey": "Leave empty to use your passkey instead.",
     "addonTitle": "Use it in Claude Desktop",
     "addonBody": "Download the add-on, double-click it and click Install. Claude Desktop then asks for two things: the address below and the token above.",
@@ -1237,20 +1238,20 @@
   },
   "device": {
     "title": "Sign in a command-line tool",
-    "enterBody": "Type the code your terminal shows after petty auth login.",
+    "enterBody": "Type the code your terminal shows after `petty auth login`.",
     "code": "Code",
     "continue": "Continue",
     "checking": "Checking the code…",
     "notACode": "That is not a code. A code has 12 letters, like BCDF-GHJK-LMNP.",
-    "unknown": "No request is waiting with this code. It may have expired after 15 minutes, or it was already used. Run petty auth login again.",
+    "unknown": "No request is waiting with this code. It may have expired after 15 minutes, or it was already used. Run `petty auth login` again.",
     "tooMany": "Too many tries. Wait a few minutes and try again.",
-    "mismatch": "This request does not match its code: it was changed on its way here. Do not allow it. Run petty auth login again, and tell whoever runs this Petty.",
+    "mismatch": "This request does not match its code: it was changed on its way here. Do not allow it. Run `petty auth login` again, and tell the person who runs this Petty.",
     "askTitle": "Allow “{name}”?",
     "checkCode": "Check that your terminal shows this code:",
     "asked": "Asked {when}.",
     "askedFrom": "Asked {when}, from {ip}.",
     "onlyYours": "Allow it only if you started it yourself, just now. The tool gets a copy of your drawer keys: it can read every drawer you can open.",
-    "readOnly": "It asks to read only. It cannot add entries.",
+    "readOnly": "It asks to read only. It cannot change anything.",
     "allow": "Allow",
     "deny": "Deny",
     "doneTitle": "Allowed",
@@ -1262,11 +1263,11 @@
   "ai": {
     "link": "Use Petty with AI",
     "title": "Use Petty with AI",
-    "intro": "Ask an AI app about your drawers, or have it add an entry for you. A small program on your own computer holds an access token, opens your keys there and gives the app a few tools. The Petty server still sees only ciphertext.",
+    "intro": "Ask an AI app about your drawers, or have it add an entry for you. A small program on your own computer holds an access token, opens your keys there and gives the app a few tools. The Petty server still cannot read your drawers; the AI company can read what the tools fetch.",
     "tokenTitle": "1. Make an access token",
     "tokenSteps": [
       "Open Settings → Access tokens → New token.",
-      "Give it a name, and choose whether it may add entries.",
+      "Give it a name, and choose whether it can make changes.",
       "Confirm with your passkey or vault passphrase.",
       "Copy the token. It is shown once only."
     ],
@@ -1274,15 +1275,15 @@
     "desktopSteps": [
       "Install Claude Desktop from claude.ai/download and sign in, if you have not yet.",
       "Make an access token (step 1) and keep the token in view.",
-      "Download the add-on below. Double-click petty.mcpb (or drag it onto the Claude Desktop window) and click Install.",
+      "Download the add-on below. Double-click `petty.mcpb` (or drag it onto the Claude Desktop window) and click Install.",
       "Claude Desktop asks for two things: paste this Petty address and your token, then save. You can change them later in Claude Desktop → Settings → Extensions → Petty.",
-      "Start a new chat and ask: \"What is in my drawers?\" On a Mac, allow network access if asked, then restart Claude Desktop."
+      "Start a new chat and ask: “What is in my drawers?” On a Mac, allow network access if asked, then restart Claude Desktop."
     ],
     "otherTitle": "2b. Other AI apps (Cursor, VS Code, Windsurf, Claude Code)",
     "otherSteps": [
       "Install Node 20 or newer.",
-      "Run the two commands for your computer below. The first saves petty-mcp.mjs in a .petty folder in your home folder; the second prints the settings block with that file's real path.",
-      "Paste the printed block into the app's MCP settings, and put your token in place of petty_pat_…."
+      "Run the two commands for your computer below. The first saves `petty-mcp.mjs` in a `.petty` folder in your home folder; the second prints the settings block with that file's real path.",
+      "Paste the printed block into the app's MCP settings, and put your token where it says `petty_pat_…`"
     ],
     "download": "Download petty-mcp.mjs",
     "unix": "macOS or Linux (Terminal)",
@@ -1291,15 +1292,15 @@
     "example": "The printed block looks like this, with your own paths:",
     "claudeCode": "For Claude Code, the same as one command:",
     "cliTitle": "2c. The command line: petty",
-    "cliIntro": "One program for your terminal, your scripts, and AI agents that run commands (Claude Code, Codex). It signs in through a page of this Petty in your browser, like gh auth login: no token to copy.",
+    "cliIntro": "One program for your terminal, your scripts and AI agents that run commands (Claude Code, Codex). It signs in through a page of this Petty in your browser, like `gh auth login`: no token to copy.",
     "cliSteps": [
       "Install Node 20 or newer.",
       "Run the commands for your computer below. The last one shows a code and opens this Petty in your browser.",
       "Check that the page shows the same code, and allow it.",
-      "Then try petty drawers, or petty help for the rest. For Tab completion, run petty completion -s zsh (or bash, fish, powershell)."
+      "Then try `petty drawers`, or `petty help` for the rest. For Tab completion, run `petty completion -s zsh` (or bash, fish, powershell)."
     ],
     "cliDownload": "Download petty.mjs",
-    "cliPath": "If the terminal says “command not found: petty”, ~/.local/bin is not on your PATH. Add export PATH=\"$HOME/.local/bin:$PATH\" to ~/.zshrc (Mac) or ~/.bashrc (Linux), then open a new terminal.",
+    "cliPath": "If the terminal says “command not found: petty”, `~/.local/bin` is not on your PATH. Add `export PATH=\"$HOME/.local/bin:$PATH\"` to `~/.zshrc` (Mac) or `~/.bashrc` (Linux), then open a new terminal.",
     "askTitle": "3. Ask",
     "ask": [
       "What is in my kitchen drawer?",
@@ -1309,7 +1310,7 @@
       "Which drawers hold euros?"
     ],
     "toolsTitle": "The tools",
-    "toolsHint": "A token that may only read gets no writing tools at all.",
+    "toolsHint": "A read-only token gets no writing tools at all.",
     "need": {
       "read": "read",
       "write": "write"
@@ -1332,7 +1333,7 @@
     "honestTitle": "Good to know",
     "honest": [
       "The token and your keys stay on your computer. The server never sees the secret half of the token.",
-      "Whatever you ask reaches the AI model, because you asked it.",
+      "What you ask, and the drawer data the tools read, goes to the AI company. Petty's encryption does not cover that.",
       "Text in your drawers is shown to the model as quoted data, and a change is always a separate tool the app can ask you to approve.",
       "To stop it, revoke the token in Settings → Access tokens.",
       "A phone app cannot run this program yet."

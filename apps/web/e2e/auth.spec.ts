@@ -193,7 +193,7 @@ test("landing (PETTY-108): a visitor has a way in — sign in first, an invite s
 test("not found (PETTY-110): a wrong URL says so and leads home; signed in it leads to the drawers", async ({ page }) => {
   await page.goto("/this-page-does-not-exist");
   await expect(page.getByTestId("not-found")).toHaveText("This page does not exist");
-  await page.getByRole("button", { name: "Go to the home page" }).click();
+  await page.getByRole("button", { name: "Home page" }).click();
   await expect(page.getByRole("heading", { name: "Petty", level: 1 })).toBeVisible();
   const user = await signupViaApi("lost");
   await loginAndUnlock(page, user);

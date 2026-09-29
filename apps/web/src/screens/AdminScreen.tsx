@@ -22,16 +22,17 @@ export function AdminScreen() {
   const [error, setError] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState<null | { u: AdminUser; what: "block" | "revoke" | "admin" }>(null);
+  const [confirm, setConfirm] = useState<null | { u: AdminUser; what: "block" | "revoke" | "makeAdmin" | "removeAdmin" }>(null);
   const load = () => api<{ users: AdminUser[] }>("GET", "/admin/users").then((r) => setUsers(r.users)).catch((e) => setError(e instanceof ApiError && e.status === 403 ? t("admin.forbidden") : t("errors.unknown")));
   useEffect(() => { void load(); }, []);
   if (auth.status === "unlocked" && !auth.me.is_admin) return <Navigate to="/" replace />;
   const meId = auth.status === "unlocked" ? auth.me.id : "";
 
-  async function act(u: AdminUser, what: "block" | "unblock" | "revoke" | "admin") {
-    const path = what === "revoke" ? `/admin/users/${u.id}/revoke-sessions` : `/admin/users/${u.id}/${what}`;
+  async function act(u: AdminUser, what: "block" | "unblock" | "revoke" | "makeAdmin" | "removeAdmin") {
+    const admin = what === "makeAdmin" || what === "removeAdmin";
+    const path = what === "revoke" ? `/admin/users/${u.id}/revoke-sessions` : `/admin/users/${u.id}/${admin ? "admin" : what}`;
     try {
-      await api("POST", path, what === "admin" ? { is_admin: !u.is_admin } : undefined);
+      await api("POST", path, admin ? { is_admin: what === "makeAdmin" } : undefined);
       toast(t(`admin.done.${what}`));
       await load();
     } catch { toast(t("errors.unknown")); }
@@ -65,7 +66,8 @@ export function AdminScreen() {
               <div className="actions wrap m0">
                 {u.blocked_at ? <Button variant="secondary" onClick={() => void act(u, "unblock")}>{t("admin.unblock")}</Button> : <Button variant="danger-ghost" onClick={() => setConfirm({ u, what: "block" })}>{t("admin.block")}</Button>}
                 <Button variant="secondary" onClick={() => setConfirm({ u, what: "revoke" })}>{t("admin.revoke")}</Button>
-                <Button variant="secondary" onClick={() => setConfirm({ u, what: "admin" })}>{u.is_admin ? t("admin.removeAdmin") : t("admin.makeAdmin")}</Button>
+                {/* PETTY-281: the sheet says which way the change goes, and its button does what it says */}
+                <Button variant="secondary" onClick={() => setConfirm({ u, what: u.is_admin ? "removeAdmin" : "makeAdmin" })}>{u.is_admin ? t("admin.removeAdmin") : t("admin.makeAdmin")}</Button>
               </div>
             ) : null}
           </section>

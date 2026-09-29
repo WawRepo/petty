@@ -84,7 +84,7 @@ export function DeleteAccountScreen() {
                         </span>
                       </span>
                     </label>
-                    <label className="choice-row">
+                    <label className="choice-row danger">
                       <input type="radio" name={`d-${s.drawer_id}`} checked={c?.action === "delete"} onChange={() => setChoices({ ...choices, [s.drawer_id]: { action: "delete" } })} />
                       <span className="choice-body"><span className="choice-title">{t("delete.deleteForAll")}</span></span>
                     </label>
@@ -100,13 +100,17 @@ export function DeleteAccountScreen() {
                   const who = c?.action === "transfer" ? s.members.find((m) => m.user_id === c.to_user_id)?.display_name ?? "?" : "";
                   return <li key={s.drawer_id}>{c?.action === "transfer" ? t("delete.summaryGive", { drawer: name(s.drawer_id), name: who }) : c?.action === "delete" ? t("delete.summaryDelete", { drawer: name(s.drawer_id) }) : t("delete.summaryUndecided", { drawer: name(s.drawer_id) })}</li>;
                 })}
-                {preview.sole.length ? <li>{t("delete.sole", { count: preview.sole.length })}</li> : null}
+                {/* PETTY-280 (S24): which drawers, not only how many */}
+                {preview.sole.length ? <li>{t("delete.sole", { count: preview.sole.length })}<ul className="list mt4 mb0" data-testid="delete-sole">{preview.sole.map((id) => <li key={id}>{name(id)}</li>)}</ul></li> : null}
                 {preview.memberships.length ? <li>{t("delete.memberships", { count: preview.memberships.length })}</li> : null}
               </ul>
             </section>
             <section className="card">
               {isClerk() ? null : <TextField label={t("delete.password")} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={error} />}
-              <Button variant="danger" type="submit" busy={busy} disabled={!isClerk() && !password}>{busy ? t("delete.working") : t("delete.confirm")}</Button>
+              <div className="actions">
+                <Button variant="secondary" onClick={back}>{t("app.cancel")}</Button>
+                <Button variant="danger" type="submit" busy={busy} disabled={!isClerk() && !password}>{busy ? t("delete.working") : t("delete.confirm")}</Button>
+              </div>
             </section>
           </form>
         )}

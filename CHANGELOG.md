@@ -6,7 +6,50 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Changed
+- One word for what a drawer holds: **item** (the app said "line", "row" and "item"). The drawer
+  check is **Checked**: *Mark as checked*, *Not checked yet*, *Checked · 3 days ago*. The entry
+  sheet ends with *Check and save* and *Save*; safety numbers say *Compared* and *Numbers match*.
+- The security and privacy texts say no more than is true: what the server still sees (your email,
+  your name, when entries happen), that a server that changes the app is a different matter, when an
+  open vault locks itself, that a password manager that syncs holds the passphrase too, and that an
+  AI app reads what its tools fetch.
+- Access tokens: *Can make changes* (a writing token can also change tags and move drawers), and a
+  new token only reads until you switch that on.
+- The emails about a changed password or vault passphrase, or a new sign-in method, tell you to
+  reset the password with *Forgot your password?* and name the contact address of your Petty.
+- Clearer errors with a next step; plurals that agree ("1 entry … goes", "3 entries … go"); dates in
+  British English; commands shown as code; the Places sheets name the place; admin changes say which
+  way they go; unused texts removed.
+- Polish, German, Spanish and French follow all of this, with the reviewers' fixes: Polish uses
+  "Dodaj"/"Wyjmij" (not the cash words) and no gendered forms, French reverses with "Inverser" (not
+  "Annuler", which also meant Cancel), German "Tag erstellen" (not "new day"), Spanish agreement in
+  the landing examples, a colon with a no-break space in French, and shorter button labels.
+- The browser tab names the screen (*Settings · Petty*). It never shows a drawer's or an item's name:
+  a tab title is kept in the browser's history on disk.
+- The sign-in page says why it is there when a command-line tool is waiting.
+
 ### Fixed
+- Contrast: switches that are off, input borders, text on red buttons in the dark theme, links, dark
+  sheets against the dimmed page, the landing's phone frames and place pills in the dark theme.
+- The drawer picture's top bubble no longer touches the middle one; names in the pictures use the
+  room they have; the Home picture is a size smaller on a phone.
+- The Home picture: names no longer ride their bubbles across other bubbles, the card keeps its
+  height until the bubbles land, and hover names sit above the middle and outside growing bubbles.
+- A change of screen no longer shows both top bars at half strength.
+- Loading shows the screen's shape: Home remembers how tall its top card was; a drawer and an item
+  show placeholders instead of a bare "Loading…".
+- 44 px tap targets for the places editor, place trail, chips, picture bubbles, drag handles,
+  language menu, the landing demo's tabs and the FAQ rows; the "−" that deletes a place is red, and on
+  a phone it gives its room to the place's name (⋯ still has Delete).
+- Sheets: labels, checkboxes and radios in the app's style; wrapped labels stay beside their boxes;
+  the invite sheet has *Cancel* before the lookup and no form for someone already in the drawer.
+- *Delete account* names the drawers that will be deleted, shows *Delete for everyone* in red, and
+  has *Cancel*.
+- Landing: hero buttons that fit their words, one column of features on a phone, one width for the
+  sections on a laptop, the FAQ marker beside a wrapped question, the current language underlined, no
+  lone words, and a screenshot strip that no longer clips the frames. Commands on the AI page wrap.
+- The 404 page's heading is its message.
 - Back from a drawer held the old screen for almost a second when the drawer sits in a place (its
   Home bubble is folded into the place's). Now Home shows at once.
 - A new page opens at its top: the privacy page and *Use Petty with AI* opened where the landing

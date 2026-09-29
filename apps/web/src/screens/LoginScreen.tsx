@@ -9,6 +9,7 @@ import { TopBar } from "../components/TopBar.js";
 import { api, ApiError, NetworkError } from "../lib/api.js";
 import { afterLogin } from "../lib/session.js";
 import { contactEmail } from "../lib/authConfig.js";
+import { afterUnlock } from "../lib/afterUnlock.js";
 
 
 export function LoginScreen() {
@@ -50,6 +51,8 @@ export function LoginScreen() {
     <>
       <TopBar title={t("auth.login.title")} onBack={() => nav("/")} />
       <main>
+        {/* PETTY-281 (F15): opened from a command-line tool's link — say why sign-in comes first */}
+        {afterUnlock() ? <p className="hint mt0" role="status" data-testid="login-after-device">{t("auth.login.afterDevice")}</p> : null}
         <form onSubmit={submit} noValidate>
           <TextField label={t("auth.login.email")} type="email" autoComplete="username" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <TextField label={t("auth.login.password")} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required error={error} />

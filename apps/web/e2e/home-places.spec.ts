@@ -11,7 +11,8 @@ import { expect, loginAndUnlock, makeDrawers, openSettings, signupWithKeys, test
 const art = (page: Page) => page.getByTestId("places-art");
 /** The names on the bubbles in view of one kind, in the order they are drawn. */
 const shown = (page: Page, kind: string) => art(page).locator(`.pa-bub.${kind}:not(.off) .uc-bub-tip`).allTextContents();
-const tap = (page: Page, kind: string, name: string) => art(page).locator(`.pa-bub.${kind}:not(.off) .uc-bub-hit`).filter({ hasText: name }).click();
+/** A bubble of one kind, found by the name it shows on hover (drawn beside its disc, PETTY-280), tapped. */
+const tap = (page: Page, kind: string, name: string) => art(page).locator(`.pa-bub.${kind}:not(.off)`).filter({ has: page.locator(".pa-tip", { hasText: name }) }).locator(".uc-bub-hit").click();
 const shots = process.env["SHOTS"]; // a folder: the test leaves a capture of each step there, for a look by eye
 /** From now on, for 1.2 s: the picture's size and its drawers' places on screen, once per frame. */
 const watchFrames = (page: Page) => page.evaluate(() => {

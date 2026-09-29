@@ -15,7 +15,7 @@ async function addDrawer(page: Page, name: string): Promise<string> {
   return /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
 }
 async function addMoneyLine(page: Page, name: string, currency: string, start: string) {
-  await page.getByRole("button", { name: "Add line" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("Name", { exact: true }).fill(name);
   await page.getByLabel("Currency", { exact: true }).fill(currency);
   await page.getByLabel("Starting balance").fill(start);
@@ -108,7 +108,7 @@ test("F2, F6, S31: a new page opens at its top; the screenshot viewer keeps Tab 
 test("F3: /reset with no token, or one cut short, says the link is not valid instead of offering a form", async ({ page }) => {
   for (const path of ["/reset", "/reset#abc123"]) {
     await page.goto(path);
-    await expect(page.getByTestId("reset-invalid")).toHaveText("This link is invalid, used or older than one hour. Ask for a new one.");
+    await expect(page.getByTestId("reset-invalid")).toHaveText("This link is invalid, used or older than 1 hour. Ask for a new one.");
     await expect(page.getByLabel("New password")).toHaveCount(0);
   }
   await page.getByRole("button", { name: "Back to sign in" }).click();
@@ -262,7 +262,7 @@ test("M14, M9, M4: a card leads with its largest amount; search finds drawers by
   await expect(page.getByTestId("home-totals").getByRole("listitem")).toHaveText(["500.00 USD", "10.00 EUR"]);
   // M9: a currency finds its items; a drawer's name or place finds the drawer with all it holds
   await page.getByTestId("home-search-toggle").click();
-  const search = page.getByLabel("Search items and tags in every drawer");
+  const search = page.getByLabel("Search drawers, places, items and tags");
   await search.fill("usd");
   await expect(page.getByTestId("search-count")).toHaveText("1 item in 1 drawer");
   await expect(page.getByTestId("search-hit")).toHaveText(["Dollars500.00 USD"]);
@@ -290,7 +290,7 @@ test("S1: a member's buttons wrap to a new row instead of squeezing their labels
   await shareViaApi(owner, id, member, "write");
   await page.goto(`/drawers/${id}/members`);
   const buttons = page.getByTestId("member-card").filter({ hasText: "mem" }).locator(".actions .btn");
-  await expect(buttons).toHaveText(["I compared this number", "Make owner", "Remove"]);
+  await expect(buttons).toHaveText(["Numbers match", "Make owner", "Remove"]);
   // each label on one line: its text makes one line box
   const lines = await buttons.evaluateAll((els) => els.map((b) => {
     const r = document.createRange();

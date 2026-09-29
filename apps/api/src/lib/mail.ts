@@ -33,12 +33,12 @@ const send = (to: string, m: MailText) => sendMail(to, m.subject, m.text);
 export const mails = {
   joinLink: (to: string, inviter: string, token: string, locale: string) => send(to, MAIL[mailLocale(locale)].joinLink(inviter, `${config.appUrl}/join#${token}`)),
   invitation: (to: string, inviter: string, role: string, locale: string) => send(to, MAIL[mailLocale(locale)].invitation(inviter, role === "write" ? "write" : "read", config.appUrl)),
-  relinked: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].relinked(config.appUrl)),
+  relinked: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].relinked(config.appUrl, config.contactEmail)),
   revoked: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].revoked(owner)),
   transferOffered: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferOffered(owner, config.appUrl)),
   transferDone: (to: string, newOwner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferDone(newOwner)),
   passwordReset: (to: string, token: string, locale: string) => send(to, MAIL[mailLocale(locale)].passwordReset(`${config.appUrl}/reset#${token}`)),
-  passwordChanged: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].passwordChanged()),
-  vaultReplaced: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].vaultReplaced()),
+  passwordChanged: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].passwordChanged(config.contactEmail)),
+  vaultReplaced: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].vaultReplaced(config.contactEmail)),
   handedOver: (to: string, from: string, locale: string) => send(to, MAIL[mailLocale(locale)].handedOver(from)),
 };
