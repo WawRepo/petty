@@ -168,3 +168,33 @@ test("S9: on a phone the places editor keeps a long name whole, and its row's bu
   }
   await expect(row.getByTestId("place-minus")).toBeHidden();
 });
+
+test("PETTY-283: hovering a bubble that shows its name does not draw the name again; a bubble without a name still shows its tip", async ({ page }) => {
+  const user = await signupWithKeys("vih");
+  await loginAndUnlock(page, user);
+  await makeDrawers(page, [["Cash tin", ["Flat", "Kitchen"]], ["Safe", ["Flat"]], ["Wallet", []]]);
+  const art = page.getByTestId("places-art");
+  await expect(art).toHaveAttribute("data-count", "3");
+  await page.waitForTimeout(900);
+  const bubble = (kind: string, name: string) => art.locator(`.pa-bub.${kind}:not(.off)`).filter({ has: page.locator(".pa-tip", { hasText: name }) });
+  // Flat shows its name under it: no tip repeats it
+  await bubble("place", "Flat").locator(".uc-bub-hit").hover();
+  await expect(bubble("place", "Flat").locator(".pa-label")).toBeVisible();
+  await expect(bubble("place", "Flat").locator(".pa-tip")).toBeHidden();
+  // a small bubble round Flat has no name under it: its tip says what it is
+  await bubble("sat", "Safe").locator(".uc-bub-hit").hover();
+  await expect(bubble("sat", "Safe").locator(".pa-tip")).toBeVisible();
+  // the drawer's own picture: an item's bubble shows its name, and no tip repeats it
+  await page.getByTestId("drawer-row").filter({ hasText: "Wallet" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Funty");
+  await page.getByLabel("Currency", { exact: true }).fill("GBP");
+  await page.getByLabel("Starting balance").fill("5");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  const item = page.getByTestId("drawer-art").locator(".uc-bub.sat").filter({ hasText: "Funty" });
+  await page.waitForTimeout(900);
+  await item.locator(".uc-bub-hit").hover();
+  await expect(item.locator(".uc-bub-name")).toBeVisible();
+  await expect(item.locator(".uc-bub-tip")).toBeHidden();
+});

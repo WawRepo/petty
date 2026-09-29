@@ -94,3 +94,34 @@ test("clerk flow", async ({ page }) => {
   expect(scripts.filter((u) => !u.startsWith(base) && !u.startsWith("https://challenges.cloudflare.com/")), "scripts from elsewhere").toEqual([]);
   expect(blocked.filter((t) => /script-src/.test(t)), "script-src violations").toEqual([]);
 });
+
+test("sign up through Clerk: the email code step stays on screen, with no page load between steps, then vault setup (PETTY-283)", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 420, height: 900 });
+  await setupClerkTestingToken({ page });
+  // Clerk moves through the app's router: one page load for the whole sign-up (each full load used to
+  // boot the app again and leave the page blank; after the code it was left empty)
+  let loads = 0;
+  page.on("load", () => { loads++; });
+  const email = `petty-e2e-signup-${Date.now()}+clerk_test@example.com`;
+  try {
+    await page.goto("/join");
+    await page.getByLabel(/email/i).first().fill(email);
+    const pw = page.getByLabel(/^password/i).first();
+    if (await pw.count()) await pw.fill(PW);
+    await page.getByRole("button", { name: /^continue/i }).first().click();
+    await expect(page).toHaveURL(/\/join\/verify-email-address$/);
+    const code = page.getByRole("textbox", { name: /verification code/i });
+    await expect(code).toBeVisible();
+    await page.waitForTimeout(1500);
+    await expect(code).toBeVisible(); // it stays
+    await code.click();
+    await page.keyboard.type("424242", { delay: 60 });
+    await expect(page).toHaveURL(/\/setup$/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Set up your vault" })).toBeVisible();
+    expect(loads).toBe(1);
+  } finally {
+    const found = await clerkApi(`/users?email_address=${encodeURIComponent(email)}`);
+    for (const u of found.ok ? ((await found.json()) as { id: string }[]) : []) await clerkApi(`/users/${u.id}`, { method: "DELETE" });
+  }
+});

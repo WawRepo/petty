@@ -30,6 +30,10 @@ All notable, user-visible changes to Petty. The format follows
 - The sign-in page says why it is there when a command-line tool is waiting.
 
 ### Fixed
+- Signing up through Clerk (with GitHub, or with an email code): the code step showed for a moment
+  and left an almost empty page. Clerk now moves between its steps inside the app, with no page loads
+  in between.
+- A bubble in the pictures that shows its name no longer repeats it in a hover tip.
 - Contrast: switches that are off, input borders, text on red buttons in the dark theme, links, dark
   sheets against the dimmed page, the landing's phone frames and place pills in the dark theme.
 - The drawer picture's top bubble no longer touches the middle one; names in the pictures use the

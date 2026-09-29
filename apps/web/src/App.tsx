@@ -157,7 +157,8 @@ export function App() {
             <Route path="/login/*" element={<Guard need="anonymous"><LoginRoute /></Guard>} />
             {/* Tokens travel in the URL fragment (/join#<token>), which never reaches the server (SR-9); the path form stays for links already sent. */}
             <Route path="/join/*" element={<JoinRoute />} />
-            <Route path="/join/:token" element={<JoinRoute />} />
+            {/* not in clerk mode: /join/verify-email-address would switch routes mid-sign-up and mount Clerk's form anew */}
+            {isClerk() ? null : <Route path="/join/:token" element={<JoinRoute />} />}
             <Route path="/reset" element={<ResetRoute />} />
             <Route path="/reset/:token" element={<ResetRoute />} />
             <Route path="/setup" element={<Guard need="setup"><VaultSetupScreen /></Guard>} />

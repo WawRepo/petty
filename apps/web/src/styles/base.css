@@ -927,3 +927,5 @@ button.tag-chip::after { content: ""; position: absolute; inset: -4px -2px; }
 /* F26: no lone word at the end of the tagline or the footer lines */
 .landing-tag, .landing-hero .hint, .landing-footer p { text-wrap: balance; }
 .nobr { white-space: nowrap; }
+/* a bubble that shows its name under it needs no hover tip saying it again (the middle's says "Back to …") */
+.pa-bub:not(.center):has(> .pa-label) > .pa-tip { display: none; }

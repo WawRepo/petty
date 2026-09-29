@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/clerk-react";
+import { useNavigate } from "react-router";
 import { currentLocale, type Locale } from "./i18n/index.js";
 import { Clerk } from "@clerk/clerk-js";
 import { authConfig } from "./lib/authConfig.js";
@@ -15,6 +16,22 @@ import { useClerkAppearance } from "./lib/clerkAppearance.js";
  */
 let clerkInstance: Clerk | null = null;
 const clerkJs = (publishableKey: string): Clerk => (clerkInstance ??= new Clerk(publishableKey));
+
+/**
+ * Clerk moves between its steps (the email code, a second factor, the OAuth return) through the app's
+ * router. Without these it loaded the whole page for each step: the app booted again and the page stood
+ * blank until Clerk drew again, a sign-up's code step among them. Clerk keeps the first functions it
+ * gets, so they are module-level and call the router of the shell that is mounted now (a navigate from
+ * a render React threw away is ignored, and the page was left empty after the code).
+ */
+let appNavigate: ((to: string, replace: boolean) => void) | null = null;
+const clerkNavigation = (replace: boolean) => (to: string) => {
+  const url = new URL(to, location.href);
+  if (url.origin !== location.origin || !appNavigate) { if (replace) location.replace(url.href); else location.assign(url.href); return; }
+  appNavigate(url.pathname + url.search + url.hash, replace);
+};
+const routerPush = clerkNavigation(false);
+const routerReplace = clerkNavigation(true);
 
 type ClerkLocalization = NonNullable<ComponentProps<typeof ClerkProvider>["localization"]>;
 /** PETTY-249: Clerk's own texts (the sign-in and sign-up forms) in the app's language, each loaded on demand. */
@@ -45,8 +62,14 @@ export function ClerkShell({ children }: { children: ReactNode }) {
   const appearance = useClerkAppearance();
   const localization = useClerkLocalization();
   const publishableKey = authConfig().clerk_publishable_key ?? "";
+  const navigate = useNavigate();
+  useEffect(() => {
+    appNavigate = (to, replace) => { void navigate(to, { replace }); };
+    return () => { appNavigate = null; };
+  }, [navigate]);
   return (
-    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join">
+    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join"
+      routerPush={routerPush} routerReplace={routerReplace}>
       <Bridge>{children}</Bridge>
     </ClerkProvider>
   );
