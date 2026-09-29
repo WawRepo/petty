@@ -40,6 +40,16 @@ export function useMorph(): (to: string, ready: string) => void {
   };
 }
 
+/**
+ * Scrolls to the top after a Back. The browser puts back the old scroll of a history entry at its next
+ * layout, which undid a scroll made before it (PETTY-279: Home stayed at the bottom): reading the layout
+ * first lets that happen, then the scroll to the top is the last word.
+ */
+function toTop(): void {
+  void document.documentElement.scrollTop;
+  window.scrollTo(0, 0);
+}
+
 /** Waits (at most ~0.8 s) until an element matching `selector` is on the page. */
 async function until(selector: string): Promise<void> {
   for (let i = 0; i < 50 && !document.querySelector(selector); i++) await new Promise((r) => window.setTimeout(r, 16));
@@ -61,7 +71,7 @@ export function useMorphBack(fallback: string): (vt: string, target: string, rea
     const doc = document as Document & { startViewTransition?: (update: () => Promise<void>) => { finished: Promise<void> } };
     if (typeof doc.startViewTransition !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       back();
-      if (opts.top) void until(ready).then(() => window.scrollTo(0, 0));
+      if (opts.top) void until(ready).then(toTop);
       return;
     }
     let el: HTMLElement | null = null;
@@ -70,7 +80,7 @@ export function useMorphBack(fallback: string): (vt: string, target: string, rea
     const change = doc.startViewTransition(async () => {
       go();
       await until(ready);
-      if (opts.top) window.scrollTo(0, 0);
+      if (opts.top) toTop();
       el = document.querySelector<HTMLElement>(target);
       if (el) el.style.viewTransitionName = vt;
     });
