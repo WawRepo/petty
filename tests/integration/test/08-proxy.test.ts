@@ -25,4 +25,24 @@ describe("per-IP limits behind a proxy", () => {
     expect(statuses.slice(0, 10)).toEqual(Array(10).fill(201));
     expect(statuses[10]).toBe(429);
   });
+
+  // PETTY-301: behind Fly.io the X-Forwarded-For chain ends in the platform's own addresses; the platform's
+  // own header (here x-test-client-ip, CLIENT_IP_HEADER in compose.test.yml) names the client instead.
+  it("count the address in the platform's header when one is named, each client on its own", async () => {
+    const client = `203.0.113.${10 + Math.floor(Math.random() * 200)}`;
+    const ask = async (who: string, i: number) => {
+      const key = await deviceKeyPair();
+      return (await fetch(`${API}/device/code`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-test-client-ip": who, "x-forwarded-for": `198.51.100.${i + 1}` },
+        body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
+      })).status;
+    };
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) statuses.push(await ask(client, i));
+    expect(statuses.slice(0, 10)).toEqual(Array(10).fill(201));
+    expect(statuses[10]).toBe(429);
+    // another client behind the same proxy has a limit of its own
+    expect(await ask("2001:db8::1:7", 0)).toBe(201);
+  });
 });

@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Behind Fly.io, 1.5.7 counted every visitor as one address for the per-address limits (in Clerk mode
+  the device-login limits), because Fly puts its own addresses at the end of `X-Forwarded-For`. A new
+  setting, `CLIENT_IP_HEADER`, names the platform's own header: `Fly-Client-IP` on Fly.io,
+  `CF-Connecting-IP` behind Cloudflare.
+
 ## [1.5.7] — 2026-09-30
 
 ### Fixed

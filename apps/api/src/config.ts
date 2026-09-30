@@ -36,8 +36,10 @@ export const config = {
   apiPrefix: env("API_PREFIX", ""),
   /** When set, the API also serves the built web app from this directory (SPA fallback). */
   webDist: env("WEB_DIST", ""),
-  /** Behind a reverse proxy: how many X-Forwarded-For hops to believe (lib/trust-proxy.ts). */
+  /** Behind a reverse proxy: which X-Forwarded-For hops to believe (lib/trust-proxy.ts). */
   trustProxy: parseTrustProxy(env("TRUST_PROXY", "false")),
+  /** A platform proxy's own client-address header, e.g. Fly-Client-IP (lib/client-ip.ts); empty = none. */
+  clientIpHeader: env("CLIENT_IP_HEADER", "").trim().toLowerCase(),
   /** OTLP/HTTP base URL of Tempo (spans go to <endpoint>/v1/traces); empty = tracing off. */
   otlpEndpoint: env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
   /** Prometheus /metrics on its own port (never behind the ingress); 0 = off. */

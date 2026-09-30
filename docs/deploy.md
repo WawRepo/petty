@@ -26,6 +26,10 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
   pick its own address. With a wrong value a client can dodge the per-IP limits on sign-in, sign-up,
   password reset and device codes (PETTY-290). The account lock does not depend on it: it is keyed
   by email (10 wrong passwords / 15 min), and password reset is capped per email.
+- Some platforms put their own addresses at the end of `X-Forwarded-For` and give the client's
+  address in a header of their own: Fly.io `Fly-Client-IP`, Cloudflare `CF-Connecting-IP`. Name it
+  in `CLIENT_IP_HEADER`, and that header counts (PETTY-301). Set it only when the app can be reached
+  through that platform alone: anyone who reaches the app directly could write the header.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
@@ -68,6 +72,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail. The server must offer TLS: STARTTLS (usually port 587) or TLS on port 465. Only `localhost`, `127.0.0.1` and `mailpit` may be plain. Mail to a relay without TLS fails; the app logs it, and nobody else sees it. |
 | `CONTACT_EMAIL` | the operator's address, shown to everyone: the "Get an invite" buttons, the landing page, `/api/config`, and the security emails ("write to …"). Empty hides all of them. |
 | `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (the default: all three); `false` = none. See above. |
+| `CLIENT_IP_HEADER` | a platform proxy's own client-address header, for example `Fly-Client-IP` or `CF-Connecting-IP`; it wins over `X-Forwarded-For`. Empty (the default) = none. See above. |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |
 | `OPEN_SIGNUP` | local mode only: `true` lets anyone create an account without a join link (a public self-hosted instance). Default off = invite-only. In Clerk mode, open sign-up is a setting in the Clerk dashboard, not here. |
 | `STORAGE_QUOTA_MB` | per-person storage limit in MB: the encrypted photos, documents (with their 30-day history) and entries in the drawers a person owns; writes by members of a shared drawer count against its owner. Empty = no limit. A photo is at most about 300 KB whatever this says. Each person sees their use in Settings. |

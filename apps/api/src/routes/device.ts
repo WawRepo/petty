@@ -5,6 +5,7 @@ import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
 import { ApiError, badRequest, conflict, notFound, unauthorized } from "../lib/errors.js";
 import { authEvents } from "../lib/metrics.js";
+import { clientIp } from "../lib/client-ip.js";
 import { checkRate } from "../lib/password.js";
 import { requireUser } from "../lib/session.js";
 
@@ -36,7 +37,7 @@ interface Row {
 export async function deviceRoutes(app: FastifyInstance) {
   /** The tool asks. No session: this is how a tool without one begins. Limited per address. */
   app.post("/device/code", async (req, reply) => {
-    if (!checkRate(`device-code:${req.ip}`, 10, 60 * 60_000)) throw tooMany();
+    if (!checkRate(`device-code:${clientIp(req)}`, 10, 60 * 60_000)) throw tooMany();
     const body = DeviceCodeRequest.parse(req.body);
     try {
       await importEcdhPublic(body.cli_pub);
@@ -49,7 +50,7 @@ export async function deviceRoutes(app: FastifyInstance) {
       `insert into device_requests (device_hash, user_code, cli_pub, client_name, role, expires_days, ip, expires_at)
        values ($1, $2, $3, $4, $5, $6, $7, now() + make_interval(secs => $8))
        on conflict do nothing returning id`,
-      [sha256(deviceCode), userCode, body.cli_pub, body.client_name, body.role, body.expires_days, req.ip, DEVICE_LIFETIME_S],
+      [sha256(deviceCode), userCode, body.cli_pub, body.client_name, body.role, body.expires_days, clientIp(req), DEVICE_LIFETIME_S],
     );
     if (!rows[0]) throw conflict("DeviceCodeTaken", "ask again with a new key");
     authEvents.inc({ event: "device_code" });
@@ -111,7 +112,7 @@ export async function deviceRoutes(app: FastifyInstance) {
    * same answer as an expired one.
    */
   app.post("/device/token", async (req, reply) => {
-    if (!checkRate(`device-poll:${req.ip}`, 600, 15 * 60_000)) throw tooMany();
+    if (!checkRate(`device-poll:${clientIp(req)}`, 600, 15 * 60_000)) throw tooMany();
     const body = DeviceTokenPoll.parse(req.body);
     const { rows } = await apiPool.query<{ id: string; state: "pending" | "approved" | "denied"; sealed_token: unknown; expired: boolean; early: boolean }>(
       `with prev as (select id, last_poll_at from device_requests where device_hash = $1)

@@ -15,3 +15,4 @@ services:
       OPEN_SIGNUP: "true"   # PETTY-215: exercise open signup (invite path still works)
       STORAGE_QUOTA_MB: "1" # PETTY-243: small enough that 05-storage fills an account
       CONTACT_EMAIL: "ops@petty.test" # PETTY-281: the mails that say "tell the person who runs your Petty" name them
+      CLIENT_IP_HEADER: "x-test-client-ip" # PETTY-301: 08-proxy plays a platform proxy that sets its own header

@@ -60,6 +60,8 @@ services:
       # The image sets SECURE_COOKIES=true: keep the HTTPS reverse proxy. TRUST_PROXY = the proxies
       # whose X-Forwarded-For the app believes; the default is those on private networks (docs/deploy.md).
       TRUST_PROXY: ${TRUST_PROXY:-loopback,linklocal,uniquelocal}
+      # A platform proxy's own client-address header (Fly-Client-IP, CF-Connecting-IP); empty = none.
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       METRICS_PORT: ${METRICS_PORT:-0}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
