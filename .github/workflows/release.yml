@@ -80,17 +80,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # Built from the release commit. `latest` moves only once the release is out (the last step).
+      # PETTY-297 (review B2): v1.3.0–v1.5.0 carried the owner's email in their provenance (the event
+      # payload's pusher and owner), and the build records uploaded as artifacts held it too. Minimal
+      # provenance, no build record, no summary, no provenance in the logged metadata.
       - id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+          DOCKER_BUILD_SUMMARY: false
+          BUILDX_METADATA_PROVENANCE: disabled
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          provenance: true
+          provenance: mode=min
           sbom: true
           build-args: |
             PETTY_VERSION=v${{ steps.version.outputs.version }}
           tags: ghcr.io/wawrepo/petty:v${{ steps.version.outputs.version }}
+      # Before anything else is published: the image's provenance may hold no email address but a noreply
+      # one. On a hit, nothing more is published; the address is never printed (logs are public).
+      - name: The provenance holds no personal address
+        env:
+          IMAGE: ghcr.io/wawrepo/petty:v${{ steps.version.outputs.version }}
+        run: |
+          hits=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Provenance}}' \
+            | grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | grep -vc 'noreply' || true)
+          if [ "$hits" != "0" ]; then
+            echo "::error::the image's provenance holds $hits email address(es) that are not noreply ones; nothing else was published. Delete this image version, turn on 'Keep my email addresses private' in GitHub, and start the release again."
+            exit 1
+          fi
       # The AI add-on as release files too (not only served by each running Petty), with its licence,
       # third-party notices and checksums. Built from the same release commit as the image.
       - run: pnpm install --frozen-lockfile
