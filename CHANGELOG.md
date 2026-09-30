@@ -6,6 +6,16 @@ All notable, user-visible changes to Petty. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Self-hosting: the suggested password command (`openssl rand -base64 32`) broke the database
+  address about half the time, because of a `/`. The docs now suggest `openssl rand -hex 32`, and
+  the migrations and the app name the variable that holds a broken address.
+- `make image` sets the image's version; it showed "dev".
+
+### Changed
+- The deploy guide lists the three database passwords, says that mail needs TLS, where the contact
+  address is shown, and what admins can do (they cannot delete accounts).
+
 ## [1.5.6] — 2026-09-29
 
 ### Changed

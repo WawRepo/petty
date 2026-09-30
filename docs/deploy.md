@@ -10,6 +10,11 @@ cp deploy/compose/.env.example deploy/compose/.env    # fill in every value
 docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d
 ```
 
+- Make the three database passwords of letters and digits only, for example with
+  `openssl rand -hex 32`. Compose puts them into `postgres://` addresses, where `/`, `?`, `#`, `@`
+  and `:` break the address (`openssl rand -base64` gives a `/` about half the time). The migrations
+  and the app stop with a message that names the variable.
+
 - The app listens on `127.0.0.1:3000`. Put Caddy, Traefik or nginx in front of it for HTTPS.
   Passkeys, secure cookies and the service worker need HTTPS.
 - The image trusts `X-Forwarded-For` (`TRUST_PROXY=true`) for the client IP. Only run it behind
@@ -33,8 +38,10 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
   exec app pnpm --filter @petty/api join-link you@example.com
 ```
 
-Open the URL, create the account and its vault. To manage other accounts later (invite, block,
-delete), make that account an admin — admins manage accounts but can read no drawer content:
+Open the URL, create the account and its vault. To manage other accounts later (block or unblock
+them, end their sessions, restore a vault from its history, make other admins), make that account
+an admin — admins manage accounts but can read no drawer content. Deleting an account is up to its
+owner (Settings → Delete account):
 
 ```
 docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env \
@@ -48,13 +55,14 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 
 | Variable | Meaning |
 |---|---|
-| `DATABASE_URL` | migration owner; never used for requests |
-| `API_DATABASE_URL` | request role (entries are insert-only for it) |
-| `MAINT_DATABASE_URL` | maintenance role (key rotation, deletions) |
+| `OWNER_DB_PASSWORD`, `API_DB_PASSWORD`, `MAINT_DB_PASSWORD` | compose only: the three database passwords, letters and digits only. The database creates its roles with them, and compose builds the three addresses below from them. |
+| `DATABASE_URL` | migration owner; never used for requests (built by compose) |
+| `API_DATABASE_URL` | request role (entries are insert-only for it) (built by compose) |
+| `MAINT_DATABASE_URL` | maintenance role (key rotation, deletions) (built by compose) |
 | `APP_URL` | public HTTPS address, used in emailed links |
 | `CLERK_AUTHORIZED_PARTIES` | clerk mode: comma-separated origins whose Clerk session tokens are accepted; default is the origin of `APP_URL` (PETTY-189) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail |
-| `CONTACT_EMAIL` | where "Get an invite" writes to; empty hides the link |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail. The server must offer TLS: STARTTLS (usually port 587) or TLS on port 465. Only `localhost`, `127.0.0.1` and `mailpit` may be plain. Mail to a relay without TLS fails; the app logs it, and nobody else sees it. |
+| `CONTACT_EMAIL` | the operator's address, shown to everyone: the "Get an invite" buttons, the landing page, `/api/config`, and the security emails ("write to …"). Empty hides all of them. |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |
 | `OPEN_SIGNUP` | local mode only: `true` lets anyone create an account without a join link (a public self-hosted instance). Default off = invite-only. In Clerk mode, open sign-up is a setting in the Clerk dashboard, not here. |
 | `STORAGE_QUOTA_MB` | per-person storage limit in MB: the encrypted photos, documents (with their 30-day history) and entries in the drawers a person owns; writes by members of a shared drawer count against its owner. Empty = no limit. A photo is at most about 300 KB whatever this says. Each person sees their use in Settings. |
@@ -66,8 +74,9 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `METRICS_PORT` | optional Prometheus metrics port (`0` = off); not published by the compose file |
 | `LOG_LEVEL` | `info` (default), `warn`, `error`, `debug` |
 
-Every variable in this table is passed through by `deploy/compose/docker-compose.yml`; set it in
-`deploy/compose/.env` and restart (`up -d`).
+`deploy/compose/docker-compose.yml` passes every other variable in this table to the app; set it in
+`deploy/compose/.env` and restart (`up -d`). The image fixes `SECURE_COOKIES=true` (cookies only over
+HTTPS) and `TRUST_PROXY` (see above).
 
 Metrics, logs and traces are described in `monitoring.md`.
 
@@ -113,3 +122,5 @@ Downgrading across a migration is not supported: restore the backup from step 1 
 ```
 make image TAG=<tag> IMAGE=<registry>/petty      # linux/amd64 and linux/arm64, pushed, digest printed
 ```
+
+The image reports `<tag>` as its version (Settings, the landing page's footer, `/api/config`).

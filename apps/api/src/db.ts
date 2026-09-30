@@ -1,5 +1,9 @@
 import pg from "pg";
 import { config } from "./config.js";
+import { checkDbUrl } from "./db-url.js";
+
+checkDbUrl("API_DATABASE_URL", config.apiDatabaseUrl);
+checkDbUrl("MAINT_DATABASE_URL", config.maintDatabaseUrl);
 
 /** Pool for ordinary requests. Connects as petty_api. */
 export const apiPool = new pg.Pool({ connectionString: config.apiDatabaseUrl, max: 5 });

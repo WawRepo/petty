@@ -46,7 +46,7 @@ PLATFORMS ?= linux/amd64,linux/arm64
 IMAGE ?= ghcr.io/wawrepo/petty
 image:
 	@test -n "$(TAG)" || { echo "usage: make image TAG=<tag>"; exit 1; }
-	docker buildx build --platform $(PLATFORMS) -t $(IMAGE):$(TAG) --push .
+	docker buildx build --platform $(PLATFORMS) --build-arg PETTY_VERSION=$(TAG) -t $(IMAGE):$(TAG) --push .
 	docker buildx imagetools inspect $(IMAGE):$(TAG) | grep -E "^Digest|Platform: +linux"
 backup-image:
 	docker buildx build --platform $(PLATFORMS) -t $(IMAGE)-backup:1 --push deploy/backup

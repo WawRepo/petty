@@ -69,7 +69,8 @@ cp deploy/compose/.env.example deploy/compose/.env    # fill in the values
 docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d
 ```
 
-Then put an HTTPS reverse proxy in front of `127.0.0.1:3000`. `docs/deploy.md` has the details,
+Make the database passwords letters and digits only (`openssl rand -hex 32`). Then put an HTTPS
+reverse proxy in front of `127.0.0.1:3000`. `docs/deploy.md` has the details,
 and `docs/monitoring.md` covers metrics, logs and traces.
 
 ## License

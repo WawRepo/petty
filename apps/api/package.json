@@ -13,7 +13,7 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "AUTH_PROVIDER=local vitest run",
-    "migrate": "DATABASE_URL=\"${DATABASE_URL:-postgres://petty:petty@localhost:5432/petty}\" node-pg-migrate -m migrations --migration-file-language sql up",
+    "migrate": "tsx src/check-db-url.ts && DATABASE_URL=\"${DATABASE_URL:-postgres://petty:petty@localhost:5432/petty}\" node-pg-migrate -m migrations --migration-file-language sql up",
     "migrate:down": "DATABASE_URL=\"${DATABASE_URL:-postgres://petty:petty@localhost:5432/petty}\" node-pg-migrate -m migrations --migration-file-language sql down",
     "migrate:create": "node-pg-migrate -m migrations --migration-file-language sql create",
     "seed": "tsx scripts/seed.ts",

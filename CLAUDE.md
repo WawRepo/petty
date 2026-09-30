@@ -121,3 +121,12 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
   under `## [Unreleased]` in the same commit as the change. An empty section ships as "Maintenance only".
 - **After a release, pull before you push:** main has the release commit on top. Deploying a release is
   the operator's step and lives outside this repository.
+- **When Actions cannot run** (v1.5.1–v1.5.6 were made this way), do the workflow's steps by hand, in
+  its order: `node scripts/release.ts X.Y.Z <date> notes.md`; commit "Release X.Y.Z" and an annotated
+  tag `vX.Y.Z`; build from `git archive vX.Y.Z`, each platform on a machine of that platform
+  (`docker buildx build --platform linux/amd64`, then `linux/arm64`, both with `--provenance=true
+  --sbom=true --build-arg PETTY_VERSION=vX.Y.Z`, pushed by digest); join them with `docker buildx
+  imagetools create -t <image>:vX.Y.Z <amd64 digest> <arm64 digest>`; run the upgrade test
+  (`make integration BASE=<previous image>`); push main and the tag together (`git push --atomic`);
+  pack the add-on and the command line, write `SHA256SUMS`, and `gh release create` with the
+  section as notes; move `latest`. An image built this way has no CI provenance (no source revision).
