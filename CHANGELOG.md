@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.8] — 2026-09-30
+
 ### Fixed
 - Behind Fly.io, 1.5.7 counted every visitor as one address for the per-address limits (in Clerk mode
   the device-login limits), because Fly puts its own addresses at the end of `X-Forwarded-For`. A new
@@ -341,7 +343,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.7...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.8...HEAD
+[1.5.8]: https://github.com/WawRepo/petty/releases/tag/v1.5.8
 [1.5.7]: https://github.com/WawRepo/petty/releases/tag/v1.5.7
 [1.5.6]: https://github.com/WawRepo/petty/releases/tag/v1.5.6
 [1.5.5]: https://github.com/WawRepo/petty/releases/tag/v1.5.5
