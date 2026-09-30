@@ -44,4 +44,6 @@ These are re-checked at every dependency update; a compatible upstream bump remo
 
 ## Supported versions
 
-The latest tagged release and the `main` branch receive security fixes. Petty follows semver; the current line is 1.x.
+The latest tagged release and the `main` branch receive security fixes. The current line is 1.x.
+Every release raises the patch number, also when it adds features, so this is not strict semver:
+read the release's section in `CHANGELOG.md` before you upgrade.

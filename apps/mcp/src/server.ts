@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { connect, TokenError, type AgentClient, type AgentDrawer, type AgentLine, type AgentPlace } from "@petty/agent";
 import { foldText } from "@petty/ledger";
+import pkg from "../package.json" with { type: "json" };
 
 /**
  * Petty as tools for an agent host, Claude Desktop first (PETTY-166). A thin layer over
@@ -83,7 +84,8 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     if (!client) client = await open();
     return client;
   };
-  const server = new McpServer({ name: "petty", version: "1.2.0" }, { instructions: INSTRUCTIONS });
+  // PETTY-296 (review S11): the release this server comes from, not a number typed once (it said 1.2.0)
+  const server = new McpServer({ name: "petty", version: pkg.version }, { instructions: INSTRUCTIONS });
   // Unknown role (not connected yet): offer the write tools; a read-only token is still refused by the server.
   const mayWrite = client ? client.identity.role === "write" : true;
 

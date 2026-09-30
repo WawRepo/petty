@@ -1,8 +1,10 @@
 # Changelog
 
 All notable, user-visible changes to Petty. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Petty follows
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are MAJOR.MINOR.PATCH, but not
+strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html): every release raises the patch
+number, also when it adds features, and a new minor or major is started by hand (see "Releasing" in
+`CLAUDE.md`). Read a release's section before you upgrade.
 
 ## [Unreleased]
 
@@ -11,6 +13,8 @@ All notable, user-visible changes to Petty. The format follows
   address about half the time, because of a `/`. The docs now suggest `openssl rand -hex 32`, and
   the migrations and the app name the variable that holds a broken address.
 - `make image` sets the image's version; it showed "dev".
+- `petty.mcpb` is the same file on every machine that builds it, so the copy an instance serves
+  matches the release's `SHA256SUMS`. The MCP server tells AI apps its real version (it said 1.2.0).
 
 ### Added
 - Settings → About: the version, the licence, the source code of this version, and the third-party

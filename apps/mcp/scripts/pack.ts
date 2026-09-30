@@ -42,12 +42,13 @@ function files(root: string, at = root): string[] {
 
 checkManifest(dir);
 const zip: Zippable = {};
-// A fixed time keeps the archive the same for the same input.
-const mtime = new Date("2026-01-01T00:00:00Z");
+// The same input gives the same archive on every machine (PETTY-296, review S11). A ZIP stores
+// wall-clock time, which fflate reads in the local time zone, so the fixed date is built from local
+// fields; and every file gets mode 0644, whatever the builder's umask left on disk.
+const mtime = new Date(2026, 0, 1, 0, 0, 0);
 for (const p of files(dir).sort()) {
   const name = relative(dir, p).split(sep).join("/");
-  const mode = statSync(p).mode & 0o777;
-  zip[name] = [new Uint8Array(readFileSync(p)), { level: 9, mtime, os: 3, attrs: (0o100000 | mode) << 16 }];
+  zip[name] = [new Uint8Array(readFileSync(p)), { level: 9, mtime, os: 3, attrs: (0o100000 | 0o644) << 16 }];
 }
 writeFileSync(out, zipSync(zip));
 process.stdout.write(`pack: ${out} (${Object.keys(zip).length} files)\n`);
