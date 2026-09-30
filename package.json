@@ -10,7 +10,7 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "pnpm@11.2.2",
+  "packageManager": "pnpm@11.28.2",
   "scripts": {
     "dev": "pnpm --filter @petty/api --filter @petty/web --parallel run dev",
     "build": "pnpm -r run build",

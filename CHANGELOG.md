@@ -21,6 +21,9 @@ All notable, user-visible changes to Petty. The format follows
   address the client wrote into `X-Forwarded-For`. `TRUST_PROXY` now names the proxies to believe
   (addresses, ranges, or `loopback`, `linklocal`, `uniquelocal`); the image's default, and what
   `true` now means, is proxies on private networks. Behind a CDN, add its ranges.
+- The image no longer ships npm, corepack and yarn, and its pnpm is 11.28.2. An image scan (trivy)
+  finds no high or critical issue; it found 1 critical and 22 high in 1.5.6. The operator commands
+  (`pnpm migrate`, `join-link`, `make-admin`) work as before.
 
 ## [1.5.6] — 2026-09-29
 
