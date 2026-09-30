@@ -7,10 +7,10 @@ import { isHealthProbe, safeUrl } from "./tracing.js";
 
 /**
  * Metrics (Phase 15b, PETTY-92). Two paths from one definition:
- *  - a Prometheus registry served on a SEPARATE port (pull), scraped inside the cluster — unchanged, so
- *    the existing scrape stays byte-for-byte the same during the OTLP migration;
- *  - an OpenTelemetry mirror pushed over OTLP when `otlpPush` is on (lib/otel-push.ts), so the Fly
- *    instance — which nothing can scrape from outside — still reports.
+ *  - a Prometheus registry served on a SEPARATE port (pull), for a scraper on the same network —
+ *    unchanged, so an existing scrape stays byte-for-byte the same during the OTLP migration;
+ *  - an OpenTelemetry mirror pushed over OTLP when `otlpPush` is on (lib/otel-push.ts), so an instance
+ *    that nothing can scrape from outside (a platform-hosted one) still reports.
  * `dualCounter`/`dualHistogram` write both from one call, so the call sites never change. When OTLP is
  * off there is no MeterProvider, the OTel side is a no-op, and only the Prometheus path runs.
  *

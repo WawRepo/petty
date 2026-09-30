@@ -19,7 +19,9 @@ See `README.md` for the setup (`pnpm install`, `make dev`). Before you open a pu
 ```
 make lint
 make test
+pnpm i18n:check
 pnpm --filter @petty/web exec playwright test --project=dev
+make integration      # the production image over real HTTP; needs Docker
 ```
 
 - Every user-facing string goes through the dictionaries in `apps/web/src/i18n/` — English, Polish,

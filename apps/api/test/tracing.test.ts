@@ -39,7 +39,7 @@ describe("traces (PETTY-34)", () => {
     expect(server!.attributes["url.path"]).toBe("/join-links/:token");
   });
 
-  it("health probes are not traced, including the /health/live one Fly calls (PETTY-240)", async () => {
+  it("health probes are not traced, including /health/live, which platforms call (PETTY-240)", async () => {
     exporter.reset();
     expect((await fetch(`${base}/health`)).status).toBe(200);
     expect((await fetch(`${base}/health/live`)).status).toBe(200);

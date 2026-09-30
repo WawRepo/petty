@@ -36,7 +36,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 | Currency codes | Free text with ISO suggestions and formatting fallback |
 | History loading | Paginated, always fetched back to the last Adjust |
 | Accessibility | Keyboard and labelling built in; formal audits deferred |
-| Totals and search | Totals in scope; search deferred |
+| Totals and search | Totals in scope; search deferred. *Superseded (PETTY-47): Home searches item names, texts, tags and units, on the device only (`apps/web/src/lib/search.ts`).* |
 | Auth | Backend-owned email + password; invite-only signup. *Extended: see "Identity provider" and "Open sign-up".* |
 | Concurrent Adjust | Conditional insert on `expected_head_seq`; first write wins |
 | Reverse limits | Not past the latest Adjust; reverse-once enforced by a plaintext UNIQUE |

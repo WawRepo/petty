@@ -8,8 +8,8 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 
 /**
  * OTLP push for metrics and logs (PETTY-92). Traces already push (lib/tracing.ts); this adds the other
- * two so one instance speaks OTLP for all three to a single endpoint, and the home and Fly deployments
- * differ only by that endpoint. It runs alongside the existing paths (Prometheus /metrics scrape, stdout
+ * two so one instance speaks OTLP for all three to a single endpoint, and two deployments can differ
+ * only by that endpoint. It runs alongside the existing paths (Prometheus /metrics scrape, stdout
  * JSON logs), which stay the source of truth until parity is proven — nothing here removes them.
  *
  * Gated by `otlpPush`: while the endpoint still points at a traces-only receiver (Tempo), pushing metrics

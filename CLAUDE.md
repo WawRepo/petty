@@ -70,14 +70,15 @@ screen's layout or to a visible feature is reflected there in the same ticket**:
 re-run the capture (`MARKETING=1 MARKETING_OUT=<dir> WEB_PORT=5174 npx
 playwright test e2e/marketing.spec.ts` in `apps/web`, then convert the PNGs to
 webp into `apps/web/public/landing/`), extend the capture's data when the
-feature needs it, and update the feature cards, alt texts and FAQ in `en.json`
-and `pl.json`. A landing page that shows last month's app is a bug.
+feature needs it, and update the feature cards, alt texts and FAQ in every dictionary
+(`apps/web/src/i18n/`). A landing page that shows last month's app is a bug.
 
 ## Working style
 
 - The Decisions log (`docs/decisions.md`) is settled. If you believe a decision is wrong, **say so**
   rather than quietly implementing something else.
-- Prefer boring, reviewed libraries (libsodium) over hand-assembled WebCrypto.
+- Use the reviewed primitives Petty settled on — WebCrypto (AES-256-GCM, ECDH P-256, ECDSA, HKDF) and
+  hash-wasm's Argon2id (SPEC-ISSUES C1, security review SR-14) — and never hand-assemble crypto.
 - If something cannot be tested meaningfully, say so rather than writing a test
   that passes vacuously.
 - Report what you actually verified, not what you intended. "Tests pass" means

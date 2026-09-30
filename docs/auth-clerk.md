@@ -12,8 +12,8 @@ data: the vault is opened on the device and the server never sees a key.
 
 ## One switch, two modes
 
-`AUTH_PROVIDER=local` (default) keeps every existing route and the cookie session: the Pi
-the deployment, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` turns on:
+`AUTH_PROVIDER=local` (default) keeps every existing route and the cookie session: a self-hosted
+deployment, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` turns on:
 
 - **Requests** carry `Authorization: Bearer <Clerk session token>`; the session plugin
   verifies it (`@clerk/backend` `verifyToken`, offline with `CLERK_JWT_KEY`, else JWKS via

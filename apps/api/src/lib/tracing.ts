@@ -21,8 +21,8 @@ import { otelResource } from "./otel-resource.js";
  * Fastify requires it — which is why index.ts imports the app dynamically.
  */
 /**
- * The health probes, `/health` and `/health/live` (PETTY-240: Fly probes `/live` every 10 s, which the
- * old `/health$` test missed, so the probe was 97% of logs and traces). Measured in metrics, never
+ * The health probes, `/health` and `/health/live` (PETTY-240: a platform probe can call `/live` every
+ * 10 s, which the old `/health$` test missed, so the probe was 97% of logs and traces). Measured in metrics, never
  * logged or traced. Shared by the log hook (lib/metrics.ts) and the http instrumentation below.
  */
 export const isHealthProbe = (url: string): boolean => /\/health(\/live)?(\?|$)/.test(url);

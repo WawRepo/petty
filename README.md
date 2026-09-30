@@ -22,8 +22,8 @@ choose. Everything is encrypted on your device before it is sent.
 - **Currencies and things.** Zloty, euro and dollars side by side, plus countable things like
   keys or documents. Tag items and filter by tag.
 - **Shared, with roles.** Writers add entries; readers only look. The server enforces this.
-- **Count, confirm, never erase.** Confirm a drawer after a real count. Mistakes are reversed,
-  not deleted.
+- **Count, check, never erase.** Mark a drawer as checked after a real count. Mistakes are
+  reversed, not deleted.
 - **Works with AI apps.** Ask Claude Desktop (a one-click add-on) or any MCP app about your drawers,
   or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. See
   [docs/agent.md](docs/agent.md).
@@ -110,7 +110,7 @@ deployment passes the same names as environment variables or secrets.
 
 - Docker Desktop (or any Docker with Compose v2)
 - Node 24 (LTS; `.node-version` says 24 — the image and CI use it too)
-- pnpm 11: `corepack enable && corepack prepare pnpm@11.2.2 --activate`
+- pnpm 11: `corepack enable && corepack prepare pnpm@11.28.2 --activate` (the version in `package.json`)
 - GNU make (preinstalled on macOS; `apt install make` on Debian/Ubuntu)
 
 ## First run
@@ -164,7 +164,8 @@ while you were away and which queued changes were refused.
 
 `pnpm e2e` runs two Playwright projects: `dev` (Vite dev server) and `prod`
 (the API serving the production build on :3100 under the strict security headers;
-fails on any CSP violation; service worker active).
+fails on any CSP violation; service worker active). A third, `clerk-prod`, runs the Clerk sign-in
+against a Clerk development instance, only with `CLERK_E2E=1` and its keys.
 
 ## Layout
 
@@ -176,7 +177,12 @@ packages/crypto Envelope encryption, AAD binding, signatures, compatibility corp
 packages/ledger Pure domain: balance fold, chain verification, money formatting,
                 line extras (icon, tags, counted) and place paths.
 packages/protocol zod schemas shared by api and web.
+packages/agent  The drawer tools shared by the MCP server and the command line.
+apps/mcp        The MCP server for AI apps (petty-mcp.mjs, the petty.mcpb add-on).
+apps/cli        petty, the command line (petty.mjs).
 apps/api/migrations  Version-controlled SQL migrations (node-pg-migrate).
+tests/integration    The production image under deploy/compose, over real HTTP.
+deploy/compose  The production compose file; deploy/backup the pg_dump + age image.
 docker/postgres/init.sql  Dev-only: creates petty_api / petty_maint with LOGIN.
 ```
 
@@ -193,11 +199,16 @@ reasoning: [docs/decisions.md](docs/decisions.md) (rows *Places*, *Icons*, *Line
 ## API (apps/api)
 
 All bodies are JSON; bytes travel as base64; the server never opens ciphertext.
-Session = httpOnly cookie `petty_session`. Non-members get 404, never 403.
+Session = httpOnly cookie `petty_session` (`__Host-petty_session` over HTTPS, as in the image).
+In the image every route sits under `/api` (`/api/me`). Access tokens and Clerk session tokens come
+as `Authorization: Bearer …`. Non-members get 404, never 403.
 
 | Route | Who | Does |
 |---|---|---|
+| `GET /config` `GET /health` `GET /health/live` | – | sign-in mode, contact address, open sign-up, version; health with the database; the process is up |
 | `POST /auth/signup` `POST /auth/login` `POST /auth/logout` | – | invite-only signup with vault blobs and public keys; login; logout |
+| `POST /auth/forgot` `POST /auth/reset` | – | local mode: a one-hour reset link by email; a new login password (the vault is untouched) |
+| `POST /auth/provision` | Clerk session | Clerk mode: the first sign-in creates the Petty account with its vault blobs |
 | `POST /join-links` `GET /join-links/:token` | user | create / inspect a join link (7 days) |
 | `GET /me` `PATCH /me` `GET /users/lookup?email=` `GET /users/:id/keys` | user | profile, locale, exact-email lookup for inviting, key history |
 | `GET /me/doc` `PUT /me/doc` | user | the user's own encrypted document (key pins), version-checked |
@@ -214,7 +225,17 @@ Session = httpOnly cookie `petty_session`. Non-members get 404, never 403.
 | `POST /drawers/:id/rotation` `PUT /drawers/:id/rotation/batch` `GET /drawers/:id/rotation` | write | publish new key + wraps first; re-seal in batches (petty_maint); status |
 | `GET /drawers/:id/export` | owner, write | everything for the drawer; read members get 403 |
 | `GET /me/delete` `POST /me/delete` | user | preview; delete with per-drawer decisions (hand over / delete), password re-entered |
-| `GET /me/recovery-vault` `PUT /me/vault` | user | recovery-code copy; replace the passphrase wrap of the same keys |
+| `GET /me/recovery-vault` `PUT /me/recovery-vault` `PUT /me/vault` | user | recovery-code copy; a new recovery code; replace the passphrase wrap of the same keys |
+| `POST /me/custody-challenge` | user | a fresh challenge for a custody proof (docs/threat-model.md) |
+| `POST /me/passkeys` `DELETE /me/passkeys/:id` | user | add / remove a passkey that opens the vault |
+| `GET /me/storage` | user | storage used, against `STORAGE_QUOTA_MB` |
+| `GET /drawers/:id/document/history` `POST /drawers/:id/document/restore` | owner | the drawer document's 30-day history; restore an earlier version |
+| `GET /me/tokens` `POST /me/tokens` `DELETE /me/tokens/:id` `GET/POST /me/tokens/:id/keys` | user | access tokens: list, make (with a custody proof), revoke, their key bundle |
+| `GET /me/token` `GET /me/token/bootstrap` `GET /me/token/keys` `DELETE /me/token` | token | a token about itself, its drawers and its key bundle; a token ends itself |
+| `GET /users/:id/delegations` | user | the tokens a person's key vouched for, to check their signatures |
+| `POST /device/code` `POST /device/token` | – | device login: a tool asks for a code, then polls for its sealed token |
+| `GET /device/:code` `POST /device/:code/approve` `POST /device/:code/deny` | user | the /device page (signed in, never a token): see the request, allow it (the page seals a new token) or deny it |
+| `GET /admin/users` `POST /admin/users/:id/block` `/unblock` `/revoke-sessions` `/restore-vault` `/admin` | admin | accounts: list, block, unblock, end sessions, restore a vault from its history, make or remove an admin |
 
 ## Database roles
 

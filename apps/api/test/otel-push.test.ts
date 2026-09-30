@@ -1,7 +1,7 @@
 /**
  * OTLP push (PETTY-92): metrics and logs leave the process over OTLP/HTTP when enabled, and stay off
- * otherwise. Proves the pipeline against a mock collector — the same wire the home Alloy and Grafana
- * Cloud receive. Runs in its own file so the global OTel providers it sets do not leak into other tests.
+ * otherwise. Proves the pipeline against a mock collector — the same wire an OpenTelemetry collector
+ * (Grafana Alloy, Grafana Cloud) receives. Runs in its own file so the global OTel providers it sets do not leak into other tests.
  */
 import http from "node:http";
 import type { AddressInfo } from "node:net";
