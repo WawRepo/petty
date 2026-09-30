@@ -6,8 +6,15 @@ the terms of the GNU Affero General Public License version 3, as published by
 the Free Software Foundation. See the LICENSE file for the full text.
 
 This product includes software developed by third parties. Each distributed
-artifact carries its own notices: the container image ships this NOTICE and the
-LICENSE; the Claude Desktop add-on (.mcpb) and the standalone MCP script ship a
-THIRD_PARTY_NOTICES.md generated from the packages bundled into them; the web app
-links to its source code under the AGPL (section 13). The complete dependency
-tree, with each package's licence, is in pnpm-lock.yaml.
+artifact carries its own notices:
+- the container image ships this NOTICE and the LICENSE;
+- the web app serves /THIRD_PARTY_NOTICES.md (every production dependency it may
+  ship, with its licence text; the LGPL and GPL texts for the LGPL library in the
+  Clerk sign-in code), linked from the landing page and from Settings → About;
+- the command line (petty.mjs) and the standalone MCP script (petty-mcp.mjs) each
+  name their licence and the source of their version at the top, and end with
+  the licence texts of the packages bundled into them;
+- the Claude Desktop add-on (.mcpb) also ships a THIRD_PARTY_NOTICES.md.
+The web app links to the source code of the running version, as the AGPL
+(section 13) requires. A changed version sets its own source address when it is
+built (docs/deploy.md, "Running a changed version").

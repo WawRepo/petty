@@ -31,6 +31,9 @@ COPY apps/cli/package.json apps/cli/
 COPY tests/integration/package.json tests/integration/
 RUN pnpm install --frozen-lockfile
 COPY . .
+# AGPL section 13 (PETTY-292): a changed version must offer its own source. A fork builds with
+# --build-arg VITE_SOURCE_URL=<its repository>; the web app and the downloadable files link there.
+ARG VITE_SOURCE_URL=
 # The Claude Desktop add-on (PETTY-172) is packed into the web app's public folder, so Petty serves it.
 RUN pnpm --filter @petty/mcp run pack
 # The command line (PETTY-274), one file, served at /downloads/petty.mjs like the add-on.

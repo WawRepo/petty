@@ -16,7 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "AUTH_PROVIDER=local vitest run",
     "bundle": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/petty.mjs --legal-comments=eof --metafile=meta.json --banner:js=\"import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);\"",
-    "pack": "pnpm run bundle && mkdir -p ../web/public/downloads && cp dist/petty.mjs ../web/public/downloads/petty.mjs"
+    "pack": "pnpm run bundle && tsx ../../scripts/bundle-notices.ts --meta meta.json --what \"petty, the Petty command line\" --bundle dist/petty.mjs && mkdir -p ../web/public/downloads && cp dist/petty.mjs ../web/public/downloads/petty.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.1",

@@ -270,6 +270,10 @@
       "title": "Speicher",
       "used": "{used} von {quota} belegt",
       "hint": "Zählt alles in den Schubladen, die dir gehören, auch was die Menschen hinzufügen, mit denen du sie teilst. Fotos brauchen am meisten Platz."
+    },
+    "about": {
+      "title": "Über Petty",
+      "body": "Petty ist freie Software unter der GNU Affero General Public License v3 (AGPL-3.0). Du darfst es nutzen, untersuchen, ändern und weitergeben. Wenn du eine geänderte Version für andere betreibst, biete ihnen ihren Quellcode an."
     }
   },
   "keypad": {

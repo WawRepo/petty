@@ -270,6 +270,10 @@
       "title": "Miejsce na dane",
       "used": "Zajęte {used} z {quota}",
       "hint": "Wlicza się tu wszystko w szufladach należących do Ciebie, także to, co dodają osoby, którym je udostępniasz. Najwięcej miejsca zajmują zdjęcia."
+    },
+    "about": {
+      "title": "O Petty",
+      "body": "Petty to wolne oprogramowanie na licencji GNU Affero General Public License v3 (AGPL-3.0). Możesz go używać, poznawać, zmieniać i udostępniać. Jeśli uruchamiasz zmienioną wersję dla innych osób, udostępnij im jej kod źródłowy."
     }
   },
   "keypad": {

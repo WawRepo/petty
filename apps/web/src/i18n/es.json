@@ -270,6 +270,10 @@
       "title": "Almacenamiento",
       "used": "{used} de {quota} en uso",
       "hint": "Cuenta todo lo que hay en los cajones de tu propiedad, incluido lo que añaden las personas con las que los compartes. Las fotos son lo que más espacio ocupa."
+    },
+    "about": {
+      "title": "Acerca de Petty",
+      "body": "Petty es software libre bajo la GNU Affero General Public License v3 (AGPL-3.0). Puedes usarlo, estudiarlo, cambiarlo y compartirlo. Si ejecutas una versión modificada para otras personas, ofréceles su código fuente."
     }
   },
   "keypad": {

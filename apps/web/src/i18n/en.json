@@ -270,6 +270,10 @@
       "title": "Storage",
       "used": "{used} of {quota} used",
       "hint": "Counts everything in the drawers you own, including what people you share them with add. Photos take the most space."
+    },
+    "about": {
+      "title": "About Petty",
+      "body": "Petty is free software under the GNU Affero General Public License v3 (AGPL-3.0). You may use, study, change and share it. If you run a changed version for other people, offer them its source code."
     }
   },
   "keypad": {

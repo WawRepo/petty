@@ -30,6 +30,7 @@ import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
 import { promptInstall, useInstallState } from "../lib/install.js";
 import { pictureShown, placesShown, setPictureShown, setPlacesShown, setTotalsShown, setVerificationShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { appVersion, isClerk } from "../lib/authConfig.js";
+import { sourceUrlFor } from "../lib/links.js";
 import { dateLocale } from "../lib/time.js";
 
 export function SettingsScreen() {
@@ -260,7 +261,14 @@ export function SettingsScreen() {
         </section>
         <ConfirmSheet open={leaving} title={t("home.signOutTitle")} body={t("home.signOutBody")} confirmLabel={t("auth.signOut")} danger={false} onClose={() => setLeaving(false)}
           onConfirm={async () => { await signOut(); nav("/", { replace: true }); }} />
-        {appVersion() ? <p className="hint mt12 mb0" data-testid="app-version">Petty {appVersion()}</p> : null}
+        {/* PETTY-292 (review S4): the AGPL source offer and the notices, one tap from Settings */}
+        <section className="card" data-testid="about-section">
+          <h2 className="h-card">{t("settings.about.title")}</h2>
+          {appVersion() ? <p className="hint mb4" data-testid="app-version">Petty {appVersion()}</p> : null}
+          <p className="hint">{t("settings.about.body")}</p>
+          <p className="mt4 mb0"><a href={sourceUrlFor(appVersion())} target="_blank" rel="noopener noreferrer" data-testid="about-source">{t("app.sourceCode")}</a></p>
+          <p className="mt4 mb0"><a href="/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" data-testid="about-notices">{t("app.thirdPartyNotices")}</a></p>
+        </section>
       </main>
       <Sheet open={pkAdd} title={t("settings.passkey.add")} onClose={() => setPkAdd(false)}>
         <form onSubmit={doPasskeyAdd} noValidate>

@@ -129,3 +129,16 @@ make image TAG=<tag> IMAGE=<registry>/petty      # linux/amd64 and linux/arm64, 
 ```
 
 The image reports `<tag>` as its version (Settings, the landing page's footer, `/api/config`).
+
+## Running a changed version (AGPL §13)
+
+If you run a changed Petty for other people, the AGPL asks you to offer them the source of your
+version. Build the image with your repository's address, and publish your changes there:
+
+```
+docker build --build-arg VITE_SOURCE_URL=https://example.org/you/petty --build-arg PETTY_VERSION=<tag> -t <image> .
+```
+
+The web app (landing page, privacy page, Settings → About) and the downloadable command line and MCP
+script then link to your source. On GitHub a release version (`v1.2.3`) links the tree at its tag;
+on other hosts, the repository. Keep `NOTICE`, `LICENSE` and the notices files as they are built.

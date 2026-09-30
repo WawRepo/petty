@@ -8,7 +8,7 @@ import { LanguagePicker } from "../components/LanguagePicker.js";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { appVersion, contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
-import { SOURCE_URL } from "../lib/links.js";
+import { sourceUrlFor } from "../lib/links.js";
 import { useTheme } from "../lib/theme.js";
 
 
@@ -125,7 +125,7 @@ export function LandingScreen() {
         <Button variant="ghost" onClick={() => nav("/login")}>{t("auth.login.title")}</Button>
         <Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>
         <Button variant="ghost" onClick={() => nav("/ai")} data-testid="landing-ai">{t("ai.link")}</Button>
-        <a className="btn btn-ghost" href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
+        <a className="btn btn-ghost" href={sourceUrlFor(appVersion())} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
         <a className="btn btn-ghost" href="/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" data-testid="landing-notices">{t("app.thirdPartyNotices")}</a>
         <p className="hint m0">{t("landing.made")}{contact ? <> · <a className="landing-mail" href={`mailto:${contact}`}>{contact}</a></> : null}</p>
         {/* PETTY-280 (F26): the slogan on its own line, the version kept with it, no lone "·" at a line's end */}

@@ -12,9 +12,19 @@ All notable, user-visible changes to Petty. The format follows
   the migrations and the app name the variable that holds a broken address.
 - `make image` sets the image's version; it showed "dev".
 
+### Added
+- Settings → About: the version, the licence, the source code of this version, and the third-party
+  notices, also for someone who is signed in.
+
 ### Changed
 - The deploy guide lists the three database passwords, says that mail needs TLS, where the contact
   address is shown, and what admins can do (they cannot delete accounts).
+- Source links go to the source of the running version (its tag), not only to the repository. A
+  changed version builds the image with `--build-arg VITE_SOURCE_URL=<its repository>`.
+- Licence notices: the web app's list now covers everything it may ship (hash-wasm, the service
+  worker's Workbox) and carries the LGPL and GPL texts for the LGPL library in Clerk's sign-in code;
+  `petty.mjs` and `petty-mcp.mjs` name their licence and source at the top and end with the notices
+  of the packages bundled into them.
 
 ### Security
 - The per-address limits on sign-in, sign-up, password reset and device codes no longer believe an

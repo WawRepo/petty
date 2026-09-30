@@ -270,6 +270,10 @@
       "title": "Stockage",
       "used": "Espace utilisé : {used} sur {quota}",
       "hint": "Compte tout ce que contiennent les tiroirs dont vous êtes propriétaire, y compris ce qu’y ajoutent les personnes avec qui vous les partagez. Les photos prennent le plus de place."
+    },
+    "about": {
+      "title": "À propos de Petty",
+      "body": "Petty est un logiciel libre sous licence GNU Affero General Public License v3 (AGPL-3.0). Vous pouvez l’utiliser, l’étudier, le modifier et le partager. Si vous faites fonctionner une version modifiée pour d’autres personnes, proposez-leur son code source."
     }
   },
   "keypad": {

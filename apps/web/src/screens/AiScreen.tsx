@@ -4,7 +4,8 @@ import { CodeText } from "../components/CodeText.js";
 import { Button } from "../components/Button.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
-import { SOURCE_URL } from "../lib/links.js";
+import { appVersion } from "../lib/authConfig.js";
+import { sourceUrlFor } from "../lib/links.js";
 
 /**
  * "Use Petty with AI" (PETTY-173): how to connect an AI app through an access token and the local
@@ -99,7 +100,7 @@ export function AiScreen() {
         <section className="card">
           <h2 className="h-card">{t("ai.honestTitle")}</h2>
           <ul className="list">{list("ai.honest")}</ul>
-          <p className="m0"><a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" data-testid="ai-source">{t("ai.source")}</a></p>
+          <p className="m0"><a href={sourceUrlFor(appVersion())} target="_blank" rel="noopener noreferrer" data-testid="ai-source">{t("ai.source")}</a></p>
         </section>
       </main>
     </>
