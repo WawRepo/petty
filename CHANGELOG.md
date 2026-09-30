@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.7] — 2026-09-30
+
 ### Fixed
 - Self-hosting: the suggested password command (`openssl rand -base64 32`) broke the database
   address about half the time, because of a `/`. The docs now suggest `openssl rand -hex 32`, and
@@ -333,7 +335,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.6...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.7...HEAD
+[1.5.7]: https://github.com/WawRepo/petty/releases/tag/v1.5.7
 [1.5.6]: https://github.com/WawRepo/petty/releases/tag/v1.5.6
 [1.5.5]: https://github.com/WawRepo/petty/releases/tag/v1.5.5
 [1.5.4]: https://github.com/WawRepo/petty/releases/tag/v1.5.4
