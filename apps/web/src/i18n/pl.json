@@ -1104,7 +1104,7 @@
       },
       "cost": {
         "q": "Ile to kosztuje?",
-        "a": "Petty to wolne oprogramowanie (AGPL-3.0): możesz uruchomić własne za darmo. Jeśli osoba, która prowadzi hostowane Petty, kiedyś zacznie pobierać opłaty, musi Cię o tym wcześniej wyraźnie poinformować."
+        "a": "Samo Petty to wolne oprogramowanie (AGPL-3.0): możesz uruchomić własne za darmo. Petty prowadzone przez kogoś innego może być płatne: cenę ustala osoba, która je prowadzi."
       },
       "phone": {
         "q": "Czy jest aplikacja na telefon?",
@@ -1115,8 +1115,9 @@
     "made": "Tworzone w Polsce",
     "create": "Załóż sejf",
     "getInvite": "Poproś o zaproszenie",
-    "betaOpen": "Bez karty, bez instalacji.",
+    "betaOpen": "Nic do instalowania: działa w przeglądarce.",
     "betaInvite": "Tutaj Petty działa tylko na zaproszenia: poproś członka albo napisz do nas.",
+    "betaInviteNoContact": "Tutaj Petty działa tylko na zaproszenia: poproś członka o zaproszenie.",
     "again": "Zaczynamy? To zajmuje minutę.",
     "againInvite": "Masz zaproszenie? Otwórz link z e-maila, aby założyć konto.",
     "shotOpen": "Powiększ: {name}",

@@ -1104,7 +1104,7 @@
       },
       "cost": {
         "q": "Was kostet das?",
-        "a": "Petty ist freie Software (AGPL-3.0): Du kannst dein eigenes Petty kostenlos betreiben. Verlangt die Person, die ein gehostetes Petty betreibt, je Geld dafür, muss sie es dir vorher klar sagen."
+        "a": "Petty selbst ist freie Software (AGPL-3.0): Du kannst dein eigenes Petty kostenlos betreiben. Ein Petty, das jemand anderes betreibt, kann Geld kosten: Den Preis legt die Person fest, die es betreibt."
       },
       "phone": {
         "q": "Gibt es eine App fürs Handy?",
@@ -1115,8 +1115,9 @@
     "made": "Entwickelt in Polen",
     "create": "Tresor erstellen",
     "getInvite": "Einladung anfragen",
-    "betaOpen": "Ohne Kreditkarte, ohne Installation.",
+    "betaOpen": "Nichts zu installieren: Es läuft in deinem Browser.",
     "betaInvite": "Dieses Petty gibt es nur auf Einladung: Frag ein Mitglied oder schreib uns.",
+    "betaInviteNoContact": "Dieses Petty gibt es nur auf Einladung: Frag ein Mitglied danach.",
     "again": "Bereit? Es dauert nur eine Minute.",
     "againInvite": "Du hast eine Einladung? Öffne den Link in deiner E-Mail, um dein Konto zu erstellen.",
     "shotOpen": "Vergrößern: {name}",

@@ -21,6 +21,9 @@ All notable, user-visible changes to Petty. The format follows
   address is shown, and what admins can do (they cannot delete accounts).
 - Source links go to the source of the running version (its tag), not only to the repository. A
   changed version builds the image with `--build-arg VITE_SOURCE_URL=<its repository>`.
+- The landing page fits every Petty, not only a hosted one: "write to us" shows only when the
+  operator gives a contact address, the open sign-up line no longer reads like a hosted offer, and
+  the cost answer says that whoever runs a Petty sets its price.
 - Licence notices: the web app's list now covers everything it may ship (hash-wasm, the service
   worker's Workbox) and carries the LGPL and GPL texts for the LGPL library in Clerk's sign-in code;
   `petty.mjs` and `petty-mcp.mjs` name their licence and source at the top and end with the notices

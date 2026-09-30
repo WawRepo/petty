@@ -1104,7 +1104,7 @@
       },
       "cost": {
         "q": "What does it cost?",
-        "a": "Petty is free software (AGPL-3.0): you can run your own for nothing. If the person who runs a hosted Petty ever charges for it, they must tell you clearly first."
+        "a": "Petty itself is free software (AGPL-3.0): you can run your own for nothing. A Petty that someone else runs can cost money: the person who runs it sets the price."
       },
       "phone": {
         "q": "Is there a phone app?",
@@ -1115,8 +1115,9 @@
     "made": "Made in Poland",
     "create": "Create your vault",
     "getInvite": "Get an invite",
-    "betaOpen": "No card, nothing to install.",
+    "betaOpen": "Nothing to install: it works in your browser.",
     "betaInvite": "This Petty is invite-only: ask a member, or write to us.",
+    "betaInviteNoContact": "This Petty is invite-only: ask a member for an invite.",
     "again": "Ready? It takes a minute.",
     "againInvite": "Have an invite? Open the link in your email to create your account.",
     "shotOpen": "Enlarge: {name}",

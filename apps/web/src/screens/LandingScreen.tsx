@@ -51,7 +51,8 @@ export function LandingScreen() {
         <p className="landing-tag">{t("landing.tagline")}</p>
         <p className="hint m0">{t("landing.sub")}</p>
         {cta}
-        <p className="hint m0">{t(open ? "landing.betaOpen" : "landing.betaInvite")}</p>
+        {/* PETTY-293 (review S8): "write to us" only when this Petty names an address to write to */}
+        <p className="hint m0" data-testid="landing-access">{t(open ? "landing.betaOpen" : contact ? "landing.betaInvite" : "landing.betaInviteNoContact")}</p>
         <p className="m0"><Button variant="ghost" onClick={() => document.getElementById("crypto")?.scrollIntoView({ behavior: "smooth" })}>{t("landing.how")}</Button></p>
       </section>
 

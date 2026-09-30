@@ -212,3 +212,23 @@ test("the hero stands in the middle of wide screens too (PETTY-260)", async ({ p
     expect(Math.abs(hero!.x + hero!.width / 2 - middle), `${width} px`).toBeLessThan(2);
   }
 });
+
+// PETTY-293 (review S8): every self-hosted copy shows this page. "Write to us" only when the operator names
+// an address (CONTACT_EMAIL); no hosted-service promise; the cost answer claims no duty the AGPL does not create.
+test("the hero says how to get in with and without a contact address, and makes no hosted-service promise", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("landing-access")).toHaveText("This Petty is invite-only: ask a member, or write to us.");
+
+  await page.route("**/api/config", async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), contact_email: null } });
+  });
+  await page.reload();
+  await expect(page.getByTestId("landing-access")).toHaveText("This Petty is invite-only: ask a member for an invite.");
+  await expect(page.getByTestId("landing-invite")).toHaveCount(0);
+  await expect(page.getByText("write to us")).toHaveCount(0);
+
+  await page.getByText("What does it cost?").click();
+  await expect(page.getByText(/the person who runs it sets the price/)).toBeVisible();
+  await expect(page.getByText(/must tell you/)).toHaveCount(0);
+});

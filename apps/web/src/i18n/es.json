@@ -1104,7 +1104,7 @@
       },
       "cost": {
         "q": "¿Cuánto cuesta?",
-        "a": "Petty es software libre (AGPL-3.0): puedes ejecutar tu propio Petty gratis. Si la persona que administra un Petty alojado llega a cobrar por él, antes debe decírtelo con claridad."
+        "a": "Petty en sí es software libre (AGPL-3.0): puedes ejecutar tu propio Petty gratis. Un Petty que administra otra persona puede costar dinero: el precio lo fija quien lo administra."
       },
       "phone": {
         "q": "¿Hay una aplicación para el teléfono?",
@@ -1115,8 +1115,9 @@
     "made": "Hecho en Polonia",
     "create": "Crear tu bóveda",
     "getInvite": "Pedir una invitación",
-    "betaOpen": "Sin tarjeta y sin nada que instalar.",
+    "betaOpen": "Nada que instalar: funciona en tu navegador.",
     "betaInvite": "Este Petty funciona solo con invitación: pídesela a un miembro o escríbenos.",
+    "betaInviteNoContact": "Este Petty funciona solo con invitación: pídesela a un miembro.",
     "again": "¿Empezamos? Solo lleva un minuto.",
     "againInvite": "¿Tienes una invitación? Abre el enlace de tu correo para crear tu cuenta.",
     "shotOpen": "Ampliar: {name}",

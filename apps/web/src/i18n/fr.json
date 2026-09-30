@@ -1104,7 +1104,7 @@
       },
       "cost": {
         "q": "Combien ça coûte ?",
-        "a": "Petty est un logiciel libre (AGPL-3.0) : vous pouvez héberger le vôtre gratuitement. Si la personne qui gère un Petty hébergé le rend un jour payant, elle doit d’abord vous en informer clairement."
+        "a": "Petty lui-même est un logiciel libre (AGPL-3.0) : vous pouvez héberger le vôtre gratuitement. Un Petty géré par quelqu’un d’autre peut être payant : c’est la personne qui le gère qui fixe le prix."
       },
       "phone": {
         "q": "Existe-t-il une application mobile ?",
@@ -1115,8 +1115,9 @@
     "made": "Conçu en Pologne",
     "create": "Créer votre coffre",
     "getInvite": "Obtenir une invitation",
-    "betaOpen": "Sans carte bancaire, rien à installer.",
+    "betaOpen": "Rien à installer : il fonctionne dans votre navigateur.",
     "betaInvite": "Ce Petty fonctionne sur invitation : demandez à un membre ou écrivez-nous.",
+    "betaInviteNoContact": "Ce Petty fonctionne sur invitation : demandez-en une à un membre.",
     "again": "On y va ? Ça prend une minute.",
     "againInvite": "Vous avez une invitation ? Ouvrez le lien reçu par e-mail pour créer votre compte.",
     "shotOpen": "Agrandir : {name}",
