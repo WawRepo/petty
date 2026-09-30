@@ -50,7 +50,8 @@ LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
 RUN npm install -g pnpm@11.2.2
 # PETTY-218: the release version, passed in by release.yml from the git tag; "dev" for local builds.
 ARG PETTY_VERSION=dev
-ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=true SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION
+# TRUST_PROXY: believe X-Forwarded-For only from proxies on private networks (PETTY-290, lib/trust-proxy.ts).
+ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=loopback,linklocal,uniquelocal SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules

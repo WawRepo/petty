@@ -16,6 +16,12 @@ All notable, user-visible changes to Petty. The format follows
 - The deploy guide lists the three database passwords, says that mail needs TLS, where the contact
   address is shown, and what admins can do (they cannot delete accounts).
 
+### Security
+- The per-address limits on sign-in, sign-up, password reset and device codes no longer believe an
+  address the client wrote into `X-Forwarded-For`. `TRUST_PROXY` now names the proxies to believe
+  (addresses, ranges, or `loopback`, `linklocal`, `uniquelocal`); the image's default, and what
+  `true` now means, is proxies on private networks. Behind a CDN, add its ranges.
+
 ## [1.5.6] — 2026-09-29
 
 ### Changed

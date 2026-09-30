@@ -57,7 +57,9 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
-      # The image sets SECURE_COOKIES=true and TRUST_PROXY=true: keep the reverse proxy.
+      # The image sets SECURE_COOKIES=true: keep the HTTPS reverse proxy. TRUST_PROXY = the proxies
+      # whose X-Forwarded-For the app believes; the default is those on private networks (docs/deploy.md).
+      TRUST_PROXY: ${TRUST_PROXY:-loopback,linklocal,uniquelocal}
       METRICS_PORT: ${METRICS_PORT:-0}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}

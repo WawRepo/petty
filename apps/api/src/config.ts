@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseTrustProxy } from "./lib/trust-proxy.js";
 
 /**
  * One .env for the whole repo, at its root (gitignored; see .env.example). Loaded here so the dev
@@ -35,8 +36,8 @@ export const config = {
   apiPrefix: env("API_PREFIX", ""),
   /** When set, the API also serves the built web app from this directory (SPA fallback). */
   webDist: env("WEB_DIST", ""),
-  /** Behind Traefik/any reverse proxy: take the client IP from X-Forwarded-For. */
-  trustProxy: env("TRUST_PROXY", "false") === "true",
+  /** Behind a reverse proxy: how many X-Forwarded-For hops to believe (lib/trust-proxy.ts). */
+  trustProxy: parseTrustProxy(env("TRUST_PROXY", "false")),
   /** OTLP/HTTP base URL of Tempo (spans go to <endpoint>/v1/traces); empty = tracing off. */
   otlpEndpoint: env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
   /** Prometheus /metrics on its own port (never behind the ingress); 0 = off. */
