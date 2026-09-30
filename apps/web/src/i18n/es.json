@@ -722,7 +722,7 @@
     "notTitle": "Contra qué no puede protegerte Petty",
     "not": [
       "Quien sirve este sitio web podría servir una versión que robe tu frase de contraseña. Las reglas estrictas del navegador reducen este riesgo, pero no lo eliminan.",
-      "Un token de acceso que creas para una herramienta (Ajustes → Tokens de acceso) lee todos los cajones que puedes abrir, incluidos los que se compartan contigo más adelante, y un token con permiso de escritura puede añadir movimientos y editar etiquetas y lugares. Quien tenga la cadena del token tiene ese acceso hasta que caduque o lo revoques. Trátalo como una llave.",
+      "Un token de acceso que creas para una herramienta (Ajustes → Tokens de acceso) lee todos los cajones que puedes abrir, incluidos los que se compartan contigo más adelante, y un token con permiso de escritura puede añadir movimientos y cambiar nombres, elementos, etiquetas y lugares de un cajón. Quien tenga la cadena del token tiene ese acceso hasta que caduque o lo revoques. Trátalo como una llave.",
       "Cualquier persona con quien compartas un cajón puede leer y copiar todo su contenido. Quitarla solo le impide el acceso futuro.",
       "Un miembro con permiso de escritura también puede dañar el historial de un cajón (la aplicación muestra entonces esos registros como manipulados, pero su contenido se pierde). Comparte con personas de confianza.",
       "Un fallo de seguridad en la propia aplicación.",
@@ -1221,7 +1221,7 @@
     "name": "Nombre",
     "defaultName": "Mi asistente",
     "mayWriteSwitch": "Puede hacer cambios",
-    "mayWriteHint": "Desactivado: el token solo puede leer. Activado: también puede añadir movimientos, cambiar etiquetas y mover cajones, en tu nombre.",
+    "mayWriteHint": "Desactivado: el token solo puede leer. Activado: también puede añadir movimientos y cambiar nombres, elementos, etiquetas y lugares, en tu nombre.",
     "expiry": "Caducidad",
     "days": "{count, plural, one {# día} other {# días}}",
     "never": "Nunca",

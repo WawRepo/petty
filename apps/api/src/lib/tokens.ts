@@ -10,9 +10,10 @@ import type { Queryable } from "./tx.js";
  * token never comes here: it opens the key bundle on the tool's machine.
  *
  * A token is deliberately weaker than a session. It can read the drawers in its scope and, with
- * the write role, append entries. It can never touch the vault, the account, sharing, admin or
- * export, and it can never make another token. The allow-list below is the whole permission set,
- * so a new route is denied to tokens until someone adds it here on purpose.
+ * the write role, append entries and replace a drawer's sealed document (PETTY-175: names, items,
+ * tags, places; the 30-day document history can restore them). It can never touch the vault, the
+ * account, sharing, admin or export, and it can never make another token. The allow-list below is
+ * the whole permission set, so a new route is denied to tokens until someone adds it here on purpose.
  */
 export interface TokenAuth {
   readonly id: string;

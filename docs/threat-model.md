@@ -1,6 +1,6 @@
 # Threat model
 
-**Current as of v1.3.1 (2026-09-25).** This is the maintained description of what Petty protects,
+**Current as of 2026-09-30 (after v1.5.6).** This is the maintained description of what Petty protects,
 from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
@@ -26,8 +26,9 @@ provider, if you use a hosted one. The same code runs in both cases.
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
 - **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
   read anything written afterwards.
-- **A leaked access token of limited scope.** A tool token can read the drawers in its scope and,
-  with the write role, append entries — nothing else (see "Access tokens").
+- **A leaked access token of limited scope.** A tool token can read the drawers in its scope. With
+  the write role it can also add entries and replace a drawer's sealed document: its name, items,
+  tags and places (the drawer's 30-day history can restore them). Nothing else (see "Access tokens").
 
 ## What Petty does not defend against
 
@@ -38,7 +39,8 @@ Users should be told these plainly.
   **with a hosted instance you trust its operator to serve the published code.** Mitigations are
   partial: a strict Content-Security-Policy with no inline or third-party script (Clerk's code is
   bundled at a pinned version, not fetched at run time), subresource integrity, no analytics, pinned
-  dependencies, and published, attested release images. Self-hosting from a verified image removes
+  dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
+  built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
   the third party, not the risk class.
 - **A malicious collaborator.** Anyone you share a drawer with can read and copy everything in it.
   Removal stops future access, never past access.
@@ -109,8 +111,11 @@ A token lets a tool on the owner's machine (for example the Claude Desktop add-o
 optionally write, the owner's drawers without breaking end-to-end encryption. The token string holds
 a secret that opens a key bundle on the tool's machine; the server stores only the bundle it cannot
 open and a hash of the token id. A token has its own signing key, vouched for by the owner's account
-key. It **can never** touch the vault, the account, sharing, admin or export, or create another token —
-the server refuses every route not on its allow-list. Creating one requires the custody proof. Details
+key. With the write role it may add entries and replace a drawer's document; the server cannot see
+what changed inside the sealed document, so such a token can rename, retag, move or drop items, and
+the owner can restore an earlier version from the drawer's 30-day history. It **can never** touch the
+vault, the account, sharing, admin or export, or create another token — the server refuses every
+route not on its allow-list. Creating one requires the custody proof. Details
 and diagram: [README.md](README.md).
 
 ## Device login
@@ -131,7 +136,7 @@ relays the sealed blob once and deletes the request; it never sees the token.
   that may write needs the passphrase or passkey. Someone who allows an attacker's request gives that
   attacker a token, as with any device login; revoking it in Settings stops it at once.
 - **Guessing codes.** 12 letters from 20 (about 2^52), one-time, 15 minutes. Lookups are limited per
-  person and per address, only a signed-in and unlocked person can allow one, and a token can never
+  person, only a signed-in and unlocked person can allow one, and a token can never
   allow a token. Asking for codes is limited per address.
 - **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
   token file. What a person types (names, amounts, notes) stays in their shell's history, outside

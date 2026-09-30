@@ -722,7 +722,7 @@
     "notTitle": "Ce contre quoi Petty ne peut pas protéger",
     "not": [
       "Quiconque héberge ce site pourrait diffuser une version qui vole votre phrase secrète. Des règles strictes du navigateur réduisent ce risque, elles ne le suppriment pas.",
-      "Un jeton d’accès que vous créez pour un outil (Réglages → Jetons d’accès) peut lire chaque tiroir que vous pouvez ouvrir, y compris les tiroirs partagés avec vous plus tard, et un jeton en écriture peut ajouter des opérations et modifier les étiquettes et les lieux. Quiconque détient la chaîne du jeton a cet accès jusqu’à son expiration ou jusqu’à ce que vous le révoquiez. Traitez-le comme une clé.",
+      "Un jeton d’accès que vous créez pour un outil (Réglages → Jetons d’accès) peut lire chaque tiroir que vous pouvez ouvrir, y compris les tiroirs partagés avec vous plus tard, et un jeton en écriture peut ajouter des opérations et modifier les noms, les éléments, les étiquettes et les lieux d’un tiroir. Quiconque détient la chaîne du jeton a cet accès jusqu’à son expiration ou jusqu’à ce que vous le révoquiez. Traitez-le comme une clé.",
       "Toute personne avec qui vous partagez un tiroir peut lire et copier tout ce qu’il contient. La retirer ne coupe que l’accès futur.",
       "Un membre avec accès en écriture peut aussi endommager l’historique d’un tiroir (l’application signale alors ces enregistrements comme altérés, mais leur contenu est perdu). Partagez avec des personnes de confiance.",
       "Une faille de sécurité dans l’application elle-même.",
@@ -1221,7 +1221,7 @@
     "name": "Nom",
     "defaultName": "Mon assistant",
     "mayWriteSwitch": "Peut modifier",
-    "mayWriteHint": "Désactivé : le jeton peut seulement lire. Activé : il peut aussi ajouter des opérations, modifier les étiquettes et déplacer des tiroirs, en votre nom.",
+    "mayWriteHint": "Désactivé : le jeton peut seulement lire. Activé : il peut aussi ajouter des opérations et modifier les noms, les éléments, les étiquettes et les lieux, en votre nom.",
     "expiry": "Expiration",
     "days": "{count, plural, one {# jour} other {# jours}}",
     "never": "Jamais",

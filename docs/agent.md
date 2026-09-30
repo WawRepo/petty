@@ -18,8 +18,8 @@ runs this same server with that login.
 ## 1. Make a token
 
 In Petty: **Settings → Access tokens → New token**. Give it a name, switch on **Can make changes**
-if it should add entries, change tags or move drawers (a new token only reads), pick an expiry, and
-confirm with your passkey or passphrase. The token is shown once:
+if it should add entries and change names, items, tags and places (a new token only reads), pick an
+expiry, and confirm with your passkey or passphrase. The token is shown once:
 
 ```
 petty_pat_<id>.<secret>

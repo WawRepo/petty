@@ -722,7 +722,7 @@
     "notTitle": "Wovor Petty nicht schützen kann",
     "not": [
       "Wer diese Website ausliefert, könnte eine Version ausliefern, die deine Passphrase stiehlt. Strenge Browser-Regeln verringern das Risiko, beseitigen es aber nicht.",
-      "Ein Zugriffstoken, das du für ein Tool erstellst (Einstellungen → Zugriffstokens), liest jede Schublade, die du öffnen kannst, auch solche, die erst später mit dir geteilt werden, und ein Token mit Schreibrecht kann Buchungen hinzufügen sowie Tags und Orte ändern. Wer die Zeichenfolge des Tokens hat, hat diesen Zugriff, bis das Token abläuft oder du es widerrufst. Behandle es wie einen Schlüssel.",
+      "Ein Zugriffstoken, das du für ein Tool erstellst (Einstellungen → Zugriffstokens), liest jede Schublade, die du öffnen kannst, auch solche, die erst später mit dir geteilt werden, und ein Token mit Schreibrecht kann Buchungen hinzufügen sowie Namen, Posten, Tags und Orte einer Schublade ändern. Wer die Zeichenfolge des Tokens hat, hat diesen Zugriff, bis das Token abläuft oder du es widerrufst. Behandle es wie einen Schlüssel.",
       "Alle, mit denen du eine Schublade teilst, können alles darin lesen und kopieren. Entfernst du sie, endet nur der künftige Zugriff.",
       "Ein Mitglied mit Schreibzugriff kann auch den Verlauf einer Schublade beschädigen (die App zeigt diese Einträge dann als manipuliert an, aber ihr Inhalt ist weg). Teile nur mit Menschen, denen du vertraust.",
       "Eine Sicherheitslücke in dieser App selbst.",
@@ -1221,7 +1221,7 @@
     "name": "Name",
     "defaultName": "Mein Assistent",
     "mayWriteSwitch": "Änderungen erlauben",
-    "mayWriteHint": "Aus: Das Token kann nur lesen. An: Es kann auch Buchungen hinzufügen, Tags ändern und Schubladen verschieben, in deinem Namen.",
+    "mayWriteHint": "Aus: Das Token kann nur lesen. An: Es kann auch Buchungen hinzufügen und Namen, Posten, Tags und Orte ändern, in deinem Namen.",
     "expiry": "Gültigkeit",
     "days": "{count, plural, one {# Tag} other {# Tage}}",
     "never": "Unbegrenzt",

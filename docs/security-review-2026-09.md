@@ -58,8 +58,9 @@ causes and fixes are unchanged.
   revokes every session.
 - **SQL and login:** all SQL is parameterised. Login answers the same for a wrong password and a
   blocked account.
-- **Container:** it runs as non-root with a read-only root filesystem, no capabilities and the
-  `RuntimeDefault` seccomp profile.
+- **Container:** in the reviewed deployment it ran as non-root with a read-only root filesystem, no
+  capabilities and the `RuntimeDefault` seccomp profile. The image runs as non-root; the rest were
+  that deployment's settings, and `deploy/compose` does not set them.
 - **Tracing and metrics:** tracing redacts token routes and never records bound values, and a
   test proves it. Metric labels are route templates and fixed enums.
 
@@ -114,7 +115,8 @@ causes and fixes are unchanged.
 
 - **Cause:** the nightly `pg_dump` was written as-is to network storage and kept for 30 days.
 - **Fix:** the backup image (`deploy/backup`) pipes every dump through `age` to a public key. The
-  private key stays off the server. A manual run was decrypted to a valid archive. The privacy
+  private key stays off the server. (The nightly job belonged to the reviewed deployment:
+  `deploy/compose` ships none; see docs/deploy.md, "Backups".) A manual run was decrypted to a valid archive. The privacy
   page says what a dump contains.
 
 ### SR-5. Per-user activity in observability stores

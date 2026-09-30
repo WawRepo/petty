@@ -722,7 +722,7 @@
     "notTitle": "Przed czym Petty nie chroni",
     "not": [
       "Kto udostępnia tę stronę, mógłby podsunąć wersję, która wykrada hasło sejfu. Ścisłe reguły przeglądarki zawężają to ryzyko, ale go nie usuwają.",
-      "Token dostępu, który tworzysz dla narzędzia (Ustawienia → Tokeny dostępu), czyta każdą szufladę, którą możesz otworzyć, także szuflady udostępnione Ci później, a token z prawem zapisu może dodawać wpisy i zmieniać tagi oraz miejsca. Kto ma ten token, ma ten dostęp, dopóki token nie wygaśnie albo go nie unieważnisz. Traktuj go jak klucz.",
+      "Token dostępu, który tworzysz dla narzędzia (Ustawienia → Tokeny dostępu), czyta każdą szufladę, którą możesz otworzyć, także szuflady udostępnione Ci później, a token z prawem zapisu może dodawać wpisy i zmieniać nazwy, pozycje, tagi oraz miejsca w szufladzie. Kto ma ten token, ma ten dostęp, dopóki token nie wygaśnie albo go nie unieważnisz. Traktuj go jak klucz.",
       "Każdy, z kim dzielisz szufladę, może przeczytać i skopiować całą jej zawartość. Usunięcie odcina tylko przyszły dostęp.",
       "Osoba z prawem zapisu może też uszkodzić historię szuflady (aplikacja pokaże te wpisy jako zmanipulowane, ale ich treść przepadnie). Udostępniaj osobom, którym ufasz.",
       "Błąd bezpieczeństwa w samej aplikacji.",
@@ -1221,7 +1221,7 @@
     "name": "Nazwa",
     "defaultName": "Mój asystent",
     "mayWriteSwitch": "Może wprowadzać zmiany",
-    "mayWriteHint": "Wyłączone: token może tylko czytać. Włączone: może też dodawać wpisy, zmieniać tagi i przenosić szuflady w Twoim imieniu.",
+    "mayWriteHint": "Wyłączone: token może tylko czytać. Włączone: może też dodawać wpisy i zmieniać nazwy, pozycje, tagi oraz miejsca w Twoim imieniu.",
     "expiry": "Ważność",
     "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
     "never": "Nigdy",

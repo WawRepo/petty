@@ -5,7 +5,7 @@ name: release
 # - the version is the highest vX.Y.Z tag plus one patch. A tag pushed by hand (say v1.6.0) releases
 #   nothing: it starts a new minor or major, and the next release is v1.6.1;
 # - it makes the release commit (the version in every package.json and the add-on manifest; CHANGELOG.md's
-#   [Unreleased] becomes the version's section), builds the multi-arch image (reproducible, with provenance
+#   [Unreleased] becomes the version's section), builds the multi-arch image (with provenance
 #   and an SBOM), pushes the commit and its tag to main together, and publishes the GitHub Release: that
 #   CHANGELOG section, the image digest and the add-on files.
 # github-actions[bot] pushes the commit: if main ever gets a push rule, let GitHub Actions bypass it.

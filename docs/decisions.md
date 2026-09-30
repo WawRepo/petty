@@ -97,7 +97,8 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
   tag); `/api/config`, Settings and the landing footer show it.
 - **Releases (2026-09-23/24; PETTY-254).** Multi-architecture images built by CI with provenance and an
-  SBOM, pinned by digest. A release is started by hand from main and never waits for CI: it is refused
+  SBOM, pinned by digest. While CI could not run (v1.5.1–v1.5.6), releases were built by hand with the
+  same steps (CLAUDE.md, "Releasing"); their provenance names no source revision. A release is started by hand from main and never waits for CI: it is refused
   while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
   version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
   the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.

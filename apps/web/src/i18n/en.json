@@ -722,7 +722,7 @@
     "notTitle": "What Petty cannot defend against",
     "not": [
       "Whoever serves this website could serve a version that steals your passphrase. Strict browser rules narrow this, they do not remove it.",
-      "An access token you make for a tool (Settings → Access tokens) reads every drawer you can open, including drawers shared with you later, and a writing token can add entries and edit tags and places. Whoever holds the token string has that access until it expires or you revoke it. Treat it like a key.",
+      "An access token you make for a tool (Settings → Access tokens) reads every drawer you can open, including drawers shared with you later, and a writing token can add entries and change a drawer's names, items, tags and places. Whoever holds the token string has that access until it expires or you revoke it. Treat it like a key.",
       "Anyone you share a drawer with can read and copy everything in it. Removing them stops future access only.",
       "A member with write access can also damage a drawer's history (the app then shows those records as tampered, but their content is gone). Share with people you trust.",
       "A security bug in this app itself.",
@@ -1221,7 +1221,7 @@
     "name": "Name",
     "defaultName": "My assistant",
     "mayWriteSwitch": "Can make changes",
-    "mayWriteHint": "Off: the token can only read. On: it can also add entries, change tags and move drawers, in your name.",
+    "mayWriteHint": "Off: the token can only read. On: it can also add entries and change names, items, tags and places, in your name.",
     "expiry": "Expires",
     "days": "{count, plural, one {# day} other {# days}}",
     "never": "Never",

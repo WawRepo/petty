@@ -21,6 +21,8 @@ All notable, user-visible changes to Petty. The format follows
   address is shown, and what admins can do (they cannot delete accounts).
 - Source links go to the source of the running version (its tag), not only to the repository. A
   changed version builds the image with `--build-arg VITE_SOURCE_URL=<its repository>`.
+- The privacy page and the token switch say all that a writing token can change: a drawer's names,
+  items, tags and places, besides adding entries. They named only tags and places.
 - The landing page fits every Petty, not only a hosted one: "write to us" shows only when the
   operator gives a contact address, the open sign-up line no longer reads like a hosted offer, and
   the cost answer says that whoever runs a Petty sets its price.
