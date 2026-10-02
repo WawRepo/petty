@@ -35,7 +35,7 @@ const inject: typeof fetch = async (input, init) => {
 };
 
 /** A made-up terminal: what the program printed, and a person who acts on the page it opened. */
-function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void>; env?: Record<string, string> } = {}) {
+function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void>; env?: Record<string, string>; realTime?: boolean } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "petty-cli-"));
   dirs.push(dir);
   const t = { out: "", err: "", pages: [] as string[], env: { PETTY_CONFIG_DIR: dir, ...opts.env } as Record<string, string | undefined>, dir };
@@ -48,7 +48,9 @@ function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void
     ask: async () => null,
     interactive: false,
     openUrl: (url) => { t.pages.push(url); if (opts.onPage) void opts.onPage(url); return true; },
-    sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 30))),
+    // waits are cut to 30 ms (device-login polling); live completion keeps its real 1.5 s window, or a
+    // busy machine misses it and completes nothing (flaky in CI, PETTY-303)
+    sleep: (ms) => new Promise((r) => setTimeout(r, opts.realTime ? ms : Math.min(ms, 30))),
     now: () => Date.now(),
     hostname: "laptop",
   };
@@ -209,7 +211,7 @@ describe("Tab completion (PETTY-274)", () => {
   });
 
   it("completes item names live, decrypted in memory, quoted for bash", async () => {
-    const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api`, PETTY_COMPLETE_SHELL: "bash" } });
+    const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api`, PETTY_COMPLETE_SHELL: "bash" }, realTime: true });
     await petty("__complete", "add", "Ki");
     expect(t.out).toBe("Kitchen\\ ›\\ Cash\n");
     t.out = "";
