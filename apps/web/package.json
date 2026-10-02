@@ -26,7 +26,7 @@
     "@petty/crypto": "workspace:*",
     "@petty/ledger": "workspace:*",
     "@petty/protocol": "workspace:*",
-    "i18next": "^25.5.2",
+    "i18next": "^26.4.2",
     "i18next-icu": "^2.4.4",
     "intl-messageformat": "^12.1.2",
     "lucide-react": "^1.48.0",
