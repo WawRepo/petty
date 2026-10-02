@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "petty",
   "display_name": "Petty",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Your Petty drawers as tools: balances, finding an item, history, and adding or taking cash.",
   "long_description": "Petty is an end-to-end encrypted ledger for the cash and things in your home. This add-on runs on your own computer. It holds your access token, opens your drawer keys here, and talks to your Petty server, which only ever sees ciphertext. Make a token in Petty: Settings → Access tokens.",
   "author": {
