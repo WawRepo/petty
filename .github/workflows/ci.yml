@@ -25,6 +25,22 @@ jobs:
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
 
+  # DCO (PETTY-304): every commit of a pull request is signed off by its author (CONTRIBUTING.md).
+  # Our own check instead of a third-party app; Dependabot signs off too (web sign-off is required).
+  dco:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24 }
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/dco-check.ts "$BASE" "$HEAD"
+
   test:
     # PETTY-255: while the repository is private (paid minutes), the runs Dependabot starts are skipped;
     # its updates are checked here on main after the merge. A re-run started by a person still runs.

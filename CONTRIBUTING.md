@@ -48,6 +48,7 @@ git commit -s -m "Fix the thing"
 ```
 
 Forgot it? `git commit --amend -s` (last commit) or `git rebase --signoff main` (a whole branch).
+The `dco` check in CI fails a pull request with a commit that has no sign-off from its author.
 
 ## Tracking and decisions
 
