@@ -47,7 +47,6 @@ const initial = detect();
 /** Resolves once the first language is in; main.tsx renders after it. If its file fails to load, English shows. */
 export const i18nReady: Promise<void> = i18n
   .init({
-    showSupportNotice: false, // PETTY-133: no vendor line in the console
     resources: { en: { translation: en } },
     lng: "en",
     fallbackLng: "en",
