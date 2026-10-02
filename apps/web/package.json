@@ -28,7 +28,7 @@
     "@petty/protocol": "workspace:*",
     "i18next": "^25.5.2",
     "i18next-icu": "^2.4.4",
-    "intl-messageformat": "^10.7.16",
+    "intl-messageformat": "^12.1.2",
     "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
