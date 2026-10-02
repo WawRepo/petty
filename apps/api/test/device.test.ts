@@ -10,7 +10,7 @@ import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js"
  * relays the sealed blob and never sees the token.
  */
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 const ORIGIN = "https://petty.test";
 let A: Client;
 

@@ -15,7 +15,7 @@ import pkg from "../package.json" with { type: "json" };
  * tools and calling them. The API runs in memory; the token and the keys stay in this process.
  */
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 let owner: Client;
 let drawerId: string, lineId: string;
 

@@ -11,7 +11,7 @@ import { checkApiUrl, connect, TokenError, type AgentClient } from "../src/index
  * bundle here, decrypts what the bundle covers, and appends entries the owner signs.
  */
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 let owner: Client;
 let drawerId: string, lineId: string, key: CryptoKey; // key: the drawer key as the owner holds it
 

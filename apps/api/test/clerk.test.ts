@@ -37,7 +37,7 @@ const { apiPool, maintPool } = await import("../src/db.js");
 const { Client, userMaterial } = await import("../src/devtools/fixtures.js");
 
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 const owner = new pg.Pool({ connectionString: config.ownerDatabaseUrl, max: 2 });
 const token = (sub: string, over: Record<string, unknown> = {}) =>
   new SignJWT({ sid: `sess_${sub}`, azp: new URL(config.appUrl).origin, ...over }).setProtectedHeader({ alg: "RS256" }).setSubject(sub).setIssuer("https://clerk.petty.test").setIssuedAt().setExpirationTime("5m").sign(pair.privateKey);

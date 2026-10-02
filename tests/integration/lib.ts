@@ -38,7 +38,7 @@ export function testEnv(key: string): string {
   return line.slice(key.length + 1);
 }
 
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 
 /** A new person. The first join link comes from the operator script, as for a real first account. */
 export async function newUser(name: string, joinToken?: string): Promise<Client> {

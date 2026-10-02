@@ -62,6 +62,8 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-loopback,linklocal,uniquelocal}
       # A platform proxy's own client-address header (Fly-Client-IP, CF-Connecting-IP); empty = none.
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
+      # API requests per client address per minute; 0 = off (docs/deploy.md).
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-600}
       METRICS_PORT: ${METRICS_PORT:-0}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}

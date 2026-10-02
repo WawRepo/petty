@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A general limit on API requests per client address: 600 a minute in the image (`RATE_LIMIT_PER_MINUTE`;
+  `0` turns it off). Before, only sign-in, sign-up, password reset and device codes had limits, so one
+  address could flood the database through any other route.
+
 ## [1.5.8] — 2026-09-30
 
 ### Fixed

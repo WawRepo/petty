@@ -9,7 +9,7 @@ import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, sealedBody, userMaterial } from "../src/devtools/fixtures.js";
 
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 let A: Client, B: Client, C: Client, N: Client; // owner, write, read, non-member
 const owner = new pg.Pool({ connectionString: config.ownerDatabaseUrl, max: 2 });
 

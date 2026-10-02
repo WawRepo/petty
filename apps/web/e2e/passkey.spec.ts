@@ -21,7 +21,7 @@ async function virtualAuthenticator(page: Page): Promise<{ cdp: CDPSession; id: 
 
 /** Day 1: the invitation, a login password, a passkey — no passphrase typed, ever. Returns the recovery code too. */
 async function joinWithPasskey(page: Page, name: string): Promise<TestUser & { recoveryCode: string }> {
-  const run = Math.random().toString(36).slice(2, 8);
+  const run = crypto.randomUUID().slice(0, 8);
   const user = { name, email: `${name}-${run}@e2e.local`, password: `password-${name}-${run}`, passphrase: "" };
   await page.goto(`/join#${await makeJoinLink()}`);
   await page.getByLabel("Your name").fill(name);

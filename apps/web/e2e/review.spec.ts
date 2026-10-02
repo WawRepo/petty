@@ -4,11 +4,13 @@
  * REVIEW_OUT and runs axe on each. Findings go to the Plane ticket.
  */
 import AxeBuilder from "@axe-core/playwright";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { expect, loginAndUnlock, makeJoinLink, signupViaApi, test, openSettings } from "./fixtures.js";
 
-const OUT = process.env["REVIEW_OUT"] ?? "/tmp/petty-review";
+const OUT = process.env["REVIEW_OUT"] ?? mkdtempSync(join(tmpdir(), "petty-review-"));
 const PL_WITHDRAW = "Wyjmij";
 test.skip(!process.env["REVIEW"], "review harness; set REVIEW=1");
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

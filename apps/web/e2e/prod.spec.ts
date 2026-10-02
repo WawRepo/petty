@@ -36,7 +36,7 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   // full crypto path under the policy
   const token = await makeJoinLink();
   await page.goto(`/join#${token}`);
-  const run = Math.random().toString(36).slice(2, 8);
+  const run = crypto.randomUUID().slice(0, 8);
   await page.getByLabel("Your name").fill("Pat");
   await page.getByLabel("Email").fill(`pat-${run}@e2e.local`);
   await page.getByLabel("Login password").fill(`login-${run}-pw`);

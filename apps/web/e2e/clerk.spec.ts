@@ -23,7 +23,7 @@ test.beforeAll(async () => {
   if (EMAIL) return;
   // only ever against a development instance
   if (!process.env["CLERK_SECRET_KEY"]?.startsWith("sk_test_")) throw new Error("CLERK_E2E needs Clerk test keys");
-  EMAIL = `petty-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}+clerk_test@example.com`;
+  EMAIL = `petty-e2e-${Date.now()}-${crypto.randomUUID().slice(0, 6)}+clerk_test@example.com`;
   const res = await clerkApi("/users", { method: "POST", body: JSON.stringify({ email_address: [EMAIL], password: PW, skip_password_checks: true }) });
   if (!res.ok) throw new Error(`clerk user: ${res.status}`);
   madeUserId = ((await res.json()) as { id: string }).id;

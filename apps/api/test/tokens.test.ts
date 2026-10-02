@@ -10,7 +10,7 @@ import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js"
  * it cannot open; the secret half never arrives here.
  */
 const app = buildApp();
-const run = Math.random().toString(36).slice(2, 8);
+const run = crypto.randomUUID().slice(0, 8);
 let A: Client, B: Client;
 
 const tokenId = () => toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");

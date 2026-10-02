@@ -76,6 +76,7 @@ ARG PETTY_VERSION=dev
 # pnpm_config_verify_deps_before_run=false: pnpm 11.28 otherwise runs "pnpm install" before every script
 # (start, migrate, join-link), which the partial production install always fails as the node user.
 ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=loopback,linklocal,uniquelocal SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION \
+    RATE_LIMIT_PER_MINUTE=600 \
     pnpm_config_verify_deps_before_run=false
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules

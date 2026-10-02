@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { closeSync, fstatSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -16,7 +16,7 @@ import type { Io } from "../src/io.js";
  * owner, checks the code against the tool's key, makes a token and seals it to the tool, as the web app does.
  */
 const app = buildApp();
-const run_ = Math.random().toString(36).slice(2, 8);
+const run_ = crypto.randomUUID().slice(0, 8);
 const ORIGIN = "https://petty.test";
 let owner: Client;
 let drawerId: string, lineId: string;
@@ -107,9 +107,11 @@ describe("petty auth login through the page (PETTY-274)", () => {
     expect(t.err).toContain("Signed in to https://petty.test with the token “petty on laptop” (may add entries)");
     // kept for this user only, never with drawer content
     const file = join(t.dir, "hosts.json");
-    expect(statSync(file).mode & 0o777).toBe(0o600);
+    const fd = openSync(file, "r");
+    expect(fstatSync(fd).mode & 0o777).toBe(0o600);
     expect(statSync(t.dir).mode & 0o777).toBe(0o700);
-    const stored = readFileSync(file, "utf8");
+    const stored = readFileSync(fd, "utf8");
+    closeSync(fd);
     expect(stored).toContain("petty_pat_");
     expect(stored).not.toContain("Kitchen");
 

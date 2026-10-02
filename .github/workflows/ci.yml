@@ -18,12 +18,19 @@ jobs:
     if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # PETTY-303: on a pull request the action lists its commits through the API, so it needs the token
+    # ("GITHUB_TOKEN is now required to scan pull requests"); read-only, and no PR comments.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: false
 
   # DCO (PETTY-304): every commit of a pull request is signed off by its author (CONTRIBUTING.md).
   # Our own check instead of a third-party app; Dependabot signs off too (web sign-off is required).

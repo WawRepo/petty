@@ -40,6 +40,8 @@ export const config = {
   trustProxy: parseTrustProxy(env("TRUST_PROXY", "false")),
   /** A platform proxy's own client-address header, e.g. Fly-Client-IP (lib/client-ip.ts); empty = none. */
   clientIpHeader: env("CLIENT_IP_HEADER", "").trim().toLowerCase(),
+  /** API requests per client address per minute (lib/rate-limit.ts); 0 = off. The image sets 600. */
+  apiRateLimitPerMinute: Math.max(0, Number(env("RATE_LIMIT_PER_MINUTE", "0")) || 0),
   /** OTLP/HTTP base URL of Tempo (spans go to <endpoint>/v1/traces); empty = tracing off. */
   otlpEndpoint: env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
   /** Prometheus /metrics on its own port (never behind the ingress); 0 = off. */

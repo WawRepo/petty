@@ -16,7 +16,7 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   await page.goto(`/join#${token}`);
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await axe(page);
-  const run = Math.random().toString(36).slice(2, 8);
+  const run = crypto.randomUUID().slice(0, 8);
   await page.getByLabel("Your name").fill("Dana");
   await page.getByLabel("Email").fill(`dana-${run}@e2e.local`);
   await page.getByLabel("Login password").fill(`login-${run}-pw`);

@@ -12,6 +12,7 @@ import { sessionPlugin } from "./lib/session.js";
 import { securityHeaders } from "./lib/headers.js";
 import { requestMetrics } from "./lib/metrics.js";
 import { safeUrl, tracingHooks } from "./lib/tracing.js";
+import { apiRateLimit } from "./lib/rate-limit.js";
 import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { drawerRoutes } from "./routes/drawers.js";
@@ -55,6 +56,7 @@ export function buildApp() {
   app.register(sessionPlugin);
   requestMetrics(app, config.apiPrefix);
   securityHeaders(app, { hsts: config.secureCookies });
+  apiRateLimit(app, { perMinute: config.apiRateLimitPerMinute, apiPrefix: config.apiPrefix, clientIpHeader: config.clientIpHeader });
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof ApiError) {

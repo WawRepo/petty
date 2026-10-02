@@ -11,13 +11,13 @@ import { logs } from "@opentelemetry/api-logs";
 import { otelResource } from "../src/lib/otel-resource.js";
 import { startOtlpMetrics, startOtlpLogs, flushOtlpPush, stopOtlpPush } from "../src/lib/otel-push.js";
 
-const hits: Record<string, number> = {};
+const hits = new Map<string, number>();
 let server: http.Server;
 let endpoint = "";
 
 beforeAll(async () => {
   server = http.createServer((req, res) => {
-    hits[req.url ?? "?"] = (hits[req.url ?? "?"] ?? 0) + 1;
+    hits.set(req.url ?? "?", (hits.get(req.url ?? "?") ?? 0) + 1);
     req.on("data", () => {});
     req.on("end", () => res.writeHead(200).end());
   });
@@ -45,7 +45,7 @@ describe("otlp push", () => {
     await new Promise((r) => setTimeout(r, 400));
     await flushOtlpPush();
     await new Promise((r) => setTimeout(r, 200));
-    expect(hits["/v1/metrics"] ?? 0).toBeGreaterThan(0);
-    expect(hits["/v1/logs"] ?? 0).toBeGreaterThan(0);
+    expect(hits.get("/v1/metrics") ?? 0).toBeGreaterThan(0);
+    expect(hits.get("/v1/logs") ?? 0).toBeGreaterThan(0);
   });
 });

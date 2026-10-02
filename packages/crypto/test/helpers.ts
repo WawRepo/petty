@@ -6,7 +6,7 @@ export const AUTHOR = "user-default";
 
 export interface TestAuthor { keys: UserKeyPairs; id: string; sigKeyId: string; ecdhPub: string; author: Author }
 
-export async function author(id = "user-" + Math.random().toString(36).slice(2, 8)): Promise<TestAuthor> {
+export async function author(id = "user-" + crypto.randomUUID().slice(0, 8)): Promise<TestAuthor> {
   const keys = await generateUserKeys();
   const pub = await exportPublicKeys(keys);
   const sigKeyId = await signingKeyId(pub.ecdsa);
@@ -23,7 +23,7 @@ export function docIdentity(extra: Partial<RecordIdentity> = {}): RecordIdentity
 export async function makeEntry(a: TestAuthor, over: Partial<EntryPayloadV1> = {}): Promise<SignedEntryV1> {
   const payload: EntryPayloadV1 = {
     v: 1,
-    id: over.id ?? "e-" + Math.random().toString(36).slice(2, 10),
+    id: over.id ?? "e-" + crypto.randomUUID().slice(0, 10),
     drawer_id: DRAWER,
     line_id: LINE,
     op: "add",

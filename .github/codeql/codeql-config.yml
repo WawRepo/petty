@@ -1,0 +1,4 @@
+# CodeQL (PETTY-303): the frozen prototype in docs/history is a historical record, never built or
+# served; its findings say nothing about the app.
+paths-ignore:
+  - docs/history
