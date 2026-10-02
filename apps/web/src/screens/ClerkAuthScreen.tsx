@@ -1,4 +1,4 @@
-import { SignIn, SignUp } from "@clerk/clerk-react";
+import { SignIn, SignUp } from "@clerk/react";
 import { useTranslation } from "react-i18next";
 import { TopBar } from "../components/TopBar.js";
 import { useNavigate } from "react-router";

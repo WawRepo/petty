@@ -36,7 +36,7 @@ function build(c: Tokens) {
       footerActionLink: { color: c.accent, fontWeight: 600 },
     },
     // "auto": Clerk shows icon buttons when the provider names would not fit.
-    layout: { socialButtonsPlacement: "top" as const, socialButtonsVariant: "auto" as const },
+    options: { socialButtonsPlacement: "top" as const, socialButtonsVariant: "auto" as const },
   };
 }
 

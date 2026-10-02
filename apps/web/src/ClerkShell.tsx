@@ -1,9 +1,10 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/react";
 import { useNavigate } from "react-router";
 import { currentLocale, type Locale } from "./i18n/index.js";
 import { Clerk } from "@clerk/clerk-js";
+import { ui } from "@clerk/ui";
 import { authConfig } from "./lib/authConfig.js";
 import { setTokenProvider } from "./lib/api.js";
 import { boot, setSessionScope, setSignOutHandler, toAnonymous } from "./lib/session.js";
@@ -12,10 +13,16 @@ import { useClerkAppearance } from "./lib/clerkAppearance.js";
 /**
  * clerk-js is bundled into this chunk at a pinned version (PETTY-185, review NR-5), not fetched from
  * Clerk's servers at run time: the page that holds the vault keys runs only code we built and can
- * review. The CSP therefore no longer lists Clerk's origin under script-src.
+ * review. The CSP therefore no longer lists Clerk's origin under script-src. Since Clerk 6 the sign-in
+ * and sign-up screens are a package of their own, @clerk/ui, which Clerk would otherwise load from its
+ * CDN; it is bundled too and handed to ClerkProvider as `ui` (PETTY-306).
  */
 let clerkInstance: Clerk | null = null;
-const clerkJs = (publishableKey: string): Clerk => (clerkInstance ??= new Clerk(publishableKey));
+// Clerk 6's types differ from this repo's exactOptionalPropertyTypes in one internal optional field
+// (__internal_protectChallengeLoadTimeoutMs: number | undefined vs number); the instance itself is the
+// one ClerkProvider expects.
+type ClerkInstanceProp = ComponentProps<typeof ClerkProvider>["Clerk"];
+const clerkJs = (publishableKey: string): ClerkInstanceProp => (clerkInstance ??= new Clerk(publishableKey)) as unknown as ClerkInstanceProp;
 
 /**
  * Clerk moves between its steps (the email code, a second factor, the OAuth return) through the app's
@@ -68,7 +75,7 @@ export function ClerkShell({ children }: { children: ReactNode }) {
     return () => { appNavigate = null; };
   }, [navigate]);
   return (
-    <ClerkProvider Clerk={clerkJs(publishableKey)} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join"
+    <ClerkProvider Clerk={clerkJs(publishableKey)} ui={ui} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join"
       routerPush={routerPush} routerReplace={routerReplace}>
       <Bridge>{children}</Bridge>
     </ClerkProvider>

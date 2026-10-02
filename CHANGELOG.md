@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- Sign-in through Clerk uses Clerk 6. Its screens look slightly different (for example, the social
+  sign-in buttons say "Continue with …"), and a sign-in on a new device may ask for an email code.
+  Clerk's code, now with its screens as a package of their own, is still bundled into the app and
+  never loaded from Clerk's servers.
+
 ### Security
 - A general limit on API requests per client address: 600 a minute in the image (`RATE_LIMIT_PER_MINUTE`;
   `0` turns it off). Before, only sign-in, sign-up, password reset and device codes had limits, so one

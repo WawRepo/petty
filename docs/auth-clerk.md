@@ -42,10 +42,14 @@ deployment, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` 
 
 ## Browser side
 
-- `@clerk/clerk-react` with `@clerk/clerk-js` bundled into the app at a pinned version
-  (PETTY-185): no Clerk code is fetched at run time, so `script-src` does not list Clerk. Only
-  `connect-src` adds the instance's frontend API origin (`CLERK_FRONTEND_API`) in clerk mode.
-  Upgrading clerk-js is a normal dependency bump, reviewed like any other. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`), the bot check loads
+- `@clerk/react` with `@clerk/clerk-js` and `@clerk/ui` (since Clerk 6 the sign-in and sign-up
+  screens are a package of their own) bundled into the app at pinned versions (PETTY-185, PETTY-306):
+  `ClerkProvider` gets the bundled instance as `Clerk` and the screens as `ui`, so no Clerk code is
+  fetched at run time and `script-src` does not list Clerk. Only `connect-src` adds the instance's
+  frontend API origin (`CLERK_FRONTEND_API`) in clerk mode. Upgrade clerk-js, `@clerk/ui`,
+  `@clerk/react` and `@clerk/localizations` together, and run the Clerk tests locally
+  (`CLERK_E2E=1 npx playwright test e2e/clerk.spec.ts --project clerk-prod` in `apps/web`): CI has no
+  Clerk keys. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`), the bot check loads
   Cloudflare Turnstile (`script-src`/`frame-src` `https://challenges.cloudflare.com`),
   `img-src` adds `https://img.clerk.com`, and Trusted Types enforcement is off. These are the
   relaxations, all listed in `lib/headers.ts`; local mode keeps the strict policy.

@@ -63,7 +63,8 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   custody proofs stay Petty's. See [auth-clerk.md](auth-clerk.md).
 - **Clerk code is bundled, not fetched (PETTY-185, 2026-09-19).** clerk-js ships inside the app at a
   pinned version so the page holding the vault keys runs only code that was built and reviewed; the
-  CSP lists no Clerk script origin.
+  CSP lists no Clerk script origin. Since Clerk 6 (PETTY-306) its UI package, `@clerk/ui`, is bundled
+  the same way.
 - **Admins (2026-09).** An admin flag grants account management (list, block/unblock, revoke sessions,
   restore a vault blob, grant admin) and no content access. Granted from the container with
   `make-admin`.

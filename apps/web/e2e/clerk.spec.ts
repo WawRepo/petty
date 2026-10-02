@@ -33,17 +33,17 @@ const PASS = "correct horse battery staple 2026";
 async function clerkSignIn(page: Page) {
   await page.goto("/login"); await page.waitForTimeout(2500);
   await page.getByLabel(/email/i).first().fill(EMAIL);
-  const c1 = page.getByRole("button", { name: /^continue/i }).first(); if (await c1.count()) await c1.click();
+  const c1 = page.getByRole("button", { name: "Continue", exact: true }); if (await c1.count()) await c1.click();
   await page.waitForTimeout(1500);
   await page.getByLabel(/^password/i).first().fill(PW);
-  await page.getByRole("button", { name: /^continue/i }).first().click();
-  const codeStep = await page.waitForURL(/factor-two|verify/, { timeout: 15_000 }).then(() => true).catch(() => false);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  const codeStep = await page.waitForURL(/factor-two|verify|client-trust/, { timeout: 15_000 }).then(() => true).catch(() => false);
   if (codeStep) {
-    // device trust: an email code on a new device; +clerk_test addresses take 424242
+    // device trust: an email code on a new device (Clerk 6: the client-trust step); +clerk_test addresses take 424242
     await page.getByRole("textbox").first().click();
     await page.keyboard.type("424242", { delay: 60 });
-    const left = await page.waitForURL((u) => !/factor-two|verify/.test(u.toString()), { timeout: 20_000 }).then(() => true).catch(() => false);
-    if (!left) await page.getByRole("button", { name: /^continue/i }).first().click().catch(() => undefined);
+    const left = await page.waitForURL((u) => !/factor-two|verify|client-trust/.test(u.toString()), { timeout: 20_000 }).then(() => true).catch(() => false);
+    if (!left) await page.getByRole("button", { name: "Continue", exact: true }).click().catch(() => undefined);
   }
 }
 test("clerk flow", async ({ page }) => {
@@ -109,7 +109,7 @@ test("sign up through Clerk: the email code step stays on screen, with no page l
     await page.getByLabel(/email/i).first().fill(email);
     const pw = page.getByLabel(/^password/i).first();
     if (await pw.count()) await pw.fill(PW);
-    await page.getByRole("button", { name: /^continue/i }).first().click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await expect(page).toHaveURL(/\/join\/verify-email-address$/);
     const code = page.getByRole("textbox", { name: /verification code/i });
     await expect(code).toBeVisible();

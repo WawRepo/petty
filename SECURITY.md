@@ -32,15 +32,10 @@ Include what you found, how to reproduce it, and what an attacker gains. We answ
 ## Known dependency advisories
 
 CI fails a pull request on any *high* or *critical* advisory in the shipped dependencies
-(`pnpm audit --prod --audit-level high`). Lower-severity advisories are triaged, not ignored; the
-current accepted ones, with the reason, are:
-
-| Advisory | Package | Why accepted (2026-09-24) |
-|---|---|---|
-| GHSA-w5hq-g745-h8pq | `uuid@8.3.2` | Reached only through `@clerk/clerk-js → @solana/… → jayson`, Clerk's Solana-wallet sign-in path. Petty never enables a Web3 wallet, the code sits in a lazily-loaded Clerk-only chunk, and no Petty input flows into it. |
-| GHSA-528h-pc64-c93x | `stream-json@1.9.1` | Same path; a server-side streaming JSON parser that the browser bundle never invokes. |
-
-These are re-checked at every dependency update; a compatible upstream bump removes them.
+(`pnpm audit --prod --audit-level high`). Lower-severity advisories are triaged, not ignored, and
+any accepted one is listed here with the reason. None is accepted today: the two that were (`uuid`
+8.3.2 and `stream-json` 1.9.1, reached only through Clerk 5's Solana-wallet code) left with Clerk 6,
+and `pnpm audit --prod` reports no known vulnerabilities (2026-10-02).
 
 ## Supported versions
 
