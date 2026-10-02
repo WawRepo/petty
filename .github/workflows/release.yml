@@ -100,12 +100,14 @@ jobs:
           tags: ghcr.io/wawrepo/petty:v${{ steps.version.outputs.version }}
       # Before anything else is published: the image's provenance may hold no email address but a noreply
       # one. On a hit, nothing more is published; the address is never printed (logs are public).
+      # `git@github.com` is the repository's SSH address (the event's repository.ssh_url), not a person.
       - name: The provenance holds no personal address
         env:
           IMAGE: ghcr.io/wawrepo/petty:v${{ steps.version.outputs.version }}
         run: |
           hits=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Provenance}}' \
-            | grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | grep -vc 'noreply' || true)
+            | grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
+            | grep -v -e 'noreply' -e '^git@github\.com$' | wc -l | tr -d ' ' || true)
           if [ "$hits" != "0" ]; then
             echo "::error::the image's provenance holds $hits email address(es) that are not noreply ones; nothing else was published. Delete this image version, turn on 'Keep my email addresses private' in GitHub, and start the release again."
             exit 1
