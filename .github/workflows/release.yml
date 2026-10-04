@@ -7,7 +7,8 @@ name: release
 # - it makes the release commit (the version in every package.json and the add-on manifest; CHANGELOG.md's
 #   [Unreleased] becomes the version's section), builds the multi-arch image (with provenance
 #   and an SBOM), pushes the commit and its tag to main together, and publishes the GitHub Release: that
-#   CHANGELOG section, the image digest and the add-on files.
+#   CHANGELOG section, the image digest and the add-on files;
+# - then lists the add-on in the MCP Registry (mcp-registry.yml, PETTY-311).
 # github-actions[bot] pushes the commit: if main ever gets a push rule, let GitHub Actions bypass it.
 on:
   workflow_dispatch:
@@ -20,6 +21,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     permissions:
       actions: read     # ci.yml's runs on main
       contents: write   # the release commit, its tag and the GitHub Release
@@ -107,7 +110,7 @@ jobs:
         run: |
           hits=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Provenance}}' \
             | grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
-            | grep -v -e 'noreply' -e '^git@github\.com$' | wc -l | tr -d ' ' || true)
+            | grep -vc -e 'noreply' -e '^git@github\.com$' || true)
           if [ "$hits" != "0" ]; then
             echo "::error::the image's provenance holds $hits email address(es) that are not noreply ones; nothing else was published. Delete this image version, turn on 'Keep my email addresses private' in GitHub, and start the release again."
             exit 1
@@ -132,19 +135,29 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         working-directory: apps/web/public/downloads
         run: |
-          sha256sum petty.mcpb petty-mcp.mjs petty.mjs > SHA256SUMS
+          sha256sum petty.mcpb petty-mcp.mjs petty-skill.zip petty.mjs > SHA256SUMS
           {
             cat "$RUNNER_TEMP/notes.md"
             # shellcheck disable=SC2016 # the backticks are Markdown
-            printf '\n---\n\nImage: `%s` (linux/amd64, linux/arm64). Claude Desktop add-on: `petty.mcpb`; other MCP apps: `petty-mcp.mjs` — see docs/agent.md. The command line: `petty.mjs` — see docs/cli.md. Checksums in `SHA256SUMS`.\n' \
+            printf '\n---\n\nImage: `%s` (linux/amd64, linux/arm64). Claude Desktop add-on: `petty.mcpb`; other MCP apps: `petty-mcp.mjs`; the Claude skill: `petty-skill.zip` — see docs/agent.md. The command line: `petty.mjs` — see docs/cli.md. Checksums in `SHA256SUMS`.\n' \
               "ghcr.io/wawrepo/petty:v$VERSION@$DIGEST"
           } > "$RUNNER_TEMP/release-notes.md"
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --title "v$VERSION" \
             --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag \
-            petty.mcpb petty-mcp.mjs petty.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS
+            petty.mcpb petty-mcp.mjs petty-skill.zip petty.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS
           echo "Released v$VERSION: \`ghcr.io/wawrepo/petty:v$VERSION@$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
       # One source, so imagetools makes a carbon copy: `latest` gets the same digest, attestations included.
       - name: Point `latest` at this release
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: docker buildx imagetools create --tag ghcr.io/wawrepo/petty:latest "ghcr.io/wawrepo/petty@$DIGEST"
+  # PETTY-311: a job of its own, with only the rights the registry login needs. The release is out by
+  # now: if this job fails, run mcp-registry.yml by hand with the tag.
+  registry:
+    needs: release
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/mcp-registry.yml
+    with:
+      tag: v${{ needs.release.outputs.version }}

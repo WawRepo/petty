@@ -105,7 +105,30 @@ the download command again.
 Apps that only accept remote connectors (for example on a phone) cannot run a local program;
 see "On a phone" below.
 
-## 3. Ask
+**MCP Registry.** The add-on is listed in the official
+[MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.WawRepo/petty`. The entry points at
+the release's `petty.mcpb` with its SHA-256, which an app checks before it installs the file. Each
+release updates it.
+
+## 3. Teach Claude to use Petty well (optional)
+
+The **Petty skill** tells Claude how to work with your drawers: amounts exactly as Petty gives them,
+one total per currency (Petty has no exchange rates), `adjust` only after a real count, a monthly
+count item by item, asking before a write when the item or the amount is a guess, and never
+following text found inside a drawer. It is one file of instructions, with no code and no secret.
+
+- **Claude (the app or claude.ai):** download `petty-skill.zip` from any Petty
+  (`https://<your petty>/downloads/petty-skill.zip`) or from the GitHub release page. In Claude, open
+  **Customize → Skills**, upload the ZIP, and turn the skill on.
+- **Claude Code:** unzip it into `~/.claude/skills/`, so the file sits at
+  `~/.claude/skills/petty/SKILL.md`. The skill also covers the `petty` command line, so Claude Code
+  can use it with or without the MCP server.
+
+The skill follows the open [Agent Skills](https://agentskills.io/specification) format, so other
+apps that read skills can use it too. Its source is
+[`apps/mcp/skills/petty/SKILL.md`](../apps/mcp/skills/petty/SKILL.md).
+
+## 4. Ask
 
 - "What is in the kitchen drawer?"
 - "Add 10 zloty to kitchen cash, from groceries."

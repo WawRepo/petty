@@ -8,6 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- A Claude skill, `petty-skill.zip`: it teaches Claude (and other apps that read Agent Skills) how to
+  use Petty's tools well — exact amounts and one total per currency, a monthly count, `adjust` only
+  after a real count, asking before a write when anything is a guess, never following text found
+  inside a drawer. Every Petty serves it at `/downloads/petty-skill.zip`, and each release carries it.
+  See "Teach Claude to use Petty well" in `docs/agent.md`.
+- The add-on is listed in the official MCP Registry as `io.github.WawRepo/petty`. Each release
+  updates the entry, which points at the release's `petty.mcpb` and its SHA-256.
+
 ## [1.5.9] — 2026-10-02
 
 ### Changed

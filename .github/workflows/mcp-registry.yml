@@ -1,0 +1,62 @@
+name: mcp-registry
+# PETTY-311: lists a release's Claude Desktop add-on in the official MCP Registry
+# (registry.modelcontextprotocol.io) as io.github.WawRepo/petty. The entry is metadata only: it points
+# at the GitHub Release's petty.mcpb with its SHA-256, which MCP apps check before they install it.
+# release.yml calls this once the GitHub Release is out (the registry checks that the file can be
+# fetched). For a release that is already out, run it by hand:
+#   gh workflow run mcp-registry.yml --ref main -f tag=v1.5.9
+# The login is GitHub's OIDC token for this repository: no secret, and it can only publish names under
+# io.github.WawRepo/. A version the registry already holds is refused, so a second run changes nothing.
+on:
+  workflow_call:
+    inputs:
+      tag: { type: string, required: true }
+  workflow_dispatch:
+    inputs:
+      tag: { description: "The release tag, for example v1.5.9", type: string, required: true }
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read  # the release's files
+      id-token: write # the registry login
+    defaults:
+      run:
+        shell: bash
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24 }
+      - name: Fetch the release's add-on and check it against its SHA256SUMS
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::$TAG is not a vX.Y.Z tag"; exit 1; }
+          mkdir "$RUNNER_TEMP/release" && cd "$RUNNER_TEMP/release"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern petty.mcpb --pattern SHA256SUMS
+          grep ' petty.mcpb$' SHA256SUMS | sha256sum -c -
+          version=$(unzip -p petty.mcpb manifest.json | jq -r .version)
+          [ "v$version" = "$TAG" ] || { echo "::error::the add-on in $TAG says it is $version"; exit 1; }
+      - name: Write the registry entry
+        run: |
+          node scripts/mcp-server-json.ts "$TAG" "$RUNNER_TEMP/release/petty.mcpb" > "$RUNNER_TEMP/server.json"
+          cat "$RUNNER_TEMP/server.json"
+      # Pinned like every other tool here: one version, checked against the checksum its release lists.
+      - name: Install mcp-publisher 1.8.1
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSL -o mcp-publisher.tar.gz https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+          echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+      - name: Publish to the MCP Registry
+        working-directory: ${{ runner.temp }}
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish server.json
+          echo "Listed in the MCP Registry: io.github.WawRepo/petty $TAG" >> "$GITHUB_STEP_SUMMARY"

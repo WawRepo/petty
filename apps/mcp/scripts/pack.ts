@@ -4,12 +4,20 @@
  * on, then zips the mcpb/ folder with fflate, which is pinned in the lockfile like every other tool.
  *
  *   tsx scripts/pack.ts <mcpb folder> <out.mcpb>
+ *
+ * PETTY-310: `--skill` packs an Agent Skill the way claude.ai takes one: a ZIP whose top level is the
+ * skill's folder (`petty/SKILL.md`), with the licence beside it. SKILL.md is checked first.
+ *
+ *   tsx scripts/pack.ts --skill <skill folder> <out.zip> <LICENSE>
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { zipSync, type Zippable } from "fflate";
+import { readSkill } from "./skill.js";
 
-const [dir = "mcpb", out = "petty.mcpb"] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const skillMode = args[0] === "--skill";
+const [dir = "mcpb", out = "petty.mcpb", licence] = skillMode ? args.slice(1) : args;
 
 function fail(msg: string): never {
   process.stderr.write(`pack: ${msg}\n`);
@@ -40,15 +48,24 @@ function files(root: string, at = root): string[] {
   });
 }
 
-checkManifest(dir);
+let prefix = "";
+if (skillMode) {
+  try {
+    prefix = `${readSkill(dir).name}/`;
+  } catch (e) {
+    fail(`${dir}/SKILL.md: ${(e as Error).message}`);
+  }
+  if (!licence || !statSync(licence, { throwIfNoEntry: false })?.isFile()) fail("--skill needs the LICENSE file as its third argument");
+} else checkManifest(dir);
 const zip: Zippable = {};
 // The same input gives the same archive on every machine (PETTY-296, review S11). A ZIP stores
 // wall-clock time, which fflate reads in the local time zone, so the fixed date is built from local
 // fields; and every file gets mode 0644, whatever the builder's umask left on disk.
 const mtime = new Date(2026, 0, 1, 0, 0, 0);
-for (const p of files(dir).sort()) {
-  const name = relative(dir, p).split(sep).join("/");
+const add = (name: string, p: string) => {
   zip[name] = [new Uint8Array(readFileSync(p)), { level: 9, mtime, os: 3, attrs: (0o100000 | 0o644) << 16 }];
-}
+};
+for (const p of files(dir).sort()) add(prefix + relative(dir, p).split(sep).join("/"), p);
+if (skillMode) add(`${prefix}LICENSE`, licence!);
 writeFileSync(out, zipSync(zip));
 process.stdout.write(`pack: ${out} (${Object.keys(zip).length} files)\n`);

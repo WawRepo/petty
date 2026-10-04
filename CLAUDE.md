@@ -118,6 +118,8 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
 - **The workflow makes the release commit** ("Release X.Y.Z": the version in every `package.json` and in
   `apps/mcp/mcpb/manifest.json`; `## [Unreleased]` in `CHANGELOG.md` becomes `## [X.Y.Z] — date`), tags
   it `vX.Y.Z`, builds and pushes the image, and publishes the GitHub Release with that section as notes.
+  Then a second job lists the add-on in the MCP Registry (`mcp-registry.yml`). The release is already
+  out at that point: if only that job fails, run `gh workflow run mcp-registry.yml --ref main -f tag=vX.Y.Z`.
 - **Never bump a version or write a version heading by hand.** Each user-visible change adds its lines
   under `## [Unreleased]` in the same commit as the change. An empty section ships as "Maintenance only".
 - **After a release, pull before you push:** main has the release commit on top. Deploying a release is
@@ -129,6 +131,8 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
   then `linux/arm64`, both with `--provenance=true --sbom=true --build-arg PETTY_VERSION=vX.Y.Z`,
   pushed by digest); join them with `docker buildx imagetools create -t <image>:vX.Y.Z <amd64 digest>
   <arm64 digest>`; run the upgrade test (`make integration BASE=<previous image>`); push main and the
-  tag together (`git push --atomic`); pack the add-on and the command line, write `SHA256SUMS`, and
-  `gh release create` with the section as notes; move `latest`. An image built this way has no CI
-  provenance (no source revision).
+  tag together (`git push --atomic`); pack the add-on, the skill and the command line, write `SHA256SUMS`,
+  and `gh release create` with the section as notes; move `latest`; list the add-on in the MCP Registry
+  (`node scripts/mcp-server-json.ts vX.Y.Z petty.mcpb > server.json`, then `mcp-publisher login github`
+  and `mcp-publisher publish server.json`). An image built this way has no CI provenance (no source
+  revision).

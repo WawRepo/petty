@@ -20,7 +20,7 @@
     "test": "AUTH_PROVIDER=local vitest run",
     "bundle": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=mcpb/server/index.mjs --legal-comments=eof --metafile=meta.json --banner:js=\"import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);\"",
     "notices": "tsx ../../scripts/bundle-notices.ts --meta meta.json --what \"petty-mcp, the Petty MCP server\" --bundle mcpb/server/index.mjs --md mcpb/THIRD_PARTY_NOTICES.md && cp ../../LICENSE mcpb/LICENSE",
-    "pack": "pnpm run bundle && pnpm run notices && mkdir -p ../web/public/downloads && tsx scripts/pack.ts mcpb ../web/public/downloads/petty.mcpb && cp mcpb/server/index.mjs ../web/public/downloads/petty-mcp.mjs && cp mcpb/LICENSE mcpb/THIRD_PARTY_NOTICES.md ../web/public/downloads/"
+    "pack": "pnpm run bundle && pnpm run notices && mkdir -p ../web/public/downloads && tsx scripts/pack.ts mcpb ../web/public/downloads/petty.mcpb && cp mcpb/server/index.mjs ../web/public/downloads/petty-mcp.mjs && cp mcpb/LICENSE mcpb/THIRD_PARTY_NOTICES.md ../web/public/downloads/ && tsx scripts/pack.ts --skill skills/petty ../web/public/downloads/petty-skill.zip ../../LICENSE"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",

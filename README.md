@@ -25,7 +25,9 @@ choose. Everything is encrypted on your device before it is sent.
 - **Count, check, never erase.** Mark a drawer as checked after a real count. Mistakes are
   reversed, not deleted.
 - **Works with AI apps.** Ask Claude Desktop (a one-click add-on) or any MCP app about your drawers,
-  or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. See
+  or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. A
+  Claude skill teaches it the good habits (a monthly count, one total per currency, ask before it
+  writes), and the add-on is listed in the MCP Registry as `io.github.WawRepo/petty`. See
   [docs/agent.md](docs/agent.md).
 - **A command line.** `petty` signs in through your browser, like `gh auth login`, then reads and
   writes drawers from a terminal, scripts or AI agents, with `--json` and Tab completion. See

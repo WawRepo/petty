@@ -98,11 +98,17 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
   tag); `/api/config`, Settings and the landing footer show it.
 - **Releases (2026-09-23/24; PETTY-254).** Multi-architecture images built by CI with provenance and an
-  SBOM, pinned by digest. While CI could not run (v1.5.1–v1.5.6), releases were built by hand with the
+  SBOM, pinned by digest. While CI could not run (v1.5.1–v1.5.8), releases were built by hand with the
   same steps (CLAUDE.md, "Releasing"); their provenance names no source revision. A release is started by hand from main and never waits for CI: it is refused
   while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
   version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
   the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.
+- **Agent skill and MCP Registry (PETTY-310/311, 2026-10-04).** The "petty" Agent Skill
+  (`apps/mcp/skills/petty/SKILL.md`) is instructions only, no code or secret; it is served at
+  `/downloads/petty-skill.zip` and carried by each release. The add-on is listed in the official MCP
+  Registry as `io.github.WawRepo/petty`: metadata pointing at the release's `petty.mcpb` and its SHA-256,
+  published by `mcp-registry.yml` with GitHub's OIDC login (no secret). There is no hosted (remote) MCP
+  connector: it would decrypt on a server, which the threat model rules out.
 - **Contributions (2026-09-25).** AGPL inbound = outbound with a DCO `Signed-off-by` per commit; no CLA.
 - **History (2026-09-25).** Deleted hosting files and private repository names in git history are
   accepted as public (no credentials); no history rewrite.
