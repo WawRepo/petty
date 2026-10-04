@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.11] — 2026-10-04
+
 ### Changed
 - The landing page shows Petty's AI side right under the hero, in every language: "Works with your
   AI app" names MCP, the open standard AI apps use to plug in tools; buttons for Claude Desktop,
@@ -375,7 +377,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.10...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.11...HEAD
+[1.5.11]: https://github.com/WawRepo/petty/releases/tag/v1.5.11
 [1.5.10]: https://github.com/WawRepo/petty/releases/tag/v1.5.10
 [1.5.9]: https://github.com/WawRepo/petty/releases/tag/v1.5.9
 [1.5.8]: https://github.com/WawRepo/petty/releases/tag/v1.5.8
