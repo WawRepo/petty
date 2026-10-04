@@ -15,7 +15,9 @@ describe("licences in what the image serves", () => {
     const md = await r.text();
     for (const pkg of ["hash-wasm", "workbox-core", "workbox-precaching"]) expect(md).toMatch(new RegExp(`^## ${pkg} `, "m"));
     const lgpl = [...md.matchAll(/^## (\S+) \S+ — (\S*LGPL\S*)$/gm)].map((m) => m[1]!);
-    for (const pkg of lgpl) expect(md).toMatch(new RegExp(`^## ${pkg.replace(/[/.]/g, "\\$&")} [^\n]*\n\nSource: https://`, "m"));
+    // PETTY-313 (CodeQL #70): every character a regex gives a meaning to is escaped, the backslash too
+    const literal = (s: string) => s.replace(/[\\^$.*+?()[\]{}|/-]/g, "\\$&");
+    for (const pkg of lgpl) expect(md).toMatch(new RegExp(`^## ${literal(pkg)} [^\n]*\n\nSource: https://`, "m"));
     expect(md.includes("GNU LESSER GENERAL PUBLIC LICENSE")).toBe(lgpl.length > 0);
     expect(/^ +GNU GENERAL PUBLIC LICENSE$/m.test(md)).toBe(lgpl.length > 0);
   });
