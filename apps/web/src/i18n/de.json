@@ -783,6 +783,47 @@
     "tagline": "Alles, was du aufbewahrst, an seinem Platz – geteilt mit den Menschen, die du wählst, Ende-zu-Ende-verschlüsselt.",
     "sub": "Bargeld in der Keksdose, Werkzeug im Keller, Pässe im Safe: Gib jeder Schublade ihren Ort, trag ein, was drin ist, und teile sie mit den Menschen, die sie nutzen.",
     "how": "Wie Petty Geheimnisse wahrt",
+    "aiJump": "Mit deiner KI-App nutzen",
+    "ai": {
+      "eyebrow": "Funktioniert mit deiner KI-App",
+      "title": "Frag in ganz normalen Worten nach deinen Schubladen",
+      "body": "Petty spricht MCP, den offenen Standard, über den KI-Apps Tools anbinden. So können Claude, Cursor, VS Code oder jede andere MCP-App deine Schubladen lesen und ändern. Eine kleine Erweiterung auf deinem eigenen Computer schließt sie dort auf; der Server speichert weiterhin verschlossene Kisten, die er nicht öffnen kann.",
+      "appsLabel": "KI-Apps",
+      "apps": {
+        "desktop": "Claude Desktop",
+        "code": "Claude Code",
+        "cursor": "Cursor",
+        "vscode": "VS Code",
+        "windsurf": "Windsurf",
+        "any": "Jede MCP-App"
+      },
+      "chat": {
+        "label": "Ein Beispielgespräch",
+        "local": "Petty-Erweiterung, auf diesem Computer",
+        "q1": "Wie viel Bargeld ist in der Küche?",
+        "tool1": "Petty · Schubladen auflisten · Küche",
+        "a1": "In deiner Geldkassette in der Küche sind {groceries} Einkaufsgeld und {coins} in Münzen.",
+        "q2": "Ich habe 20 für Brot genommen.",
+        "a2": "{amount} aus Geldkassette › Einkaufsgeld entnehmen, mit der Notiz „Brot“?",
+        "q3": "Ja.",
+        "tool2": "Petty · Aus einem Posten entnehmen · {amount}",
+        "a3": "Erledigt. Im Einkaufsgeld sind jetzt {amount}."
+      },
+      "setupTitle": "So richtest du es in {app} ein",
+      "setup": {
+        "desktop": "Lade die Erweiterung herunter, doppelklicke sie und füge dann deine Petty-Adresse und ein Zugriffstoken aus den Einstellungen ein.",
+        "code": "Ein Befehl, sobald die Kommandozeile petty angemeldet ist:",
+        "editor": "Speichere petty-mcp.mjs in ~/.petty und füge dann den Einstellungsblock, den dieser Befehl ausgibt, in {app} ein:",
+        "any": "Jede App, die lokale MCP-Server startet, kann Petty nutzen. In der offiziellen MCP-Registry heißt es:"
+      },
+      "badgesLabel": "Kurz gesagt",
+      "badges": {
+        "standard": "Offener Standard: MCP",
+        "registry": "In der MCP-Registry:",
+        "local": "Läuft auf deinem Computer"
+      },
+      "cli": "Agenten, die Befehle ausführen, etwa Codex, können stattdessen die Kommandozeile `petty` nutzen."
+    },
     "uses": {
       "title": "Eine Idee, viele Möglichkeiten",
       "sub": "Orte enthalten Schubladen, Schubladen enthalten Posten – Geld, Dinge oder Notizen. Ordne sie an, wie du willst: Dieselben drei Bausteine passen zu allem, was du aufbewahrst.",
@@ -1089,6 +1130,10 @@
       "see": {
         "q": "Könnt ihr mein Geld sehen?",
         "a": "Nein. Beträge und Namen werden auf deinem Gerät verschlüsselt, und der Server speichert Daten, die er nicht lesen kann. Er sieht aber deine E-Mail-Adresse, deinen Namen und wann gebucht wird."
+      },
+      "ai": {
+        "q": "Kann eine KI-App meine Schubladen lesen?",
+        "a": "Nur wenn du eine verbindest. Eine kleine Erweiterung auf deinem eigenen Computer speichert ein Zugriffstoken, öffnet dort deine Schlüssel und beantwortet die Fragen der App; ein Token nur zum Lesen kann nur schauen. Der Server speichert weiterhin verschlossene Kisten, die er nicht öffnen kann. Was du fragst, geht an die KI-App, die du gewählt hast."
       },
       "places": {
         "q": "Kann ich Schubladen nach Zimmern gruppieren?",

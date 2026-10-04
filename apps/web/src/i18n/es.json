@@ -783,6 +783,47 @@
     "tagline": "Todo lo que guardas, en su lugar: compartido con quien tú elijas y cifrado de extremo a extremo.",
     "sub": "Efectivo en la lata de la cocina, herramientas en el sótano, pasaportes en la caja fuerte: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
     "how": "Cómo guarda los secretos",
+    "aiJump": "Úsalo desde tu aplicación de IA",
+    "ai": {
+      "eyebrow": "Funciona con tu aplicación de IA",
+      "title": "Pregunta por tus cajones con tus propias palabras",
+      "body": "Petty habla MCP, el estándar abierto con el que las aplicaciones de IA conectan herramientas. Así, Claude, Cursor, VS Code o cualquier otra aplicación MCP puede leer y cambiar tus cajones. Un pequeño complemento en tu propio equipo los abre allí; el servidor sigue guardando cajas cerradas que no puede abrir.",
+      "appsLabel": "Aplicaciones de IA",
+      "apps": {
+        "desktop": "Claude Desktop",
+        "code": "Claude Code",
+        "cursor": "Cursor",
+        "vscode": "VS Code",
+        "windsurf": "Windsurf",
+        "any": "Cualquier aplicación MCP"
+      },
+      "chat": {
+        "label": "Una conversación de ejemplo",
+        "local": "Complemento de Petty, en este equipo",
+        "q1": "¿Cuánto efectivo hay en la cocina?",
+        "tool1": "Petty · Listar cajones · Cocina",
+        "a1": "Tu lata del dinero de la cocina tiene {groceries} para compras y {coins} en monedas.",
+        "q2": "Saqué 20 para el pan.",
+        "a2": "¿Retiro {amount} de Lata del dinero › Compras, con la nota «pan»?",
+        "q3": "Sí.",
+        "tool2": "Petty · Retirar de un elemento · {amount}",
+        "a3": "Hecho. Compras tiene ahora {amount}."
+      },
+      "setupTitle": "Cómo configurarlo en {app}",
+      "setup": {
+        "desktop": "Descarga el complemento, haz doble clic en él y pega la dirección de tu Petty y un token de acceso de Ajustes.",
+        "code": "Un solo comando, cuando la línea de comandos petty ya tiene la sesión iniciada:",
+        "editor": "Guarda petty-mcp.mjs en ~/.petty y pega en {app} el bloque de configuración que imprime este comando:",
+        "any": "Cualquier aplicación que ejecute servidores MCP locales puede usar Petty. En el registro oficial de MCP aparece como:"
+      },
+      "badgesLabel": "En resumen",
+      "badges": {
+        "standard": "Estándar abierto: MCP",
+        "registry": "En el registro de MCP:",
+        "local": "Se ejecuta en tu equipo"
+      },
+      "cli": "Los agentes que ejecutan comandos, como Codex, pueden usar en su lugar la línea de comandos `petty`."
+    },
     "uses": {
       "title": "Una idea, muchos usos",
       "sub": "Los lugares contienen cajones y los cajones contienen elementos: dinero, cosas o notas. Organízalos como quieras; las mismas tres piezas sirven para todo lo que guardas.",
@@ -1089,6 +1130,10 @@
       "see": {
         "q": "¿Petty puede ver mi dinero?",
         "a": "No. Las cantidades y los nombres se cifran en tu dispositivo, y el servidor guarda datos que no puede leer. Lo que sí ve es tu correo, tu nombre y cuándo se hacen los movimientos."
+      },
+      "ai": {
+        "q": "¿Puede una aplicación de IA leer mis cajones?",
+        "a": "Solo si conectas una. Un pequeño complemento en tu propio equipo guarda un token de acceso, abre allí tus claves y responde a las preguntas de la aplicación; un token de solo lectura solo puede mirar. El servidor sigue guardando cajas cerradas que no puede abrir. Lo que preguntas llega a la aplicación de IA que elegiste."
       },
       "places": {
         "q": "¿Puedo agrupar los cajones por habitación?",

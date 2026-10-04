@@ -783,6 +783,47 @@
     "tagline": "Tout ce que vous gardez, à sa place — partagé avec qui vous choisissez, chiffré de bout en bout.",
     "sub": "L’argent dans la boîte de la cuisine, les outils au sous-sol, les passeports dans le coffre-fort : donnez à chaque tiroir sa place, notez ce qu’il contient et partagez-le avec ceux qui s’en servent.",
     "how": "Comment Petty garde vos secrets",
+    "aiJump": "L’utiliser depuis votre application d’IA",
+    "ai": {
+      "eyebrow": "Fonctionne avec votre application d’IA",
+      "title": "Interrogez vos tiroirs avec vos propres mots",
+      "body": "Petty parle MCP, le standard ouvert par lequel les applications d’IA branchent des outils. Claude, Cursor, VS Code ou toute autre application MCP peut donc lire et modifier vos tiroirs. Une petite extension sur votre propre ordinateur les déverrouille sur place ; le serveur stocke toujours des boîtes verrouillées qu’il ne peut pas ouvrir.",
+      "appsLabel": "Applications d’IA",
+      "apps": {
+        "desktop": "Claude Desktop",
+        "code": "Claude Code",
+        "cursor": "Cursor",
+        "vscode": "VS Code",
+        "windsurf": "Windsurf",
+        "any": "Toute application MCP"
+      },
+      "chat": {
+        "label": "Un exemple de conversation",
+        "local": "Extension Petty, sur cet ordinateur",
+        "q1": "Combien d’argent y a-t-il dans la cuisine ?",
+        "tool1": "Petty · Lister les tiroirs · Cuisine",
+        "a1": "Votre boîte à sous de la cuisine contient {groceries} pour les courses et {coins} en pièces.",
+        "q2": "J’ai pris 20 pour le pain.",
+        "a2": "Retirer {amount} de Boîte à sous › Courses, avec la note « pain » ?",
+        "q3": "Oui.",
+        "tool2": "Petty · Retirer d’un élément · {amount}",
+        "a3": "C’est fait. Courses contient maintenant {amount}."
+      },
+      "setupTitle": "Le configurer dans {app}",
+      "setup": {
+        "desktop": "Téléchargez l’extension, double-cliquez dessus, puis collez l’adresse de votre Petty et un jeton d’accès créé dans les Réglages.",
+        "code": "Une seule commande, une fois la ligne de commande petty connectée :",
+        "editor": "Enregistrez petty-mcp.mjs dans ~/.petty, puis collez dans {app} le bloc de réglages qu’affiche cette commande :",
+        "any": "Toute application qui lance des serveurs MCP locaux peut utiliser Petty. Dans le registre MCP officiel, son nom est :"
+      },
+      "badgesLabel": "En bref",
+      "badges": {
+        "standard": "Standard ouvert : MCP",
+        "registry": "Dans le registre MCP :",
+        "local": "Tourne sur votre ordinateur"
+      },
+      "cli": "Les agents qui lancent des commandes, comme Codex, peuvent utiliser à la place la ligne de commande `petty`."
+    },
     "uses": {
       "title": "Une idée, mille usages",
       "sub": "Les lieux contiennent des tiroirs, les tiroirs des éléments — argent, objets ou notes. Organisez-les comme vous voulez : ces trois mêmes briques conviennent à tout ce que vous gardez.",
@@ -1089,6 +1130,10 @@
       "see": {
         "q": "Pouvez-vous voir mon argent ?",
         "a": "Non. Les montants et les noms sont chiffrés sur votre appareil, et le serveur stocke des données qu’il ne peut pas lire. Il voit en revanche votre e-mail, votre nom et le moment de chaque opération."
+      },
+      "ai": {
+        "q": "Une application d’IA peut-elle lire mes tiroirs ?",
+        "a": "Seulement si vous en connectez une. Une petite extension sur votre propre ordinateur détient un jeton d’accès, y ouvre vos clés et répond aux questions de l’application ; un jeton en lecture seule ne peut que regarder. Le serveur stocke toujours des boîtes verrouillées qu’il ne peut pas ouvrir. Ce que vous demandez parvient à l’application d’IA que vous avez choisie."
       },
       "places": {
         "q": "Puis-je regrouper les tiroirs par pièce ?",

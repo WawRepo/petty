@@ -203,6 +203,79 @@ test("the demo passes axe (WCAG 2.1 AA)", async ({ page }) => {
   expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 });
 
+// PETTY-316: working with AI apps was a footer link 3,300 px down; now it is the section right under the hero.
+test("the AI section comes right after the hero: MCP named, the app buttons switch the real setup line, the add-on and /ai one click away", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  const show = page.getByTestId("ai-show");
+  await show.waitFor();
+  const order = await page.evaluate(() => [...document.querySelectorAll("main.landing > *")].map((e) => (e as HTMLElement).dataset["testid"] ?? e.className));
+  expect(order.indexOf("ai-show"), order.join(" | ")).toBe(order.indexOf("landing-hero") + 1);
+  // on a laptop's first screen, without scrolling
+  await expect(page.getByText("Works with your AI app")).toBeInViewport();
+  await expect(show).toContainText("Petty speaks MCP, the open standard AI apps use to plug in tools.");
+
+  // Claude Desktop first: the add-on, no command
+  await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("ai-mcpb")).toHaveAttribute("href", "/downloads/petty.mcpb");
+  await expect(page.getByTestId("ai-command")).toHaveCount(0);
+  // each app its own line; one button pressed at a time
+  await page.getByTestId("ai-app-code").click();
+  await expect(page.getByTestId("ai-app-code")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("ai-chat-app")).toHaveText("Claude Code");
+  await expect(page.getByTestId("ai-command")).toHaveText("claude mcp add petty -- petty mcp");
+  await expect(page.getByTestId("ai-mcpb")).toHaveCount(0);
+  const origin = new URL(page.url()).origin;
+  for (const [key, name] of [["cursor", "Cursor"], ["vscode", "VS Code"], ["windsurf", "Windsurf"]] as const) {
+    await page.getByTestId(`ai-app-${key}`).click();
+    await expect(page.getByTestId("ai-setup")).toContainText(`into ${name}:`);
+    await expect(page.getByTestId("ai-command")).toHaveText(`node ~/.petty/petty-mcp.mjs --print-config ${origin}/api`);
+  }
+  await page.getByTestId("ai-app-any").press("Enter"); // a keyboard press works like a click
+  await expect(page.getByTestId("ai-app-any")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("ai-command")).toHaveText("io.github.WawRepo/petty");
+  await expect(page.locator('.ai-app[aria-pressed="true"]')).toHaveCount(1);
+
+  // the example amounts are EUR in the visitor's language
+  await expect(show).toContainText("120.50 EUR");
+  await expect(show).toContainText("100.50 EUR");
+  // and the FAQ answers the question a careful visitor asks
+  await page.getByText("Can an AI app read my drawers?").click();
+  await expect(page.getByText(/What you ask about reaches the AI app you chose/)).toBeVisible();
+
+  // the button opens the full guide
+  await page.getByTestId("ai-show-more").click();
+  await expect(page).toHaveURL(/\/ai$/);
+});
+
+test("on a phone the hero links to the AI section, and the section speaks the visitor's language (PETTY-316)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const jump = page.getByTestId("landing-ai-jump");
+  await expect(jump).toBeInViewport();
+  await jump.click();
+  await expect(page.getByTestId("ai-show").getByRole("heading", { name: "Ask about your drawers in plain words" })).toBeInViewport();
+  // nothing wider than the phone
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await page.getByRole("button", { name: "Polski" }).click();
+  const show = page.getByTestId("ai-show");
+  await expect(show.getByRole("heading", { name: "Pytaj o swoje szuflady zwykłymi słowami" })).toBeVisible();
+  await expect(show).toContainText("120,50 EUR");
+  await expect(page.getByTestId("ai-app-any")).toHaveText("Każda aplikacja MCP");
+});
+
+test("the AI section passes axe (WCAG 2.1 AA), light and dark", async ({ page }) => {
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/");
+    await page.getByTestId("ai-show").waitFor();
+    const r = await new AxeBuilder({ page }).include('[data-testid="ai-show"]').withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(r.violations.map((v) => `${scheme} ${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+  }
+});
+
 test("the hero stands in the middle of wide screens too (PETTY-260)", async ({ page }) => {
   for (const width of [1100, 1280, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });

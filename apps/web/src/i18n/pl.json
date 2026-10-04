@@ -783,6 +783,47 @@
     "tagline": "Wszystko, co przechowujesz, na swoim miejscu — udostępnione wybranym osobom, z szyfrowaniem end-to-end.",
     "sub": "Gotówka w puszce w kuchni, narzędzia w piwnicy, paszporty w sejfie: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
     "how": "Jak strzeże sekretów",
+    "aiJump": "Korzystaj z aplikacji AI",
+    "ai": {
+      "eyebrow": "Działa z Twoją aplikacją AI",
+      "title": "Pytaj o swoje szuflady zwykłymi słowami",
+      "body": "Petty mówi w MCP, otwartym standardzie, przez który aplikacje AI podłączają narzędzia. Dzięki temu Claude, Cursor, VS Code albo każda inna aplikacja MCP może czytać i zmieniać Twoje szuflady. Mały dodatek na Twoim własnym komputerze otwiera je na miejscu; serwer nadal przechowuje zamknięte pudełka, których nie umie otworzyć.",
+      "appsLabel": "Aplikacje AI",
+      "apps": {
+        "desktop": "Claude Desktop",
+        "code": "Claude Code",
+        "cursor": "Cursor",
+        "vscode": "VS Code",
+        "windsurf": "Windsurf",
+        "any": "Każda aplikacja MCP"
+      },
+      "chat": {
+        "label": "Przykładowa rozmowa",
+        "local": "Dodatek Petty, na tym komputerze",
+        "q1": "Ile gotówki jest w kuchni?",
+        "tool1": "Petty · Lista szuflad · Kuchnia",
+        "a1": "W puszce na gotówkę w kuchni jest {groceries} na zakupy i {coins} w monetach.",
+        "q2": "Biorę 20 na chleb.",
+        "a2": "Odjąć {amount} od Puszka na gotówkę › Na zakupy, z notatką „chleb”?",
+        "q3": "Tak.",
+        "tool2": "Petty · Odejmij od pozycji · {amount}",
+        "a3": "Gotowe. Na zakupy jest teraz {amount}."
+      },
+      "setupTitle": "Jak to ustawić: {app}",
+      "setup": {
+        "desktop": "Pobierz dodatek, kliknij go dwukrotnie, a potem wklej adres swojego Petty i token dostępu z Ustawień.",
+        "code": "Jedno polecenie, gdy wiersz poleceń petty jest już zalogowany:",
+        "editor": "Zapisz petty-mcp.mjs w ~/.petty, a potem wklej w ustawieniach aplikacji {app} blok, który wypisze to polecenie:",
+        "any": "Petty działa w każdej aplikacji, która uruchamia lokalne serwery MCP. W oficjalnym rejestrze MCP nazywa się:"
+      },
+      "badgesLabel": "W skrócie",
+      "badges": {
+        "standard": "Otwarty standard: MCP",
+        "registry": "W rejestrze MCP:",
+        "local": "Działa na Twoim komputerze"
+      },
+      "cli": "Agenci, którzy uruchamiają polecenia, jak Codex, mogą zamiast tego używać wiersza poleceń `petty`."
+    },
     "uses": {
       "title": "Jeden pomysł, wiele zastosowań",
       "sub": "Miejsca mieszczą szuflady, a szuflady pozycje — pieniądze, rzeczy albo notatki. Ułóż je, jak chcesz; te same trzy elementy pasują do wszystkiego, co przechowujesz.",
@@ -1089,6 +1130,10 @@
       "see": {
         "q": "Czy widzicie moje pieniądze?",
         "a": "Nie. Kwoty i nazwy są szyfrowane na Twoim urządzeniu, a serwer przechowuje dane, których nie umie odczytać. Widzi jednak Twój e-mail, imię i to, kiedy pojawiają się wpisy."
+      },
+      "ai": {
+        "q": "Czy aplikacja AI może czytać moje szuflady?",
+        "a": "Tylko jeśli ją podłączysz. Mały dodatek na Twoim własnym komputerze trzyma token dostępu, otwiera tam Twoje klucze i odpowiada na pytania aplikacji; token tylko do odczytu może tylko patrzeć. Serwer nadal przechowuje zamknięte pudełka, których nie umie otworzyć. To, o co pytasz, trafia do wybranej przez Ciebie aplikacji AI."
       },
       "places": {
         "q": "Czy mogę pogrupować szuflady po pokojach?",

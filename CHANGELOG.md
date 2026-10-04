@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The landing page shows Petty's AI side right under the hero, in every language: "Works with your
+  AI app" names MCP, the open standard AI apps use to plug in tools; buttons for Claude Desktop,
+  Claude Code, Cursor, VS Code, Windsurf and any MCP app each show their one-line setup, with this
+  Petty's own address; a short example conversation shows a question, an answer, and a change the
+  assistant asks about first. The hero links to it, and the questions answer "Can an AI app read my
+  drawers?". Before, the only way there was a link in the footer.
+
 ## [1.5.10] — 2026-10-04
 
 ### Added

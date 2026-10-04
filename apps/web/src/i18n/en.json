@@ -783,6 +783,47 @@
     "tagline": "Everything you keep, in its place — shared with the people you choose, encrypted end to end.",
     "sub": "Cash in the kitchen tin, tools in the basement, passports in the safe: give every drawer its place, list what is inside, and share it with the people who use it.",
     "how": "How it keeps secrets",
+    "aiJump": "Use it from your AI app",
+    "ai": {
+      "eyebrow": "Works with your AI app",
+      "title": "Ask about your drawers in plain words",
+      "body": "Petty speaks MCP, the open standard AI apps use to plug in tools. So Claude, Cursor, VS Code or any other MCP app can read and update your drawers. A small add-on on your own computer unlocks them there; the server still stores locked boxes it cannot open.",
+      "appsLabel": "AI apps",
+      "apps": {
+        "desktop": "Claude Desktop",
+        "code": "Claude Code",
+        "cursor": "Cursor",
+        "vscode": "VS Code",
+        "windsurf": "Windsurf",
+        "any": "Any MCP app"
+      },
+      "chat": {
+        "label": "An example conversation",
+        "local": "Petty add-on, on this computer",
+        "q1": "How much cash is in the kitchen?",
+        "tool1": "Petty · List drawers · Kitchen",
+        "a1": "Your Cash tin in the kitchen holds {groceries} for groceries and {coins} in coins.",
+        "q2": "I took 20 for bread.",
+        "a2": "Take {amount} out of Cash tin › Groceries, with the note “bread”?",
+        "q3": "Yes.",
+        "tool2": "Petty · Take from an item · {amount}",
+        "a3": "Done. Groceries now holds {amount}."
+      },
+      "setupTitle": "Set it up in {app}",
+      "setup": {
+        "desktop": "Download the add-on, double-click it, then paste your Petty address and an access token from Settings.",
+        "code": "One command, once the petty command line is signed in:",
+        "editor": "Save petty-mcp.mjs in ~/.petty, then paste the settings block this command prints into {app}:",
+        "any": "Any app that runs local MCP servers can use Petty. It is listed in the official MCP Registry as:"
+      },
+      "badgesLabel": "In short",
+      "badges": {
+        "standard": "Open standard: MCP",
+        "registry": "In the MCP Registry:",
+        "local": "Runs on your computer"
+      },
+      "cli": "Agents that run commands, like Codex, can use the `petty` command line instead."
+    },
     "uses": {
       "title": "One idea, many uses",
       "sub": "Places hold drawers, drawers hold items — money, things or notes. Arrange them any way you like; the same three pieces fit everything you keep.",
@@ -1089,6 +1130,10 @@
       "see": {
         "q": "Can you see my money?",
         "a": "No. Amounts and names are encrypted on your device, and the server stores data it cannot read. It does see your email, your name and when entries happen."
+      },
+      "ai": {
+        "q": "Can an AI app read my drawers?",
+        "a": "Only if you connect one. A small add-on on your own computer holds an access token, opens your keys there and answers the app's questions; a read-only token can only look. The server still stores locked boxes it cannot open. What you ask about reaches the AI app you chose."
       },
       "places": {
         "q": "Can I group drawers by room?",

@@ -320,13 +320,41 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 
 .landing-mail { color: var(--accent); font-weight: 600; text-decoration: none; }
 .landing-mail:hover { text-decoration: underline; }
+.landing-jumps { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.landing-jumps .btn { width: auto; }
+/* "Works with your AI app" (PETTY-316): MCP named, a row of apps, a short example chat, the setup line. */
+.landing > .ai-show { max-width: 520px; display: flex; flex-direction: column; gap: 14px; }
+.ai-show-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.ai-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.ai-apps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ai-app { font: inherit; font-size: 13px; font-weight: 700; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
+.ai-app[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.ai-app:focus-visible { outline: none; box-shadow: var(--focus); }
+.ai-chat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.ai-chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.ai-chat-app { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+.ai-chat-app svg { color: var(--accent); }
+.ai-chat-local { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.ai-msg { margin: 0; font-size: 15px; line-height: 1.45; max-width: 88%; }
+.ai-user { align-self: flex-end; background: var(--accent); color: var(--accent-text); border-radius: 16px 16px 4px 16px; padding: 9px 14px; }
+.ai-bot { align-self: flex-start; }
+.ai-tool { margin: 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; }
+.ai-setup { display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.45; background: color-mix(in srgb, var(--accent) 9%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)); border-radius: 12px; padding: 12px 14px; }
+.ai-command { display: block; overflow-x: auto; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.ai-setup .btn { width: auto; }
+.ai-show .btn-primary { width: 100%; }
+.ai-badges { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ai-badge { font-size: 12px; font-weight: 700; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; }
+.ai-badge code { font-size: 11px; font-weight: 600; }
+.ai-cli { text-align: center; }
 /* Desktop: bigger hero, one-line CTAs, three-up features (UX review findings 6/7). */
 /* Desktop (PETTY-49 → PETTY-135): one centred column — hero, the five phones, then the rest. */
 @media (min-width: 1280px) {
-  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
+  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "ai" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
   /* PETTY-260: the hero keeps its 700 px (the 900 px rule below) and stands in the middle of the 960 px column */
   .landing > .landing-hero { grid-area: hero; text-align: center; align-items: center; justify-self: center; }
   .landing > .usecases { grid-area: uses; justify-self: center; width: 100%; }
+  .landing > .ai-show { grid-area: ai; justify-self: center; width: 100%; }
   .landing > .landing-lang { grid-area: lang; width: 100%; }
   .landing > .landing-hero .landing-cta { justify-content: center; }
   .landing > .shots { grid-area: shots; max-width: 1000px; width: 100%; }
@@ -338,7 +366,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .landing > .landing-hero { max-width: 700px; }
   .landing-cta { width: auto; max-width: none; }
   .landing-cta .btn { width: auto; flex: 0 0 auto; padding: 16px 26px; white-space: nowrap; }
-  .landing > .landing-features, .landing > section:not(.landing-hero):not(.shots):not(.usecases), .landing > footer { max-width: 720px; }
+  .landing > .landing-features, .landing > section:not(.landing-hero):not(.shots):not(.usecases):not(.ai-show), .landing > footer { max-width: 720px; }
   .landing-features .feature-grid { grid-template-columns: 1fr 1fr 1fr; }
 }
 

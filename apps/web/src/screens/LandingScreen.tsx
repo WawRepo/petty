@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "../components/Button.js";
 import { UseCases } from "../components/UseCases.js";
+import { AiShowcase } from "../components/AiShowcase.js";
 import { currentLocale, LOCALE_NAMES, LOCALES, setLocale } from "../i18n/index.js";
 import { LanguagePicker } from "../components/LanguagePicker.js";
 import { useEffect, useRef } from "react";
@@ -38,7 +39,7 @@ export function LandingScreen() {
     alt: t(`landing.shots.${n}`),
   }));
   const features = ["private", "shared", "places", "currencies", "verify", "passkey"] as const; // PETTY-135 (audit F28): one grid of six, the pillars folded in
-  const faqs = ["see", "places", "lost", "undo", "cost", "phone"] as const;
+  const faqs = ["see", "ai", "places", "lost", "undo", "cost", "phone"] as const;
   return (
     <main className="landing">
       {/* PETTY-249: the language switch at the top, where a visitor looks first */}
@@ -53,8 +54,14 @@ export function LandingScreen() {
         {cta}
         {/* PETTY-293 (review S8): "write to us" only when this Petty names an address to write to */}
         <p className="hint m0" data-testid="landing-access">{t(open ? "landing.betaOpen" : contact ? "landing.betaInvite" : "landing.betaInviteNoContact")}</p>
-        <p className="m0"><Button variant="ghost" onClick={() => document.getElementById("crypto")?.scrollIntoView({ behavior: "smooth" })}>{t("landing.how")}</Button></p>
+        <p className="m0 landing-jumps">
+          <Button variant="ghost" onClick={() => document.getElementById("crypto")?.scrollIntoView({ behavior: "smooth" })}>{t("landing.how")}</Button>
+          <Button variant="ghost" onClick={() => document.getElementById("ai")?.scrollIntoView({ behavior: "smooth" })} data-testid="landing-ai-jump">{t("landing.aiJump")}</Button>
+        </p>
       </section>
+
+      {/* PETTY-316: working with AI apps, right under the hero (it was only a footer link before) */}
+      <AiShowcase />
 
       {/* PETTY-248: the one pattern (place › drawer › items) as a live demo, one example turning into the next. */}
       <UseCases />
