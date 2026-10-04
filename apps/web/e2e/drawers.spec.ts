@@ -941,6 +941,9 @@ test("tags per person (PETTY-152): one list across drawers, kept without items, 
   await picker.getByRole("button", { name: "groceries" }).click();
   await picker.getByTestId("tag-save").click();
   await page.getByRole("button", { name: "Back" }).click();
+  // PETTY-316 CI: Back is a navigation of its own; a reload started before it lands was aborted
+  // (net::ERR_ABORTED, twice on one CI run). Reload once the drawer shows again.
+  await expect(page.getByRole("button", { name: "Open Petty box" })).toBeVisible();
   // the list survives a reload (it lives in the user document), and Settings renames the tag in both drawers
   await page.reload();
   await openSettings(page);
