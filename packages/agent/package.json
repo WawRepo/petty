@@ -23,6 +23,6 @@
     "@petty/protocol": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0"
+    "@types/node": "^26.6.3"
   }
 }
