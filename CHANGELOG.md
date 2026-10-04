@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.10] — 2026-10-04
+
 ### Added
 - A Claude skill, `petty-skill.zip`: it teaches Claude (and other apps that read Agent Skills) how to
   use Petty's tools well — exact amounts and one total per currency, a monthly count, `adjust` only
@@ -365,7 +367,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.9...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.10...HEAD
+[1.5.10]: https://github.com/WawRepo/petty/releases/tag/v1.5.10
 [1.5.9]: https://github.com/WawRepo/petty/releases/tag/v1.5.9
 [1.5.8]: https://github.com/WawRepo/petty/releases/tag/v1.5.8
 [1.5.7]: https://github.com/WawRepo/petty/releases/tag/v1.5.7
