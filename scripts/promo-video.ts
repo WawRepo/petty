@@ -4,7 +4,8 @@
  *   PROMO=1 PROMO_OUT=<dir> npx playwright test e2e/promo.spec.ts --project dev   (in apps/web)
  *   node scripts/promo-video.ts <dir>
  *
- * Writes <dir>/petty-short.mp4 (about 20 s), <dir>/petty-long.mp4 (about 48 s) and a poster picture;
+ * Writes <dir>/petty-short.mp4 (about 20 s), <dir>/petty-long.mp4 (about 48 s), the feature tour
+ * <dir>/petty-tour.mp4 (about 1:40) and a poster picture;
  * PROMO_FILM=petty-short cuts only that one. Needs ffmpeg 7 or newer on the PATH.
  *
  * Each film is a list of scenes: a piece of one clip on the phone's screen, a background in the
@@ -28,6 +29,7 @@ interface Film { readonly name: string; readonly fade: number; readonly scenes: 
 
 const cap = (key: string, short = false): Layer[] => [{ png: `cap-${key}${short ? "-short" : ""}` }];
 const AI: Layer[] = [{ png: "ai-head" }, { png: "ai-q", at: 0.9 }, { png: "ai-tool", at: 1.7 }, { png: "ai-a", at: 2.4 }];
+const tour = (key: string): Layer[] => [{ png: `cap-t-${key}` }];
 
 export const FILMS: readonly Film[] = [
   { name: "petty-long", fade: 0.5, scenes: [
@@ -41,6 +43,27 @@ export const FILMS: readonly Film[] = [
     { clip: "all", from: 0.3, dur: 5.2, bg: "all", layers: cap("all") },
     { clip: "ai", from: 0, dur: 5.4, bg: "ai", layers: AI },
     { clip: "places", from: 0.3, dur: 4.6, bg: "outro", layers: cap("outro") },
+  ] },
+  // the feature tour (PETTY-325): a chapter a feature, each the real thing on the phone
+  { name: "petty-tour", fade: 0.5, scenes: [
+    { clip: "home", from: 0, dur: 4.0, bg: "intro", layers: cap("intro") },
+    { clip: "t-core", from: 0.2, dur: 8.3, bg: "t-core", layers: tour("core") },
+    { clip: "t-nav", from: 0.2, dur: 6.2, bg: "t-nav", layers: tour("nav") },
+    { clip: "t-places", from: 0.2, dur: 6.2, bg: "t-places", layers: tour("places") },
+    { clip: "t-drawer", from: 0.1, dur: 5.2, bg: "t-drawer", layers: tour("drawer") },
+    { clip: "t-items", from: 0.1, dur: 7.8, bg: "t-items", layers: tour("items") },
+    { clip: "t-style", from: 0.1, dur: 5.0, bg: "t-style", layers: tour("style") },
+    { clip: "cash", from: 0.3, dur: 6.3, bg: "t-entries", layers: tour("entries") },
+    { clip: "accounts", from: 0.2, dur: 6.4, bg: "t-check", layers: tour("check") },
+    { clip: "t-tags", from: 0.2, dur: 6.9, bg: "t-tags", layers: tour("tags") },
+    { clip: "t-search", from: 0.2, dur: 5.9, bg: "t-search", layers: tour("search") },
+    { clip: "t-share", from: 0.2, dur: 6.0, bg: "t-share", layers: tour("share") },
+    { clip: "t-accept", from: 0, dur: 5.4, bg: "t-accept", layers: tour("accept") },
+    { clip: "t-unlock", from: 0.2, dur: 5.0, bg: "t-private", layers: tour("private") },
+    { clip: "t-settings", from: 0.2, dur: 5.4, bg: "t-settings", layers: tour("settings") },
+    { clip: "t-backup", from: 0.3, dur: 6.3, bg: "t-backup", layers: tour("backup") },
+    { clip: "ai", from: 0, dur: 5.6, bg: "ai", layers: AI },
+    { clip: "places", from: 0.3, dur: 5.0, bg: "outro", layers: cap("outro") },
   ] },
   { name: "petty-short", fade: 0.35, scenes: [
     { clip: "home", from: 0, dur: 3.0, bg: "intro", layers: cap("intro", true) },

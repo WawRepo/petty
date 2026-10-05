@@ -6,7 +6,9 @@
  * A calm loop in D major at 84 beats a minute — D, B minor, G, A — a soft pad under a slow electric
  * piano (two-operator FM) playing the chord tones, a sine bass and a quiet shaker, all through one
  * reverb. The piece is as long as asked: it fades in, ends on D and fades out over its last bars.
- * The same seed gives the same piece every run.
+ * Longer than a minute it has a form instead of one loop going round (PETTY-325): eight bars of the
+ * loop (A), eight of G, A, F♯ minor, B minor with a bell over the piano (B), four quiet bars of A,
+ * then from the top. The same seed gives the same piece every run.
  */
 import { writeFileSync } from "node:fs";
 
@@ -22,7 +24,11 @@ const CHORDS = [
   { bass: 35, pad: [54, 57, 62, 64], keys: [59, 62, 66, 69, 74] }, // Bm11
   { bass: 43, pad: [54, 57, 59, 62], keys: [59, 62, 66, 69, 71] }, // Gmaj9
   { bass: 45, pad: [52, 55, 57, 62], keys: [62, 64, 67, 69, 74] }, // A7sus4
+  { bass: 42, pad: [52, 57, 61, 64], keys: [61, 64, 66, 69, 73] }, // F♯m7, in B only
 ] as const;
+/** B's chords, by their place in CHORDS: G, A, F♯m, Bm. */
+const B_CHORDS = [2, 3, 4, 1] as const;
+type Part = "a" | "b" | "quiet";
 /** Where the piano plays in a bar (beat, which of the chord's notes), two shapes taken in turn. */
 const PATTERNS: readonly (readonly [number, number])[][] = [
   [[0, 0], [0.5, 2], [1, 3], [1.5, 4], [2.5, 3], [3, 2], [3.5, 1]],
@@ -79,7 +85,13 @@ export function music(seconds: number, seed = 324): [Float32Array, Float32Array]
   const bars = Math.max(2, Math.ceil(seconds / BAR));
   // the last bar that starts at least two seconds before the end holds the home chord to the end
   const lastBar = Math.max(1, Math.min(bars - 1, Math.floor((seconds - 2) / BAR)));
-  const chordAt = (bar: number) => (bar >= lastBar ? CHORDS[0] : CHORDS[bar % CHORDS.length])!;
+  const formed = seconds > 60;
+  const part = (bar: number): Part => {
+    if (!formed || bar === 0) return "a";
+    const k = (bar - 1) % 28;
+    return k < 8 ? "a" : k < 16 ? "b" : k < 20 ? "quiet" : "a";
+  };
+  const chordAt = (bar: number) => (bar >= lastBar ? CHORDS[0] : part(bar) === "b" ? CHORDS[B_CHORDS[(bar - 1) % 4]!] : CHORDS[bar % 4])!;
   const add = (buf: Float32Array, i: number, v: number) => { if (i >= 0 && i < len) buf[i]! += v; };
 
   // pad: three slightly detuned voices a note, slow in and out, panned left, centre, right
@@ -121,8 +133,23 @@ export function music(seconds: number, seed = 324): [Float32Array, Float32Array]
   for (let bar = 0; bar < lastBar; bar++) {
     const c = chordAt(bar), start = bar * BAR;
     // the first bar only touches the chord; the piano walks from the second
-    const pattern = bar === 0 ? [[0, 0], [2, 2]] as const : PATTERNS[bar % 2]!;
+    const pattern = bar === 0 || part(bar) === "quiet" ? [[0, 0], [2, 2]] as const : PATTERNS[bar % 2]!;
     for (const [beat, idx] of pattern) piano(start + beat * BEAT + rnd() * 0.012, c.keys[idx]!, 0.55 + rnd() * 0.3);
+  }
+  // a bell in B: three soft notes a bar, an octave over the piano
+  const bell = (t0: number, midi: number, vel: number) => {
+    const f = hz(midi), pan = 0.5 + Math.max(-0.25, Math.min(0.25, (midi - 80) / 24)), i0 = Math.floor(t0 * RATE), n = Math.min(len - i0, 3 * RATE);
+    for (let k = 0; k < n; k++) {
+      const u = k / RATE;
+      const env = Math.min(1, u / 0.012) * Math.exp(-u / 1.1);
+      const s = (Math.sin(2 * Math.PI * f * u) + 0.18 * Math.sin(2 * Math.PI * 2.76 * f * u) * Math.exp(-u / 0.25)) * env * vel * 0.035;
+      add(L, i0 + k, s * (1 - pan)); add(R, i0 + k, s * pan);
+      add(wetL, i0 + k, s * 1.2 * (1 - pan)); add(wetR, i0 + k, s * 1.2 * pan);
+    }
+  };
+  for (let bar = 1; bar < lastBar; bar++) {
+    if (part(bar) !== "b") continue;
+    for (const [beat, idx] of [[0, 4], [1.5, 3], [3, 2]] as const) bell(bar * BAR + beat * BEAT, chordAt(bar).keys[idx]! + 12, 0.7 + rnd() * 0.2);
   }
   // the end: the home chord, rolled up from the bottom, left to ring
   CHORDS[0].keys.forEach((m, k) => piano(lastBar * BAR + k * 0.07, m, 0.6));
@@ -142,12 +169,13 @@ export function music(seconds: number, seed = 324): [Float32Array, Float32Array]
     const c = chordAt(bar), start = bar * BAR;
     if (bar >= lastBar) { bass(start, c.bass, 0.9, seconds - start); break; }
     bass(start, c.bass, 0.9, 2.3 * BEAT);
-    if (bar > 0) bass(start + 2.5 * BEAT, c.bass, 0.55, 1.3 * BEAT);
+    if (bar > 0 && part(bar) !== "quiet") bass(start + 2.5 * BEAT, c.bass, 0.55, 1.3 * BEAT);
   }
 
   // shaker: high noise on the eighths from the second bar, the off-beats a little louder
   let hp = 0, prev = 0;
   for (let bar = 1; bar < lastBar; bar++) {
+    if (part(bar) === "quiet") continue;
     for (let e = 0; e < 8; e++) {
       const i0 = Math.floor((bar * BAR + e * BEAT / 2 + rnd() * 0.008) * RATE), vel = (e % 2 ? 0.032 : 0.018) * (0.8 + rnd() * 0.4);
       for (let k = 0; k < RATE * 0.09; k++) {

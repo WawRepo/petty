@@ -9,7 +9,9 @@
  */
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import type { Browser, CDPSession, Locator, Page } from "@playwright/test";
-import { expect, loginAndUnlock, shareViaApi, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
+import { randomBytes } from "node:crypto";
+import { createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys, signingKeyId } from "@petty/crypto";
+import { API, expect, loginAndUnlock, makeJoinLink, shareViaApi, test, type TestUserWithKeys } from "./fixtures.js";
 
 const OUT = process.env["PROMO_OUT"] ?? "/tmp/petty-promo";
 test.skip(!process.env["PROMO"], "promo footage; set PROMO=1");
@@ -152,6 +154,25 @@ async function seedEntryAs(browser: Browser, user: TestUserWithKeys, drawerId: s
 }
 
 /**
+ * A demo account, like fixtures' signupWithKeys but with a plain address (name.run@example.com):
+ * the sharing chapter types Cara's on screen.
+ */
+async function signupDemo(name: string): Promise<TestUserWithKeys> {
+  const run = randomBytes(3).toString("hex");
+  const email = `${name.toLowerCase()}.${run}@example.com`, password = `password-${name}-${run}`, passphrase = `vault ${name} ${run} passphrase`;
+  const keys = await generateUserKeys();
+  const pub = await exportPublicKeys(keys);
+  const recoveryCode = generateRecoveryCode();
+  const res = await fetch(`${API}/auth/signup`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+    join_token: await makeJoinLink(), email, password, display_name: name, locale: LOC,
+    keys: { ecdh_pub: pub.ecdh, ecdsa_pub: pub.ecdsa, sig_key_id: await signingKeyId(pub.ecdsa) },
+    vault: await createVault(passphrase, keys), recovery_vault: await createRecoveryVault(recoveryCode, keys),
+  }) });
+  if (res.status !== 201) throw new Error(`signup failed: ${res.status} ${await res.text()}`);
+  return { name, email, password, passphrase, keys, ecdhPub: pub.ecdh, recoveryCode };
+}
+
+/**
  * A camera on one page: Chrome's screencast at the device's pixels, each frame saved with its time.
  * The frames come only when the screen changes; the cutter holds each until the next.
  */
@@ -226,14 +247,15 @@ async function placeAt(page: Page, target: Locator, top: number): Promise<void> 
 }
 async function home(page: Page): Promise<void> {
   await page.goto("/");
-  await expect(page.getByTestId("drawer-row")).toHaveCount(13);
+  await expect(page.getByTestId("home")).toHaveAttribute("data-status", "ready");
+  await expect(page.getByTestId("drawer-row").first()).toBeVisible();
   await page.waitForTimeout(1200);
 }
 
 test("seed the six examples and film the app", async ({ browser }) => {
   test.setTimeout(600_000);
   mkdirSync(OUT, { recursive: true });
-  const [ben, anna, cara, tom] = await Promise.all(["Ben", "Anna", "Cara", "Tom"].map((n) => signupWithKeys(n)));
+  const [ben, anna, cara, tom] = await Promise.all(["Ben", "Anna", "Cara", "Tom"].map((n) => signupDemo(n)));
   const plan = seedPlan();
   const setup = await browser.newContext();
   const sp = await setup.newPage();
@@ -374,6 +396,242 @@ test("seed the six examples and film the app", async ({ browser }) => {
   await cam.start("ai");
   await page.waitForTimeout(5000);
   await cam.stop();
+  // ---- the feature tour (PETTY-325): one clip per chapter; the cash and accounts clips above serve it too
+
+  // the idea: a place, the drawer in it, an item in the drawer
+  await home(page);
+  await cam.start("t-core");
+  await page.waitForTimeout(1200);
+  await tap(page, chip(PLACE["home"]!), 300);
+  cam.mark("place");
+  await page.waitForTimeout(1200);
+  await tap(page, chip(PLACE["kitchen"]!), 300);
+  await page.waitForTimeout(1000);
+  await tap(page, row(D("tin")), 300);
+  cam.mark("drawer");
+  await page.waitForTimeout(1700);
+  await tap(page, row(uc("cash.items.groceries.name")), 300);
+  cam.mark("item");
+  await page.waitForTimeout(1800);
+  await cam.stop();
+
+  // finding your way: up the drawer's path, through the places, back to all
+  await page.goto(`/drawers/${ids["valuables"]}`);
+  await expect(page.getByRole("heading", { name: D("valuables") })).toBeVisible();
+  await page.waitForTimeout(1200);
+  await cam.start("t-nav");
+  await page.waitForTimeout(900);
+  await tap(page, page.getByTestId("place-trail").getByRole("button", { name: PLACE["bedroom"]!, exact: true }), 300);
+  cam.mark("home");
+  await page.waitForTimeout(1500);
+  await tap(page, chip(PLACE["wardrobe"]!), 300);
+  await page.waitForTimeout(1300);
+  await tap(page, page.getByTestId("tag-bar").getByRole("button", { name: /^All\b/ }), 300);
+  await page.waitForTimeout(1500);
+  await cam.stop();
+
+  // places: a new one inside Home, then one step up the list
+  const GARDEN = "Garden";
+  await page.goto("/places");
+  await expect(page.getByTestId("place-row").first()).toBeVisible();
+  await page.waitForTimeout(1000);
+  await cam.start("t-places");
+  await page.waitForTimeout(700);
+  await tap(page, page.getByRole("button", { name: `Add a place inside ${PLACE["home"]}` }), 300);
+  await page.getByRole("dialog").getByLabel("Name").pressSequentially(GARDEN, { delay: 70 });
+  await tap(page, page.getByRole("dialog").getByRole("button", { name: "Save" }), 300);
+  await expect(page.getByRole("dialog")).toBeHidden();
+  cam.mark("added");
+  const garden = page.getByTestId("place-row").filter({ hasText: GARDEN });
+  await glide(page, await garden.evaluate((el) => el.getBoundingClientRect().top + scrollY - 420), 900);
+  await page.waitForTimeout(500);
+  await tap(page, garden.getByRole("button", { name: `Options for ${GARDEN}` }), 300);
+  await tap(page, page.getByRole("dialog").getByRole("button", { name: "Move up" }), 700);
+  await expect(page.getByRole("dialog")).toBeHidden();
+  cam.mark("moved");
+  await page.waitForTimeout(1400);
+  await cam.stop();
+
+  // a new drawer, made in the new place
+  const SHED = "Garden shed";
+  await home(page);
+  await placeAt(page, page.getByRole("button", { name: "Add drawer" }), 560);
+  await page.waitForTimeout(500);
+  await cam.start("t-drawer");
+  await tap(page, page.getByRole("button", { name: "Add drawer" }), 700);
+  await page.getByRole("dialog").getByLabel("Name", { exact: true }).pressSequentially(SHED, { delay: 70 });
+  const picker = page.getByTestId("add-place-picker");
+  await tap(page, picker.getByRole("button", { name: w("places.expand").replace("{name}", PLACE["home"]!) }), 300);
+  await tap(page, picker.getByTestId("place-option").filter({ hasText: new RegExp(`^${GARDEN}$`) }), 400);
+  await tap(page, page.getByRole("dialog").getByRole("button", { name: "Save" }), 400);
+  await expect(page.getByRole("heading", { name: SHED })).toBeVisible();
+  cam.mark("made");
+  await page.waitForTimeout(1600);
+  await cam.stop();
+
+  // items of each kind
+  await cam.start("t-items");
+  await tap(page, page.getByRole("button", { name: "Add item" }), 500);
+  await tap(page, page.getByRole("group").getByRole("button", { name: "Countable" }), 300);
+  await page.getByLabel("Name", { exact: true }).pressSequentially("Seed packets", { delay: 45 });
+  await page.getByLabel("Unit (optional)").pressSequentially("packs", { delay: 45 });
+  await page.getByLabel("Starting count").pressSequentially("12", { delay: 90 });
+  await tap(page, page.getByRole("button", { name: "Add", exact: true }), 300);
+  await expect(page.getByRole("dialog")).toBeHidden();
+  cam.mark("first");
+  await page.waitForTimeout(900);
+  await tap(page, page.getByRole("button", { name: "Add item" }), 400);
+  await tap(page, page.getByRole("group").getByRole("button", { name: "Single item" }), 300);
+  await page.getByLabel("Name", { exact: true }).pressSequentially("Hedge trimmer", { delay: 45 });
+  await page.getByLabel("Text (optional)").pressSequentially("sharpened in April", { delay: 35 });
+  await tap(page, page.getByRole("button", { name: "Add", exact: true }), 300);
+  await expect(page.getByRole("dialog")).toBeHidden();
+  cam.mark("second");
+  await page.waitForTimeout(1500);
+  await cam.stop();
+
+  // its look: a colour, then an icon
+  await cam.start("t-style");
+  await tap(page, page.getByRole("button", { name: "Drawer options" }), 500);
+  await tap(page, page.getByTestId("drawer-icon"), 400);
+  await tap(page, page.getByTestId("color-picker").getByRole("button", { name: "Olive" }), 500);
+  await tap(page, page.getByTestId("icon-picker").getByRole("button", { name: "Tools" }), 600);
+  await expect(page.getByRole("dialog")).toBeHidden();
+  cam.mark("done");
+  await page.waitForTimeout(1800);
+  await cam.stop();
+
+  // tags: one tag over items in three drawers, then the tag's own list
+  await page.goto(`/drawers/${ids["documents"]}`);
+  await expect(page.getByRole("heading", { name: D("documents") })).toBeVisible();
+  await page.waitForTimeout(1200);
+  const TAG = "travel";
+  await cam.start("t-tags");
+  await tap(page, page.getByRole("button", { name: "Manage tags" }), 600);
+  await tap(page, page.getByRole("dialog").getByRole("button", { name: "New tag" }), 500);
+  const tagSheet = page.getByRole("dialog").last();
+  await tagSheet.getByLabel("Tag name").pressSequentially(TAG, { delay: 80 });
+  for (const item of [uc("family.items.passports.name"), uc("trip.items.passes.name"), uc("cash.items.holiday.name")]) {
+    const box = tagSheet.getByRole("checkbox", { name: item });
+    await box.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(350);
+    await box.check();
+  }
+  await tap(page, tagSheet.getByRole("button", { name: "Save" }), 400);
+  cam.mark("saved");
+  await page.waitForTimeout(900);
+  await tap(page, page.getByRole("dialog").last().getByRole("button", { name: new RegExp(TAG) }).first(), 300);
+  cam.mark("detail");
+  await page.waitForTimeout(1900);
+  await cam.stop();
+
+  // search: by tag, then by a word in a name
+  await home(page);
+  await cam.start("t-search");
+  await tap(page, page.getByTestId("home-search-toggle"), 500);
+  const search = page.getByTestId("home-search").locator("input");
+  await search.pressSequentially(TAG, { delay: 120 });
+  cam.mark("tag");
+  await page.waitForTimeout(1800);
+  await search.fill("");
+  await search.pressSequentially("car key", { delay: 110 });
+  cam.mark("word");
+  await page.waitForTimeout(1800);
+  await cam.stop();
+
+  // sharing: invite Cara to the valuables as a reader, safety number compared
+  await page.goto(`/drawers/${ids["valuables"]}/members`);
+  await expect(page.getByRole("button", { name: "Invite someone" })).toBeVisible();
+  await page.waitForTimeout(1000);
+  await cam.start("t-share");
+  await tap(page, page.getByRole("button", { name: "Invite someone" }), 600);
+  await page.getByRole("dialog").getByLabel("Their email").pressSequentially(cara!.email, { delay: 40 });
+  await tap(page, page.getByRole("dialog").getByRole("button", { name: "Find" }), 300);
+  await expect(page.getByTestId("invite-found")).toBeVisible();
+  cam.mark("found");
+  await page.waitForTimeout(900);
+  await tap(page, page.getByRole("radio", { name: /^Reader/ }), 300);
+  await tap(page, page.getByRole("checkbox", { name: /I compared this safety number/ }), 600);
+  await tap(page, page.getByTestId("invite-found").getByRole("button", { name: "Invite" }), 500);
+  await expect(page.getByTestId("invite-found")).toBeHidden({ timeout: 15_000 });
+  cam.mark("sent");
+  await page.waitForTimeout(1600);
+  await cam.stop();
+
+  // Cara, on her own phone: compares the number, accepts, opens the drawer she may only read
+  const cctx = await browser.newContext({ viewport: VP, deviceScaleFactor: DSF, isMobile: true, hasTouch: true, colorScheme: "light" });
+  await cctx.addInitScript(TOUCH_DOTS);
+  const cp = await cctx.newPage();
+  await loginAndUnlock(cp, cara!);
+  await cp.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
+  await expect(cp.getByRole("button", { name: "Accept" })).toBeVisible();
+  await cp.waitForTimeout(1200);
+  const ccam = new Camera(cp);
+  await ccam.start("t-accept");
+  await tap(cp, cp.getByRole("checkbox", { name: /I compared this number/ }), 900);
+  await tap(cp, cp.getByRole("button", { name: "Accept" }), 600);
+  await expect(cp.getByRole("button", { name: `Open ${D("valuables")}` })).toBeVisible({ timeout: 15_000 });
+  ccam.mark("accepted");
+  await cp.waitForTimeout(800);
+  await tap(cp, cp.getByRole("button", { name: `Open ${D("valuables")}` }), 400);
+  ccam.mark("drawer");
+  await cp.waitForTimeout(2200);
+  await ccam.stop();
+  await cctx.close();
+
+  // the look: another language, then dark; put back before the next clips (unfilmed)
+  const pickOption = async (testId: string, value: string) => {
+    const sel = page.getByTestId(testId);
+    await sel.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(700);
+    // a native list does not show in the film: a tap dot where the finger would be, then the choice
+    await sel.evaluate((el) => { const r = el.getBoundingClientRect(); dispatchEvent(new PointerEvent("pointerdown", { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 })); });
+    await page.waitForTimeout(250);
+    await sel.selectOption(value);
+  };
+  await page.goto("/settings");
+  await expect(page.getByTestId("settings-language")).toBeVisible();
+  await page.waitForTimeout(1000);
+  await cam.start("t-settings");
+  await pickOption("settings-language", "pl");
+  cam.mark("language");
+  await page.waitForTimeout(1600);
+  await pickOption("settings-theme", "dark");
+  cam.mark("dark");
+  await page.waitForTimeout(1800);
+  await cam.stop();
+  await page.getByTestId("settings-language").selectOption("en");
+  await page.getByTestId("settings-theme").selectOption("light");
+  await page.waitForTimeout(800);
+
+  // yours to keep: backup, install, passkeys
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { name: "Backup" })).toBeVisible();
+  await placeAt(page, page.getByRole("heading", { name: "Access tokens" }), 90);
+  await page.waitForTimeout(800);
+  await cam.start("t-backup");
+  await page.waitForTimeout(600);
+  await glide(page, await page.getByRole("heading", { name: "Backup" }).evaluate((el) => el.getBoundingClientRect().top + scrollY - 90), 1500);
+  cam.mark("backup");
+  await page.waitForTimeout(1300);
+  await glide(page, await page.getByRole("heading", { name: "Install the app" }).evaluate((el) => el.getBoundingClientRect().top + scrollY - 200), 1600);
+  cam.mark("install");
+  await page.waitForTimeout(1500);
+  await cam.stop();
+
+  // locked: the vault opens only with the passphrase (or a passkey) on this device
+  await page.getByRole("button", { name: "Lock now" }).click();
+  await expect(page.getByLabel("Vault passphrase")).toBeVisible();
+  await page.waitForTimeout(1000);
+  await cam.start("t-unlock");
+  await page.waitForTimeout(900);
+  await page.getByLabel("Vault passphrase").pressSequentially(ben!.passphrase, { delay: 35 });
+  await tap(page, page.getByRole("button", { name: "Unlock" }), 300);
+  await expect(page.getByTestId("home")).toHaveAttribute("data-status", "ready", { timeout: 15_000 });
+  cam.mark("open");
+  await page.waitForTimeout(2000);
+  await cam.stop();
+
   // cash, last (it changes the checked tin): the tin, groceries, twenty out for bread on the keypad
   await page.goto(`/drawers/${ids["tin"]}`);
   await expect(page.getByRole("heading", { name: D("tin") })).toBeVisible();
@@ -405,6 +663,31 @@ const SCREEN = { x: 1180, y: 90, w: 416, h: 900 };
 const INK = "#1c1a17", MUTED = "#5f5a50", BG = "#f5f3ef", GREEN = "#2f6f4f";
 const TINT: Record<string, string> = { intro: GREEN, workshop: "#4f5a68", trip: "#1b7174", accounts: "#6c4a9e", cash: GREEN, lent: "#a4552f", family: "#a3406a", all: GREEN, ai: "#3657a6", outro: GREEN };
 const STEPS = ["workshop", "trip", "accounts", "cash", "lent", "family", "all"];
+/**
+ * The feature tour's chapters (PETTY-325): the film's own words, English for now. Each names what its
+ * clip shows; where the app already says it, its dictionary does.
+ */
+const TOUR: readonly { key: string; tint: string; chapter: string; title: string; body: () => string }[] = [
+  { key: "core", tint: GREEN, chapter: "The idea", title: "Places, drawers, items", body: () => "A place is a room, a shelf or a box. A drawer sits in a place. Items are what is inside: money, things you count, and single things with a note." },
+  { key: "nav", tint: "#1b7174", chapter: "Find your way", title: "Tap your way around", body: () => "The picture and the chips show your places: tap one to see only its drawers. The path on a drawer takes you back up." },
+  { key: "places", tint: "#5d6a1e", chapter: "Places", title: "Arrange your places", body: () => w("places.manageHint") },
+  { key: "drawer", tint: "#5d6a1e", chapter: "Drawers", title: "Add a drawer", body: () => "Give it a name and a place. A new place can be made right there." },
+  { key: "items", tint: "#5d6a1e", chapter: "Items", title: "Fill it with items", body: () => "Money in any currency, things you count by the piece, and single things with a note." },
+  { key: "style", tint: "#5d6a1e", chapter: "Drawers", title: "Give it a look", body: () => "A colour and an icon for each drawer, so you know it at a glance." },
+  { key: "entries", tint: GREEN, chapter: "Money and counts", title: "Add and take out", body: () => "A few taps on the keypad and a note. You check it before it is saved, and every entry stays in the history." },
+  { key: "check", tint: "#6c4a9e", chapter: "Checking", title: "Count, then mark as checked", body: () => w("landing.features.verify.body") },
+  { key: "tags", tint: "#3657a6", chapter: "Tags", title: "One tag, many drawers", body: () => "Tag items wherever they are: travel, insurance, warranty. The tag lists them all." },
+  { key: "search", tint: "#3657a6", chapter: "Search", title: "Search everything", body: () => "Names, notes and tags in every drawer. Each hit shows the place it is in." },
+  { key: "share", tint: "#1b7174", chapter: "Sharing", title: "Share one drawer", body: () => "Invite someone by email, as a writer or a reader. Compare safety numbers once, and no one can quietly swap in their own key." },
+  { key: "accept", tint: "#1b7174", chapter: "Sharing", title: "They accept on their phone", body: () => "Cara checks the number and accepts. As a reader she can see the drawer, not change it." },
+  { key: "private", tint: "#4f5a68", chapter: "Privacy", title: "Locked on your device", body: () => "Names, amounts and notes are encrypted on your device. Your passkey or passphrase opens them; the server cannot." },
+  { key: "settings", tint: "#4f5a68", chapter: "Settings", title: "Your language, your look", body: () => "English, polski, Deutsch, español, français. Light or dark. Hide what you do not use." },
+  { key: "backup", tint: "#4f5a68", chapter: "Settings", title: "Yours to keep", body: () => "Export your drawers to a file, install Petty like an app, and keep working offline." },
+];
+const PIN = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`;
+const DRAWER = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>`;
+const KINDS = { money: "#2e7a4f", things: "#2f63a8", notes: "#9a5f12" };
+
 const LOCK = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const CHAT = `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>`;
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -428,6 +711,14 @@ function sheet(tint: string, body: string, opaque = false): string {
   .steps { display: flex; gap: 10px; margin-top: 48px; }
   .steps i { width: 46px; height: 7px; border-radius: 4px; background: #e0dbd2; }
   .steps i.on { background: var(--tint); }
+  .steps.tour { gap: 8px; }
+  .steps.tour i { width: 30px; height: 6px; }
+  .concept { display: flex; align-items: center; gap: 18px; margin-top: 40px; font-size: 30px; font-weight: 700; }
+  .concept span { display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 18px; background: #fff; border: 1px solid #e5e0d8; box-shadow: 0 10px 24px -14px rgba(60, 45, 25, .35); }
+  .concept span svg { color: var(--tint); }
+  .concept b { color: #b9b2a6; font-size: 34px; }
+  .kinds { display: flex; gap: 26px; margin-top: 24px; font-size: 27px; color: ${MUTED}; }
+  .kinds i { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin-right: 10px; vertical-align: -1px; }
   .brand { display: flex; align-items: center; gap: 28px; font-size: 104px; font-weight: 800; letter-spacing: -0.03em; }
   .brand img { width: 116px; height: 116px; border-radius: 28px; box-shadow: 0 18px 40px -16px rgba(31, 106, 69, .55); }
   .url { display: inline-block; align-self: flex-start; margin-top: 44px; padding: 22px 38px; border-radius: 999px; background: ${GREEN}; color: #fff; font-size: 40px; font-weight: 700; letter-spacing: -0.01em; box-shadow: 0 16px 36px -14px rgba(47, 111, 79, .6); }
@@ -466,6 +757,15 @@ test("draw the frame and the words", async ({ browser }) => {
     await shot(`cap-${key}`, sheet(TINT[key]!, `<div class="col">${eyebrow}<div class="title">${esc(uc(`${key}.title`))}</div><div class="body">${esc(uc(`${key}.body`))}</div>${steps(key)}</div>`));
     await shot(`cap-${key}-short`, sheet(TINT[key]!, `<div class="col">${eyebrow}<div class="title s">${esc(uc(`${key}.title`))}</div>${steps(key)}</div>`));
   }
+  // the tour: chapter, title, words, and where it is in the tour; the first chapter draws the idea itself
+  const legend = (k: string) => esc(w(`landing.uses.legend.${k}`));
+  const concept = `<div class="concept"><span>${PIN}${legend("place")}</span><b>›</b><span>${DRAWER}${legend("drawer")}</span><b>›</b><span>${legend("items")}</span></div>
+    <div class="kinds">${(["money", "things", "notes"] as const).map((k) => `<span><i style="background:${KINDS[k]}"></i>${legend(k)}</span>`).join("")}</div>`;
+  for (const [n, c] of TOUR.entries()) {
+    const bars = `<div class="steps tour">${TOUR.map((_, i) => `<i${i === n ? ' class="on"' : ""}></i>`).join("")}</div>`;
+    await shot(`cap-t-${c.key}`, sheet(c.tint, `<div class="col"><div class="eyebrow"><i></i>${esc(c.chapter)}</div><div class="title s">${esc(c.title)}</div><div class="body">${esc(c.body())}</div>${c.key === "core" ? concept : ""}${bars}</div>`));
+  }
+  for (const c of TOUR) await shot(`bg-t-${c.key}`, sheet(c.tint, "", true), true);
   const brand = `<div class="brand"><img src="${icon}" alt="">${esc(w("app.name"))}</div>`;
   const [keep, rest] = w("landing.tagline").split(" — ");
   await shot("cap-intro", sheet(GREEN, `<div class="col">${brand}<div class="title" style="margin-top:46px">${esc(w("landing.slogan"))}</div></div>`));
