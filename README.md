@@ -10,6 +10,9 @@ in a tin, tools in the basement, passports in the safe, the drill you lent out. 
 place, holds items — money, counted things or notes — and is shared only with the people you choose.
 Everything is encrypted on your device before it is sent.
 
+**Try it at [petty.kropka.studio](https://petty.kropka.studio)** — nothing to install, it works in your
+browser. Or [run your own](#run-your-own).
+
 <p>
   <img src="apps/web/public/landing/home-en-light.webp" alt="Home screen: the total, the places as a picture, and the drawers grouped by place" width="260">
   <img src="apps/web/public/landing/items-en-light.webp" alt="A drawer of things: tools counted by the piece, keys and a torch as single items" width="260">

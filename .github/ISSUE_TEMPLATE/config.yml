@@ -7,5 +7,5 @@ contact_links:
     url: https://github.com/WawRepo/petty/issues
     about: Ask a question or float an idea before opening a change.
   - name: Email the maintainers
-    url: mailto:petty@szatanik.dev
+    url: mailto:petty@kropka.studio
     about: For anything that does not fit an issue.

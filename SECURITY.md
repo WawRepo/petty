@@ -6,7 +6,7 @@ it (it does see account and activity metadata, listed in the threat model). The 
 
 ## Reporting a vulnerability
 
-Please report security problems **privately**: email <petty@szatanik.dev>, or use
+Please report security problems **privately**: email <petty@kropka.studio>, or use
 **Security → Report a vulnerability** on this repository. Do not open a public issue.
 
 Include what you found, how to reproduce it, and what an attacker gains. We answer within

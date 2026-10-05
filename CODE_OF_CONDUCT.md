@@ -59,7 +59,7 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainers privately by email at <petty@szatanik.dev>, or by
+reported to the maintainers privately by email at <petty@kropka.studio>, or by
 opening a report at <https://github.com/WawRepo/petty/security/advisories/new>.
 All complaints will be reviewed and investigated promptly and fairly.
 
