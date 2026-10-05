@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.12] — 2026-10-05
+
 ### Changed
 - Petty describes itself as what it is now, not a cash-only ledger: a private record of what you keep
   and where — money, counted things and notes. In every language, the landing page's feature card is
@@ -389,7 +391,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.11...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.12...HEAD
+[1.5.12]: https://github.com/WawRepo/petty/releases/tag/v1.5.12
 [1.5.11]: https://github.com/WawRepo/petty/releases/tag/v1.5.11
 [1.5.10]: https://github.com/WawRepo/petty/releases/tag/v1.5.10
 [1.5.9]: https://github.com/WawRepo/petty/releases/tag/v1.5.9
