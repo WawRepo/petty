@@ -779,9 +779,9 @@
     }
   },
   "landing": {
-    "slogan": "Kleine Beträge. Große Gelassenheit.",
+    "slogan": "Wissen, was du hast, und wo.",
     "tagline": "Alles, was du aufbewahrst, an seinem Platz – geteilt mit den Menschen, die du wählst, Ende-zu-Ende-verschlüsselt.",
-    "sub": "Bargeld in der Keksdose, Werkzeug im Keller, Pässe im Safe: Gib jeder Schublade ihren Ort, trag ein, was drin ist, und teile sie mit den Menschen, die sie nutzen.",
+    "sub": "Werkzeug im Keller, Pässe im Safe, Bargeld in der Keksdose: Gib jeder Schublade ihren Ort, trag ein, was drin ist, und teile sie mit den Menschen, die sie nutzen.",
     "how": "Wie Petty Geheimnisse wahrt",
     "aiJump": "Mit deiner KI-App nutzen",
     "ai": {
@@ -800,9 +800,9 @@
         "app": "Deine KI-App",
         "label": "Ein Beispielgespräch",
         "local": "Petty-Erweiterung, auf diesem Computer",
-        "q1": "Wie viel Bargeld ist in der Küche?",
-        "tool1": "Petty · Schubladen auflisten · Küche",
-        "a1": "In deiner Geldkassette in der Küche sind {groceries} Einkaufsgeld und {coins} in Münzen.",
+        "q1": "Wo ist der Zweitschlüssel fürs Auto?",
+        "tool1": "Petty · Einen Posten finden · Zweitschlüssel Auto",
+        "a1": "In Wertsachen, im Safe: Zuhause › Schlafzimmer › Kleiderschrank › Safe. Die Notiz sagt „roter Anhänger“.",
         "q2": "Ich habe 20 für Brot genommen.",
         "a2": "{amount} aus Geldkassette › Einkaufsgeld entnehmen, mit der Notiz „Brot“?",
         "q3": "Ja.",
@@ -1099,8 +1099,8 @@
         "body": "Küche › Regal › Dose. Gib jeder Schublade ihren Ort; verschiebst du ein Zimmer, ziehen seine Schubladen mit."
       },
       "currencies": {
-        "title": "Währungen und Dinge",
-        "body": "Euro und Dollar nebeneinander, dazu zählbare Dinge wie Schlüssel oder Dokumente. Versieh jeden Posten mit Tags und filtere danach."
+        "title": "Geld, Dinge und Notizen",
+        "body": "Bargeld in jeder Währung, Dinge nach Stück gezählt und einzelne Gegenstände mit Notiz: ein Pass, eine Bohrmaschine, ein Zweitschlüssel. Versieh jeden Posten mit Tags und filtere danach."
       },
       "verify": {
         "title": "Zählen, prüfen, stornieren",
@@ -1121,15 +1121,15 @@
     },
     "stepsTitle": "So funktioniert es",
     "steps": {
-      "one": "Leg für jeden Ort, an dem du Bargeld oder Dinge aufbewahrst, eine Schublade an, ordne sie ihrem Zimmer oder Regal zu und trag ein, was jetzt darin ist.",
+      "one": "Leg für jeden Ort, an dem du etwas aufbewahrst – eine Dose, ein Regal, eine Kiste –, eine Schublade an, ordne sie ihrem Zimmer zu und trag ein, was darin ist: Geld, Dinge oder Notizen.",
       "two": "Trag mit ein paar Fingertipps ein, was hinzukommt oder entnommen wird. Storniere Fehler.",
       "three": "Zähl ab und zu, was in einer Schublade ist, und markiere sie als geprüft. Teile sie mit den Menschen, die sie nutzen."
     },
     "faqTitle": "Fragen",
     "faq": {
       "see": {
-        "q": "Könnt ihr mein Geld sehen?",
-        "a": "Nein. Beträge und Namen werden auf deinem Gerät verschlüsselt, und der Server speichert Daten, die er nicht lesen kann. Er sieht aber deine E-Mail-Adresse, deinen Namen und wann gebucht wird."
+        "q": "Könnt ihr sehen, was ich aufbewahre?",
+        "a": "Nein. Namen, Beträge und Notizen werden auf deinem Gerät verschlüsselt, und der Server speichert Daten, die er nicht lesen kann. Er sieht aber deine E-Mail-Adresse, deinen Namen und wann gebucht wird."
       },
       "ai": {
         "q": "Kann eine KI-App meine Schubladen lesen?",
@@ -1357,7 +1357,7 @@
       "Zahl 10 € in die Küchenkasse ein, Rest vom Einkauf.",
       "Ich habe 37,50 in der Dose gezählt. Trag das ein.",
       "Was habe ich diese Woche aus dem Schuppen genommen?",
-      "Welche Schubladen enthalten Euro?"
+      "Wo ist der Zweitschlüssel fürs Auto?"
     ],
     "toolsTitle": "Die Tools",
     "toolsHint": "Ein Token, das nur lesen darf, bekommt gar keine schreibenden Tools.",

@@ -9,6 +9,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 ## [Unreleased]
 
 ### Changed
+- Petty describes itself as what it is now, not a cash-only ledger: a private record of what you keep
+  and where — money, counted things and notes. In every language, the landing page's feature card is
+  "Money, things and notes", step 1 and the question "Can you see what I keep?" say so, the AI example
+  asks where the spare car key is before it records a sum, and the footer reads "Know what you have,
+  and where." The page now has a description and link-preview tags (it had none), the install text
+  says "Everything you keep, in its place.", and the README, the add-on, the Claude skill and the MCP
+  Registry entry describe money, things and notes.
 - On the landing page, the AI section now follows "One idea, many uses". Its example conversation comes
   first and names no app; under it, "Set it up in your app" holds the app buttons and each app's
   one-line setup.

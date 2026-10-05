@@ -252,10 +252,13 @@ test("the AI section follows the use cases: MCP named, the chat names no app, th
   await expect(page.getByTestId("ai-command")).toHaveText("io.github.WawRepo/petty");
   await expect(page.locator('.ai-app[aria-pressed="true"]')).toHaveCount(1);
 
-  // the example amounts are EUR in the visitor's language
-  await expect(show).toContainText("120.50 EUR");
+  // PETTY-320: the example asks about a thing first, then a sum; amounts are EUR in the visitor's language
+  await expect(show).toContainText("Where is the spare car key?");
+  await expect(show).toContainText("Home › Bedroom › Wardrobe › Safe");
   await expect(show).toContainText("100.50 EUR");
+  await expect(show).not.toContainText("How much cash");
   // and the FAQ answers the question a careful visitor asks
+  await expect(page.getByText("Can you see what I keep?")).toBeVisible(); // PETTY-320: not "my money"
   await page.getByText("Can an AI app read my drawers?").click();
   await expect(page.getByText(/What you ask about reaches the AI app you chose/)).toBeVisible();
 
@@ -277,7 +280,8 @@ test("on a phone the hero links to the AI section, and the section speaks the vi
   await page.getByRole("button", { name: "Polski" }).click();
   const show = page.getByTestId("ai-show");
   await expect(show.getByRole("heading", { name: "Pytaj o swoje szuflady zwykłymi słowami" })).toBeVisible();
-  await expect(show).toContainText("120,50 EUR");
+  await expect(show).toContainText("Gdzie jest zapasowy kluczyk do auta?");
+  await expect(show).toContainText("100,50 EUR");
   await expect(page.getByTestId("ai-app-any")).toHaveText("Każda aplikacja MCP");
 });
 

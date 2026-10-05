@@ -51,7 +51,7 @@ async function locate(client: AgentClient, target: string): Promise<{ drawer: Ag
 const log = (line: string) => process.stderr.write(`petty-mcp: ${line}\n`);
 
 /** What the host shows the model about this server: how Petty is shaped and how to use the tools well. */
-export const INSTRUCTIONS = `Petty is the user's own ledger of cash and things kept at home, end-to-end encrypted. This server runs on the user's computer and decrypts only here.
+export const INSTRUCTIONS = `Petty is the user's own record of the money, things and notes they keep at home and where, end-to-end encrypted. This server runs on the user's computer and decrypts only here.
 
 Shape: a drawer (for example "Kitchen tin") holds items (lines): money in one currency, a countable thing, or a single item with text. A drawer may sit in a place, a path like "House › Kitchen › shelf". Items may carry up to 5 tags, like "cash" or "travel".
 

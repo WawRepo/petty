@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: "Petty",
         short_name: "Petty",
-        description: "A ledger for cash kept in several places.",
+        description: "Everything you keep, in its place. End-to-end encrypted.",
         theme_color: "#2f6f4f",
         background_color: "#f5f3ef",
         display: "standalone",

@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 
 const NAME = "io.github.WawRepo/petty";
 const REPO = "https://github.com/WawRepo/petty";
-const DESCRIPTION = "End-to-end encrypted cash ledger: balances, history, add or take cash. Decrypts on your computer.";
+const DESCRIPTION = "What you keep and where: money, things, notes. End-to-end encrypted; decrypts on your computer.";
 
 const [tag = "", file = ""] = process.argv.slice(2);
 const fail = (msg: string): never => {

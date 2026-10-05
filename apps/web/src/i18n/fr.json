@@ -779,9 +779,9 @@
     }
   },
   "landing": {
-    "slogan": "Petites sommes. Grande tranquillité.",
+    "slogan": "Savoir ce que vous avez, et où.",
     "tagline": "Tout ce que vous gardez, à sa place — partagé avec qui vous choisissez, chiffré de bout en bout.",
-    "sub": "L’argent dans la boîte de la cuisine, les outils au sous-sol, les passeports dans le coffre-fort : donnez à chaque tiroir sa place, notez ce qu’il contient et partagez-le avec ceux qui s’en servent.",
+    "sub": "Les outils au sous-sol, les passeports dans le coffre-fort, l’argent dans la boîte de la cuisine : donnez à chaque tiroir sa place, notez ce qu’il contient et partagez-le avec ceux qui s’en servent.",
     "how": "Comment Petty garde vos secrets",
     "aiJump": "L’utiliser depuis votre application d’IA",
     "ai": {
@@ -800,9 +800,9 @@
         "app": "Votre application d’IA",
         "label": "Un exemple de conversation",
         "local": "Extension Petty, sur cet ordinateur",
-        "q1": "Combien d’argent y a-t-il dans la cuisine ?",
-        "tool1": "Petty · Lister les tiroirs · Cuisine",
-        "a1": "Votre boîte à sous de la cuisine contient {groceries} pour les courses et {coins} en pièces.",
+        "q1": "Où est le double de clé de voiture ?",
+        "tool1": "Petty · Trouver un élément · double de clé de voiture",
+        "a1": "Dans Objets de valeur, au coffre-fort : Maison › Chambre › Armoire › Coffre-fort. La note dit « porte-clé rouge ».",
         "q2": "J’ai pris 20 pour le pain.",
         "a2": "Retirer {amount} de Boîte à sous › Courses, avec la note « pain » ?",
         "q3": "Oui.",
@@ -1099,8 +1099,8 @@
         "body": "Cuisine › étagère › boîte. Rangez chaque tiroir à sa place ; déplacez une pièce et ses tiroirs suivent."
       },
       "currencies": {
-        "title": "Devises et objets",
-        "body": "Euro et dollar côte à côte, et aussi des objets à compter, comme des clés ou des documents. Étiquetez n’importe quel élément et filtrez par étiquette."
+        "title": "Argent, objets et notes",
+        "body": "De l’argent dans n’importe quelle devise, des objets comptés à la pièce et des objets uniques avec une note : un passeport, une perceuse, un double de clé. Étiquetez n’importe quel élément et filtrez par étiquette."
       },
       "verify": {
         "title": "Compter, contrôler, inverser",
@@ -1121,15 +1121,15 @@
     },
     "stepsTitle": "Comment ça marche",
     "steps": {
-      "one": "Créez un tiroir pour chaque endroit où vous gardez de l’argent ou des objets, rangez-le dans sa pièce ou sur son étagère, et notez ce qu’il contient maintenant.",
+      "one": "Créez un tiroir pour chaque endroit où vous gardez quelque chose — une boîte, une étagère, un carton —, rangez-le dans sa pièce et notez ce qu’il contient : argent, objets ou notes.",
       "two": "Ajoutez ou retirez en quelques gestes dès que quelque chose bouge. Inversez les opérations erronées.",
       "three": "De temps en temps, comptez ce que contient un tiroir et marquez-le comme contrôlé. Partagez-le avec ceux qui s’en servent."
     },
     "faqTitle": "Questions",
     "faq": {
       "see": {
-        "q": "Pouvez-vous voir mon argent ?",
-        "a": "Non. Les montants et les noms sont chiffrés sur votre appareil, et le serveur stocke des données qu’il ne peut pas lire. Il voit en revanche votre e-mail, votre nom et le moment de chaque opération."
+        "q": "Pouvez-vous voir ce que je garde ?",
+        "a": "Non. Les noms, les montants et les notes sont chiffrés sur votre appareil, et le serveur stocke des données qu’il ne peut pas lire. Il voit en revanche votre e-mail, votre nom et le moment de chaque opération."
       },
       "ai": {
         "q": "Une application d’IA peut-elle lire mes tiroirs ?",
@@ -1357,7 +1357,7 @@
       "Ajoutez 10 € à l’argent de la cuisine, reste des courses.",
       "J’ai compté 37,50 dans la boîte. Ajustez le solde.",
       "Qu’ai-je pris dans l’abri de jardin cette semaine ?",
-      "Quels tiroirs contiennent des euros ?"
+      "Où est le double de clé de voiture ?"
     ],
     "toolsTitle": "Les outils",
     "toolsHint": "Un jeton en lecture seule ne reçoit aucun outil d’écriture.",

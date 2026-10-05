@@ -779,9 +779,9 @@
     }
   },
   "landing": {
-    "slogan": "Small amounts. Big peace of mind.",
+    "slogan": "Know what you have, and where.",
     "tagline": "Everything you keep, in its place — shared with the people you choose, encrypted end to end.",
-    "sub": "Cash in the kitchen tin, tools in the basement, passports in the safe: give every drawer its place, list what is inside, and share it with the people who use it.",
+    "sub": "Tools in the basement, passports in the safe, cash in the kitchen tin: give every drawer its place, list what is inside, and share it with the people who use it.",
     "how": "How it keeps secrets",
     "aiJump": "Use it from your AI app",
     "ai": {
@@ -800,9 +800,9 @@
         "app": "Your AI app",
         "label": "An example conversation",
         "local": "Petty add-on, on this computer",
-        "q1": "How much cash is in the kitchen?",
-        "tool1": "Petty · List drawers · Kitchen",
-        "a1": "Your Cash tin in the kitchen holds {groceries} for groceries and {coins} in coins.",
+        "q1": "Where is the spare car key?",
+        "tool1": "Petty · Find an item · spare car key",
+        "a1": "In Valuables, in the safe: Home › Bedroom › Wardrobe › Safe. The note says “red tag”.",
         "q2": "I took 20 for bread.",
         "a2": "Take {amount} out of Cash tin › Groceries, with the note “bread”?",
         "q3": "Yes.",
@@ -1099,8 +1099,8 @@
         "body": "Kitchen › shelf › tin. Put every drawer in its place; move a room and its drawers follow."
       },
       "currencies": {
-        "title": "Currencies and things",
-        "body": "Euro and dollar side by side, plus countable things like keys or documents. Tag any item and filter by tag."
+        "title": "Money, things and notes",
+        "body": "Cash in any currency, things counted by the piece, and single items with a note: a passport, a drill, a spare key. Tag any item and filter by tag."
       },
       "verify": {
         "title": "Count, check, reverse",
@@ -1121,15 +1121,15 @@
     },
     "stepsTitle": "How it works",
     "steps": {
-      "one": "Make a drawer for each place you keep cash or things, put it in its room or on its shelf, and list what is there now.",
+      "one": "Make a drawer for each place you keep something — a tin, a shelf, a box — put it in its room, and list what is inside: money, things or notes.",
       "two": "Add or withdraw with a few taps whenever something moves. Reverse mistakes.",
       "three": "Now and then, count what is in a drawer and mark it as checked. Share it with the people who use it."
     },
     "faqTitle": "Questions",
     "faq": {
       "see": {
-        "q": "Can you see my money?",
-        "a": "No. Amounts and names are encrypted on your device, and the server stores data it cannot read. It does see your email, your name and when entries happen."
+        "q": "Can you see what I keep?",
+        "a": "No. Names, amounts and notes are encrypted on your device, and the server stores data it cannot read. It does see your email, your name and when entries happen."
       },
       "ai": {
         "q": "Can an AI app read my drawers?",
@@ -1357,7 +1357,7 @@
       "Add €10 to kitchen cash, from groceries.",
       "I counted 37.50 in the tin. Set it.",
       "What did I take from the shed this week?",
-      "Which drawers hold euros?"
+      "Where is the spare car key?"
     ],
     "toolsTitle": "The tools",
     "toolsHint": "A read-only token gets no writing tools at all.",

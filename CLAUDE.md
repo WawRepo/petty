@@ -1,7 +1,8 @@
 # Petty
 
-A ledger for physical cash kept in several places, across multiple currencies.
-End-to-end encrypted, shared per drawer with specific people. Household scale —
+A private record of what people keep and where: money in several currencies, counted things and
+single items, in drawers that sit in places. It began as a ledger for physical cash. End-to-end
+encrypted, shared per drawer with specific people. Household scale —
 a handful of users, not a multi-tenant product.
 
 ## Read these first

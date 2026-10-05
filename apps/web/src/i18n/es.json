@@ -779,9 +779,9 @@
     }
   },
   "landing": {
-    "slogan": "Pequeñas cantidades. Gran tranquilidad.",
+    "slogan": "Sabes qué tienes y dónde.",
     "tagline": "Todo lo que guardas, en su lugar: compartido con quien tú elijas y cifrado de extremo a extremo.",
-    "sub": "Efectivo en la lata de la cocina, herramientas en el sótano, pasaportes en la caja fuerte: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
+    "sub": "Herramientas en el sótano, pasaportes en la caja fuerte, efectivo en la lata de la cocina: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
     "how": "Cómo guarda los secretos",
     "aiJump": "Úsalo desde tu aplicación de IA",
     "ai": {
@@ -800,9 +800,9 @@
         "app": "Tu aplicación de IA",
         "label": "Una conversación de ejemplo",
         "local": "Complemento de Petty, en este equipo",
-        "q1": "¿Cuánto efectivo hay en la cocina?",
-        "tool1": "Petty · Listar cajones · Cocina",
-        "a1": "Tu lata del dinero de la cocina tiene {groceries} para compras y {coins} en monedas.",
+        "q1": "¿Dónde está la llave de repuesto del coche?",
+        "tool1": "Petty · Buscar un elemento · llave de repuesto del coche",
+        "a1": "En Objetos de valor, en la caja fuerte: Casa › Dormitorio › Armario › Caja fuerte. La nota dice «etiqueta roja».",
         "q2": "Saqué 20 para el pan.",
         "a2": "¿Retiro {amount} de Lata del dinero › Compras, con la nota «pan»?",
         "q3": "Sí.",
@@ -1099,8 +1099,8 @@
         "body": "Cocina › estante › lata. Pon cada cajón en su lugar; mueve una habitación y sus cajones la siguen."
       },
       "currencies": {
-        "title": "Divisas y cosas",
-        "body": "Euros y dólares, uno al lado del otro, y además cosas que se cuentan, como llaves o documentos. Etiqueta cualquier elemento y filtra por etiqueta."
+        "title": "Dinero, cosas y notas",
+        "body": "Efectivo en cualquier divisa, cosas que se cuentan por unidades y objetos sueltos con una nota: un pasaporte, un taladro, una llave de repuesto. Etiqueta cualquier elemento y filtra por etiqueta."
       },
       "verify": {
         "title": "Cuenta, revisa, revierte",
@@ -1121,15 +1121,15 @@
     },
     "stepsTitle": "Cómo funciona",
     "steps": {
-      "one": "Crea un cajón para cada lugar donde guardas efectivo o cosas, ponlo en su habitación o en su estante y apunta lo que hay ahora.",
+      "one": "Crea un cajón para cada lugar donde guardas algo —una lata, un estante, una caja—, ponlo en su habitación y apunta lo que hay dentro: dinero, cosas o notas.",
       "two": "Añade o retira con unos pocos toques cada vez que algo se mueve. Revierte los errores.",
       "three": "De vez en cuando, cuenta lo que hay en un cajón y márcalo como revisado. Compártelo con quienes lo usan."
     },
     "faqTitle": "Preguntas",
     "faq": {
       "see": {
-        "q": "¿Petty puede ver mi dinero?",
-        "a": "No. Las cantidades y los nombres se cifran en tu dispositivo, y el servidor guarda datos que no puede leer. Lo que sí ve es tu correo, tu nombre y cuándo se hacen los movimientos."
+        "q": "¿Petty puede ver lo que guardo?",
+        "a": "No. Los nombres, las cantidades y las notas se cifran en tu dispositivo, y el servidor guarda datos que no puede leer. Lo que sí ve es tu correo, tu nombre y cuándo se hacen los movimientos."
       },
       "ai": {
         "q": "¿Puede una aplicación de IA leer mis cajones?",
@@ -1357,7 +1357,7 @@
       "Añade 10 € al efectivo de la cocina, de la compra.",
       "Conté 37,50 en la lata. Ajústalo.",
       "¿Qué saqué del cobertizo esta semana?",
-      "¿Qué cajones tienen euros?"
+      "¿Dónde está la llave de repuesto del coche?"
     ],
     "toolsTitle": "Las herramientas",
     "toolsHint": "Un token de solo lectura no recibe ninguna herramienta de escritura.",

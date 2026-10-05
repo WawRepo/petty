@@ -779,9 +779,9 @@
     }
   },
   "landing": {
-    "slogan": "Małe kwoty. Duży spokój.",
+    "slogan": "Wiesz, co masz i gdzie.",
     "tagline": "Wszystko, co przechowujesz, na swoim miejscu — udostępnione wybranym osobom, z szyfrowaniem end-to-end.",
-    "sub": "Gotówka w puszce w kuchni, narzędzia w piwnicy, paszporty w sejfie: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
+    "sub": "Narzędzia w piwnicy, paszporty w sejfie, gotówka w puszce w kuchni: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
     "how": "Jak strzeże sekretów",
     "aiJump": "Korzystaj z aplikacji AI",
     "ai": {
@@ -800,9 +800,9 @@
         "app": "Twoja aplikacja AI",
         "label": "Przykładowa rozmowa",
         "local": "Dodatek Petty, na tym komputerze",
-        "q1": "Ile gotówki jest w kuchni?",
-        "tool1": "Petty · Lista szuflad · Kuchnia",
-        "a1": "W puszce na gotówkę w kuchni jest {groceries} na zakupy i {coins} w monetach.",
+        "q1": "Gdzie jest zapasowy kluczyk do auta?",
+        "tool1": "Petty · Znajdź pozycję · zapasowy kluczyk",
+        "a1": "W Kosztownościach, w sejfie: Dom › Sypialnia › Szafa › Sejf. Notatka: „czerwona zawieszka”.",
         "q2": "Biorę 20 na chleb.",
         "a2": "Odjąć {amount} od Puszka na gotówkę › Na zakupy, z notatką „chleb”?",
         "q3": "Tak.",
@@ -1099,8 +1099,8 @@
         "body": "Kuchnia › półka › puszka. Każda szuflada ma swoje miejsce; przenieś pokój, a szuflady pójdą za nim."
       },
       "currencies": {
-        "title": "Waluty i rzeczy",
-        "body": "Złote i euro obok siebie, a do tego rzeczy do policzenia, jak klucze czy dokumenty. Oznacz dowolną pozycję tagiem i filtruj po tagach."
+        "title": "Pieniądze, rzeczy i notatki",
+        "body": "Gotówka w dowolnej walucie, rzeczy liczone na sztuki i pojedyncze przedmioty z notatką: paszport, wiertarka, zapasowy kluczyk. Oznacz dowolną pozycję tagiem i filtruj po tagach."
       },
       "verify": {
         "title": "Policz, sprawdź, cofnij",
@@ -1121,15 +1121,15 @@
     },
     "stepsTitle": "Jak to działa",
     "steps": {
-      "one": "Załóż szufladę dla każdego miejsca, w którym trzymasz gotówkę lub rzeczy, umieść ją w pokoju lub na półce i wpisz, co jest teraz w środku.",
+      "one": "Załóż szufladę dla każdego miejsca, w którym coś trzymasz — puszki, półki, pudełka — umieść ją w pokoju i wpisz, co jest w środku: pieniądze, rzeczy albo notatki.",
       "two": "Dodawaj i wyjmuj kilkoma dotknięciami, gdy coś przybywa lub ubywa. Cofaj pomyłki.",
       "three": "Co jakiś czas policz, co jest w szufladzie, i oznacz ją jako sprawdzoną. Udostępnij ją osobom, które z niej korzystają."
     },
     "faqTitle": "Pytania",
     "faq": {
       "see": {
-        "q": "Czy widzicie moje pieniądze?",
-        "a": "Nie. Kwoty i nazwy są szyfrowane na Twoim urządzeniu, a serwer przechowuje dane, których nie umie odczytać. Widzi jednak Twój e-mail, imię i to, kiedy pojawiają się wpisy."
+        "q": "Czy widzicie, co trzymam?",
+        "a": "Nie. Nazwy, kwoty i notatki są szyfrowane na Twoim urządzeniu, a serwer przechowuje dane, których nie umie odczytać. Widzi jednak Twój e-mail, imię i to, kiedy pojawiają się wpisy."
       },
       "ai": {
         "q": "Czy aplikacja AI może czytać moje szuflady?",
@@ -1357,7 +1357,7 @@
       "Dodaj 10 zł do gotówki w kuchni, z zakupów.",
       "Po przeliczeniu w puszce jest 37,50. Ustaw to.",
       "Co zabrano z szopy w tym tygodniu?",
-      "Które szuflady mają euro?"
+      "Gdzie jest zapasowy kluczyk do auta?"
     ],
     "toolsTitle": "Narzędzia",
     "toolsHint": "Token tylko do odczytu nie dostaje żadnych narzędzi zapisu.",

@@ -51,7 +51,7 @@ export function AiShowcase() {
         </div>
         <p className="ai-msg ai-user">{t("landing.ai.chat.q1")}</p>
         <p className="ai-tool"><Lock size={12} aria-hidden="true" />{t("landing.ai.chat.tool1")}</p>
-        <p className="ai-msg ai-bot">{t("landing.ai.chat.a1", { groceries: eur(12050), coins: eur(1420) })}</p>
+        <p className="ai-msg ai-bot">{t("landing.ai.chat.a1")}</p>
         <p className="ai-msg ai-user">{t("landing.ai.chat.q2")}</p>
         <p className="ai-msg ai-bot">{t("landing.ai.chat.a2", { amount: eur(2000) })}</p>
         <p className="ai-msg ai-user">{t("landing.ai.chat.q3")}</p>

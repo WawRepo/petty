@@ -1,6 +1,6 @@
 ---
 name: petty
-description: Work with Petty, the user's end-to-end encrypted ledger of cash and things kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, or wants to tag items or move drawers between places.
+description: Work with Petty, the user's end-to-end encrypted record of the money, things and notes kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, or wants to tag items or move drawers between places.
 license: AGPL-3.0-only (LICENSE has the full terms)
 compatibility: Needs Petty's MCP server (petty.mcpb or petty-mcp.mjs) or the petty command line (petty.mjs), signed in to the user's Petty with an access token.
 metadata:
@@ -10,7 +10,7 @@ metadata:
 
 # Petty
 
-Petty is the user's own ledger of cash and things kept at home. It is end-to-end encrypted: only
+Petty is the user's own record of the money, things and notes they keep at home, and where. It is end-to-end encrypted: only
 the user's computer can read it. The Petty MCP server, or the `petty` command line, decrypts it on
 that computer and hands you what you ask for. Petty's server never sees it.
 

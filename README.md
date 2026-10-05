@@ -5,28 +5,30 @@
 
 # Petty
 
-**A private ledger for the cash and valuables in your home.** Petty keeps track of what is in
-each drawer, tin and envelope, in any currency, and shares a drawer only with the people you
-choose. Everything is encrypted on your device before it is sent.
+**Everything you keep, in its place.** Petty is a private record of what you keep and where: cash
+in a tin, tools in the basement, passports in the safe, the drill you lent out. Each drawer sits in a
+place, holds items — money, counted things or notes — and is shared only with the people you choose.
+Everything is encrypted on your device before it is sent.
 
 <p>
-  <img src="apps/web/public/landing/home-en-light.webp" alt="Home screen: drawers grouped by room, with a total" width="260">
-  <img src="apps/web/public/landing/drawer-en-light.webp" alt="A drawer: totals, tags and items with icons" width="260">
-  <img src="apps/web/public/landing/entry-en-light.webp" alt="Adding an entry with the keypad" width="260">
+  <img src="apps/web/public/landing/home-en-light.webp" alt="Home screen: the total, the places as a picture, and the drawers grouped by place" width="260">
+  <img src="apps/web/public/landing/items-en-light.webp" alt="A drawer of things: tools counted by the piece, keys and a torch as single items" width="260">
+  <img src="apps/web/public/landing/places-en-light.webp" alt="Places: rooms, shelves and boxes as a tree you can drag" width="260">
 </p>
 
 ## What it does
 
-- **Drawers in places.** A drawer lives in a place, for example Kitchen › shelf › tin. Moving a
-  room moves its drawers.
-- **Currencies and things.** Zloty, euro and dollars side by side, plus countable things like
-  keys or documents. Tag items and filter by tag.
-- **Shared, with roles.** Writers add entries; readers only look. The server enforces this.
+- **Money, things and notes.** Cash in any currency, things counted by the piece, and single items
+  with a note: a passport, a drill, a spare key. Tag items and filter by tag.
+- **Drawers in places.** Home › Bedroom › Wardrobe › Safe. A drawer lives in a place; moving a room
+  moves its drawers. Search finds an item by its name, note or tag.
+- **Shared, with roles.** A drawer is shared only with the people you pick. Writers add entries;
+  readers only look. The server enforces this.
 - **Count, check, never erase.** Mark a drawer as checked after a real count. Mistakes are
   reversed, not deleted.
-- **Works with AI apps.** Ask Claude Desktop (a one-click add-on) or any MCP app about your drawers,
-  or have it add an entry. It decrypts on your computer; the server still sees only ciphertext. A
-  Claude skill teaches it the good habits (a monthly count, one total per currency, ask before it
+- **Works with AI apps.** Claude Desktop (a one-click add-on), Claude Code, Cursor, VS Code or any
+  MCP app can read and update your drawers. It decrypts on your computer; the server still sees only
+  ciphertext. A Claude skill teaches it the good habits (one total per currency, ask before it
   writes), and the add-on is listed in the MCP Registry as `io.github.WawRepo/petty`. See
   [docs/agent.md](docs/agent.md).
 - **A command line.** `petty` signs in through your browser, like `gh auth login`, then reads and
@@ -35,6 +37,16 @@ choose. Everything is encrypted on your device before it is sent.
 - **Passkey first, works offline.** Face ID, Touch ID or Windows Hello opens your vault. It
   installs like an app and keeps working without a network.
 - **English, Polish, German, Spanish and French** — the app, its emails and the sign-in pages.
+
+## Made for
+
+- **Cash at home** — every tin and envelope in its room, counted and checked. Where Petty started.
+- **The workshop** — the zip ties are in Home › Basement › Workshop, in the desk drawer.
+- **A trip kitty** — one drawer per trip, one item per person; nobody can quietly change what they paid.
+- **Yearly accounts** — a drawer per account, checked once a year, the date kept with it.
+- **Lent out** — who has your drill, and since when.
+- **The family safe** — where the passports, keys and papers are, shared read-only with the people
+  who may one day need it.
 
 ## Documentation
 
