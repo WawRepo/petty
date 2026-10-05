@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.13] — 2026-10-05
+
 ### Added
 - Two metrics for operators' alerts: `petty_security_refusals_total{code}` counts refusals that normal
   use never triggers (a forged custody proof, keys or a wrap that do not match, a token asked to do what
@@ -401,7 +403,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.12...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.13...HEAD
+[1.5.13]: https://github.com/WawRepo/petty/releases/tag/v1.5.13
 [1.5.12]: https://github.com/WawRepo/petty/releases/tag/v1.5.12
 [1.5.11]: https://github.com/WawRepo/petty/releases/tag/v1.5.11
 [1.5.10]: https://github.com/WawRepo/petty/releases/tag/v1.5.10
