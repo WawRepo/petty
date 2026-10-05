@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- On the landing page, the AI section now follows "One idea, many uses". Its example conversation comes
+  first and names no app; under it, "Set it up in your app" holds the app buttons and each app's
+  one-line setup.
+
 ## [1.5.11] — 2026-10-04
 
 ### Changed

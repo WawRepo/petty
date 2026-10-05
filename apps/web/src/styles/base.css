@@ -339,6 +339,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .ai-user { align-self: flex-end; background: var(--accent); color: var(--accent-text); border-radius: 16px 16px 4px 16px; padding: 9px 14px; }
 .ai-bot { align-self: flex-start; }
 .ai-tool { margin: 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; }
+.ai-setup-title { font-size: 17px; font-weight: 800; text-align: center; margin-top: 10px; }
 .ai-setup { display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.45; background: color-mix(in srgb, var(--accent) 9%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)); border-radius: 12px; padding: 12px 14px; }
 .ai-command { display: block; overflow-x: auto; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
 .ai-setup .btn { width: auto; }
@@ -350,7 +351,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* Desktop: bigger hero, one-line CTAs, three-up features (UX review findings 6/7). */
 /* Desktop (PETTY-49 → PETTY-135): one centred column — hero, the five phones, then the rest. */
 @media (min-width: 1280px) {
-  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "ai" "uses" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
+  main.landing { display: grid; grid-template-columns: minmax(300px, 960px); grid-template-areas: "lang" "hero" "uses" "ai" "shots" "rest"; justify-content: center; row-gap: 32px; align-items: center; padding: 40px 32px; }
   /* PETTY-260: the hero keeps its 700 px (the 900 px rule below) and stands in the middle of the 960 px column */
   .landing > .landing-hero { grid-area: hero; text-align: center; align-items: center; justify-self: center; }
   .landing > .usecases { grid-area: uses; justify-self: center; width: 100%; }

@@ -7,10 +7,11 @@ import { currentLocale } from "../i18n/index.js";
 import { CodeText } from "./CodeText.js";
 
 /**
- * "Works with your AI app" on the landing page, right under the hero (PETTY-316, design B of PETTY-315).
- * Petty's MCP add-on works with any app that runs local MCP servers, so the section names MCP, shows a
- * row of apps whose buttons switch a one-line setup, and a short example conversation: a question, an
- * answer, and a change the assistant asks about before making it. The setup lines are the real ones
+ * "Works with your AI app" on the landing page, after "One idea, many uses" (PETTY-316, design B of
+ * PETTY-315; order and layout D of PETTY-319). Petty's MCP add-on works with any app that runs local MCP
+ * servers, so the section names MCP, then shows a short example conversation that names no app (a
+ * question, an answer, and a change the assistant asks about before making it), then "Set it up in your
+ * app": a row of apps whose buttons switch a one-line setup. The setup lines are the real ones
  * (docs/agent.md, docs/cli.md) with this Petty's own address. Apps that only take remote connectors are
  * left out on purpose: those would need the server to decrypt (docs/decisions.md).
  *
@@ -42,17 +43,10 @@ export function AiShowcase() {
         <p className="hint m0">{t("landing.ai.body")}</p>
       </div>
 
-      <div className="ai-apps" role="group" aria-label={t("landing.ai.appsLabel")}>
-        {APPS.map((a) => (
-          <button type="button" key={a} className="ai-app" aria-pressed={a === app} onClick={() => setApp(a)} data-testid={`ai-app-${a}`}>
-            {t(`landing.ai.apps.${a}`)}
-          </button>
-        ))}
-      </div>
-
+      {/* PETTY-319: the example first, for any app; the setup per app under it */}
       <figure className="ai-chat m0" aria-label={t("landing.ai.chat.label")}>
         <div className="ai-chat-head">
-          <span className="ai-chat-app" data-testid="ai-chat-app"><MessageCircle size={18} aria-hidden="true" />{name}</span>
+          <span className="ai-chat-app" data-testid="ai-chat-app"><MessageCircle size={18} aria-hidden="true" />{t("landing.ai.chat.app")}</span>
           <span className="ai-chat-local"><Lock size={14} aria-hidden="true" />{t("landing.ai.chat.local")}</span>
         </div>
         <p className="ai-msg ai-user">{t("landing.ai.chat.q1")}</p>
@@ -65,8 +59,16 @@ export function AiShowcase() {
         <p className="ai-msg ai-bot">{t("landing.ai.chat.a3", { amount: eur(10050) })}</p>
       </figure>
 
+      <h3 className="ai-setup-title m0" id="ai-setup-title">{t("landing.ai.setupHeading")}</h3>
+      <div className="ai-apps" role="group" aria-labelledby="ai-setup-title">
+        {APPS.map((a) => (
+          <button type="button" key={a} className="ai-app" aria-pressed={a === app} onClick={() => setApp(a)} data-testid={`ai-app-${a}`}>
+            {t(`landing.ai.apps.${a}`)}
+          </button>
+        ))}
+      </div>
       <div className="ai-setup" data-testid="ai-setup" aria-live="polite">
-        <p className="m0 fw700">{t("landing.ai.setupTitle", { app: name })}</p>
+        <p className="m0 fw700" data-testid="ai-setup-app">{name}</p>
         <p className="m0">{setup}</p>
         {command ? <code className="ai-command" data-testid="ai-command">{command}</code> : null}
         {app === "desktop" ? <p className="m0"><a className="btn btn-secondary" href="/downloads/petty.mcpb" download="petty.mcpb" data-testid="ai-mcpb">{t("tokens.addonDownload")}</a></p> : null}

@@ -60,11 +60,11 @@ export function LandingScreen() {
         </p>
       </section>
 
-      {/* PETTY-316: working with AI apps, right under the hero (it was only a footer link before) */}
-      <AiShowcase />
-
       {/* PETTY-248: the one pattern (place › drawer › items) as a live demo, one example turning into the next. */}
       <UseCases />
+
+      {/* PETTY-316: working with AI apps (it was only a footer link before); after the use cases since PETTY-319 */}
+      <AiShowcase />
 
       {/* Five real captures (PETTY-77/79; audit F2 in PETTY-109): whole frames in a row from 1000 px up, a swipe strip on phones;
           a tap or Enter opens the frame at full size in an overlay — no reflow, no reserved empty height. */}

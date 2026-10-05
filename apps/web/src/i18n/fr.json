@@ -788,7 +788,6 @@
       "eyebrow": "Fonctionne avec votre application d’IA",
       "title": "Interrogez vos tiroirs avec vos propres mots",
       "body": "Petty parle MCP, le standard ouvert par lequel les applications d’IA branchent des outils. Claude, Cursor, VS Code ou toute autre application MCP peut donc lire et modifier vos tiroirs. Une petite extension sur votre propre ordinateur les déverrouille sur place ; le serveur stocke toujours des boîtes verrouillées qu’il ne peut pas ouvrir.",
-      "appsLabel": "Applications d’IA",
       "apps": {
         "desktop": "Claude Desktop",
         "code": "Claude Code",
@@ -798,6 +797,7 @@
         "any": "Toute application MCP"
       },
       "chat": {
+        "app": "Votre application d’IA",
         "label": "Un exemple de conversation",
         "local": "Extension Petty, sur cet ordinateur",
         "q1": "Combien d’argent y a-t-il dans la cuisine ?",
@@ -809,7 +809,7 @@
         "tool2": "Petty · Retirer d’un élément · {amount}",
         "a3": "C’est fait. Courses contient maintenant {amount}."
       },
-      "setupTitle": "Le configurer dans {app}",
+      "setupHeading": "Le configurer dans votre application",
       "setup": {
         "desktop": "Téléchargez l’extension, double-cliquez dessus, puis collez l’adresse de votre Petty et un jeton d’accès créé dans les Réglages.",
         "code": "Une seule commande, une fois la ligne de commande petty connectée :",

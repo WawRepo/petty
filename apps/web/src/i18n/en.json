@@ -788,7 +788,6 @@
       "eyebrow": "Works with your AI app",
       "title": "Ask about your drawers in plain words",
       "body": "Petty speaks MCP, the open standard AI apps use to plug in tools. So Claude, Cursor, VS Code or any other MCP app can read and update your drawers. A small add-on on your own computer unlocks them there; the server still stores locked boxes it cannot open.",
-      "appsLabel": "AI apps",
       "apps": {
         "desktop": "Claude Desktop",
         "code": "Claude Code",
@@ -798,6 +797,7 @@
         "any": "Any MCP app"
       },
       "chat": {
+        "app": "Your AI app",
         "label": "An example conversation",
         "local": "Petty add-on, on this computer",
         "q1": "How much cash is in the kitchen?",
@@ -809,7 +809,7 @@
         "tool2": "Petty · Take from an item · {amount}",
         "a3": "Done. Groceries now holds {amount}."
       },
-      "setupTitle": "Set it up in {app}",
+      "setupHeading": "Set it up in your app",
       "setup": {
         "desktop": "Download the add-on, double-click it, then paste your Petty address and an access token from Settings.",
         "code": "One command, once the petty command line is signed in:",

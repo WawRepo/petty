@@ -203,17 +203,31 @@ test("the demo passes axe (WCAG 2.1 AA)", async ({ page }) => {
   expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 });
 
-// PETTY-316: working with AI apps was a footer link 3,300 px down; now it is the section right under the hero.
-test("the AI section comes right after the hero: MCP named, the app buttons switch the real setup line, the add-on and /ai one click away", async ({ page }) => {
+// PETTY-316: working with AI apps was a footer link 3,300 px down; now it is a section of its own, after
+// "One idea, many uses" (PETTY-319): the example chat first, for any app, then the setup per app.
+test("the AI section follows the use cases: MCP named, the chat names no app, the app buttons below it switch the real setup line, the add-on and /ai one click away", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   const show = page.getByTestId("ai-show");
   await show.waitFor();
   const order = await page.evaluate(() => [...document.querySelectorAll("main.landing > *")].map((e) => (e as HTMLElement).dataset["testid"] ?? e.className));
-  expect(order.indexOf("ai-show"), order.join(" | ")).toBe(order.indexOf("landing-hero") + 1);
-  // on a laptop's first screen, without scrolling
+  expect(order.indexOf("use-cases"), order.join(" | ")).toBe(order.indexOf("landing-hero") + 1);
+  expect(order.indexOf("ai-show"), order.join(" | ")).toBe(order.indexOf("use-cases") + 1);
+  // on a laptop's first screen the hero's link leads there
+  const jump = page.getByTestId("landing-ai-jump");
+  await expect(jump).toBeInViewport();
+  await jump.click();
   await expect(page.getByText("Works with your AI app")).toBeInViewport();
   await expect(show).toContainText("Petty speaks MCP, the open standard AI apps use to plug in tools.");
+  // the chat comes before the setup, and names no app whichever is picked
+  const chatAbove = await page.evaluate(() => {
+    const chat = document.querySelector(".ai-chat")!.getBoundingClientRect().top;
+    return chat < document.querySelector('[data-testid="ai-app-desktop"]')!.getBoundingClientRect().top;
+  });
+  expect(chatAbove).toBe(true);
+  await expect(page.getByTestId("ai-chat-app")).toHaveText("Your AI app");
+  await expect(page.getByRole("heading", { name: "Set it up in your app" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Set it up in your app" }).getByRole("button")).toHaveCount(6);
 
   // Claude Desktop first: the add-on, no command
   await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "true");
@@ -223,7 +237,8 @@ test("the AI section comes right after the hero: MCP named, the app buttons swit
   await page.getByTestId("ai-app-code").click();
   await expect(page.getByTestId("ai-app-code")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByTestId("ai-chat-app")).toHaveText("Claude Code");
+  await expect(page.getByTestId("ai-chat-app")).toHaveText("Your AI app");
+  await expect(page.getByTestId("ai-setup-app")).toHaveText("Claude Code");
   await expect(page.getByTestId("ai-command")).toHaveText("claude mcp add petty -- petty mcp");
   await expect(page.getByTestId("ai-mcpb")).toHaveCount(0);
   const origin = new URL(page.url()).origin;

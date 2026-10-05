@@ -788,7 +788,6 @@
       "eyebrow": "Działa z Twoją aplikacją AI",
       "title": "Pytaj o swoje szuflady zwykłymi słowami",
       "body": "Petty mówi w MCP, otwartym standardzie, przez który aplikacje AI podłączają narzędzia. Dzięki temu Claude, Cursor, VS Code albo każda inna aplikacja MCP może czytać i zmieniać Twoje szuflady. Mały dodatek na Twoim własnym komputerze otwiera je na miejscu; serwer nadal przechowuje zamknięte pudełka, których nie umie otworzyć.",
-      "appsLabel": "Aplikacje AI",
       "apps": {
         "desktop": "Claude Desktop",
         "code": "Claude Code",
@@ -798,6 +797,7 @@
         "any": "Każda aplikacja MCP"
       },
       "chat": {
+        "app": "Twoja aplikacja AI",
         "label": "Przykładowa rozmowa",
         "local": "Dodatek Petty, na tym komputerze",
         "q1": "Ile gotówki jest w kuchni?",
@@ -809,7 +809,7 @@
         "tool2": "Petty · Odejmij od pozycji · {amount}",
         "a3": "Gotowe. Na zakupy jest teraz {amount}."
       },
-      "setupTitle": "Jak to ustawić: {app}",
+      "setupHeading": "Ustaw to w swojej aplikacji",
       "setup": {
         "desktop": "Pobierz dodatek, kliknij go dwukrotnie, a potem wklej adres swojego Petty i token dostępu z Ustawień.",
         "code": "Jedno polecenie, gdy wiersz poleceń petty jest już zalogowany:",

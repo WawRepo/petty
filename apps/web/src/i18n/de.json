@@ -788,7 +788,6 @@
       "eyebrow": "Funktioniert mit deiner KI-App",
       "title": "Frag in ganz normalen Worten nach deinen Schubladen",
       "body": "Petty spricht MCP, den offenen Standard, über den KI-Apps Tools anbinden. So können Claude, Cursor, VS Code oder jede andere MCP-App deine Schubladen lesen und ändern. Eine kleine Erweiterung auf deinem eigenen Computer schließt sie dort auf; der Server speichert weiterhin verschlossene Kisten, die er nicht öffnen kann.",
-      "appsLabel": "KI-Apps",
       "apps": {
         "desktop": "Claude Desktop",
         "code": "Claude Code",
@@ -798,6 +797,7 @@
         "any": "Jede MCP-App"
       },
       "chat": {
+        "app": "Deine KI-App",
         "label": "Ein Beispielgespräch",
         "local": "Petty-Erweiterung, auf diesem Computer",
         "q1": "Wie viel Bargeld ist in der Küche?",
@@ -809,7 +809,7 @@
         "tool2": "Petty · Aus einem Posten entnehmen · {amount}",
         "a3": "Erledigt. Im Einkaufsgeld sind jetzt {amount}."
       },
-      "setupTitle": "So richtest du es in {app} ein",
+      "setupHeading": "So richtest du es in deiner App ein",
       "setup": {
         "desktop": "Lade die Erweiterung herunter, doppelklicke sie und füge dann deine Petty-Adresse und ein Zugriffstoken aus den Einstellungen ein.",
         "code": "Ein Befehl, sobald die Kommandozeile petty angemeldet ist:",

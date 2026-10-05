@@ -788,7 +788,6 @@
       "eyebrow": "Funciona con tu aplicación de IA",
       "title": "Pregunta por tus cajones con tus propias palabras",
       "body": "Petty habla MCP, el estándar abierto con el que las aplicaciones de IA conectan herramientas. Así, Claude, Cursor, VS Code o cualquier otra aplicación MCP puede leer y cambiar tus cajones. Un pequeño complemento en tu propio equipo los abre allí; el servidor sigue guardando cajas cerradas que no puede abrir.",
-      "appsLabel": "Aplicaciones de IA",
       "apps": {
         "desktop": "Claude Desktop",
         "code": "Claude Code",
@@ -798,6 +797,7 @@
         "any": "Cualquier aplicación MCP"
       },
       "chat": {
+        "app": "Tu aplicación de IA",
         "label": "Una conversación de ejemplo",
         "local": "Complemento de Petty, en este equipo",
         "q1": "¿Cuánto efectivo hay en la cocina?",
@@ -809,7 +809,7 @@
         "tool2": "Petty · Retirar de un elemento · {amount}",
         "a3": "Hecho. Compras tiene ahora {amount}."
       },
-      "setupTitle": "Cómo configurarlo en {app}",
+      "setupHeading": "Configúralo en tu aplicación",
       "setup": {
         "desktop": "Descarga el complemento, haz doble clic en él y pega la dirección de tu Petty y un token de acceso de Ajustes.",
         "code": "Un solo comando, cuando la línea de comandos petty ya tiene la sesión iniciada:",
