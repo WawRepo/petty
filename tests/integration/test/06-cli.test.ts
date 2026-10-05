@@ -53,7 +53,8 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const login = petty(["auth", "login", "--host", ORIGIN, "--no-browser"]);
     await expect.poll(login.err, { timeout: 30_000 }).toMatch(/code: [A-Z]{4}-[A-Z]{4}-[A-Z]{4}/);
     const code = /code: ([A-Z]{4}-[A-Z]{4}-[A-Z]{4})/.exec(login.err())![1]!;
-    expect(login.err()).toContain(`${ORIGIN}/device?code=${code}`);
+    // PETTY-322: the address follows the code in a write of its own; the v1.5.12 upgrade run read in between
+    await expect.poll(login.err, { timeout: 5_000 }).toContain(`${ORIGIN}/device?code=${code}`);
 
     // the page's part: find the request, check the code is the tool's key's, make a token, seal it to the tool
     const view = (await ann.call("GET", `/device/${code}`)).json();
