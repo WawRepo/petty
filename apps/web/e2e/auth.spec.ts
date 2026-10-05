@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import pg from "pg";
-import { expect, loginAndUnlock, makeJoinLink, signupViaApi, test, openSettings, choosePassphraseDoor } from "./fixtures.js";
+import { expect, loginAndUnlock, makeDrawers, makeJoinLink, signupViaApi, test, openSettings, choosePassphraseDoor } from "./fixtures.js";
 
 const OWNER_DB = process.env["DATABASE_URL"] ?? "postgres://petty:petty@localhost:5432/petty";
 import type { Page } from "@playwright/test";
@@ -53,6 +53,21 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   expect(idb.isKey).toBe(true);
   expect(idb.extractable).toBe(false);
   expect(idb.expiresInHours).toBeGreaterThan(23);
+});
+
+test("Lock now with drawers on view, then unlock: Home loads them again, no reload needed (PETTY-326)", async ({ page }) => {
+  const user = await signupViaApi("lou");
+  await loginAndUnlock(page, user);
+  await makeDrawers(page, [["Cash tin", ["Home", "Kitchen"]], ["Toolbox", ["Home", "Basement"]]]);
+  await page.goto("/");
+  await expect(page.getByTestId("drawer-row")).toHaveCount(2);
+  await openSettings(page);
+  await page.getByRole("button", { name: "Lock now" }).click();
+  await page.getByLabel("Vault passphrase").fill(user.passphrase);
+  await page.getByRole("button", { name: "Unlock" }).click();
+  // the lock used to strand the store on "loading": Home said "Loading…" until the page was reloaded
+  await expect(page.getByTestId("home")).toHaveAttribute("data-status", "ready", { timeout: 10_000 });
+  await expect(page.getByTestId("drawer-row")).toHaveCount(2);
 });
 
 test("login, wrong passphrase, unlock, Lock now, sign out — in English and in Polish", async ({ page }) => {

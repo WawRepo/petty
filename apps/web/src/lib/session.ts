@@ -163,11 +163,14 @@ export async function unlockWithKeys(keys: UserKeyPairs): Promise<void> {
 
 export async function lockNow(): Promise<void> {
   if (typeof window !== "undefined") window.clearTimeout(lockTimer);
+  // Locked first (PETTY-326): the store's reset below re-renders the screen still on view, and while the
+  // session still said "unlocked" it started a load that then failed on the lock and stayed "loading" —
+  // after the next unlock Home showed "Loading…" until a reload.
+  const s = state;
+  if (s.status === "unlocked") set({ status: "locked", me: s.me });
   resetDrawers();
   forgetSelfKey();
   await idb.del(K_UNLOCKED);
-  const s = state;
-  if (s.status === "unlocked") set({ status: "locked", me: s.me });
 }
 
 let signOutHandler: (() => Promise<void>) | null = null;

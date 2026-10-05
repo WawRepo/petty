@@ -14,6 +14,10 @@ number, also when it adds features, and a new minor or major is started by hand 
   it may not), and `petty_process_resident_memory_bytes` reports the API's memory on the OTLP push too.
   `docs/monitoring.md` lists them with suggested alerts.
 
+### Fixed
+- After "Lock now" in Settings and unlocking again, Home could stay on "Loading…" until the page was
+  reloaded. It now shows your drawers straight away.
+
 ## [1.5.12] — 2026-10-05
 
 ### Changed
