@@ -2,12 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { buildApp } from "../src/app.js";
+import { apiPool, maintPool } from "../src/db.js";
+import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
 import { registry, startMetricsServer } from "../src/lib/metrics.js";
 
 const app = buildApp();
 let metrics: Server;
 beforeAll(async () => { await app.ready(); metrics = await startMetricsServer(0, "127.0.0.1"); });
-afterAll(async () => { await app.close(); metrics.close(); });
+afterAll(async () => { await app.close(); metrics.close(); await apiPool.end(); await maintPool.end(); });
 
 describe("metrics (Phase 15b)", () => {
   it("records every request under its route template, never its URL", async () => {
@@ -33,6 +35,27 @@ describe("metrics (Phase 15b)", () => {
     expect(body).toContain('petty_pg_pool_clients{pool="api",state="total"}');
 
     expect((await fetch(`http://127.0.0.1:${port}/health`)).status).toBe(404);
+  });
+
+  it("counts a refusal that normal use never triggers by its code, and an ordinary refusal not at all (PETTY-266)", async () => {
+    const run = crypto.randomUUID().slice(0, 8);
+    const A = new Client(app, await userMaterial("sec", { email: `sec-${run}@test.local` }));
+    const other = await userMaterial("sec2", { email: `sec2-${run}@test.local` });
+    expect((await A.signup(await makeJoinLink())).statusCode).toBe(201);
+    const { id } = await A.createDrawer("Probe");
+    const count = async () => Number(/petty_security_refusals_total\{code="CustodyProofInvalid"\} (\d+)/.exec(await registry.metrics())?.[1] ?? 0);
+    const before = await count();
+    // a custody proof signed with someone else's key: forged, never a slip of the hand
+    expect((await A.call("DELETE", `/drawers/${id}`, { proof: await A.proof(other.keys.ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid");
+    expect(await count()).toBe(before + 1);
+    // an ordinary refusal (no proof at all) is not counted as a security refusal
+    expect((await A.call("DELETE", `/drawers/${id}`)).statusCode).toBe(400);
+    expect(await count()).toBe(before + 1);
+    expect(await registry.metrics()).not.toContain(`sec-${run}`); // no email or id in a label
+  });
+
+  it("reports the process's resident memory under its own name (PETTY-267)", async () => {
+    expect(await registry.metrics()).toMatch(/petty_process_resident_memory_bytes [1-9]\d+/);
   });
 });
 

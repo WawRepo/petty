@@ -66,6 +66,11 @@ export const rotationsStarted = dualCounter("petty_rotations_started_total", "Dr
 
 export const mailsSent = dualCounter("petty_mail_total", "Notification emails handed to SMTP, by result", ["result"]);
 
+export const securityRefusals = dualCounter(
+  "petty_security_refusals_total",
+  "Refusals that normal use never triggers (errors.ts SECURITY_REFUSALS), by error code", ["code"],
+);
+
 // pg pool occupancy: prom collects on scrape; OTel observes on its export interval. Same numbers, two readers.
 new client.Gauge({
   name: "petty_pg_pool_clients",
@@ -80,6 +85,17 @@ new client.Gauge({
     }
   },
 });
+// PETTY-267: resident memory on both paths. The scrape also has prom-client's process_resident_memory_bytes,
+// but the OTLP push (an instance nothing can scrape) had no memory figure at all, so a memory alert was blind.
+new client.Gauge({
+  name: "petty_process_resident_memory_bytes",
+  help: "Resident set size of the API process, in bytes",
+  registers: [registry],
+  collect() { this.set(process.memoryUsage.rss()); },
+});
+meter.createObservableGauge("petty_process_resident_memory_bytes", { description: "Resident set size of the API process, in bytes" })
+  .addCallback((obs) => obs.observe(process.memoryUsage.rss()));
+
 meter.createObservableGauge("petty_pg_pool_clients", { description: "pg pool clients by pool and state" }).addCallback((obs) => {
   for (const [name, pool] of [["api", apiPool], ["maint", maintPool]] as const) {
     obs.observe(pool.totalCount, { pool: name, state: "total" });

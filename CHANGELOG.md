@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- Two metrics for operators' alerts: `petty_security_refusals_total{code}` counts refusals that normal
+  use never triggers (a forged custody proof, keys or a wrap that do not match, a token asked to do what
+  it may not), and `petty_process_resident_memory_bytes` reports the API's memory on the OTLP push too.
+  `docs/monitoring.md` lists them with suggested alerts.
+
 ## [1.5.12] — 2026-10-05
 
 ### Changed

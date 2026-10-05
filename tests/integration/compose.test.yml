@@ -8,6 +8,7 @@ services:
   app:
     ports: !override
       - "127.0.0.1:3400:3000"
+      - "127.0.0.1:3401:9464" # PETTY-266/267: 14-metrics reads the scrape port
     depends_on:
       mailpit: { condition: service_started }
     environment:
@@ -16,3 +17,4 @@ services:
       STORAGE_QUOTA_MB: "1" # PETTY-243: small enough that 05-storage fills an account
       CONTACT_EMAIL: "ops@petty.test" # PETTY-281: the mails that say "tell the person who runs your Petty" name them
       CLIENT_IP_HEADER: "x-test-client-ip" # PETTY-301: 08-proxy plays a platform proxy that sets its own header
+      METRICS_PORT: "9464" # PETTY-266/267: the scrape port, for 14-metrics

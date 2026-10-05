@@ -7,10 +7,10 @@ import { config } from "./config.js";
 import type { HealthResponse } from "@petty/protocol";
 import { ZodError } from "zod";
 import { dbIsUp } from "./db.js";
-import { ApiError, notFound } from "./lib/errors.js";
+import { ApiError, notFound, SECURITY_REFUSALS } from "./lib/errors.js";
 import { sessionPlugin } from "./lib/session.js";
 import { securityHeaders } from "./lib/headers.js";
-import { requestMetrics } from "./lib/metrics.js";
+import { requestMetrics, securityRefusals } from "./lib/metrics.js";
 import { safeUrl, tracingHooks } from "./lib/tracing.js";
 import { apiRateLimit } from "./lib/rate-limit.js";
 import { adminRoutes } from "./routes/admin.js";
@@ -60,6 +60,7 @@ export function buildApp() {
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof ApiError) {
+      if (SECURITY_REFUSALS.has(err.code)) securityRefusals.inc({ code: err.code }); // PETTY-266
       return reply.code(err.status).send({ code: err.code, message: err.message, context: err.context });
     }
     if (err instanceof ZodError) {

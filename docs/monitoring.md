@@ -40,6 +40,8 @@ separate port, not on the app port, so a reverse proxy never exposes them. The c
 | `petty_rotations_started_total` | none | drawer key rotations started |
 | `petty_mail_total` | `result` = ok, failed | emails handed to SMTP |
 | `petty_pg_pool_clients` | `pool` = api, maint; `state` = total, idle, waiting | database pool occupancy |
+| `petty_security_refusals_total` | `code` = CustodyProofInvalid, KeysMismatch, WrapMismatch, DelegationInvalid, DelegationMismatch, DeviceKeyInvalid, TokenCannotVerify, SigningKeyRequired, ReadTokenCannotSign | refusals that normal use never triggers: a forged custody proof, keys or a wrap that do not match, a token asked to do what it may not (`SECURITY_REFUSALS` in `apps/api/src/lib/errors.ts`) |
+| `petty_process_resident_memory_bytes` | none | the API process's resident memory, also on the OTLP push (which has no `process_*` defaults) |
 | `petty_users_total`, `petty_users_active{window}`, `petty_sessions_open`, `petty_drawers_total`, `petty_drawers_shared`, `petty_entries_stored` | `window` = 15m, 24h, 7d | usage counts from the database, refreshed at most every 30 seconds |
 | `process_*`, `nodejs_*` | none | prom-client defaults |
 
@@ -106,9 +108,13 @@ and on the OTLP push alike; with several instances, add `by (deployment_environm
 | Waiting for the database | `max(petty_pg_pool_clients{state="waiting"}) > 0` | 5 min |
 | Password guessing | `increase(petty_auth_events_total{event="login_fail"}[15m]) > 20` | — |
 | Sign-in limiter | `increase(petty_auth_events_total{event="rate_limited"}[15m]) > 0` | — |
+| Security refusals | `sum by (code) (increase(petty_security_refusals_total[15m])) > 2` | — |
+| Memory | `max(petty_process_resident_memory_bytes) / <the machine's memory in bytes> > 0.8` | 15 min |
 | Error logs (Loki) | `count_over_time({service_name="petty"} \| detected_level="error" [10m]) > 5` | — |
 
 Also worth a check from outside: an HTTP probe on `/api/health` that expects `"db":"up"`, and, if you
 run the backup job from `deploy/backup`, an alert when the last successful backup is older than
-26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`) appear after their first
-event, so treat "no data" as fine for those rules.
+26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`,
+`petty_security_refusals_total`) appear after their first event, so treat "no data" as fine for those
+rules. Tampering that only the client can see — a ciphertext that fails to open (`AuthTagMismatch`), a
+broken hash chain — never reaches the server, so no server alert can report it.
