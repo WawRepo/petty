@@ -74,6 +74,10 @@ webp into `apps/web/public/landing/`), extend the capture's data when the
 feature needs it, and update the feature cards, alt texts and FAQ in every dictionary
 (`apps/web/src/i18n/`). A landing page that shows last month's app is a bug.
 
+The promo films are made the same way, from the landing page's examples as real data: `PROMO=1
+PROMO_OUT=<dir> WEB_PORT=5174 npx playwright test e2e/promo.spec.ts --project dev` in `apps/web`
+films the app, then `node scripts/promo-video.ts <dir>` cuts them with their music (needs ffmpeg).
+
 ## Working style
 
 - The Decisions log (`docs/decisions.md`) is settled. If you believe a decision is wrong, **say so**
