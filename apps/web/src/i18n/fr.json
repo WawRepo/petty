@@ -784,6 +784,13 @@
     "sub": "Les outils au sous-sol, les passeports dans le coffre-fort, l’argent dans la boîte de la cuisine : donnez à chaque tiroir sa place, notez ce qu’il contient et partagez-le avec ceux qui s’en servent.",
     "how": "Comment Petty garde vos secrets",
     "aiJump": "L’utiliser depuis votre application d’IA",
+    "tour": {
+      "button": "Voir la visite guidée",
+      "meta": "1 min 38 s · avec le son · en anglais",
+      "title": "Une visite de Petty",
+      "length": "1 min 38 s",
+      "close": "Fermer la vidéo"
+    },
     "ai": {
       "eyebrow": "Fonctionne avec votre application d’IA",
       "title": "Interrogez vos tiroirs avec vos propres mots",

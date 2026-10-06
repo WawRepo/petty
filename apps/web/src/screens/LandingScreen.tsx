@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { Button } from "../components/Button.js";
 import { UseCases } from "../components/UseCases.js";
 import { AiShowcase } from "../components/AiShowcase.js";
+import { TourFilm } from "../components/TourFilm.js";
 import { currentLocale, LOCALE_NAMES, LOCALES, setLocale } from "../i18n/index.js";
 import { LanguagePicker } from "../components/LanguagePicker.js";
 import { useEffect, useRef } from "react";
@@ -54,6 +55,8 @@ export function LandingScreen() {
         {cta}
         {/* PETTY-293 (review S8): "write to us" only when this Petty names an address to write to */}
         <p className="hint m0" data-testid="landing-access">{t(open ? "landing.betaOpen" : contact ? "landing.betaInvite" : "landing.betaInviteNoContact")}</p>
+        {/* PETTY-329: the tour film, a button here and the film over the whole page */}
+        <TourFilm />
         <p className="m0 landing-jumps">
           <Button variant="ghost" onClick={() => document.getElementById("crypto")?.scrollIntoView({ behavior: "smooth" })}>{t("landing.how")}</Button>
           <Button variant="ghost" onClick={() => document.getElementById("ai")?.scrollIntoView({ behavior: "smooth" })} data-testid="landing-ai-jump">{t("landing.aiJump")}</Button>

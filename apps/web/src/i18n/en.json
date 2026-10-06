@@ -784,6 +784,13 @@
     "sub": "Tools in the basement, passports in the safe, cash in the kitchen tin: give every drawer its place, list what is inside, and share it with the people who use it.",
     "how": "How it keeps secrets",
     "aiJump": "Use it from your AI app",
+    "tour": {
+      "button": "Watch the tour",
+      "meta": "1 min 38 s · with sound",
+      "title": "A tour of Petty",
+      "length": "1 min 38 s",
+      "close": "Close the film"
+    },
     "ai": {
       "eyebrow": "Works with your AI app",
       "title": "Ask about your drawers in plain words",

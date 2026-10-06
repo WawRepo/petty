@@ -322,6 +322,34 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .landing-mail:hover { text-decoration: underline; }
 .landing-jumps { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .landing-jumps .btn { width: auto; }
+/* PETTY-329: the tour film — a button in the hero, the film over the whole page on a dark ground in either theme */
+.tour-btn { display: inline-flex; align-items: center; gap: 14px; margin-top: 10px; padding: 8px 20px 8px 8px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 10px 24px -12px rgba(60, 45, 25, .35); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.tour-btn:hover { border-color: var(--accent); }
+.tour-thumb { position: relative; display: block; width: 136px; aspect-ratio: 16 / 9; border-radius: 13px; overflow: hidden; flex-shrink: 0; background: var(--border); }
+.tour-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.tour-play { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: #2f6f4f; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.tour-text { display: flex; flex-direction: column; gap: 3px; }
+.tour-label { font-size: 17px; font-weight: 700; }
+.tour-meta { font-size: 13px; color: var(--muted); }
+@media (max-aspect-ratio: 4/5) {
+  .tour-btn { width: 100%; max-width: 380px; box-sizing: border-box; }
+  .tour-thumb { width: 56px; aspect-ratio: 9 / 16; border-radius: 11px; }
+  .tour-play { width: 32px; height: 32px; margin: -16px 0 0 -16px; }
+}
+html.tour-open { overflow: hidden; }
+.tour-dialog { box-sizing: border-box; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 12px 16px 16px; border: 0; background: #11100e; color: #e9e4da; }
+.tour-dialog[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.tour-dialog::backdrop { background: #11100e; }
+.tour-bar, .tour-video { width: 100%; max-width: min(1180px, calc((100dvh - 100px) * 16 / 9)); }
+.tour-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tour-title { margin: 0; font-size: 16px; font-weight: 700; }
+.tour-length { font-weight: 400; color: #a8a094; }
+.tour-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: 50%; background: #2a2723; color: #fff; cursor: pointer; }
+.tour-close:focus-visible { outline: 2px solid #e9e4da; outline-offset: 2px; }
+.tour-video { display: block; aspect-ratio: 16 / 9; border-radius: 14px; background: #000; }
+.tour-dialog.tall { padding: 8px 8px 12px; }
+.tour-dialog.tall .tour-bar, .tour-dialog.tall .tour-video { max-width: calc((100dvh - 84px) * 9 / 16); }
+.tour-dialog.tall .tour-video { aspect-ratio: 9 / 16; border-radius: 10px; }
 /* "Works with your AI app" (PETTY-316): MCP named, a row of apps, a short example chat, the setup line. */
 .landing > .ai-show { max-width: 520px; display: flex; flex-direction: column; gap: 14px; }
 .ai-show-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }

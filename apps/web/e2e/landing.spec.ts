@@ -324,3 +324,45 @@ test("the hero says how to get in with and without a contact address, and makes 
   await expect(page.getByText(/the person who runs it sets the price/)).toBeVisible();
   await expect(page.getByText(/must tell you/)).toHaveCount(0);
 });
+
+test("the tour film (PETTY-329): nothing of it loads before the click; the click opens it over the page; Esc and × close it", async ({ page }) => {
+  const films: string[] = [];
+  page.on("request", (r) => { if (/\/landing\/tour\/.*\.mp4/.test(r.url())) films.push(r.url()); });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  const open = page.getByTestId("tour-open");
+  await expect(open).toContainText("Watch the tour");
+  await expect(open).toContainText("1 min 38 s · with sound");
+  await page.waitForTimeout(800);
+  expect(films, "the page must not fetch the film before the click").toEqual([]);
+
+  await open.click();
+  const film = page.getByRole("dialog", { name: "A tour of Petty" });
+  await expect(film).toBeVisible();
+  await expect(film.locator("video")).toHaveAttribute("src", "/landing/tour/petty-tour.mp4");
+  await expect(page.locator("html")).toHaveClass(/tour-open/);
+  const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).include(".tour-dialog").analyze();
+  expect(axe.violations.map((v) => v.id)).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(film).toBeHidden();
+  await expect(open).toBeFocused();
+  await expect(page.locator("html")).not.toHaveClass(/tour-open/);
+
+  await open.click();
+  await expect(film).toBeVisible();
+  await film.getByRole("button", { name: "Close the film" }).click();
+  await expect(film).toBeHidden();
+});
+
+test("the tour film on a phone is the tall cut, and other languages say the film is in English (PETTY-329)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByTestId("tour-open").click();
+  const film = page.getByRole("dialog", { name: "A tour of Petty" });
+  await expect(film.locator("video")).toHaveAttribute("src", "/landing/tour/petty-tour-tall.mp4");
+  await expect(film).toHaveClass(/tall/);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => localStorage.setItem("petty.locale", "pl"));
+  await page.reload();
+  await expect(page.getByTestId("tour-open")).toContainText("po angielsku");
+});

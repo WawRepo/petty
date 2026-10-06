@@ -76,7 +76,11 @@ feature needs it, and update the feature cards, alt texts and FAQ in every dicti
 
 The promo films are made the same way, from the landing page's examples as real data: `PROMO=1
 PROMO_OUT=<dir> WEB_PORT=5174 npx playwright test e2e/promo.spec.ts --project dev` in `apps/web`
-films the app, then `node scripts/promo-video.ts <dir>` cuts them with their music (needs ffmpeg).
+films the app, then `node scripts/promo-video.ts <dir>` cuts them with their music (needs ffmpeg). The landing
+page plays the tour (PETTY-329) from `apps/web/public/landing/tour/`: after a new cut, re-encode
+`petty-tour.mp4` and `petty-tour-tall.mp4` for the web (`ffmpeg -i <cut> -c:v libx264 -preset slow
+-crf 27 -pix_fmt yuv420p -c:a aac -b:a 112k -movflags +faststart <out>`), make the posters from 2.5 s
+(`cwebp -q 82`), and fix the length in `landing.tour` in every dictionary if it changed.
 
 ## Working style
 

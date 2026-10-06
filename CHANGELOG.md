@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- A 1½-minute tour of Petty on the landing page. "Watch the tour" opens the film over the whole page,
+  with sound; Esc or × closes it. Phones get a tall version. Nothing of it loads until you click, and
+  it comes from Petty's own server, so no one else sees who watches. Its words are English; the
+  button says so in the other languages.
+
 ## [1.5.13] — 2026-10-05
 
 ### Added

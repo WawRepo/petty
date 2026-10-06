@@ -784,6 +784,13 @@
     "sub": "Herramientas en el sótano, pasaportes en la caja fuerte, efectivo en la lata de la cocina: da a cada cajón su lugar, apunta lo que hay dentro y compártelo con quienes lo usan.",
     "how": "Cómo guarda los secretos",
     "aiJump": "Úsalo desde tu aplicación de IA",
+    "tour": {
+      "button": "Ver el recorrido",
+      "meta": "1 min 38 s · con sonido · en inglés",
+      "title": "Un recorrido por Petty",
+      "length": "1 min 38 s",
+      "close": "Cerrar el vídeo"
+    },
     "ai": {
       "eyebrow": "Funciona con tu aplicación de IA",
       "title": "Pregunta por tus cajones con tus propias palabras",

@@ -784,6 +784,13 @@
     "sub": "Narzędzia w piwnicy, paszporty w sejfie, gotówka w puszce w kuchni: daj każdej szufladzie miejsce, wpisz, co jest w środku, i podziel się nią z tymi, którzy z niej korzystają.",
     "how": "Jak strzeże sekretów",
     "aiJump": "Korzystaj z aplikacji AI",
+    "tour": {
+      "button": "Obejrzyj prezentację",
+      "meta": "1 min 38 s · z dźwiękiem · po angielsku",
+      "title": "Prezentacja Petty",
+      "length": "1 min 38 s",
+      "close": "Zamknij film"
+    },
     "ai": {
       "eyebrow": "Działa z Twoją aplikacją AI",
       "title": "Pytaj o swoje szuflady zwykłymi słowami",

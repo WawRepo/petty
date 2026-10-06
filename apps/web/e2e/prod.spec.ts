@@ -92,3 +92,21 @@ test("strict headers are served; signup, unlock, drawer and entry work under the
   expect(await violations()).toEqual([]);
   await ctx.close();
 });
+
+test("the landing page's tour film loads from this server under the CSP, only after the click (PETTY-329)", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const violations = await armCspTrap(page);
+  const films: number[] = [];
+  page.on("response", (r) => { if (r.url().endsWith("/landing/tour/petty-tour.mp4")) films.push(r.status()); });
+  await page.goto("/");
+  await expect(page.getByTestId("tour-open")).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(films).toEqual([]);
+  await page.getByTestId("tour-open").click();
+  await expect(page.getByRole("dialog", { name: "A tour of Petty" })).toBeVisible();
+  await expect.poll(() => films.length, { timeout: 15_000 }).toBeGreaterThan(0);
+  expect(films.every((s) => s === 200 || s === 206), `film responses: ${films.join(",")}`).toBe(true);
+  expect(await violations()).toEqual([]);
+  await ctx.close();
+});

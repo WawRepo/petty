@@ -784,6 +784,13 @@
     "sub": "Werkzeug im Keller, Pässe im Safe, Bargeld in der Keksdose: Gib jeder Schublade ihren Ort, trag ein, was drin ist, und teile sie mit den Menschen, die sie nutzen.",
     "how": "Wie Petty Geheimnisse wahrt",
     "aiJump": "Mit deiner KI-App nutzen",
+    "tour": {
+      "button": "Die Tour ansehen",
+      "meta": "1 Min. 38 s · mit Ton · auf Englisch",
+      "title": "Eine Tour durch Petty",
+      "length": "1 Min. 38 s",
+      "close": "Film schließen"
+    },
     "ai": {
       "eyebrow": "Funktioniert mit deiner KI-App",
       "title": "Frag in ganz normalen Worten nach deinen Schubladen",
