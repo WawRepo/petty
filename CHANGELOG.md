@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.15] — 2026-10-06
+
 ### Fixed
 - The language button at the top of the page and on the sign-in pages now fits the language it shows,
   with its icon and name in the middle. It used to be as wide as its longest language, so a short one
@@ -416,7 +418,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.14...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.15...HEAD
+[1.5.15]: https://github.com/WawRepo/petty/releases/tag/v1.5.15
 [1.5.14]: https://github.com/WawRepo/petty/releases/tag/v1.5.14
 [1.5.13]: https://github.com/WawRepo/petty/releases/tag/v1.5.13
 [1.5.12]: https://github.com/WawRepo/petty/releases/tag/v1.5.12
