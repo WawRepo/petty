@@ -660,6 +660,23 @@ test("seed the six examples and film the app", async ({ browser }) => {
  * words. The phone's screen is at SCREEN; the cutter reads it from layout.json.
  */
 const SCREEN = { x: 1180, y: 90, w: 416, h: 900 };
+/**
+ * Two frames: the wide one (1920×1080, the phone on the right, the words on the left) and the tall one
+ * for phones (1080×1920, PETTY-329: the words above, the phone below, the tour's bars under it).
+ */
+interface Frame { readonly dir: string; readonly width: number; readonly height: number; readonly screen: typeof SCREEN; readonly rings: readonly [number, number]; readonly ringMask: string; readonly css: string }
+const WIDE: Frame = { dir: "layers", width: 1920, height: 1080, screen: SCREEN, rings: [560, 770], ringMask: "linear-gradient(to right, transparent 1000px, #000 1130px)", css: "" };
+const TALL: Frame = {
+  dir: "layers-tall", width: 1080, height: 1920, screen: { x: 240, y: 538, w: 600, h: 1298 }, rings: [470, 640], ringMask: "linear-gradient(to bottom, transparent 500px, #000 620px)",
+  css: `.col { left: 90px; top: 60px; width: 900px; height: 450px; justify-content: flex-end; }
+  .eyebrow { font-size: 27px; } .title { font-size: 66px; margin-top: 16px; } .title.s { font-size: 62px; }
+  .body { font-size: 33px; margin-top: 18px; max-width: 900px; }
+  .concept { margin-top: 22px; font-size: 26px; gap: 14px; } .concept span { padding: 10px 18px; } .kinds { font-size: 24px; margin-top: 14px; }
+  .brand { font-size: 84px; gap: 24px; } .brand img { width: 96px; height: 96px; border-radius: 24px; }
+  .url { font-size: 34px; margin-top: 26px; padding: 18px 32px; }
+  .foot { position: absolute; left: 0; right: 0; bottom: 30px; display: flex; justify-content: center; } .foot .steps { margin-top: 0; }
+  .card.tall { position: absolute; left: 70px; top: 1170px; width: 940px; margin-top: 0; }`,
+};
 const INK = "#1c1a17", MUTED = "#5f5a50", BG = "#f5f3ef", GREEN = "#2f6f4f";
 const TINT: Record<string, string> = { intro: GREEN, workshop: "#4f5a68", trip: "#1b7174", accounts: "#6c4a9e", cash: GREEN, lent: "#a4552f", family: "#a3406a", all: GREEN, ai: "#3657a6", outro: GREEN };
 const STEPS = ["workshop", "trip", "accounts", "cash", "lent", "family", "all"];
@@ -692,16 +709,16 @@ const LOCK = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke
 const CHAT = `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>`;
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-function sheet(tint: string, body: string, opaque = false): string {
-  const cx = SCREEN.x + SCREEN.w / 2, cy = SCREEN.y + SCREEN.h / 2;
+function sheet(tint: string, body: string, opaque = false, f: Frame = WIDE): string {
+  const S = f.screen, cx = S.x + S.w / 2, cy = S.y + S.h / 2, blob = Math.max(f.width, f.height) * 0.8;
   const ring = (r: number) => `<div class="ring" style="left:${cx - r}px;top:${cy - r}px;width:${2 * r}px;height:${2 * r}px"></div>`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 1920px; height: 1080px; overflow: hidden; background: ${opaque ? BG : "transparent"}; }
+  html, body { width: ${f.width}px; height: ${f.height}px; overflow: hidden; background: ${opaque ? BG : "transparent"}; }
   body { --tint: ${tint}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: ${INK}; -webkit-font-smoothing: antialiased; position: relative; }
   .blob { position: absolute; border-radius: 50%; }
   .ring { position: absolute; border-radius: 50%; border: 2px dashed color-mix(in srgb, var(--tint) 20%, transparent); }
-  .rings { position: absolute; inset: 0; mask-image: linear-gradient(to right, transparent 1000px, #000 1130px); }
+  .rings { position: absolute; inset: 0; mask-image: ${f.ringMask}; }
   .col { position: absolute; left: 150px; top: 0; width: 880px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
   .eyebrow { display: inline-flex; align-items: center; gap: 14px; font-size: 25px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--tint); }
   .eyebrow i { width: 14px; height: 14px; border-radius: 50%; background: var(--tint); }
@@ -722,7 +739,7 @@ function sheet(tint: string, body: string, opaque = false): string {
   .brand { display: flex; align-items: center; gap: 28px; font-size: 104px; font-weight: 800; letter-spacing: -0.03em; }
   .brand img { width: 116px; height: 116px; border-radius: 28px; box-shadow: 0 18px 40px -16px rgba(31, 106, 69, .55); }
   .url { display: inline-block; align-self: flex-start; margin-top: 44px; padding: 22px 38px; border-radius: 999px; background: ${GREEN}; color: #fff; font-size: 40px; font-weight: 700; letter-spacing: -0.01em; box-shadow: 0 16px 36px -14px rgba(47, 111, 79, .6); }
-  .phone { position: absolute; left: ${SCREEN.x - 14}px; top: ${SCREEN.y - 14}px; width: ${SCREEN.w + 28}px; height: ${SCREEN.h + 28}px; border: 14px solid #16181a; border-radius: 64px;
+  .phone { position: absolute; left: ${S.x - 14}px; top: ${S.y - 14}px; width: ${S.w + 28}px; height: ${S.h + 28}px; border: 14px solid #16181a; border-radius: 64px;
     box-shadow: 0 0 0 2px #45494d, 0 60px 110px -30px rgba(60, 45, 25, .45), 0 20px 40px -20px rgba(60, 45, 25, .35); }
   .card { margin-top: 44px; width: 820px; background: #fff; border: 1px solid #e5e0d8; border-radius: 30px; padding: 28px 34px 34px; box-shadow: 0 30px 60px -30px rgba(60, 45, 25, .35); }
   .card header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid #ece8e1; font-size: 25px; }
@@ -732,8 +749,9 @@ function sheet(tint: string, body: string, opaque = false): string {
   .q { align-self: flex-end; background: ${GREEN}; color: #fff; padding: 16px 26px; border-radius: 28px 28px 8px 28px; }
   .tool { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; font-size: 22px; color: ${MUTED}; background: #f5f3ef; border: 1px solid #e5e0d8; border-radius: 999px; padding: 8px 18px; }
   .hide { visibility: hidden; }
-  </style></head><body>${opaque ? `<div class="blob" style="left:${cx - 760}px;top:${cy - 760}px;width:1520px;height:1520px;background:radial-gradient(closest-side, color-mix(in srgb, var(--tint) 20%, transparent), transparent)"></div>
-  <div class="blob" style="left:-420px;top:-520px;width:1200px;height:1200px;background:radial-gradient(closest-side, color-mix(in srgb, var(--tint) 9%, transparent), transparent)"></div><div class="rings">${ring(560)}${ring(770)}</div>` : ""}${body}</body></html>`;
+  ${f.css}
+  </style></head><body>${opaque ? `<div class="blob" style="left:${cx - blob / 2}px;top:${cy - blob / 2}px;width:${blob}px;height:${blob}px;background:radial-gradient(closest-side, color-mix(in srgb, var(--tint) 20%, transparent), transparent)"></div>
+  <div class="blob" style="left:-420px;top:-520px;width:1200px;height:1200px;background:radial-gradient(closest-side, color-mix(in srgb, var(--tint) 9%, transparent), transparent)"></div><div class="rings">${ring(f.rings[0])}${ring(f.rings[1])}</div>` : ""}${body}</body></html>`;
 }
 
 test("draw the frame and the words", async ({ browser }) => {
@@ -743,10 +761,10 @@ test("draw the frame and the words", async ({ browser }) => {
   const icon = `data:image/svg+xml;base64,${readFileSync(new URL("../public/app-icon.svg", import.meta.url)).toString("base64")}`;
   const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
-  const shot = async (name: string, html: string, opaque = false) => {
+  const shot = async (name: string, html: string, opaque = false, f: Frame = WIDE) => {
     await page.setContent(html);
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: `${dir}/${name}.png`, omitBackground: !opaque });
+    await page.screenshot({ path: `${OUT}/${f.dir}/${name}.png`, omitBackground: !opaque });
   };
   const steps = (key: string) => STEPS.includes(key) ? `<div class="steps">${STEPS.map((k) => `<i${k === key ? ' class="on"' : ""}></i>`).join("")}</div>` : "";
 
@@ -781,6 +799,27 @@ test("draw the frame and the words", async ({ browser }) => {
     // a hidden card hides its children too: show the one asked for inside it
     .replace(/class="card hide"/, `class="card" style="background:transparent;border-color:transparent;box-shadow:none"`).replace(/<header>/, show === "head" ? "<header>" : `<header style="visibility:hidden">`);
   for (const part of ["head", "q", "tool", "a"]) await shot(`ai-${part}`, chat(part));
-  writeFileSync(`${dir}/layout.json`, JSON.stringify({ width: 1920, height: 1080, screen: SCREEN }));
+  writeFileSync(`${dir}/layout.json`, JSON.stringify({ width: WIDE.width, height: WIDE.height, screen: WIDE.screen }));
+
+  // the tall frame (PETTY-329), only what the tour uses: the words above the phone, the bars under it
+  const tdir = `${OUT}/${TALL.dir}`;
+  rmSync(tdir, { recursive: true, force: true });
+  mkdirSync(tdir, { recursive: true });
+  await page.setViewportSize({ width: TALL.width, height: TALL.height });
+  const tall = (name: string, tint: string, body: string) => shot(name, sheet(tint, body, false, TALL), false, TALL);
+  for (const key of ["intro", "ai", "outro"]) await shot(`bg-${key}`, sheet(TINT[key]!, "", true, TALL), true, TALL);
+  for (const c of TOUR) await shot(`bg-t-${c.key}`, sheet(c.tint, "", true, TALL), true, TALL);
+  await tall("phone", GREEN, `<div class="phone"></div>`);
+  await tall("cap-intro", GREEN, `<div class="col">${brand}<div class="title s" style="margin-top:34px">${esc(w("landing.slogan"))}</div></div>`);
+  for (const [n, c] of TOUR.entries()) {
+    const bars = `<div class="foot"><div class="steps tour">${TOUR.map((_, i) => `<i${i === n ? ' class="on"' : ""}></i>`).join("")}</div></div>`;
+    await tall(`cap-t-${c.key}`, c.tint, `<div class="col"><div class="eyebrow"><i></i>${esc(c.chapter)}</div><div class="title s">${esc(c.title)}</div><div class="body">${esc(c.body())}</div>${c.key === "core" ? concept : ""}</div>${bars}`);
+  }
+  await tall("cap-outro", GREEN, `<div class="col">${brand}<div class="title s" style="margin-top:30px">${esc(keep!)}.</div><div class="url">${esc(url)}</div></div>`);
+  const tallChat = (show: string) => `<div class="col"><div class="eyebrow${show === "head" ? "" : " hide"}"><i></i>${esc(w("landing.ai.eyebrow"))}</div><div class="title s${show === "head" ? "" : " hide"}">${esc(w("landing.ai.title"))}</div></div>
+    <div class="card tall"${show === "head" ? "" : ` style="background:transparent;border-color:transparent;box-shadow:none"`}><header${show === "head" ? "" : ` style="visibility:hidden"`}><b>${CHAT}${esc(w("landing.ai.chat.app"))}</b><span>${LOCK}${esc(w("landing.ai.chat.local"))}</span></header>
+      <div class="msgs"><div class="q${show === "q" ? "" : " hide"}">${esc(w("landing.ai.chat.q1"))}</div><div class="tool${show === "tool" ? "" : " hide"}">${LOCK}${esc(w("landing.ai.chat.tool1"))}</div><div class="${show === "a" ? "" : "hide"}">${esc(w("landing.ai.chat.a1"))}</div></div></div>`;
+  for (const part of ["head", "q", "tool", "a"]) await tall(`ai-${part}`, TINT["ai"]!, tallChat(part));
+  writeFileSync(`${tdir}/layout.json`, JSON.stringify({ width: TALL.width, height: TALL.height, screen: TALL.screen }));
   await ctx.close();
 });
