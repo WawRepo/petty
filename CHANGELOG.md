@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.14] — 2026-10-06
+
 ### Added
 - A 1½-minute tour of Petty on the landing page. "Watch the tour" opens the film over the whole page,
   with sound; Esc or × closes it. Phones get a tall version. Nothing of it loads until you click, and
@@ -409,7 +411,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.13...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.14...HEAD
+[1.5.14]: https://github.com/WawRepo/petty/releases/tag/v1.5.14
 [1.5.13]: https://github.com/WawRepo/petty/releases/tag/v1.5.13
 [1.5.12]: https://github.com/WawRepo/petty/releases/tag/v1.5.12
 [1.5.11]: https://github.com/WawRepo/petty/releases/tag/v1.5.11
