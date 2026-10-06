@@ -25,9 +25,12 @@ export function LanguagePicker({ compact = false, onPick, testId = "language-pic
       </div>
     );
   }
+  // PETTY-331: a <select> is as wide as its longest option ("Français"), so a short choice sat left of
+  // centre. The pill people see is sized to the chosen name; the select lies over it, unseen, and is
+  // still the control a tap, a keyboard and a screen reader use.
   return (
     <span className="lang-picker">
-      <Languages size={16} aria-hidden="true" />
+      <span className="lang-face" aria-hidden="true" data-testid={`${testId}-face`}><Languages size={16} />{LOCALE_NAMES[currentLocale()]}</span>
       <label htmlFor={id} className="sr-only">{t("settings.language")}</label>
       {select}
     </span>

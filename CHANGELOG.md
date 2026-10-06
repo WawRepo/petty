@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The language button at the top of the page and on the sign-in pages now fits the language it shows,
+  with its icon and name in the middle. It used to be as wide as its longest language, so a short one
+  sat to the left.
+
 ## [1.5.14] — 2026-10-06
 
 ### Added

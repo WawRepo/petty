@@ -87,10 +87,13 @@ p > .btn-ghost:first-child { margin-left: -8px; } /* PETTY-280 (S19/F22): its te
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* PETTY-249: the compact language switch (top bar when signed out, landing header) */
-.lang-picker { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; color: var(--muted); }
-.lang-picker > svg { position: absolute; left: 10px; pointer-events: none; }
-.lang-picker select { appearance: none; -webkit-appearance: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px 8px 32px; min-height: 44px; cursor: pointer; }
-.lang-picker select:hover { border-color: var(--accent); }
+.lang-picker { position: relative; display: inline-flex; flex-shrink: 0; }
+.lang-face { box-sizing: border-box; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 15px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.lang-face svg { color: var(--muted); flex-shrink: 0; }
+/* the real control, over the whole pill and unseen; 16px so iOS does not zoom when it opens */
+.lang-picker select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; appearance: none; -webkit-appearance: none; font-size: 16px; cursor: pointer; }
+.lang-picker:hover .lang-face { border-color: var(--accent); }
+.lang-picker:has(select:focus-visible) .lang-face { box-shadow: var(--focus); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
   .sheet, .spinner { animation: none; }

@@ -54,3 +54,23 @@ test("every signed-out page has the switch; signed in, Settings keeps the langua
   const api = await apiClient(user);
   await expect.poll(async () => ((await api.call("GET", "/me")).json as { locale: string }).locale).toBe("fr"); // emails follow it
 });
+
+test("the language pill is as wide as the chosen name, its icon and name in the middle; the whole pill opens the list (PETTY-331)", async ({ page }) => {
+  await page.goto("/");
+  const pick = page.getByTestId("landing-language");
+  const face = page.getByTestId("landing-language-face");
+  for (const l of ["en", "fr", "de", "es", "pl"]) {
+    await pick.selectOption(l);
+    const gaps = await face.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const inner = range.getBoundingClientRect();
+      return { left: inner.left - box.left, right: box.right - inner.right };
+    });
+    expect(Math.abs(gaps.left - gaps.right), `${l}: ${JSON.stringify(gaps)}`).toBeLessThanOrEqual(1.5);
+    // the unseen select covers the pill exactly, so a tap anywhere on it opens the list
+    const [a, b] = [await pick.boundingBox(), await face.boundingBox()];
+    expect(a).toEqual(b);
+  }
+});
