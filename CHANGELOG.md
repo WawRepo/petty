@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.16] — 2026-10-07
+
 ### Fixed
 - On a Petty that runs more than one copy of its server (the public one runs two), making an access token,
   signing in the `petty` command line, changing the passphrase or recovery code, adding a passkey or
@@ -434,7 +436,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.15...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.16...HEAD
+[1.5.16]: https://github.com/WawRepo/petty/releases/tag/v1.5.16
 [1.5.15]: https://github.com/WawRepo/petty/releases/tag/v1.5.15
 [1.5.14]: https://github.com/WawRepo/petty/releases/tag/v1.5.14
 [1.5.13]: https://github.com/WawRepo/petty/releases/tag/v1.5.13
