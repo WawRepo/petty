@@ -1,5 +1,6 @@
 import { argon2Verify, argon2id } from "hash-wasm";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { apiPool } from "../db.js";
 
 /** Login password only. The vault passphrase never reaches the server. */
 export async function hashPassword(password: string): Promise<string> {
@@ -15,43 +16,38 @@ export async function verifyPassword(password: string, encoded: string): Promise
 export const DUMMY_HASH: string = await hashPassword(randomBytes(24).toString("hex"));
 
 /**
- * Small in-memory limiter. Two shapes (security review SR-7):
- *  - checkRate: counts every call (per-IP login, forgot, invite minting).
+ * The limiter (security review SR-7). Two shapes:
+ *  - checkRate: counts every call (per-IP login, forgot, invite minting, the general API limit).
  *  - failuresExceeded / recordFailure: per-email login lockout counts only WRONG
  *    passwords, so a household member cannot be locked out by ten quick sign-ins.
- * Expired keys are pruned once a minute; keys are attacker-chosen emails, so the
- * map must not grow for the life of the process.
+ * Counts live in the database since PETTY-334, so every instance of the API shares them (no sticky
+ * sessions needed); keys are hashed, since they hold addresses and attacker-chosen emails. A row lasts
+ * one window; runMaintenance deletes the expired ones.
  */
-const attempts = new Map<string, { n: number; resetAt: number }>();
-let lastPrune = 0;
-function prune(now: number): void {
-  if (now - lastPrune < 60_000) return;
-  lastPrune = now;
-  for (const [k, a] of attempts) if (a.resetAt < now) attempts.delete(k);
-}
 export const LOGIN_LIMIT_PER_EMAIL = Number(process.env["LOGIN_LIMIT_PER_EMAIL"] ?? 10);
 export const LOGIN_LIMIT_PER_IP = Number(process.env["LOGIN_LIMIT_PER_IP"] ?? 100);
 export const DEFAULT_WINDOW_MS = 15 * 60_000;
 
-export function checkRate(key: string, max: number, windowMs = DEFAULT_WINDOW_MS): boolean {
-  const now = Date.now();
-  prune(now);
-  const a = attempts.get(key);
-  if (!a || a.resetAt < now) { attempts.set(key, { n: 1, resetAt: now + windowMs }); return true; }
-  a.n += 1;
-  return a.n <= max;
+const keyHash = (key: string) => createHash("sha256").update(key).digest();
+/** One more in the key's window (a new window when the last one ended); the count so far. */
+async function bump(key: string, windowMs: number): Promise<number> {
+  const r = await apiPool.query<{ n: number }>(
+    `insert into rate_counters (key_hash, n, reset_at) values ($1, 1, now() + make_interval(secs => $2::float8 / 1000))
+     on conflict (key_hash) do update set
+       n        = case when rate_counters.reset_at < now() then 1 else rate_counters.n + 1 end,
+       reset_at = case when rate_counters.reset_at < now() then excluded.reset_at else rate_counters.reset_at end
+     returning n`,
+    [keyHash(key), windowMs],
+  );
+  return r.rows[0]!.n;
 }
-export function failuresExceeded(key: string, max: number): boolean {
-  const now = Date.now();
-  prune(now);
-  const a = attempts.get(key);
-  return !!a && a.resetAt >= now && a.n >= max;
+export async function checkRate(key: string, max: number, windowMs = DEFAULT_WINDOW_MS): Promise<boolean> {
+  return (await bump(key, windowMs)) <= max;
 }
-export function recordFailure(key: string, windowMs = DEFAULT_WINDOW_MS): void {
-  const now = Date.now();
-  const a = attempts.get(key);
-  if (!a || a.resetAt < now) attempts.set(key, { n: 1, resetAt: now + windowMs });
-  else a.n += 1;
+export async function failuresExceeded(key: string, max: number): Promise<boolean> {
+  const r = await apiPool.query<{ n: number }>("select n from rate_counters where key_hash = $1 and reset_at >= now()", [keyHash(key)]);
+  return (r.rows[0]?.n ?? 0) >= max;
 }
-/** Test hook: how many keys the limiter holds. */
-export function limiterSize(): number { prune(Date.now()); return attempts.size; }
+export async function recordFailure(key: string, windowMs = DEFAULT_WINDOW_MS): Promise<void> {
+  await bump(key, windowMs);
+}

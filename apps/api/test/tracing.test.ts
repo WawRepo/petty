@@ -24,7 +24,10 @@ describe("traces (PETTY-34)", () => {
     expect(server!.attributes["http.route"]).toBe("/auth/login");
     const pgSpans = spans.filter((s) => s.name.startsWith("pg ") && s.parentSpanContext?.spanId === server!.spanContext().spanId);
     expect(pgSpans.length).toBeGreaterThan(0);
-    expect(String(pgSpans[0]!.attributes["db.statement"])).toMatch(/^select/i);
+    // the sign-in limits count first (PETTY-334: in the database), then the account is looked up
+    const statements = pgSpans.map((s) => String(s.attributes["db.statement"]));
+    expect(statements.some((q) => /^insert into rate_counters/i.test(q)), statements.join(" | ")).toBe(true);
+    expect(statements.some((q) => /^select .* from users/i.test(q)), statements.join(" | ")).toBe(true);
     // Never the values: the email is a bound parameter, not part of any attribute.
     expect(JSON.stringify(spans.map((s) => s.attributes))).not.toContain("nobody@test.local");
   });

@@ -155,6 +155,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   is kept on the device, not on the account: a phone and a laptop may want different ones. A forced
   theme is a `data-theme` on `<html>` that picks the palette in `tokens.css`, so every colour still
   comes from the tokens.
+- **Several instances, no sticky sessions (PETTY-334, 2026-10-07).** The API keeps nothing a later request
+  needs in its own memory: sessions, device logins, custody challenges and the rate and sign-in limits all
+  live in Postgres, so any number of instances can run behind a load balancer that spreads requests
+  freely. The public instance runs two machines; the custody challenge in memory made every guarded
+  action fail when its two requests met different machines. Per-process caches that are only an
+  optimisation (the usage-metrics cache, the Clerk client) are allowed.
 
 ## Non-goals
 

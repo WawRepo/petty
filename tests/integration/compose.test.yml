@@ -18,3 +18,15 @@ services:
       CONTACT_EMAIL: "ops@petty.test" # PETTY-281: the mails that say "tell the person who runs your Petty" name them
       CLIENT_IP_HEADER: "x-test-client-ip" # PETTY-301: 08-proxy plays a platform proxy that sets its own header
       METRICS_PORT: "9464" # PETTY-266/267: the scrape port, for 14-metrics
+  # PETTY-334: a second instance of the same image on the same database, as the public instance runs
+  # two machines; 16-two-instances sends one request to each.
+  app2:
+    extends: { file: ../../deploy/compose/docker-compose.yml, service: app }
+    ports: !override
+      - "127.0.0.1:3402:3000"
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    environment:
+      LOGIN_LIMIT_PER_IP: "1000"
+      OPEN_SIGNUP: "true"

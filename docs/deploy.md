@@ -128,6 +128,13 @@ version as the server (this compose file runs PostgreSQL 16); an older client re
 
 Downgrading across a migration is not supported: restore the backup from step 1 instead.
 
+## Several instances
+
+The app keeps no state of its own between requests: sessions, device logins, the one-time checks behind
+token, passphrase and delete actions, and the request and sign-in limits are all in the database. Run as
+many app containers as you like on the same database behind any load balancer; no sticky sessions are
+needed. Run `migrate` once per upgrade, before the new containers start.
+
 ## Building the image
 
 ```

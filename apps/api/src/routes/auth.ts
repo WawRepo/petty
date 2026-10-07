@@ -66,7 +66,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-215: open signup (no join link) is allowed only when the operator turned it on; rate-limit it per IP.
     if (!body.join_token) {
       if (!config.openSignup) throw badRequest("JoinLinkRequired", "this instance is invite-only");
-      if (!checkRate(`signup:${clientIp(req)}`, 10, 60 * 60_000)) throw new ApiError(429, "TooManyAttempts", "try again later");
+      if (!(await checkRate(`signup:${clientIp(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     const me = await withTx(apiPool, async (db) => {
       const link = body.join_token ? (await db.query<{ id: string; email: string | null }>(
@@ -95,7 +95,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post("/auth/login", async (req, reply) => {
     const body = LoginBody.parse(req.body);
     const emailKey = `login:${body.email.toLowerCase()}`;
-    if (!checkRate(`login:${clientIp(req)}`, LOGIN_LIMIT_PER_IP) || failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL)) {
+    if (!(await checkRate(`login:${clientIp(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
@@ -104,7 +104,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // Unknown email, wrong password and blocked account all cost one Argon2id verify and answer alike: nothing to enumerate, by content or by timing.
     const ok = await verifyPassword(body.password, u?.password_hash ?? DUMMY_HASH);
     if (!u || !ok || u.blocked_at) {
-      recordFailure(emailKey);
+      await recordFailure(emailKey);
       authEvents.inc({ event: "login_fail" });
       throw unauthorized();
     }
@@ -120,12 +120,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post("/auth/forgot", async (req, reply) => {
     const body = ForgotBody.parse(req.body);
-    if (!checkRate(`forgot:${clientIp(req)}`, LOGIN_LIMIT_PER_IP)) {
+    if (!(await checkRate(`forgot:${clientIp(req)}`, LOGIN_LIMIT_PER_IP))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     authEvents.inc({ event: "forgot" });
-    if (checkRate(`forgot:${body.email.toLowerCase()}`, 5, 60 * 60_000)) {
+    if (await checkRate(`forgot:${body.email.toLowerCase()}`, 5, 60 * 60_000)) {
       const u = (await apiPool.query<{ id: string; locale: string }>("select id, locale from users where lower(email) = lower($1) and deleted_at is null and blocked_at is null", [body.email])).rows[0];
       if (u) {
         const token = randomToken(32);
@@ -162,7 +162,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post("/join-links", async (req, reply) => {
     const me = requireUser(req);
     // Five invites an hour per member: enough for a household, useless as a mail relay (SR-9).
-    if (!checkRate(`joinlinks:${me.id}`, 5, 60 * 60_000)) throw new ApiError(429, "TooManyAttempts", "try again later");
+    if (!(await checkRate(`joinlinks:${me.id}`, 5, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     const body = JoinLinkBody.parse(req.body ?? {});
     const token = randomToken(24);
     const expires = new Date(Date.now() + JOIN_LINK_DAYS * 86_400_000);

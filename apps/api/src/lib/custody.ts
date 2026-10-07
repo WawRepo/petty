@@ -7,18 +7,21 @@ import { toB64 } from "./bytes.js";
 import { forbidden } from "./errors.js";
 
 /**
- * Custody challenges (security review SR-2). One outstanding challenge per user,
- * five minutes, single use, in memory: the API runs as one process and a lost
- * challenge only costs the client one extra round trip.
+ * Custody challenges (security review SR-2). One outstanding challenge per user, five minutes, single
+ * use. In the database since PETTY-334, not in this process's memory: with more than one instance (the
+ * public one runs two machines) the challenge and the request that uses it may reach different ones.
  */
 const CHALLENGE_MS = 5 * 60_000;
-const outstanding = new Map<string, { challenge: string; expiresAt: number }>();
 
-export function issueChallenge(userId: string): { challenge: string; expires_at: string } {
+export async function issueChallenge(userId: string): Promise<{ challenge: string; expires_at: string }> {
   const challenge = toB64(randomBytes(32));
-  const expiresAt = Date.now() + CHALLENGE_MS;
-  outstanding.set(userId, { challenge, expiresAt });
-  return { challenge, expires_at: new Date(expiresAt).toISOString() };
+  const expiresAt = new Date(Date.now() + CHALLENGE_MS);
+  await apiPool.query(
+    `insert into custody_challenges (user_id, challenge, expires_at) values ($1, $2, $3)
+     on conflict (user_id) do update set challenge = excluded.challenge, expires_at = excluded.expires_at`,
+    [userId, challenge, expiresAt],
+  );
+  return { challenge, expires_at: expiresAt.toISOString() };
 }
 
 /**
@@ -27,9 +30,11 @@ export function issueChallenge(userId: string): { challenge: string; expires_at:
  * 403 CustodyProofInvalid when the signature is wrong.
  */
 export async function consumeCustodyProof(req: FastifyRequest, userId: string, proof: CustodyProof): Promise<void> {
-  const c = outstanding.get(userId);
-  outstanding.delete(userId);
-  if (!c || c.expiresAt < Date.now() || c.challenge !== proof.challenge) throw forbidden("CustodyProofRequired");
+  // single use whatever the outcome: one statement reads and deletes, so two instances cannot both accept it
+  const c = (await apiPool.query<{ challenge: string; expires_at: Date }>(
+    "delete from custody_challenges where user_id = $1 returning challenge, expires_at", [userId],
+  )).rows[0];
+  if (!c || c.expires_at.getTime() < Date.now() || c.challenge !== proof.challenge) throw forbidden("CustodyProofRequired");
   const k = (await apiPool.query<{ ecdsa_pub: string }>("select ecdsa_pub from user_keys where user_id = $1 and retired_at is null", [userId])).rows[0];
   if (!k || !(await verifyCustodyProof(k.ecdsa_pub, proof.challenge, proof.signature))) {
     req.log.warn({ user: userId }, "custody proof rejected");

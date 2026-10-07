@@ -81,7 +81,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /** A challenge for the destructive custody calls below (security review SR-2). Five minutes, single use. */
-  app.post("/me/custody-challenge", async (req) => CustodyChallenge.parse(issueChallenge(requireUser(req).id)));
+  app.post("/me/custody-challenge", async (req) => CustodyChallenge.parse(await issueChallenge(requireUser(req).id)));
 
   /**
    * Passphrase change or recovery: replace the vault blob(s) for the SAME keypairs.

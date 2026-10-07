@@ -168,6 +168,32 @@ describe("access tokens (PETTY-164)", () => {
     expect(JSON.stringify(all)).not.toMatch(/vault|passkey|wraps|recovery/);
   });
 
+  it("a custody challenge one instance issued is accepted by another, once (PETTY-334)", async () => {
+    // the public instance runs two machines: the challenge and the request using it may meet different ones
+    const other = buildApp();
+    await other.ready();
+    try {
+      const A2 = new Client(other, A.user, A.id);
+      A2.cookie = A.cookie;
+      const body = async (proof: { challenge: string; signature: string }) => {
+        const id = tokenId();
+        return {
+          token_id: id, name: "across instances", role: "write", scope: null, expires_at: null,
+          bundle: await sealPatBundle(patSecret(), id, { v: 1, user_id: A.id, drawers: [] }), proof, signing: (await A.tokenSigning()).body,
+        };
+      };
+      const proof = await A.proof(); // the challenge comes from the first instance
+      const made = await A2.call("POST", "/me/tokens", await body(proof)); // the token is made on the second
+      expect(made.statusCode, made.body).toBe(201);
+      expect(made.json()).toMatchObject({ role: "write", expires_at: null }); // writing, and no end date: allowed
+      // single use across instances: the same proof again, on either one, is refused
+      expect((await A.call("POST", "/me/tokens", await body(proof))).json().code).toBe("CustodyProofRequired");
+      expect((await A2.call("POST", "/me/tokens", await body(proof))).json().code).toBe("CustodyProofRequired");
+    } finally {
+      await other.close();
+    }
+  });
+
   it("a writing token signs with its own key, vouched for by the account key (PETTY-184)", async () => {
     const d = await drawer(A, "Delegated");
     const entry = { id: crypto.randomUUID(), line_id: d.line, key_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", sig: "AAAA", hash: "AAAA", prev_hash: null };

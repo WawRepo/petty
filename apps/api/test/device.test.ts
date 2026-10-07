@@ -22,17 +22,20 @@ beforeAll(async () => {
 
 afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); });
 
+// PETTY-334: the per-address limits count in the database and outlive this process: one address per run
+const remoteAddress = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
+
 /** What `petty auth login` sends; no cookie, no bearer. */
 async function ask(role: "read" | "write" = "write") {
   const tool = await deviceKeyPair();
   const res = await app.inject({
-    method: "POST", url: "/device/code", headers: { "content-type": "application/json" },
+    method: "POST", url: "/device/code", remoteAddress, headers: { "content-type": "application/json" },
     payload: JSON.stringify({ cli_pub: tool.publicB64, client_name: "petty on laptop", role, expires_days: 90 }),
   });
   return { res, tool, body: res.statusCode === 201 ? (res.json() as { request_id: string; device_code: string; user_code: string; expires_in: number; interval: number }) : null };
 }
 const poll = (deviceCode: string) =>
-  app.inject({ method: "POST", url: "/device/token", headers: { "content-type": "application/json" }, payload: JSON.stringify({ device_code: deviceCode }) });
+  app.inject({ method: "POST", url: "/device/token", remoteAddress, headers: { "content-type": "application/json" }, payload: JSON.stringify({ device_code: deviceCode }) });
 
 describe("device login (PETTY-274)", () => {
   it("relays a token sealed to the tool's key: asked, allowed on the page, picked up once", async () => {
@@ -48,7 +51,7 @@ describe("device login (PETTY-274)", () => {
     // the page: typed in lower case with spaces, it finds the same request and shows what asks
     const view = await A.call("GET", `/device/${body!.user_code.toLowerCase().replace(/-/g, " ")}`);
     expect(view.statusCode).toBe(200);
-    expect(view.json()).toMatchObject({ id: body!.request_id, user_code: body!.user_code, cli_pub: tool.publicB64, client_name: "petty on laptop", role: "write", expires_days: 90, ip: "127.0.0.1" });
+    expect(view.json()).toMatchObject({ id: body!.request_id, user_code: body!.user_code, cli_pub: tool.publicB64, client_name: "petty on laptop", role: "write", expires_days: 90, ip: remoteAddress });
 
     // the page makes an ordinary token and seals it to the tool's key
     const made = await A.makeAccessToken("write");
@@ -104,7 +107,7 @@ describe("device login (PETTY-274)", () => {
 
   it("refuses a key that is not a P-256 public key", async () => {
     const res = await app.inject({
-      method: "POST", url: "/device/code", headers: { "content-type": "application/json" },
+      method: "POST", url: "/device/code", remoteAddress, headers: { "content-type": "application/json" },
       payload: JSON.stringify({ cli_pub: "AAAA", client_name: "x", role: "read", expires_days: null }),
     });
     expect(res.json().code).toBe("DeviceKeyInvalid");

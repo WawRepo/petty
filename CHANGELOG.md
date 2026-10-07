@@ -8,6 +8,22 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- On a Petty that runs more than one copy of its server (the public one runs two), making an access token,
+  signing in the `petty` command line, changing the passphrase or recovery code, adding a passkey or
+  deleting a drawer or the account failed with "not allowed" about half the time. The one-time check
+  behind those actions now lives in the database, and so do the sign-in and request limits, so any number
+  of copies work together with no sticky sessions — and a wrong-password lockout holds on all of them.
+
+### Changed
+- "Set it up in your app" gives the whole setup for Claude Code: install the `petty` command line, sign in
+  to this Petty, and add it to Claude Code by its full path for every project. The single line shown
+  before failed with ENOENT when `petty` was not installed. Cursor, VS Code and Windsurf get the download
+  line too, Claude Desktop the address to paste, each with a Copy button. Settings now shows the same
+  setup to everyone signed in, not only the landing page to visitors.
+- For operators: two new tables, `custody_challenges` and `rate_counters`, made by the usual `migrate`
+  step. Nothing to configure; see "Several instances" in docs/deploy.md.
+
 ## [1.5.15] — 2026-10-06
 
 ### Fixed

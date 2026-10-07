@@ -17,7 +17,7 @@ export function apiRateLimit(app: FastifyInstance, o: { perMinute: number; apiPr
     const path = req.url.split("?")[0] ?? "";
     if (o.apiPrefix && path !== o.apiPrefix && !path.startsWith(`${o.apiPrefix}/`)) return;
     if (isHealthProbe(path)) return;
-    if (!checkRate(`api:${clientIp(req, o.clientIpHeader)}`, o.perMinute, 60_000)) {
+    if (!(await checkRate(`api:${clientIp(req, o.clientIpHeader)}`, o.perMinute, 60_000))) {
       reply.header("retry-after", "60");
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
