@@ -735,6 +735,16 @@
     "notClerk": "Quand la connexion passe par un service externe (Clerk), c’est ce service qui décide qui peut se connecter. Quiconque le contrôle pourrait se connecter en votre nom, mais aurait encore besoin de votre clé d’accès ou de votre phrase secrète pour ouvrir vos tiroirs. Son code est intégré à cette application dans une version figée et n’est jamais chargé depuis ailleurs.",
     "source": "Petty est un logiciel libre (AGPL-3.0). Lisez ou exécutez le code source vous-même :"
   },
+  "terms": {
+    "title": "Conditions d’utilisation",
+    "link": "Conditions d’utilisation",
+    "none": "Ce Petty n’a pas de conditions d’utilisation. Demandez à la personne qui le gère."
+  },
+  "legal": {
+    "failed": "Ce texte n’a pas pu être chargé. Réessayez plus tard.",
+    "acceptTerms": "En créant un compte, vous acceptez les conditions d’utilisation.",
+    "privacyNote": "La politique de confidentialité indique quelles données sont conservées et pourquoi."
+  },
   "admin": {
     "title": "Administration",
     "link": "Administration : comptes",

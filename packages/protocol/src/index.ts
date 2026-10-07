@@ -95,7 +95,11 @@ export const LoginBody = z.object({ email: z.string().email().max(254), password
 export const ProvisionBody = SignupBody.omit({ join_token: true, email: true, password: true }).extend({ display_name: z.string().trim().min(1).max(80).optional() });
 /** Public: which identity provider the web app must use. */
 // contact_email (PETTY-160): where "Get an invite" writes to; set by the operator, absent in older answers and caches.
-export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional(), open_signup: z.boolean().optional(), version: z.string().optional() });
+export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional(), open_signup: z.boolean().optional(), version: z.string().optional(),
+  /** PETTY-342: which of the operator's own legal texts this deployment has (GET /legal/:doc). */
+  legal: z.object({ privacy: z.boolean(), terms: z.boolean() }).optional() });
+export const LegalText = z.object({ doc: z.enum(["privacy", "terms"]), lang: z.string(), text: z.string() });
+export type LegalText = z.infer<typeof LegalText>;
 export type AuthConfig = z.infer<typeof AuthConfig>;
 /**
  * Access tokens (PETTY-164). The client makes the whole token: `petty_pat_<id>.<secret>`.

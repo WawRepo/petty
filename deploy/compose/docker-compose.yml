@@ -57,6 +57,8 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      # A mounted folder with your own privacy notice and terms (docs/deploy.md); empty = none.
+      LEGAL_DIR: ${LEGAL_DIR:-}
       # The image sets SECURE_COOKIES=true: keep the HTTPS reverse proxy. TRUST_PROXY = the proxies
       # whose X-Forwarded-For the app believes; the default is those on private networks (docs/deploy.md).
       TRUST_PROXY: ${TRUST_PROXY:-loopback,linklocal,uniquelocal}

@@ -2,6 +2,7 @@ import { SignIn, SignUp } from "@clerk/react";
 import { useTranslation } from "react-i18next";
 import { TopBar } from "../components/TopBar.js";
 import { useNavigate } from "react-router";
+import { SignUpLegal } from "../components/LegalLinks.js";
 
 /** Clerk mode (PETTY-88): sign in, sign up (invitation tickets included) and password reset are Clerk's components. */
 export function ClerkAuthScreen({ kind }: { kind: "sign-in" | "sign-up" }) {
@@ -20,6 +21,8 @@ export function ClerkAuthScreen({ kind }: { kind: "sign-in" | "sign-up" }) {
         {kind === "sign-in"
           ? <SignIn routing="path" path="/login" signUpUrl="/join" fallbackRedirectUrl="/" />
           : <SignUp routing="path" path="/join" signInUrl="/login" fallbackRedirectUrl="/" />}
+        {/* PETTY-342: signing in with Google or GitHub can make the account here too, so both pages say it */}
+        <SignUpLegal />
       </main>
     </>
   );

@@ -18,6 +18,10 @@ services:
       CONTACT_EMAIL: "ops@petty.test" # PETTY-281: the mails that say "tell the person who runs your Petty" name them
       CLIENT_IP_HEADER: "x-test-client-ip" # PETTY-301: 08-proxy plays a platform proxy that sets its own header
       METRICS_PORT: "9464" # PETTY-266/267: the scrape port, for 14-metrics
+      LEGAL_DIR: "/legal" # PETTY-342: the operator's own privacy notice and terms, for 18-legal
+    volumes:
+      # relative to the first compose file (deploy/compose), as run.sh layers them
+      - ../../tests/integration/legal:/legal:ro
   # PETTY-334: a second instance of the same image on the same database, as the public instance runs
   # two machines; 16-two-instances sends one request to each.
   app2:

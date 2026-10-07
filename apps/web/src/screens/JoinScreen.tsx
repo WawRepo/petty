@@ -13,6 +13,7 @@ import { PasskeyError, rememberPasskey } from "../lib/passkey.js";
 import { afterLogin, unlockWithKeys } from "../lib/session.js";
 import { offerToSavePassphrase } from "../lib/credentials.js";
 import { createVaultMaterial } from "../lib/vaultCreate.js";
+import { SignUpLegal } from "../components/LegalLinks.js";
 
 const Info = z.object({ valid: z.boolean(), inviter_name: z.string().nullable(), email: z.string().nullable() });
 
@@ -110,6 +111,7 @@ export function JoinScreen() {
           {errors["form"] ? <p className="error" role="alert">{errors["form"]}</p> : null}
           <Button type="submit" busy={busy}>{busy ? t("auth.join.working") : t(door.method === "passkey" ? "auth.join.submitPasskey" : "auth.join.submit")}</Button>
         </form>
+        <SignUpLegal />
       </main>
     </>
   );

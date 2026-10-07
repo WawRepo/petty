@@ -993,3 +993,11 @@ button.tag-chip::after { content: ""; position: absolute; inset: -4px -2px; }
 .nobr { white-space: nowrap; }
 /* a bubble that shows its name under it needs no hover tip saying it again (the middle's says "Back to …") */
 .pa-bub:not(.center):has(> .pa-label) > .pa-tip { display: none; }
+/* PETTY-342: an operator's privacy notice or terms — long text, read top to bottom */
+.legal-text { line-height: 1.55; overflow-wrap: anywhere; }
+.legal-text h2 { font-size: 18px; margin: 0 0 10px; }
+.legal-text h3 { font-size: 15px; margin: 18px 0 6px; }
+.legal-text h4 { font-size: 14px; margin: 14px 0 4px; }
+.legal-text p, .legal-text ul, .legal-text ol { margin: 0 0 10px; }
+.legal-text ol { padding-left: 22px; }
+.legal-text > :last-child { margin-bottom: 0; }

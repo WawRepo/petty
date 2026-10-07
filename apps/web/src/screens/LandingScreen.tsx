@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { appVersion, contactEmail, isClerk, openSignup } from "../lib/authConfig.js";
 import { sourceUrlFor } from "../lib/links.js";
 import { useTheme } from "../lib/theme.js";
+import { hasLegal } from "../lib/legal.js";
 
 
 /**
@@ -135,6 +136,7 @@ export function LandingScreen() {
         </div>
         <Button variant="ghost" onClick={() => nav("/login")}>{t("auth.login.title")}</Button>
         <Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>
+        {hasLegal("terms") ? <Button variant="ghost" onClick={() => nav("/terms")} data-testid="landing-terms">{t("terms.link")}</Button> : null}
         <Button variant="ghost" onClick={() => nav("/ai")} data-testid="landing-ai">{t("ai.link")}</Button>
         <a className="btn btn-ghost" href={sourceUrlFor(appVersion())} target="_blank" rel="noopener noreferrer" data-testid="landing-source">{t("app.sourceCode")}</a>
         <a className="btn btn-ghost" href="/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" data-testid="landing-notices">{t("app.thirdPartyNotices")}</a>

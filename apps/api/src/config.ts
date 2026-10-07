@@ -68,6 +68,11 @@ export const config = {
   authProvider: env("AUTH_PROVIDER", "local") === "clerk" ? "clerk" as const : "local" as const,
   clerkSecretKey: env("CLERK_SECRET_KEY", ""),
   clerkPublishableKey: env("CLERK_PUBLISHABLE_KEY", ""),
+  /**
+   * PETTY-342: a directory with the operator's privacy notice and terms (privacy.<lang>.md, terms.<lang>.md).
+   * Empty = none: the privacy page shows only what Petty itself explains, and no terms are linked.
+   */
+  legalDir: env("LEGAL_DIR", ""),
   /** PETTY-160: the operator's address for invite requests; empty hides the "Get an invite" links. */
   contactEmail: env("CONTACT_EMAIL", ""),
   /** PETTY-215: local mode only — allow signup without a join link (a public self-hosted instance). */

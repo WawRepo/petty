@@ -47,7 +47,7 @@ afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.e
 
 describe("clerk mode", () => {
   it("advertises the mode; local login routes are off; no bearer means 401, a bad token too", async () => {
-    expect((await app.inject({ method: "GET", url: "/config" })).json()).toEqual({ auth: "clerk", clerk_publishable_key: "pk_test_offline", contact_email: config.contactEmail || null, open_signup: false, version: config.version });
+    expect((await app.inject({ method: "GET", url: "/config" })).json()).toEqual({ auth: "clerk", clerk_publishable_key: "pk_test_offline", contact_email: config.contactEmail || null, open_signup: false, version: config.version, legal: { privacy: false, terms: false } });
     expect((await app.inject({ method: "POST", url: "/auth/login", payload: { email: "a@b.c", password: "x" } })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: "/join-links/abc" })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: "/me" })).statusCode).toBe(401);

@@ -735,6 +735,16 @@
     "notClerk": "Läuft die Anmeldung über einen externen Dienst (Clerk), entscheidet dieser Dienst, wer sich anmelden darf. Wer ihn kontrolliert, könnte sich als du anmelden, bräuchte aber weiterhin deinen Passkey oder deine Passphrase, um deine Schubladen zu öffnen. Sein Code ist in einer festen Version in diese App eingebaut und wird nie von anderswo geladen.",
     "source": "Petty ist freie Software (AGPL-3.0). Lies den Quellcode oder betreibe Petty selbst:"
   },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "link": "Nutzungsbedingungen",
+    "none": "Dieses Petty hat keine Nutzungsbedingungen. Frag die Person, die es betreibt."
+  },
+  "legal": {
+    "failed": "Dieser Text konnte nicht geladen werden. Versuch es später noch einmal.",
+    "acceptTerms": "Mit dem Anlegen eines Kontos akzeptierst du die Nutzungsbedingungen.",
+    "privacyNote": "Die Datenschutzhinweise sagen, welche Daten gespeichert werden und warum."
+  },
   "admin": {
     "title": "Verwaltung",
     "link": "Verwaltung: Konten",

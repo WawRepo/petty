@@ -36,6 +36,7 @@ const MembersScreen = screen(() => import("./screens/MembersScreen.js"), (m) => 
 const DeleteAccountScreen = screen(() => import("./screens/DeleteAccountScreen.js"), (m) => m.DeleteAccountScreen);
 const PrivacyScreen = screen(() => import("./screens/PrivacyScreen.js"), (m) => m.PrivacyScreen);
 const AiScreen = screen(() => import("./screens/AiScreen.js"), (m) => m.AiScreen);
+const TermsScreen = screen(() => import("./screens/TermsScreen.js"), (m) => m.TermsScreen);
 const ResetScreen = screen(() => import("./screens/ResetScreen.js"), (m) => m.ResetScreen);
 const AdminScreen = screen(() => import("./screens/AdminScreen.js"), (m) => m.AdminScreen);
 const LandingScreen = screen(() => import("./screens/LandingScreen.js"), (m) => m.LandingScreen);
@@ -127,7 +128,7 @@ function ScrollToTop() {
  */
 const TAB_TITLES: readonly (readonly [RegExp, string])[] = [
   [/^\/settings\/delete$/, "delete.title"], [/^\/settings$/, "settings.title"], [/^\/places$/, "places.title"],
-  [/^\/drawers\/[^/]+\/members$/, "members.title"], [/^\/privacy$/, "privacy.title"], [/^\/ai$/, "ai.title"],
+  [/^\/drawers\/[^/]+\/members$/, "members.title"], [/^\/privacy$/, "privacy.title"], [/^\/terms$/, "terms.title"], [/^\/ai$/, "ai.title"],
   [/^\/login/, "auth.login.title"], [/^\/join/, "auth.join.title"], [/^\/reset/, "auth.reset.newTitle"],
   [/^\/unlock$/, "auth.unlock.title"], [/^\/setup$/, "auth.setup.title"], [/^\/device$/, "device.title"], [/^\/admin$/, "admin.title"],
 ];
@@ -154,6 +155,7 @@ export function App() {
           <Routes>
             <Route path="/privacy" element={<PrivacyScreen />} />
             <Route path="/ai" element={<AiScreen />} />
+            <Route path="/terms" element={<TermsScreen />} />
             <Route path="/login/*" element={<Guard need="anonymous"><LoginRoute /></Guard>} />
             {/* Tokens travel in the URL fragment (/join#<token>), which never reaches the server (SR-9); the path form stays for links already sent. */}
             <Route path="/join/*" element={<JoinRoute />} />

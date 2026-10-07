@@ -735,6 +735,16 @@
     "notClerk": "Cuando el inicio de sesión pasa por un servicio externo (Clerk), ese servicio decide quién puede iniciar sesión. Quien lo controle podría iniciar sesión como tú, pero aun así necesitaría tu llave de acceso o tu frase de contraseña para abrir tus cajones. Su código va integrado en esta aplicación en una versión fija y nunca se carga desde otro lugar.",
     "source": "Petty es software libre (AGPL-3.0). Lee el código fuente o ejecútalo por tu cuenta:"
   },
+  "terms": {
+    "title": "Condiciones del servicio",
+    "link": "Condiciones del servicio",
+    "none": "Este Petty no tiene condiciones del servicio. Pregunta a quien lo gestiona."
+  },
+  "legal": {
+    "failed": "No se pudo cargar este texto. Inténtalo de nuevo más tarde.",
+    "acceptTerms": "Al crear una cuenta, aceptas las condiciones del servicio.",
+    "privacyNote": "El aviso de privacidad explica qué datos se guardan y por qué."
+  },
   "admin": {
     "title": "Administración",
     "link": "Administración: cuentas",

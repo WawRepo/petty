@@ -71,6 +71,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `CLERK_AUTHORIZED_PARTIES` | clerk mode: comma-separated origins whose Clerk session tokens are accepted; default is the origin of `APP_URL` (PETTY-189) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail. The server must offer TLS: STARTTLS (usually port 587) or TLS on port 465. Only `localhost`, `127.0.0.1` and `mailpit` may be plain. Mail to a relay without TLS fails; the app logs it, and nobody else sees it. |
 | `CONTACT_EMAIL` | the operator's address, shown to everyone: the "Get an invite" buttons, the landing page, `/api/config`, and the security emails ("write to …"). Empty hides all of them. |
+| `LEGAL_DIR` | a folder with your own privacy notice and terms of service, see below. Empty (the default) = none. |
 | `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (the default: all three); `false` = none. See above. |
 | `RATE_LIMIT_PER_MINUTE` | API requests per client address per minute, for every route; `0` = off. The image's default is `600`. Over it, the API answers 429 with `Retry-After: 60`. The web app's own files and `/api/health*` do not count. Sign-in, sign-up, password reset and device codes keep their own, stricter limits. |
 | `CLIENT_IP_HEADER` | a platform proxy's own client-address header, for example `Fly-Client-IP` or `CF-Connecting-IP`; it wins over `X-Forwarded-For`. Empty (the default) = none. See above. |
@@ -92,6 +93,38 @@ HTTPS).
 Metrics, logs and traces are described in `monitoring.md`.
 
 An agent setup (Claude Desktop) is described in `agent.md`.
+
+## Privacy notice and terms
+
+Petty's privacy page explains what the server can and cannot see. It cannot say who you are, which
+providers you use, or how long you keep backups: that is yours to write, and a public instance in the EU
+must have it (GDPR Art. 13), often with terms of service too (in Poland, the act on services by
+electronic means requires published terms).
+
+Put Markdown files in a folder and set `LEGAL_DIR` to it:
+
+- `privacy.<lang>.md`: your privacy notice, shown on `/privacy` under Petty's own explanation.
+- `terms.<lang>.md`: your terms of service, shown on `/terms`.
+
+`<lang>` is `en`, `pl`, `de`, `es` or `fr`. A visitor gets their language, else English, else the one
+you wrote. When a file is there, the landing page, the sign-in and sign-up pages and Settings link to it,
+and sign-up says that creating an account accepts the terms. Without `LEGAL_DIR` nothing changes.
+
+The files are read once at start; restart after you change them. A `LEGAL_DIR` that is set but missing
+stops the start. Only a small part of Markdown is shown as formatting: `#`, `##` and `###` headings,
+paragraphs, `-` and `1.` lists (one level), `**bold**`, and links to `https://…`, `mailto:…` or a page
+of the app (`/privacy`). Everything else, HTML included, shows as plain text.
+
+With Docker Compose, mount the folder in `docker-compose.override.yml` and set the variable:
+
+```yaml
+services:
+  app:
+    volumes:
+      - ./legal:/legal:ro
+    environment:
+      LEGAL_DIR: /legal
+```
 
 ## Backups
 

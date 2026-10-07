@@ -33,6 +33,7 @@ import { pictureShown, placesShown, setPictureShown, setPlacesShown, setTotalsSh
 import { appVersion, isClerk } from "../lib/authConfig.js";
 import { sourceUrlFor } from "../lib/links.js";
 import { dateLocale } from "../lib/time.js";
+import { hasLegal } from "../lib/legal.js";
 
 export function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -262,6 +263,7 @@ export function SettingsScreen() {
             : <p className="mt12 mb0"><Button variant="ghost" onClick={() => { setCErr({}); setSp(true); }} data-testid="set-passphrase">{t("settings.setPassphrase")}</Button></p>}
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => { closeRc(); setRc(true); }} data-testid="new-recovery-code">{t("settings.recovery.new")}</Button></p>
           <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button></p>
+          {hasLegal("terms") ? <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/terms")}>{t("terms.link")}</Button></p> : null}
           {me?.is_admin ? <p className="mt4 mb0"><Button variant="ghost" onClick={() => nav("/admin")} data-testid="admin-link">{t("admin.link")}</Button></p> : null}
           {/* PETTY-279: the one link that destroys something looks like it, and stands apart */}
           <p className="mt16 mb0"><Button variant="danger-ghost" onClick={() => nav("/settings/delete")}>{t("settings.deleteAccount")}</Button></p>

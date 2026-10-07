@@ -735,6 +735,16 @@
     "notClerk": "When sign-in runs through an outside service (Clerk), that service decides who may sign in. Whoever controls it could sign in as you, but would still need your passkey or passphrase to open your drawers. Its code is built into this app at a fixed version and never loaded from elsewhere.",
     "source": "Petty is free software (AGPL-3.0). Read or run the source yourself:"
   },
+  "terms": {
+    "title": "Terms of service",
+    "link": "Terms of service",
+    "none": "This Petty has no terms of service. Ask whoever runs it."
+  },
+  "legal": {
+    "failed": "This text could not be loaded. Try again later.",
+    "acceptTerms": "By creating an account, you accept the terms of service.",
+    "privacyNote": "The privacy notice says what data is kept and why."
+  },
   "admin": {
     "title": "Admin",
     "link": "Admin: accounts",

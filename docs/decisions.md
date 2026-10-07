@@ -161,6 +161,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   freely. The public instance runs two machines; the custody challenge in memory made every guarded
   action fail when its two requests met different machines. Per-process caches that are only an
   optimisation (the usage-metrics cache, the Clerk client) are allowed.
+- **The operator's legal texts belong to the deployment (PETTY-342, 2026-10-07).** Who runs an instance,
+  its providers, how long it keeps backups and its terms differ for every operator, so this repository
+  carries none of them: an operator puts `privacy.<lang>.md` and `terms.<lang>.md` in `LEGAL_DIR`, and
+  the app shows them on `/privacy` and `/terms` and links them at sign-up. Petty's own explanation of
+  what the server sees stays on `/privacy` for everyone. The files are rendered from a small Markdown
+  subset into elements, never as HTML.
 
 ## Non-goals
 

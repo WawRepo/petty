@@ -735,6 +735,16 @@
     "notClerk": "Gdy logowanie działa przez zewnętrzną usługę (Clerk), to ona decyduje, kto może się zalogować. Kto ją kontroluje, mógłby zalogować się jako Ty, ale do otwarcia szuflad nadal potrzebowałby Twojego klucza dostępu lub hasła sejfu. Jej kod jest wbudowany w tę aplikację w stałej wersji i nigdy nie jest pobierany z zewnątrz.",
     "source": "Petty to wolne oprogramowanie (AGPL-3.0). Przeczytaj kod lub uruchom go samodzielnie:"
   },
+  "terms": {
+    "title": "Regulamin",
+    "link": "Regulamin",
+    "none": "Ta instancja Petty nie ma regulaminu. Zapytaj osobę, która ją prowadzi."
+  },
+  "legal": {
+    "failed": "Nie udało się wczytać tego tekstu. Spróbuj ponownie później.",
+    "acceptTerms": "Zakładając konto, akceptujesz regulamin.",
+    "privacyNote": "Polityka prywatności mówi, jakie dane są przechowywane i dlaczego."
+  },
   "admin": {
     "title": "Administracja",
     "link": "Administracja: konta",

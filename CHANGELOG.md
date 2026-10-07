@@ -17,6 +17,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   code, unit, note, or whether it counts in the total.
 - The AI tools now show a countable item's unit and a single item's note, and say when an item is left out
   of the total. History rows and the answers of `add` and `withdraw` end with the entry's id, for undo.
+- An operator can publish their own privacy notice and terms of service: Markdown files in `LEGAL_DIR`
+  (`privacy.<lang>.md`, `terms.<lang>.md`). The privacy page shows the notice under Petty's own
+  explanation, a new `/terms` page shows the terms, and the landing page, sign-in, sign-up and Settings link
+  to them; sign-up says that creating an account accepts the terms. Without `LEGAL_DIR` nothing changes.
+  See "Privacy notice and terms" in `docs/deploy.md`.
 
 ### Fixed
 - Traces no longer record who called: the visitor's IP address, the peer address and the browser's user

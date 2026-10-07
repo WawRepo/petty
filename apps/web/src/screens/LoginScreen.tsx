@@ -10,6 +10,7 @@ import { api, ApiError, NetworkError } from "../lib/api.js";
 import { afterLogin } from "../lib/session.js";
 import { contactEmail } from "../lib/authConfig.js";
 import { afterUnlock } from "../lib/afterUnlock.js";
+import { hasLegal } from "../lib/legal.js";
 
 
 export function LoginScreen() {
@@ -67,7 +68,7 @@ export function LoginScreen() {
             <Button variant="ghost" onClick={() => nav("/")}>{t("auth.login.about")}</Button>
           </div>
         </section>
-        <p><Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button></p>
+        <p><Button variant="ghost" onClick={() => nav("/privacy")}>{t("privacy.link")}</Button>{hasLegal("terms") ? <Button variant="ghost" onClick={() => nav("/terms")}>{t("terms.link")}</Button> : null}</p>
       </main>
       <Sheet open={reset} title={t("auth.reset.title")} onClose={() => { setReset(false); setResetSent(false); }}>
         <p className="hint">{t("auth.reset.body")}</p>

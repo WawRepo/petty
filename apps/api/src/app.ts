@@ -1,11 +1,11 @@
-import { AuthConfig } from "@petty/protocol";
+import { AuthConfig, LegalText } from "@petty/protocol";
 import path from "node:path";
 import cookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance } from "fastify";
 import { config } from "./config.js";
 import type { HealthResponse } from "@petty/protocol";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { dbIsUp } from "./db.js";
 import { ApiError, notFound, SECURITY_REFUSALS } from "./lib/errors.js";
 import { sessionPlugin } from "./lib/session.js";
@@ -13,6 +13,7 @@ import { securityHeaders } from "./lib/headers.js";
 import { requestMetrics, securityRefusals } from "./lib/metrics.js";
 import { safeUrl, tracingHooks } from "./lib/tracing.js";
 import { apiRateLimit } from "./lib/rate-limit.js";
+import { LEGAL_DOCS, legalText, loadLegalTexts } from "./lib/legal.js";
 import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { drawerRoutes } from "./routes/drawers.js";
@@ -37,6 +38,7 @@ export function staticCacheControl(filePath: string): string {
 }
 
 export function buildApp() {
+  const legal = loadLegalTexts(config.legalDir);
   const app = Fastify({
     // Error class + ids only, never bodies (CLAUDE.md rule 2). Phase 13 tightens further.
     logger: {
@@ -97,7 +99,15 @@ export function buildApp() {
     });
     a.get("/health/live", async () => ({ ok: true }));
     // Public (PETTY-88): which identity provider the web app must use; one image serves both modes.
-    a.get("/config", async () => AuthConfig.parse({ auth: config.authProvider, clerk_publishable_key: config.clerkPublishableKey || null, contact_email: config.contactEmail || null, open_signup: config.openSignup, version: config.version }));
+    a.get("/config", async () => AuthConfig.parse({ auth: config.authProvider, clerk_publishable_key: config.clerkPublishableKey || null, contact_email: config.contactEmail || null, open_signup: config.openSignup, version: config.version, legal: { privacy: legal.has("privacy"), terms: legal.has("terms") } }));
+    // Public (PETTY-342): the operator's privacy notice or terms, in the asked language or the nearest one there is.
+    a.get("/legal/:doc", async (req) => {
+      const { doc } = z.object({ doc: z.enum(LEGAL_DOCS) }).parse(req.params);
+      const { lang } = z.object({ lang: z.string().regex(/^[a-z]{2}$/).default("en") }).parse(req.query);
+      const hit = legalText(legal, doc, lang);
+      if (!hit) throw notFound();
+      return LegalText.parse({ doc, ...hit });
+    });
     await a.register(authRoutes);
     await a.register(meRoutes);
     await a.register(tokenRoutes);
