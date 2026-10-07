@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Projects:
- *  - `dev`  the suite against the Vite dev server (:5173) + API (:3000)
+ *  - `dev`  the suite against the Vite dev server (:5173) + API (:3000; API_PORT moves it)
  *  - `prod` e2e/prod.spec.ts against the production shape: the API serving the
  *           built web app under strict security headers (:3100, /api prefix),
  *           service worker active. Fails on any CSP violation.
@@ -10,6 +10,8 @@ import { defineConfig, devices } from "@playwright/test";
  */
 // WEB_PORT moves the dev server when :5173 is busy on this machine (another project's Vite), e.g. WEB_PORT=5174.
 const WEB_PORT = process.env.WEB_PORT ?? "5173";
+// API_PORT moves the dev API the same way when :3000 is busy (the Vite proxy and the fixtures read it too).
+const API_PORT = process.env.API_PORT ?? "3000";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -28,7 +30,7 @@ export default defineConfig({
   webServer: [
     // Test-only: the login limiter is per process; a day of e2e runs against one dev API would trip it.
     // The suite runs the API in local mode whatever the root .env says; CLERK_E2E=1 runs it in clerk mode (needs the Clerk keys in .env).
-    { command: `AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:${WEB_PORT} LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 pnpm --filter @petty/api dev`, url: "http://127.0.0.1:3000/health", reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
+    { command: `AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:${WEB_PORT} LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 API_PORT=${API_PORT} pnpm --filter @petty/api dev`, url: `http://127.0.0.1:${API_PORT}/health`, reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
     { command: `pnpm --filter @petty/web dev --port ${WEB_PORT}`, url: `http://localhost:${WEB_PORT}`, reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
     { command: `pnpm --filter @petty/web build && AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:3100 LOGIN_LIMIT_PER_IP=1000000 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 pnpm --filter @petty/web preview:prod`, url: "http://localhost:3100/api/health", reuseExistingServer: true, timeout: 180_000, cwd: "../.." },
   ],

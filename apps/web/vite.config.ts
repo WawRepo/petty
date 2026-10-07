@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const proxy = { "/api": { target: "http://127.0.0.1:3000", rewrite: (p: string) => p.replace(/^\/api/, "") } };
+// API_PORT moves the dev API when :3000 is busy on this machine (another project), like WEB_PORT for the web
+const proxy = { "/api": { target: `http://127.0.0.1:${process.env["API_PORT"] ?? "3000"}`, rewrite: (p: string) => p.replace(/^\/api/, "") } };
 
 export default defineConfig({
   plugins: [

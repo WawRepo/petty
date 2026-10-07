@@ -8,7 +8,7 @@ import { expect, loginAndUnlock, openSettings, signupViaApi, test } from "./fixt
  * Access tokens (PETTY-164): made in Settings, used by a tool outside the browser. The tool sends
  * only the id half; the secret half opens the bundle here, in this Node process, never on the server.
  */
-const API = process.env["API_URL"] ?? "http://127.0.0.1:3000";
+const API = process.env["API_URL"] ?? `http://127.0.0.1:${process.env["API_PORT"] ?? "3000"}`;
 const OWNER_DB = process.env["DATABASE_URL"] ?? "postgres://petty:petty@localhost:5432/petty";
 async function sql<T extends pg.QueryResultRow>(text: string, values: unknown[] = []): Promise<T[]> {
   const c = new pg.Client({ connectionString: OWNER_DB });

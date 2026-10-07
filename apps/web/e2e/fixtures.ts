@@ -8,7 +8,7 @@ import { randomBytes, createHash } from "node:crypto";
 import pg from "pg";
 import { createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys, signingKeyId } from "@petty/crypto";
 
-export const API = "http://127.0.0.1:3000";
+export const API = `http://127.0.0.1:${process.env["API_PORT"] ?? "3000"}`;
 const OWNER_DB = process.env["DATABASE_URL"] ?? "postgres://petty:petty@localhost:5432/petty";
 
 export interface TestUser { name: string; email: string; password: string; passphrase: string }
