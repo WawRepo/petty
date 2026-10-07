@@ -84,7 +84,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       )).rows[0]!;
       await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
       await insertPasskey(db, user.id, body.passkey);
-      if (link) await db.query("update join_links set used_by = $1, used_at = now() where id = $2", [user.id, link.id]);
+      // PETTY-341: the email only restricted who may use the link; once used, it is not kept
+      if (link) await db.query("update join_links set used_by = $1, used_at = now(), email = null where id = $2", [user.id, link.id]);
       return loadMe(db, user.id);
     });
     await createSession(reply, me.id);

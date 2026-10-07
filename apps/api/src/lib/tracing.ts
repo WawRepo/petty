@@ -5,7 +5,7 @@ import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { PinoInstrumentation } from "@opentelemetry/instrumentation-pino";
-import { BatchSpanProcessor, SimpleSpanProcessor, type SpanExporter } from "@opentelemetry/sdk-trace-base";
+import { BatchSpanProcessor, SimpleSpanProcessor, type ReadableSpan, type Span as SdkSpan, type SpanExporter, type SpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { otelResource } from "./otel-resource.js";
 
@@ -15,6 +15,7 @@ import { otelResource } from "./otel-resource.js";
  *
  * What a span may carry: the route TEMPLATE, the method, the status, ids, the
  * SQL text with $n placeholders. What it never carries: request bodies, cookies,
+ * who called (client address, user agent: PETTY-341),
  * query parameters (there are none), the values bound to a query, or a URL
  * path that holds a secret token (CLAUDE.md rule 2). `startTracing` MUST run
  * before Fastify is imported — the http instrumentation patches `node:http` as
@@ -27,6 +28,29 @@ import { otelResource } from "./otel-resource.js";
  */
 export const isHealthProbe = (url: string): boolean => /\/health(\/live)?(\?|$)/.test(url);
 
+/**
+ * PETTY-341 (GDPR, data minimisation): the http instrumentation records who called — the client
+ * address (from X-Forwarded-For), the peer address and port, and the browser's user agent — on every
+ * server span. Petty's traces need none of it, and an IP address is personal data. The attributes are
+ * set when the span starts and the instrumentation has no option to leave them out, so this processor
+ * drops them before any exporter sees the span. It runs first in the list.
+ */
+const CLIENT_DETAILS = [
+  "client.address", "client.port", "network.peer.address", "network.peer.port", "user_agent.original",
+  // the older semantic conventions, in case the instrumentation is switched to them
+  "http.client_ip", "http.user_agent", "net.peer.ip", "net.peer.port", "net.sock.peer.addr", "net.sock.peer.port",
+];
+class DropClientDetails implements SpanProcessor {
+  private drop(span: SdkSpan | ReadableSpan): void {
+    const attrs = span.attributes as Record<string, unknown>;
+    for (const k of CLIENT_DETAILS) delete attrs[k];
+  }
+  onStart(span: SdkSpan): void { this.drop(span); }
+  onEnd(span: ReadableSpan): void { this.drop(span); }
+  forceFlush(): Promise<void> { return Promise.resolve(); }
+  shutdown(): Promise<void> { return Promise.resolve(); }
+}
+
 export interface TracingOptions { exporter?: SpanExporter | null; endpoint?: string | undefined; apiPrefix: string; version?: string | undefined; deploymentEnv?: string | undefined; logs?: boolean }
 
 let provider: NodeTracerProvider | null = null;
@@ -37,7 +61,7 @@ export function startTracing(opts: TracingOptions): boolean {
   provider = new NodeTracerProvider({
     resource: otelResource(opts.version ?? "dev", opts.deploymentEnv ?? ""),
     // Simple = synchronous export, for tests that read spans right after a request.
-    spanProcessors: [opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
+    spanProcessors: [new DropClientDetails(), opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
   });
   provider.register();
   const prefix = opts.apiPrefix;

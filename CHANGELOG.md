@@ -18,6 +18,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 - The AI tools now show a countable item's unit and a single item's note, and say when an item is left out
   of the total. History rows and the answers of `add` and `withdraw` end with the entry's id, for undo.
 
+### Fixed
+- Traces no longer record who called: the visitor's IP address, the peer address and the browser's user
+  agent, which the HTTP tracing added to every request by default, are dropped before they are sent. An IP
+  address is personal data, and the traces never needed it.
+- Petty keeps less about people: a join link forgets the invited email once it is used, an unused link is
+  deleted when it ends, password reset tokens are deleted after their hour, and deleting an account also
+  deletes its unused invites and reset tokens. One migration (015) gives the cleanup the right to delete
+  old reset tokens and clears what was left behind.
+
 ## [1.5.16] — 2026-10-07
 
 ### Fixed

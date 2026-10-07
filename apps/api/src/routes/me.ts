@@ -260,6 +260,9 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from user_docs where user_id = $1", [me.id]);
       await db.query("delete from passkey_vaults where user_id = $1", [me.id]);
       await db.query("delete from vault_history where user_id = $1", [me.id]);
+      // PETTY-341: an invite from a deleted account dies with it (and the invitee's email with it); a reset token too
+      await db.query("delete from join_links where created_by = $1 and used_at is null", [me.id]);
+      await db.query("delete from password_resets where user_id = $1", [me.id]);
       await db.query("update user_keys set retired_at = now() where user_id = $1 and retired_at is null", [me.id]);
       await db.query(
         `update users set email = 'deleted-' || id || '@deleted.invalid', display_name = 'Deleted user', password_hash = 'deleted',

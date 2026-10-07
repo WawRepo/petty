@@ -42,6 +42,17 @@ describe("traces (PETTY-34)", () => {
     expect(server!.attributes["url.path"]).toBe("/join-links/:token");
   });
 
+  it("PETTY-341: a span keeps no client address and no browser name (GDPR: data minimisation)", async () => {
+    exporter.reset();
+    await fetch(`${base}/auth/login`, { method: "POST", headers: { "content-type": "application/json", "user-agent": "TestBrowser/1.0", "x-forwarded-for": "203.0.113.9" }, body: JSON.stringify({ email: "a@b.c", password: "x" }) });
+    const server = exporter.getFinishedSpans().find((s) => s.kind === 1 /* SERVER */)!;
+    expect(server.attributes["http.route"]).toBe("/auth/login");
+    for (const k of ["client.address", "network.peer.address", "network.peer.port", "user_agent.original"]) expect(server.attributes, k).not.toHaveProperty(k);
+    const all = JSON.stringify(exporter.getFinishedSpans().map((s) => s.attributes));
+    expect(all).not.toContain("203.0.113.9");
+    expect(all).not.toContain("TestBrowser");
+  });
+
   it("health probes are not traced, including /health/live, which platforms call (PETTY-240)", async () => {
     exporter.reset();
     expect((await fetch(`${base}/health`)).status).toBe(200);

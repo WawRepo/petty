@@ -71,6 +71,8 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` to an OTLP/HTTP receiver (for example
 - Spans carry the route, method, status, the user id and the SQL text with `$n` placeholders.
 - Spans never carry request bodies, cookies, header values, bound SQL values, or a URL that
   holds a token (`/join-links/:token` is reported as the template).
+- Spans never carry who called: the client and peer address and the user agent, which the http
+  instrumentation records by default, are dropped before export (an IP address is personal data).
 - Every log line of a traced request carries `traceId`, so a log line can link to its trace.
 
 Health probes (`/api/health`, `/api/health/live`) and static files are not traced.
