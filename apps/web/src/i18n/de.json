@@ -1392,7 +1392,9 @@
       "rename_tag": "benennt einen Tag bei allen Posten um",
       "remove_tag": "entfernt einen Tag von allen Posten",
       "move_drawer": "legt eine Schublade an einen Ort",
-      "add_item": "legt einen neuen Posten in einer Schublade an"
+      "add_item": "legt einen neuen Posten in einer Schublade an",
+      "undo_entry": "storniert eine Buchung",
+      "edit_item": "ändert Name, Währung, Einheit oder Notiz eines Postens"
     },
     "honestTitle": "Gut zu wissen",
     "honest": [

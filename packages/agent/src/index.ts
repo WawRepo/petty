@@ -19,7 +19,7 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, seedExponent, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, reverseOf, seedExponent, tagsOf, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
 import { EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
@@ -62,6 +62,10 @@ export interface AgentLine {
   readonly kind: Line["kind"];
   readonly currency: string | null;
   readonly exponent: number;
+  /** A countable item's unit, such as "pcs"; null for money and single items (PETTY-339). */
+  readonly unit: string | null;
+  /** A single item's note, such as "blue box"; null for money and countable items (PETTY-339). */
+  readonly note: string | null;
   readonly tags: readonly string[];
   /** Minor units for money, a count for countable things, and 0 for a single item. */
   readonly balance: number;
@@ -111,6 +115,13 @@ export interface AgentPlace {
 
 const LOCALE = "en-GB";
 
+const UNDO_REFUSED: Record<ReverseRefusal, string> = {
+  adjust_not_reversible: "a count (adjust) cannot be undone; count again instead",
+  reverse_not_reversible: "an undo cannot be undone; add or take the amount instead",
+  already_reversed: "that entry is already undone",
+  before_checkpoint: "a later count already settled that entry",
+};
+
 export async function connect(opts: ConnectOptions): Promise<AgentClient> {
   const client = new AgentClient(opts);
   await client.open();
@@ -130,6 +141,8 @@ export class AgentClient {
   private signing: CryptoKey | null = null;
   /** The last seq seen per drawer:line, which an Adjust must state (the server refuses a stale count). */
   private heads = new Map<string, number>();
+  /** The checked entries since each drawer:line's latest count, from the last load: what an undo looks at. */
+  private lineEntries = new Map<string, LedgerEntry[]>();
 
   constructor(opts: ConnectOptions) {
     checkApiUrl(opts.apiUrl, opts.allowInsecureHttp);
@@ -285,6 +298,7 @@ export class AgentClient {
           // an entry this token cannot open is skipped, never guessed at
         }
       }
+      for (const l of doc.lines) this.lineEntries.set(`${d.id}:${l.id}`, entriesByLine.get(l.id) ?? []);
       out.push({
         id: d.id,
         name: doc.name,
@@ -306,6 +320,8 @@ export class AgentClient {
       kind: l.kind,
       currency,
       exponent,
+      unit: l.kind === "countable" ? l.unit : null,
+      note: l.kind === "single" ? l.text : null,
       tags: lineTagsOf(l),
       balance,
       amount: l.kind === "single" ? "" : `${formatAmount(balance, exponent, LOCALE)}${currency ? ` ${currency}` : ""}`,
@@ -373,16 +389,45 @@ export class AgentClient {
     return this.append(drawerId, lineId, "adjust", countedAmount, comment);
   }
 
-  private async append(drawerId: string, lineId: string, op: EntryPayloadV1["op"], amount: string, comment: string): Promise<AgentEntry> {
+  private async append(drawerId: string, lineId: string, op: Exclude<EntryPayloadV1["op"], "reverse">, amount: string, comment: string): Promise<AgentEntry> {
+    const line = await this.writableLine(drawerId, lineId);
+    // The sign lives in the amount: a withdrawal is negative, so the fold just adds every entry up.
+    const magnitude = Math.abs(parseAmount(amount, line.exponent));
+    return this.post(drawerId, line, op, op === "withdraw" ? -magnitude : magnitude, comment, null);
+  }
+
+  /** A fresh look at one item this token may write an entry on. */
+  private async writableLine(drawerId: string, lineId: string): Promise<AgentLine> {
     if (this.identity.role !== "write" || !this.signing) throw new TokenError("ReadOnly", "this token may only read");
     const drawer = (await this.drawers()).find((d) => d.id === drawerId);
     if (!drawer) throw new TokenError("OutOfScope", "this token cannot open that drawer");
     const line = drawer.lines.find((l) => l.id === lineId);
     if (!line) throw new TokenError("NotFound", "no such item");
     if (line.kind === "single") throw new TokenError("Refused", "this item holds no amount");
-    // The sign lives in the amount: a withdrawal is negative, so the fold just adds every entry up.
-    const magnitude = Math.abs(parseAmount(amount, line.exponent));
-    const minor = op === "withdraw" ? -magnitude : magnitude;
+    return line;
+  }
+
+  /**
+   * Undoes one entry (PETTY-339) the way the app's "Reverse" does: a new entry of the opposite amount
+   * that names the one it cancels. Nothing is deleted; the log only grows (rule 8). The same rules as
+   * the app and the server: a count (adjust) or an undo cannot be undone, an entry only once, and not
+   * one a later count already settled.
+   */
+  async undo(drawerId: string, lineId: string, entryId: string, comment = ""): Promise<AgentEntry & { readonly undone: AgentEntry }> {
+    const line = await this.writableLine(drawerId, lineId);
+    const entries = this.lineEntries.get(`${drawerId}:${lineId}`) ?? [];
+    const target = entries.find((e) => e.entry.id === entryId.trim());
+    if (!target) throw new TokenError("Refused", "that entry is not among this item's entries since its latest count; older entries are settled by that count and cannot be undone");
+    const r = reverseOf(target, fold(entries));
+    if (!r.ok) throw new TokenError("Refused", UNDO_REFUSED[r.code]);
+    const fmt = (n: number) => `${formatAmount(n, line.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`;
+    const t = target.entry;
+    const undone: AgentEntry = { id: t.id, seq: target.seq, op: t.op, amount: fmt(t.amount), comment: t.comment, at: target.received_at, mine: t.author_id === this.identity.userId, verified: true };
+    return { ...(await this.post(drawerId, line, "reverse", r.amount, comment, r.reverses)), undone };
+  }
+
+  private async post(drawerId: string, line: AgentLine, op: EntryPayloadV1["op"], minor: number, comment: string, reverses: string | null): Promise<AgentEntry> {
+    const lineId = line.id;
     const held = this.keys.get(drawerId)!;
     const id = crypto.randomUUID();
     const payload: EntryPayloadV1 = {
@@ -395,19 +440,20 @@ export class AgentClient {
       exponent: line.exponent,
       comment,
       logged_at: new Date().toISOString(),
-      reverses: null,
+      reverses,
       prev_hash: null,
       delta_hint: op === "adjust" ? minor - line.balance : null,
       author_id: this.identity.userId,
       sig_key_id: await this.sigKeyId(),
     };
+    if (!this.signing) throw new TokenError("ReadOnly", "this token may only read");
     const signedEntry = await signEntry(payload, this.signing);
     const sealedEntry = await sealEntry(held.key, this.identityFor(drawerId, lineId, held.keyVersion, 1, "entry", id), signedEntry);
     await this.call("POST", `/drawers/${drawerId}/entries`, {
       id,
       line_id: lineId,
       is_checkpoint: op === "adjust",
-      reverses_entry_id: null,
+      reverses_entry_id: reverses,
       ...(op === "adjust" ? { expected_head_seq: this.heads.get(`${drawerId}:${lineId}`) ?? 0 } : {}),
       key_version: held.keyVersion,
       schema_version: 1,
@@ -599,6 +645,47 @@ export class AgentClient {
     const made = after?.lines.find((l) => l.id === id);
     if (!after || !made) throw new TokenError("Conflict", "the item was added but could not be read back; list the drawer again");
     return { drawer: after, line: made };
+  }
+
+  /**
+   * Changes an item (PETTY-339) the way the app's item options do: its name, a money item's currency
+   * code, a countable item's unit, a single item's note, and whether it counts in the drawer's total.
+   * The currency code is a label: the item keeps its exponent, so no amount is rescaled (rule 5).
+   */
+  async editItem(drawerId: string, lineId: string, change: { name?: string; currency?: string; unit?: string; note?: string; counted?: boolean }): Promise<{ drawer: AgentDrawer; line: AgentLine }> {
+    if (this.identity.role !== "write") throw new TokenError("ReadOnly", "this token may only read");
+    const drawer = (await this.drawers()).find((d) => d.id === drawerId);
+    if (!drawer) throw new TokenError("OutOfScope", "this token cannot open that drawer");
+    if (drawer.role === "read") throw new TokenError("ReadOnly", "you may only read this drawer");
+    const line = drawer.lines.find((l) => l.id === lineId);
+    if (!line) throw new TokenError("NotFound", "no such item");
+    const only = (kind: Line["kind"], what: string) => { if (line.kind !== kind) throw new TokenError("Refused", `only a ${kind} item has ${what}; this one is ${line.kind}`); };
+    const ops: DocumentOp[] = [];
+    if (change.name !== undefined) {
+      const name = change.name.trim();
+      if (!name) throw new TokenError("Refused", "an item needs a name");
+      if (drawer.lines.some((l) => l.id !== lineId && foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called "${name}"`);
+      ops.push({ type: "rename_line", line_id: lineId, name });
+    }
+    if (change.currency !== undefined) { only("money", "a currency"); ops.push({ type: "set_currency", line_id: lineId, currency: change.currency }); }
+    if (change.unit !== undefined) { only("countable", "a unit"); ops.push({ type: "set_unit", line_id: lineId, unit: change.unit.trim() }); }
+    if (change.note !== undefined) { only("single", "a note"); ops.push({ type: "set_text", line_id: lineId, text: change.note.trim() }); }
+    if (change.counted !== undefined) {
+      if (line.kind === "single") throw new TokenError("Refused", "a single item is never in a total");
+      ops.push({ type: "set_line_counted", line_id: lineId, counted: change.counted });
+    }
+    if (!ops.length) throw new TokenError("Refused", "say what to change");
+    try {
+      await this.mutate(drawerId, ops);
+    } catch (e) {
+      // the ops are applied before anything is sealed or sent, so a bad value leaves the item as it was
+      if (e instanceof LedgerError) throw new TokenError("Refused", `not a valid change: ${e.code}`);
+      throw e;
+    }
+    const after = (await this.drawers()).find((d) => d.id === drawerId);
+    const edited = after?.lines.find((l) => l.id === lineId);
+    if (!after || !edited) throw new TokenError("Conflict", "the item was changed but could not be read back; list the drawer again");
+    return { drawer: after, line: edited };
   }
 
   /** Moves a drawer to a place path such as ["Kitchen", "shelf"]; an empty path takes it out of every place. */

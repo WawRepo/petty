@@ -12,6 +12,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 - The AI tools can add a new item to a drawer (`add_item`): money in one currency, a countable thing or a
   single item with a note, with an optional starting amount. It needs a token that can make changes, and
   a drawer that token can already open. Making a new drawer still happens in the Petty app.
+- The AI tools can undo a mistaken entry (`undo_entry`), the same "Reverse" the app has: a new entry of the
+  opposite amount, so nothing is deleted. They can also change an item (`edit_item`): its name, currency
+  code, unit, note, or whether it counts in the total.
+- The AI tools now show a countable item's unit and a single item's note, and say when an item is left out
+  of the total. History rows and the answers of `add` and `withdraw` end with the entry's id, for undo.
 
 ## [1.5.16] — 2026-10-07
 

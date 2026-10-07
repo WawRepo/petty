@@ -1392,7 +1392,9 @@
       "rename_tag": "cambia el nombre de una etiqueta en todos los elementos",
       "remove_tag": "quita una etiqueta de todos los elementos",
       "move_drawer": "pone un cajón en un lugar",
-      "add_item": "añade un elemento nuevo a un cajón"
+      "add_item": "añade un elemento nuevo a un cajón",
+      "undo_entry": "revierte un movimiento",
+      "edit_item": "cambia el nombre, la moneda, la unidad o la nota de un elemento"
     },
     "honestTitle": "Conviene saber",
     "honest": [

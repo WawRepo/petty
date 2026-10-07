@@ -139,12 +139,23 @@ describe("household", () => {
     expect(history[0]).toMatchObject({ comment: "from the tool", amount: "1.00 PLN", verified: true });
     expect((await balance(ann)).balance).toBe(4100);
 
+    // PETTY-339: the tool undoes its entry; the owner's own fold cancels it, and the log keeps both
+    const undone = await agent.undo(drawerId, lineId, res.id, "typo");
+    expect(undone.balanceAfter).toBe("40.00 PLN");
+    expect((await balance(ann)).balance).toBe(4000);
+    expect((await agent.history(drawerId, lineId)).slice(0, 2).map((e) => [e.op, e.verified])).toEqual([["reverse", true], ["add", true]]);
+
     // PETTY-336: the tool adds a new item, and the other member's app opens it with its first entry
     const made = await agent.addItem(drawerId, { kind: "countable", name: "Stamps", unit: "pcs", start: "20" });
     expect(made.line).toMatchObject({ name: "Stamps", balance: 20, unverified: 0 });
     const got = (await ben.call("GET", `/drawers/${drawerId}`)).json();
     const doc = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: got.document.key_version, schema_version: got.document.schema_version }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) }) as { lines: { id: string }[] };
     expect(doc.lines.find((l) => l.id === made.line.id)).toMatchObject({ kind: "countable", name: "Stamps", unit: "pcs" });
+    // PETTY-339: and changes it; the other member's app opens the change
+    await agent.editItem(drawerId, made.line.id, { name: "Postage stamps", unit: "sheets" });
+    const got2 = (await ben.call("GET", `/drawers/${drawerId}`)).json();
+    const doc2 = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got2.document.author_id, key_version: got2.document.key_version, schema_version: got2.document.schema_version }, { nonce: fromB64(got2.document.nonce), ciphertext: fromB64(got2.document.ciphertext) }) as { lines: { id: string }[] };
+    expect(doc2.lines.find((l) => l.id === made.line.id)).toMatchObject({ name: "Postage stamps", unit: "sheets" });
     expect((await ben.call("GET", "/bootstrap")).json().entries.filter((e: { line_id: string }) => e.line_id === made.line.id)).toHaveLength(1);
 
     expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);

@@ -145,11 +145,13 @@ apps that read skills can use it too. Its source is
 | `add` | write | adds an amount |
 | `withdraw` | write | takes an amount out |
 | `adjust` | write | sets an item to what was counted |
+| `undo_entry` | write | undoes one add or withdraw with an entry of the opposite amount; nothing is deleted |
 | `list_tags` | read | every tag with the items that carry it |
 | `list_places` | read | the place tree with the drawers in each place |
 | `tag_item`, `untag_item` | write | puts a tag on an item, or takes it off |
 | `rename_tag`, `remove_tag` | write | renames or removes a tag on every item; a rename onto an existing tag merges them |
 | `add_item` | write | adds a new item (money, countable or single) to a drawer the token can write, with an optional starting amount |
+| `edit_item` | write | changes an item's name, currency code, unit, note, or whether it counts in the total |
 | `move_drawer` | write | puts a drawer in a place, such as "Kitchen › shelf" |
 
 `list_drawers` can be filtered by `tag` or `place`. The tools see the tags and places that

@@ -1,6 +1,6 @@
 ---
 name: petty
-description: Work with Petty, the user's end-to-end encrypted record of the money, things and notes kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, add_item, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, wants to add a new item to a drawer, or wants to tag items or move drawers between places.
+description: Work with Petty, the user's end-to-end encrypted record of the money, things and notes kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, undo_entry, add_item, edit_item, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, wants to undo a mistaken entry, wants to add or change an item, or wants to tag items or move drawers between places.
 license: AGPL-3.0-only (LICENSE has the full terms)
 compatibility: Needs Petty's MCP server (petty.mcpb or petty-mcp.mjs) or the petty command line (petty.mjs), signed in to the user's Petty with an access token.
 metadata:
@@ -54,6 +54,15 @@ that computer and hands you what you ask for. Petty's server never sees it.
 - Put the user's reason in `comment` (at most 200 characters). Do not invent a reason.
 - After the change, tell the user the new balance the tool reports.
 
+## Undo a mistake
+
+- `undo_entry` undoes one `add` or `withdraw` by its entry id. The answer of `add` and `withdraw`
+  ends with `entry: <id>`, and so does each `history` row.
+- Undo adds an entry of the opposite amount. Nothing is deleted, and the history shows both.
+- Never fix a mistake with a made-up `add` or `withdraw`. Use `undo_entry`.
+- A count (`adjust`) and an undo cannot be undone. An entry from before the latest count cannot be
+  undone either: that count settled it. To fix a count, count again and `adjust`.
+
 ## The user counted
 
 - `adjust` sets an item to what was counted. Use it only when the user says they counted. Never
@@ -78,15 +87,18 @@ that computer and hands you what you ask for. Petty's server never sees it.
   adjust row, the amount is what was counted.
 - To explain a balance, read the history and name the entries that made it.
 
-## New items
+## Items
 
 - `add_item` puts a new item into a drawer the token can already write. Kind `money` needs a
   currency code such as `EUR`, `countable` may take a unit, `single` may take a note. A starting
   amount is optional and becomes the item's first entry.
 - Ask the user before adding. Do not invent items they did not name. A drawer cannot hold two items
   with the same name.
-- No tool makes a new drawer. Tell the user to add it in the Petty app. The token sees it once the
-  app has opened after that.
+- `edit_item` changes an item's name, a money item's currency code, a countable item's unit, a
+  single item's note, or `counted: false` to leave it out of the drawer's total. Give only what
+  changes. A currency code is a label: the amounts are not converted. Say so when the user changes it.
+- No tool makes a new drawer, deletes an item, or changes an item's kind, icon or order. Tell the
+  user to do those in the Petty app. The token sees a new drawer once the app has opened after that.
 
 ## Tags and places
 
@@ -142,5 +154,7 @@ than one match.
 | `untag_item` | `petty untag <item> <tag> --json` |
 | `move_drawer` | `petty move <drawer> <place> --json` |
 | `add_item` | none: use the MCP tool, or the Petty app |
+| `edit_item` | none: use the MCP tool, or the Petty app |
+| `undo_entry` | none: use the MCP tool, or the Petty app |
 | `rename_tag` | none: use the MCP tool, or the Petty app |
 | `remove_tag` | none: use the MCP tool, or the Petty app |

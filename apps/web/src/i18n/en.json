@@ -1392,7 +1392,9 @@
       "rename_tag": "renames a tag on every item",
       "remove_tag": "removes a tag from every item",
       "move_drawer": "puts a drawer in a place",
-      "add_item": "adds a new item to a drawer"
+      "add_item": "adds a new item to a drawer",
+      "undo_entry": "reverses one entry",
+      "edit_item": "changes an item's name, currency, unit or note"
     },
     "honestTitle": "Good to know",
     "honest": [

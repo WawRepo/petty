@@ -1392,7 +1392,9 @@
       "rename_tag": "renomme une étiquette sur tous les éléments",
       "remove_tag": "retire une étiquette de tous les éléments",
       "move_drawer": "range un tiroir dans un lieu",
-      "add_item": "ajoute un nouvel élément à un tiroir"
+      "add_item": "ajoute un nouvel élément à un tiroir",
+      "undo_entry": "inverse une opération",
+      "edit_item": "change le nom, la devise, l’unité ou la note d’un élément"
     },
     "honestTitle": "Bon à savoir",
     "honest": [

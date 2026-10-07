@@ -300,4 +300,44 @@ describe("headless client (PETTY-165)", () => {
     expect((await c.drawers())[0]!.lines.map((l) => l.name)).not.toContain("Coins");
     await expect((await client("read")).addItem(drawerId, { kind: "single", name: "Note" })).rejects.toMatchObject({ code: "ReadOnly" });
   });
+
+  it("PETTY-339: undoes an entry the way the app's Reverse does, and changes an item", async () => {
+    const c = await client("write");
+    const lineOf = async (lineId: string) => (await c.drawers()).find((d) => d.id === drawerId)!.lines.find((l) => l.id === lineId)!;
+    const id = (await c.addItem(drawerId, { kind: "money", name: "Petrol", currency: "EUR", start: "50" })).line.id;
+    const added = await c.add(drawerId, id, "20", "by mistake");
+    const undone = await c.undo(drawerId, id, added.id, "typo");
+    expect(undone).toMatchObject({ op: "reverse", balanceAfter: "50.00 EUR", comment: "typo", undone: { id: added.id, op: "add", amount: "20.00 EUR", comment: "by mistake" } });
+    expect(undone.amount).toMatch(/20\.00 EUR$/);
+    // nothing is deleted: the log keeps both, signed, and the balance folds back
+    const h = await c.history(drawerId, id);
+    expect(h.map((e) => e.op)).toEqual(["reverse", "add", "add"]);
+    expect(h.every((e) => e.verified)).toBe(true);
+    expect((await lineOf(id)).balance).toBe(5000);
+    // refused: the same entry twice, an undo, a count, an entry a later count settled, an unknown id
+    await expect(c.undo(drawerId, id, added.id)).rejects.toMatchObject({ code: "Refused", message: "that entry is already undone" });
+    await expect(c.undo(drawerId, id, undone.id)).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("an undo cannot be undone") });
+    const counted = await c.adjust(drawerId, id, "50");
+    await expect(c.undo(drawerId, id, counted.id)).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("count again") });
+    await expect(c.undo(drawerId, id, h[2]!.id)).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("latest count") });
+    await expect(c.undo(drawerId, id, crypto.randomUUID())).rejects.toMatchObject({ code: "Refused" });
+
+    // a currency code is a label: the item keeps its exponent and its balance (rule 5)
+    const edited = await c.editItem(drawerId, id, { name: "Fuel", currency: "usd", counted: false });
+    expect(edited.line).toMatchObject({ name: "Fuel", currency: "USD", exponent: 2, balance: 5000, countedInTotal: false });
+    const box = (await c.addItem(drawerId, { kind: "countable", name: "Fuses" })).line;
+    expect((await c.editItem(drawerId, box.id, { unit: " pcs " })).line.unit).toBe("pcs");
+    const key2 = (await c.addItem(drawerId, { kind: "single", name: "Garage key", text: "hook" })).line;
+    expect(key2.note).toBe("hook");
+    expect((await c.editItem(drawerId, key2.id, { note: "blue box" })).line.note).toBe("blue box");
+    // refused, and nothing changes: another item's name, a unit on money, a note on a countable, a bad
+    // currency, nothing to change, a total for a single item
+    for (const [lineId, change] of [[id, { name: "fuses" }], [id, { unit: "kg" }], [box.id, { note: "x" }], [id, { currency: " " }], [id, {}], [key2.id, { counted: true }]] as const) {
+      await expect(c.editItem(drawerId, lineId, change)).rejects.toMatchObject({ code: "Refused" });
+    }
+    expect(await lineOf(id)).toMatchObject({ name: "Fuel", currency: "USD", unit: null, countedInTotal: false });
+    const reader = await client("read");
+    await expect(reader.editItem(drawerId, id, { name: "x" })).rejects.toMatchObject({ code: "ReadOnly" });
+    await expect(reader.undo(drawerId, id, added.id)).rejects.toMatchObject({ code: "ReadOnly" });
+  });
 });
