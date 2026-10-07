@@ -1391,7 +1391,8 @@
       "untag_item": "takes a tag off an item",
       "rename_tag": "renames a tag on every item",
       "remove_tag": "removes a tag from every item",
-      "move_drawer": "puts a drawer in a place"
+      "move_drawer": "puts a drawer in a place",
+      "add_item": "adds a new item to a drawer"
     },
     "honestTitle": "Good to know",
     "honest": [

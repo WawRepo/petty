@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- The AI tools can add a new item to a drawer (`add_item`): money in one currency, a countable thing or a
+  single item with a note, with an optional starting amount. It needs a token that can make changes, and
+  a drawer that token can already open. Making a new drawer still happens in the Petty app.
+
 ## [1.5.16] — 2026-10-07
 
 ### Fixed

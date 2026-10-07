@@ -1391,7 +1391,8 @@
       "untag_item": "zdejmuje tag z pozycji",
       "rename_tag": "zmienia nazwę tagu wszędzie",
       "remove_tag": "usuwa tag ze wszystkich pozycji",
-      "move_drawer": "przenosi szufladę do miejsca"
+      "move_drawer": "przenosi szufladę do miejsca",
+      "add_item": "dodaje nową pozycję do szuflady"
     },
     "honestTitle": "Warto wiedzieć",
     "honest": [

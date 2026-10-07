@@ -1391,7 +1391,8 @@
       "untag_item": "nimmt einen Tag von einem Posten",
       "rename_tag": "benennt einen Tag bei allen Posten um",
       "remove_tag": "entfernt einen Tag von allen Posten",
-      "move_drawer": "legt eine Schublade an einen Ort"
+      "move_drawer": "legt eine Schublade an einen Ort",
+      "add_item": "legt einen neuen Posten in einer Schublade an"
     },
     "honestTitle": "Gut zu wissen",
     "honest": [

@@ -90,7 +90,7 @@ describe("petty mcp (PETTY-166)", () => {
     const hint = (n: string) => tools.find((t) => t.name === n)!.annotations;
     for (const n of ["list_drawers", "find_item", "history", "list_tags", "list_places"]) expect(hint(n)).toMatchObject({ readOnlyHint: true, openWorldHint: false });
     for (const n of ["adjust", "withdraw", "remove_tag", "rename_tag", "move_drawer", "untag_item"]) expect(hint(n)).toMatchObject({ readOnlyHint: false, destructiveHint: true });
-    for (const n of ["add", "tag_item"]) expect(hint(n)).toMatchObject({ readOnlyHint: false, destructiveHint: false });
+    for (const n of ["add", "add_item", "tag_item"]) expect(hint(n)).toMatchObject({ readOnlyHint: false, destructiveHint: false });
   });
 
   it("lists drawers with balances, labelled as data", async () => {
@@ -112,7 +112,7 @@ describe("petty mcp (PETTY-166)", () => {
   it("a write token gets add, withdraw and adjust, and the answer says the new balance", async () => {
     const client = await host("write");
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
-    expect(names).toEqual(["add", "adjust", "find_item", "history", "list_drawers", "list_places", "list_tags", "move_drawer", "remove_tag", "rename_tag", "tag_item", "untag_item", "withdraw"]);
+    expect(names).toEqual(["add", "add_item", "adjust", "find_item", "history", "list_drawers", "list_places", "list_tags", "move_drawer", "remove_tag", "rename_tag", "tag_item", "untag_item", "withdraw"]);
 
     const added = text(await client.callTool({ name: "add", arguments: { item: "kitchen cash", amount: "10", comment: "from Claude" } }));
     expect(added).toContain("is now 60.00 PLN");
@@ -176,5 +176,21 @@ describe("petty mcp (PETTY-166)", () => {
     const res = await client.callTool({ name: "add", arguments: { item: "kitchen cash", amount: "1" } });
     expect(res.isError).toBe(true);
     expect(text(res).toLowerCase()).toContain("tool");
+  });
+
+  it("PETTY-336: add_item adds money, countable and single items, and refuses a bad one", async () => {
+    const client = await host("write");
+    const money = text(await client.callTool({ name: "add_item", arguments: { drawer: "Kitchen", name: "Travel fund", kind: "money", currency: "eur", start: "120.50", comment: "from Claude" } }));
+    expect(money).toMatch(/^Done\. Added: drawer: "Kitchen" · item: "Travel fund" · amount: 120\.50 EUR · id: /);
+    expect(text(await client.callTool({ name: "history", arguments: { item: "travel fund" } }))).toContain('comment: "from Claude"');
+    expect(text(await client.callTool({ name: "add_item", arguments: { drawer: drawerId, name: "Batteries", kind: "countable", unit: "pcs", start: "12" } }))).toContain('item: "Batteries" · amount: 12 ·');
+    expect(text(await client.callTool({ name: "add_item", arguments: { drawer: "Kitchen", name: "Spare key", kind: "single", note: "blue box" } }))).toContain('item: "Spare key" · amount: single ·');
+    // the same name again, too many decimals, money with no currency: refused, and nothing lands
+    for (const args of [{ name: "travel FUND", kind: "money", currency: "EUR" }, { name: "Coins", kind: "money", currency: "PLN", start: "1.234" }, { name: "Coins", kind: "money" }]) {
+      const res = await client.callTool({ name: "add_item", arguments: { drawer: "Kitchen", ...args } });
+      expect(res.isError).toBe(true);
+      expect(text(res)).toMatch(/^Refused: /);
+    }
+    expect(text(await client.callTool({ name: "list_drawers", arguments: {} }))).not.toContain("Coins");
   });
 });

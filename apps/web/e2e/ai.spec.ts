@@ -26,7 +26,7 @@ test("the AI page explains the setup with this Petty's own address, and is linke
   await expect(page.getByTestId("ai-cli-path")).toContainText('export PATH="$HOME/.local/bin:$PATH"');
   // PETTY-333: and Claude Code adds petty by its full path, for every project
   await expect(page.getByTestId("ai-cli-claude")).toHaveText("claude mcp add -s user petty -- ~/.local/bin/petty mcp");
-  await expect(page.getByTestId("ai-tools").locator("li")).toHaveCount(13);
+  await expect(page.getByTestId("ai-tools").locator("li")).toHaveCount(14);
   await expect(page.getByTestId("ai-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
   expect((await page.request.get("/downloads/petty-mcp.mjs")).status()).toBe(200);
 

@@ -149,6 +149,7 @@ apps that read skills can use it too. Its source is
 | `list_places` | read | the place tree with the drawers in each place |
 | `tag_item`, `untag_item` | write | puts a tag on an item, or takes it off |
 | `rename_tag`, `remove_tag` | write | renames or removes a tag on every item; a rename onto an existing tag merges them |
+| `add_item` | write | adds a new item (money, countable or single) to a drawer the token can write, with an optional starting amount |
 | `move_drawer` | write | puts a drawer in a place, such as "Kitchen › shelf" |
 
 `list_drawers` can be filtered by `tag` or `place`. The tools see the tags and places that

@@ -15,7 +15,7 @@ import { sourceUrlFor } from "../lib/links.js";
 const TOOLS: readonly (readonly [string, "read" | "write"])[] = [
   ["list_drawers", "read"], ["find_item", "read"], ["history", "read"], ["list_tags", "read"], ["list_places", "read"],
   ["add", "write"], ["withdraw", "write"], ["adjust", "write"], ["tag_item", "write"], ["untag_item", "write"],
-  ["rename_tag", "write"], ["remove_tag", "write"], ["move_drawer", "write"],
+  ["rename_tag", "write"], ["remove_tag", "write"], ["add_item", "write"], ["move_drawer", "write"],
 ];
 
 export function AiScreen() {

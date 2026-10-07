@@ -269,4 +269,35 @@ describe("headless client (PETTY-165)", () => {
     expect(history[0]!.verified).toBe(false);
     expect(history.slice(1).every((h) => h.verified)).toBe(true);
   });
+
+  it("PETTY-336: adds an item the way the app does, with its first entry; a read token cannot", async () => {
+    const c = await client("write");
+    // JPY has no minor unit: the exponent is set from the code now and stored on the item (rule 5)
+    const money = await c.addItem(drawerId, { kind: "money", name: "Holiday", currency: "jpy", start: "5000", comment: "start" });
+    expect(money.line).toMatchObject({ name: "Holiday", kind: "money", currency: "JPY", exponent: 0, balance: 5000, unverified: 0 });
+    expect((await c.history(drawerId, money.line.id)).map((h) => [h.op, h.comment, h.verified])).toEqual([["add", "start", true]]);
+    const count = await c.addItem("Kitchen", { kind: "countable", name: "Batteries", unit: " pcs ", start: "3" });
+    expect(count.line).toMatchObject({ kind: "countable", balance: 3, amount: "3" });
+    const single = await c.addItem(drawerId, { kind: "single", name: "Spare key", text: "blue box", start: "7" });
+    expect(single.line).toMatchObject({ kind: "single", amount: "" });
+    expect(await c.history(drawerId, single.line.id)).toEqual([]);
+
+    // what the owner's app opens: the same items, with the unit and the note
+    const { openDocument, fromB64 } = await import("@petty/crypto");
+    const got = (await owner.call("GET", `/drawers/${drawerId}`)).json();
+    const doc = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) }) as { lines: { id: string }[] };
+    expect(doc.lines.find((l) => l.id === money.line.id)).toMatchObject({ kind: "money", currency: "JPY", exponent: 0 });
+    expect(doc.lines.find((l) => l.id === count.line.id)).toMatchObject({ kind: "countable", unit: "pcs" });
+    expect(doc.lines.find((l) => l.id === single.line.id)).toMatchObject({ kind: "single", text: "blue box" });
+
+    // refused, and nothing lands: the same name again, no currency, part of a battery, no name
+    for (const bad of [
+      { kind: "money", name: "HOLIDAY", currency: "EUR" },
+      { kind: "money", name: "Coins" },
+      { kind: "countable", name: "Coins", start: "1.5" },
+      { kind: "single", name: "  " },
+    ] as const) await expect(c.addItem(drawerId, bad)).rejects.toMatchObject({ code: "Refused" });
+    expect((await c.drawers())[0]!.lines.map((l) => l.name)).not.toContain("Coins");
+    await expect((await client("read")).addItem(drawerId, { kind: "single", name: "Note" })).rejects.toMatchObject({ code: "ReadOnly" });
+  });
 });

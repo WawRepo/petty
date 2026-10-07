@@ -139,6 +139,14 @@ describe("household", () => {
     expect(history[0]).toMatchObject({ comment: "from the tool", amount: "1.00 PLN", verified: true });
     expect((await balance(ann)).balance).toBe(4100);
 
+    // PETTY-336: the tool adds a new item, and the other member's app opens it with its first entry
+    const made = await agent.addItem(drawerId, { kind: "countable", name: "Stamps", unit: "pcs", start: "20" });
+    expect(made.line).toMatchObject({ name: "Stamps", balance: 20, unverified: 0 });
+    const got = (await ben.call("GET", `/drawers/${drawerId}`)).json();
+    const doc = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: got.document.key_version, schema_version: got.document.schema_version }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) }) as { lines: { id: string }[] };
+    expect(doc.lines.find((l) => l.id === made.line.id)).toMatchObject({ kind: "countable", name: "Stamps", unit: "pcs" });
+    expect((await ben.call("GET", "/bootstrap")).json().entries.filter((e: { line_id: string }) => e.line_id === made.line.id)).toHaveLength(1);
+
     expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);
     await expect(agent.drawers()).rejects.toMatchObject({ code: "TokenRevoked" });
   });

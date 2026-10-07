@@ -1391,7 +1391,8 @@
       "untag_item": "quita una etiqueta de un elemento",
       "rename_tag": "cambia el nombre de una etiqueta en todos los elementos",
       "remove_tag": "quita una etiqueta de todos los elementos",
-      "move_drawer": "pone un cajón en un lugar"
+      "move_drawer": "pone un cajón en un lugar",
+      "add_item": "añade un elemento nuevo a un cajón"
     },
     "honestTitle": "Conviene saber",
     "honest": [

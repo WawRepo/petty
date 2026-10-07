@@ -19,7 +19,7 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { applyOps, assertDocumentShape, fold, formatAmount, foldText, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, seedExponent, tagsOf, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
 import { EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
@@ -560,6 +560,45 @@ export class AgentClient {
     }
     if (!changed) throw new TokenError("NotFound", `no item carries the tag "${from}"`);
     return changed;
+  }
+
+  /**
+   * Adds a new item to a drawer (PETTY-336), the way the app's "Add item" does: money in one currency,
+   * whose exponent is set now from the currency and stored on the item, never looked up again (rule 5);
+   * a countable thing with an optional unit; or a single item with a note. A starting amount becomes
+   * the item's first entry, an "add" signed by this token like any other. Only a drawer this token can
+   * already open and write: a new drawer is a different matter (its key would be new, PETTY-337).
+   */
+  async addItem(drawerRef: string, item: { kind: Line["kind"]; name: string; currency?: string; unit?: string; text?: string; start?: string; comment?: string }): Promise<{ drawer: AgentDrawer; line: AgentLine }> {
+    if (this.identity.role !== "write" || !this.signing) throw new TokenError("ReadOnly", "this token may only read");
+    const drawer = await this.findDrawer(drawerRef);
+    if (drawer.role === "read") throw new TokenError("ReadOnly", "you may only read this drawer");
+    const name = item.name.trim();
+    if (!name) throw new TokenError("Refused", "an item needs a name");
+    if (drawer.lines.some((l) => foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called "${name}"`);
+    const id = crypto.randomUUID();
+    const start = item.kind === "single" ? "" : (item.start ?? "").trim();
+    let line: Line;
+    try {
+      if (item.kind === "money") {
+        const currency = assertCurrencyCode(item.currency ?? "");
+        line = { id, kind: "money", name, currency, exponent: seedExponent(currency) };
+      } else if (item.kind === "countable") {
+        line = { id, kind: "countable", name, unit: (item.unit ?? "").trim() };
+      } else {
+        line = { id, kind: "single", name, text: (item.text ?? "").trim() };
+      }
+      // checked before anything is written, so a bad amount leaves no item behind
+      if (start) parseAmount(start, line.kind === "money" ? line.exponent : 0);
+    } catch (e) {
+      throw new TokenError("Refused", e instanceof LedgerError ? `not a valid item: ${e.code}` : "not a valid item");
+    }
+    await this.mutate(drawer.id, [{ type: "add_line", line }]);
+    if (start && parseAmount(start, line.kind === "money" ? line.exponent : 0) > 0) await this.append(drawer.id, id, "add", start, item.comment ?? "");
+    const after = (await this.drawers()).find((d) => d.id === drawer.id);
+    const made = after?.lines.find((l) => l.id === id);
+    if (!after || !made) throw new TokenError("Conflict", "the item was added but could not be read back; list the drawer again");
+    return { drawer: after, line: made };
   }
 
   /** Moves a drawer to a place path such as ["Kitchen", "shelf"]; an empty path takes it out of every place. */

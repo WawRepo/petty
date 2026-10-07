@@ -1,6 +1,6 @@
 ---
 name: petty
-description: Work with Petty, the user's end-to-end encrypted record of the money, things and notes kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, or wants to tag items or move drawers between places.
+description: Work with Petty, the user's end-to-end encrypted record of the money, things and notes kept at home, through its MCP tools (list_drawers, find_item, history, add, withdraw, adjust, add_item, tags, places) or the `petty` command line. Use it when the user asks how much cash or how many of something they have, where something is kept, wants to record money put in or taken out, has counted a drawer or tin, wants a monthly cash check, wants to add a new item to a drawer, or wants to tag items or move drawers between places.
 license: AGPL-3.0-only (LICENSE has the full terms)
 compatibility: Needs Petty's MCP server (petty.mcpb or petty-mcp.mjs) or the petty command line (petty.mjs), signed in to the user's Petty with an access token.
 metadata:
@@ -78,6 +78,16 @@ that computer and hands you what you ask for. Petty's server never sees it.
   adjust row, the amount is what was counted.
 - To explain a balance, read the history and name the entries that made it.
 
+## New items
+
+- `add_item` puts a new item into a drawer the token can already write. Kind `money` needs a
+  currency code such as `EUR`, `countable` may take a unit, `single` may take a note. A starting
+  amount is optional and becomes the item's first entry.
+- Ask the user before adding. Do not invent items they did not name. A drawer cannot hold two items
+  with the same name.
+- No tool makes a new drawer. Tell the user to add it in the Petty app. The token sees it once the
+  app has opened after that.
+
 ## Tags and places
 
 - Run `list_tags` before `tag_item` and reuse an existing spelling.
@@ -131,5 +141,6 @@ than one match.
 | `tag_item` | `petty tag <item> <tag> --json` |
 | `untag_item` | `petty untag <item> <tag> --json` |
 | `move_drawer` | `petty move <drawer> <place> --json` |
+| `add_item` | none: use the MCP tool, or the Petty app |
 | `rename_tag` | none: use the MCP tool, or the Petty app |
 | `remove_tag` | none: use the MCP tool, or the Petty app |
