@@ -229,23 +229,29 @@ test("the AI section follows the use cases: MCP named, the chat names no app, th
   await expect(page.getByRole("heading", { name: "Set it up in your app" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Set it up in your app" }).getByRole("button")).toHaveCount(6);
 
-  // Claude Desktop first: the add-on, no command
+  const origin = new URL(page.url()).origin;
+  // Claude Desktop first: the add-on, and the address to paste into it
   await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("ai-mcpb")).toHaveAttribute("href", "/downloads/petty.mcpb");
-  await expect(page.getByTestId("ai-command")).toHaveCount(0);
+  await expect(page.getByTestId("ai-command")).toHaveText(`${origin}/api`);
   // each app its own line; one button pressed at a time
   await page.getByTestId("ai-app-code").click();
   await expect(page.getByTestId("ai-app-code")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("ai-app-desktop")).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByTestId("ai-chat-app")).toHaveText("Your AI app");
   await expect(page.getByTestId("ai-setup-app")).toHaveText("Claude Code");
-  await expect(page.getByTestId("ai-command")).toHaveText("claude mcp add petty -- petty mcp");
+  // PETTY-333: all three steps — install petty, sign in to this Petty, add it by its full path for every project
+  await expect(page.getByTestId("ai-command")).toHaveText([
+    `mkdir -p ~/.local/bin && curl -fsSL ${origin}/downloads/petty.mjs -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty`,
+    `~/.local/bin/petty auth login --host ${origin}`,
+    "claude mcp add -s user petty -- ~/.local/bin/petty mcp",
+  ].join("\n"));
+  await expect(page.getByTestId("ai-windows")).toBeVisible();
   await expect(page.getByTestId("ai-mcpb")).toHaveCount(0);
-  const origin = new URL(page.url()).origin;
   for (const [key, name] of [["cursor", "Cursor"], ["vscode", "VS Code"], ["windsurf", "Windsurf"]] as const) {
     await page.getByTestId(`ai-app-${key}`).click();
-    await expect(page.getByTestId("ai-setup")).toContainText(`into ${name}:`);
-    await expect(page.getByTestId("ai-command")).toHaveText(`node ~/.petty/petty-mcp.mjs --print-config ${origin}/api`);
+    await expect(page.getByTestId("ai-setup")).toContainText(`into ${name}, with your access token`);
+    await expect(page.getByTestId("ai-command")).toHaveText(`mkdir -p ~/.petty && curl -fsSL ${origin}/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs\nnode ~/.petty/petty-mcp.mjs --print-config ${origin}/api`);
   }
   await page.getByTestId("ai-app-any").press("Enter"); // a keyboard press works like a click
   await expect(page.getByTestId("ai-app-any")).toHaveAttribute("aria-pressed", "true");

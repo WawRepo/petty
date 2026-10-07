@@ -274,6 +274,10 @@
     "about": {
       "title": "About Petty",
       "body": "Petty is free software under the GNU Affero General Public License v3 (AGPL-3.0). You may use, study, change and share it. If you run a changed version for other people, offer them its source code."
+    },
+    "ai": {
+      "title": "Use Petty in your AI app",
+      "hint": "Claude, Cursor, VS Code or any app that runs local MCP servers can read and update your drawers. A small program on your computer opens them there; this server still sees only locked boxes. Pick your app:"
     }
   },
   "keypad": {
@@ -818,10 +822,11 @@
       },
       "setupHeading": "Set it up in your app",
       "setup": {
-        "desktop": "Download the add-on, double-click it, then paste your Petty address and an access token from Settings.",
-        "code": "One command, once the petty command line is signed in:",
-        "editor": "Save petty-mcp.mjs in ~/.petty, then paste the settings block this command prints into {app}:",
-        "any": "Any app that runs local MCP servers can use Petty. It is listed in the official MCP Registry as:"
+        "desktop": "Download the add-on and double-click it. Then paste this address, and an access token from Settings:",
+        "code": "In a terminal (Node 20 or newer): install the petty command line, sign in to this Petty (a page of it opens to allow that), then add it to Claude Code for every project:",
+        "editor": "In a terminal (Node 20 or newer): save petty-mcp.mjs, then paste the settings block the second line prints into {app}, with your access token where it says petty_pat_…:",
+        "any": "Any app that runs local MCP servers can use Petty. It is listed in the official MCP Registry as:",
+        "windows": "On Windows, Use Petty with AI below has the same steps for PowerShell."
       },
       "badgesLabel": "In short",
       "badges": {
@@ -1358,6 +1363,7 @@
     ],
     "cliDownload": "Download petty.mjs",
     "cliPath": "If the terminal says “command not found: petty”, `~/.local/bin` is not on your PATH. Add `export PATH=\"$HOME/.local/bin:$PATH\"` to `~/.zshrc` (Mac) or `~/.bashrc` (Linux), then open a new terminal.",
+    "cliClaude": "Then, for Claude Code, add it for every project:",
     "askTitle": "3. Ask",
     "ask": [
       "What is in my kitchen drawer?",

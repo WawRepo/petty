@@ -274,6 +274,10 @@
     "about": {
       "title": "À propos de Petty",
       "body": "Petty est un logiciel libre sous licence GNU Affero General Public License v3 (AGPL-3.0). Vous pouvez l’utiliser, l’étudier, le modifier et le partager. Si vous faites fonctionner une version modifiée pour d’autres personnes, proposez-leur son code source."
+    },
+    "ai": {
+      "title": "Petty dans votre application d’IA",
+      "hint": "Claude, Cursor, VS Code ou toute application qui lance des serveurs MCP locaux peuvent lire et modifier vos tiroirs. Un petit programme sur votre ordinateur les ouvre ; ce serveur ne voit toujours que des boîtes verrouillées. Choisissez votre application :"
     }
   },
   "keypad": {
@@ -818,10 +822,11 @@
       },
       "setupHeading": "Le configurer dans votre application",
       "setup": {
-        "desktop": "Téléchargez l’extension, double-cliquez dessus, puis collez l’adresse de votre Petty et un jeton d’accès créé dans les Réglages.",
-        "code": "Une seule commande, une fois la ligne de commande petty connectée :",
-        "editor": "Enregistrez petty-mcp.mjs dans ~/.petty, puis collez dans {app} le bloc de réglages qu’affiche cette commande :",
-        "any": "Toute application qui lance des serveurs MCP locaux peut utiliser Petty. Dans le registre MCP officiel, son nom est :"
+        "desktop": "Téléchargez l’extension et double-cliquez dessus. Collez ensuite cette adresse et un jeton d’accès créé dans les Réglages :",
+        "code": "Dans un terminal (Node 20 ou plus récent) : installez la ligne de commande petty, connectez-vous à ce Petty (une de ses pages s’ouvre pour l’autoriser), puis ajoutez-le à Claude Code pour tous les projets :",
+        "editor": "Dans un terminal (Node 20 ou plus récent) : enregistrez petty-mcp.mjs, puis collez dans {app} le bloc de réglages qu’affiche la deuxième ligne, avec votre jeton d’accès à la place de petty_pat_… :",
+        "any": "Toute application qui lance des serveurs MCP locaux peut utiliser Petty. Dans le registre MCP officiel, son nom est :",
+        "windows": "Sous Windows, la page Utiliser Petty avec l’IA, plus bas, donne les mêmes étapes pour PowerShell."
       },
       "badgesLabel": "En bref",
       "badges": {
@@ -1358,6 +1363,7 @@
     ],
     "cliDownload": "Télécharger petty.mjs",
     "cliPath": "Si le terminal affiche « command not found: petty », `~/.local/bin` n’est pas dans votre PATH. Ajoutez `export PATH=\"$HOME/.local/bin:$PATH\"` à `~/.zshrc` (Mac) ou `~/.bashrc` (Linux), puis ouvrez un nouveau terminal.",
+    "cliClaude": "Ensuite, pour Claude Code, ajoutez-le pour tous les projets :",
     "askTitle": "3. Demander",
     "ask": [
       "Qu’y a-t-il dans mon tiroir de la cuisine ?",

@@ -112,8 +112,13 @@ For an app that cannot run commands (Claude Desktop), `petty mcp` runs the same 
 
 ```sh
 petty mcp --print-config        # the block for the app's settings; no token in it
-claude mcp add petty -- petty mcp   # Claude Code, if you prefer its tools to the commands
+claude mcp add -s user petty -- ~/.local/bin/petty mcp   # Claude Code, if you prefer its tools to the commands
 ```
+
+Give Claude Code the full path, and sign in first (`petty auth login --host …`). If Claude Code's
+`/mcp` says "Failed to reconnect to petty: ENOENT", it could not find the program: `~/.local/bin` is
+often not on the PATH it starts programs with. `-s user` adds it for every project, not only the folder
+the command was typed in. To replace an earlier entry: `claude mcp remove petty`, then add it again.
 
 ## What is kept, and where
 

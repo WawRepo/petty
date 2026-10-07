@@ -24,6 +24,8 @@ test("the AI page explains the setup with this Petty's own address, and is linke
   await expect(page.getByRole("button", { name: "Copy the settings block" })).toHaveCount(0);
   await expect(page.getByTestId("ai-cli-unix")).toContainText(`~/.local/bin/petty auth login --host ${origin}`);
   await expect(page.getByTestId("ai-cli-path")).toContainText('export PATH="$HOME/.local/bin:$PATH"');
+  // PETTY-333: and Claude Code adds petty by its full path, for every project
+  await expect(page.getByTestId("ai-cli-claude")).toHaveText("claude mcp add -s user petty -- ~/.local/bin/petty mcp");
   await expect(page.getByTestId("ai-tools").locator("li")).toHaveCount(13);
   await expect(page.getByTestId("ai-source")).toHaveAttribute("href", "https://github.com/WawRepo/petty");
   expect((await page.request.get("/downloads/petty-mcp.mjs")).status()).toBe(200);
@@ -35,4 +37,22 @@ test("the AI page explains the setup with this Petty's own address, and is linke
   await page.getByTestId("tokens-ai-link").click();
   await expect(page).toHaveURL(/\/ai$/);
   await expect(page.getByRole("heading", { name: "Use Petty with AI" })).toBeVisible();
+});
+
+test("Settings shows a signed-in person the same AI setup, with this Petty's address (PETTY-333)", async ({ page, baseURL }) => {
+  const user = await signupViaApi("aiset");
+  await loginAndUnlock(page, user);
+  await openSettings(page);
+  const origin = new URL(baseURL!).origin;
+  const section = page.getByTestId("ai-section");
+  await expect(section.getByRole("heading", { name: "Use Petty in your AI app" })).toBeVisible();
+  await expect(section.getByRole("group", { name: "Use Petty in your AI app" }).getByRole("button")).toHaveCount(6);
+  await expect(section.getByTestId("ai-command")).toHaveText(`${origin}/api`);
+  await expect(section.getByTestId("ai-mcpb")).toHaveAttribute("href", "/downloads/petty.mcpb");
+  await section.getByTestId("ai-app-code").click();
+  await expect(section.getByTestId("ai-command")).toContainText(`~/.local/bin/petty auth login --host ${origin}`);
+  await expect(section.getByTestId("ai-command")).toContainText("claude mcp add -s user petty -- ~/.local/bin/petty mcp");
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await section.getByTestId("ai-copy").click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(`curl -fsSL ${origin}/downloads/petty.mjs`);
 });

@@ -96,7 +96,7 @@ mode 600): then the block needs no secret at all.
 For Claude Code, skip the block — one command:
 
 ```
-claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node ~/.petty/petty-mcp.mjs
+claude mcp add -s user petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node ~/.petty/petty-mcp.mjs
 ```
 
 On macOS with a Petty on your home network, use a signed Node (see Troubleshooting). To update, run

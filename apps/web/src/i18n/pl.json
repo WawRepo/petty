@@ -274,6 +274,10 @@
     "about": {
       "title": "O Petty",
       "body": "Petty to wolne oprogramowanie na licencji GNU Affero General Public License v3 (AGPL-3.0). Możesz go używać, poznawać, zmieniać i udostępniać. Jeśli uruchamiasz zmienioną wersję dla innych osób, udostępnij im jej kod źródłowy."
+    },
+    "ai": {
+      "title": "Petty w Twojej aplikacji AI",
+      "hint": "Claude, Cursor, VS Code i każda aplikacja, która uruchamia lokalne serwery MCP, mogą czytać i zmieniać Twoje szuflady. Otwiera je mały program na Twoim komputerze; ten serwer nadal widzi tylko zamknięte skrzynki. Wybierz aplikację:"
     }
   },
   "keypad": {
@@ -818,10 +822,11 @@
       },
       "setupHeading": "Ustaw to w swojej aplikacji",
       "setup": {
-        "desktop": "Pobierz dodatek, kliknij go dwukrotnie, a potem wklej adres swojego Petty i token dostępu z Ustawień.",
-        "code": "Jedno polecenie, gdy wiersz poleceń petty jest już zalogowany:",
-        "editor": "Zapisz petty-mcp.mjs w ~/.petty, a potem wklej w ustawieniach aplikacji {app} blok, który wypisze to polecenie:",
-        "any": "Petty działa w każdej aplikacji, która uruchamia lokalne serwery MCP. W oficjalnym rejestrze MCP nazywa się:"
+        "desktop": "Pobierz dodatek i kliknij go dwukrotnie. Potem wklej ten adres i token dostępu z Ustawień:",
+        "code": "W terminalu (Node 20 lub nowszy): zainstaluj wiersz poleceń petty, zaloguj się do tego Petty (otworzy się jego strona, na której to zatwierdzisz), a potem dodaj go do Claude Code we wszystkich projektach:",
+        "editor": "W terminalu (Node 20 lub nowszy): zapisz petty-mcp.mjs, a potem wklej w ustawieniach aplikacji {app} blok, który wypisze druga linia, z tokenem dostępu w miejscu petty_pat_…:",
+        "any": "Petty działa w każdej aplikacji, która uruchamia lokalne serwery MCP. W oficjalnym rejestrze MCP nazywa się:",
+        "windows": "Na Windows te same kroki dla PowerShella są na stronie Petty z AI poniżej."
       },
       "badgesLabel": "W skrócie",
       "badges": {
@@ -1358,6 +1363,7 @@
     ],
     "cliDownload": "Pobierz petty.mjs",
     "cliPath": "Terminal pisze „command not found: petty”? Folderu `~/.local/bin` nie ma w PATH. Dopisz `export PATH=\"$HOME/.local/bin:$PATH\"` do `~/.zshrc` (Mac) albo `~/.bashrc` (Linux) i otwórz nowy terminal.",
+    "cliClaude": "Potem, dla Claude Code, dodaj go we wszystkich projektach:",
     "askTitle": "3. Zapytaj",
     "ask": [
       "Co jest w szufladzie w kuchni?",

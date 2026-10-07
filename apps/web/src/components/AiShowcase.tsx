@@ -1,40 +1,29 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Lock, MessageCircle } from "lucide-react";
 import { formatAmount } from "@petty/ledger";
 import { currentLocale } from "../i18n/index.js";
 import { CodeText } from "./CodeText.js";
+import { AiSetup } from "./AiSetup.js";
 
 /**
  * "Works with your AI app" on the landing page, after "One idea, many uses" (PETTY-316, design B of
  * PETTY-315; order and layout D of PETTY-319). Petty's MCP add-on works with any app that runs local MCP
  * servers, so the section names MCP, then shows a short example conversation that names no app (a
  * question, an answer, and a change the assistant asks about before making it), then "Set it up in your
- * app": a row of apps whose buttons switch a one-line setup. The setup lines are the real ones
- * (docs/agent.md, docs/cli.md) with this Petty's own address. Apps that only take remote connectors are
- * left out on purpose: those would need the server to decrypt (docs/decisions.md).
+ * app" (AiSetup, shared with Settings since PETTY-333): a row of apps whose buttons switch the setup
+ * lines. The lines are the real ones (docs/agent.md, docs/cli.md) with this Petty's own address. Apps
+ * that only take remote connectors are left out on purpose: those would need the server to decrypt
+ * (docs/decisions.md).
  *
  * The conversation is an illustration, not a capture: its words come from the dictionaries, its amounts
  * are formatted for the visitor's language and use EUR, like the screenshots, never a local currency.
  */
-const APPS = ["desktop", "code", "cursor", "vscode", "windsurf", "any"] as const;
-type App = (typeof APPS)[number];
-const EDITORS: readonly App[] = ["cursor", "vscode", "windsurf"];
-
 export function AiShowcase() {
   const { t } = useTranslation();
   const nav = useNavigate();
-  const [app, setApp] = useState<App>("desktop");
   const locale = currentLocale();
   const eur = (minor: number) => `${formatAmount(minor, 2, locale)} EUR`;
-  const name = t(`landing.ai.apps.${app}`);
-  const command: string | null =
-    app === "code" ? "claude mcp add petty -- petty mcp"
-    : EDITORS.includes(app) ? `node ~/.petty/petty-mcp.mjs --print-config ${location.origin}/api`
-    : app === "any" ? "io.github.WawRepo/petty"
-    : null;
-  const setup = t(EDITORS.includes(app) ? "landing.ai.setup.editor" : `landing.ai.setup.${app}`, { app: name });
   return (
     <section className="ai-show" id="ai" data-testid="ai-show" aria-labelledby="ai-show-title">
       <div className="ai-show-head">
@@ -60,19 +49,7 @@ export function AiShowcase() {
       </figure>
 
       <h3 className="ai-setup-title m0" id="ai-setup-title">{t("landing.ai.setupHeading")}</h3>
-      <div className="ai-apps" role="group" aria-labelledby="ai-setup-title">
-        {APPS.map((a) => (
-          <button type="button" key={a} className="ai-app" aria-pressed={a === app} onClick={() => setApp(a)} data-testid={`ai-app-${a}`}>
-            {t(`landing.ai.apps.${a}`)}
-          </button>
-        ))}
-      </div>
-      <div className="ai-setup" data-testid="ai-setup" aria-live="polite">
-        <p className="m0 fw700" data-testid="ai-setup-app">{name}</p>
-        <p className="m0">{setup}</p>
-        {command ? <code className="ai-command" data-testid="ai-command">{command}</code> : null}
-        {app === "desktop" ? <p className="m0"><a className="btn btn-secondary" href="/downloads/petty.mcpb" download="petty.mcpb" data-testid="ai-mcpb">{t("tokens.addonDownload")}</a></p> : null}
-      </div>
+      <AiSetup titleId="ai-setup-title" />
 
       <p className="m0"><button type="button" className="btn btn-primary" onClick={() => nav("/ai")} data-testid="ai-show-more">{t("ai.link")}</button></p>
       <ul className="ai-badges" aria-label={t("landing.ai.badgesLabel")}>

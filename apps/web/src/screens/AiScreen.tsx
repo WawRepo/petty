@@ -29,11 +29,12 @@ export function AiScreen() {
   const unix = `mkdir -p ~/.petty && curl -fsSL ${file} -o ~/.petty/petty-mcp.mjs\nnode ~/.petty/petty-mcp.mjs --print-config ${api}`;
   const windows = `New-Item -ItemType Directory -Force "$HOME\\.petty" | Out-Null; Invoke-WebRequest ${file} -OutFile "$HOME\\.petty\\petty-mcp.mjs"\nnode "$HOME\\.petty\\petty-mcp.mjs" --print-config ${api}`;
   const config = JSON.stringify({ mcpServers: { petty: { command: "/usr/local/bin/node", args: ["/Users/you/.petty/petty-mcp.mjs"], env: { PETTY_TOKEN: "petty_pat_…", PETTY_API_URL: api } } } }, null, 2);
-  const claudeCode = `claude mcp add petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=${api} -- node ~/.petty/petty-mcp.mjs`;
+  const claudeCode = `claude mcp add -s user petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=${api} -- node ~/.petty/petty-mcp.mjs`;
   // PETTY-274: the command line signs in through this Petty's /device page, so no token is pasted anywhere
   const cli = `${location.origin}/downloads/petty.mjs`;
   // PETTY-279: ~/.local/bin is not on macOS's PATH by default, so the first run names the file itself
   const cliUnix = `mkdir -p ~/.local/bin && curl -fsSL ${cli} -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty\n~/.local/bin/petty auth login --host ${location.origin}`;
+  const cliClaude = "claude mcp add -s user petty -- ~/.local/bin/petty mcp";
   const cliWindows = `New-Item -ItemType Directory -Force "$HOME\\.petty" | Out-Null; Invoke-WebRequest ${cli} -OutFile "$HOME\\.petty\\petty.mjs"\nnode "$HOME\\.petty\\petty.mjs" auth login --host ${location.origin}`;
   const list = (key: string) => (t(key, { returnObjects: true }) as string[]).map((s, i) => <li key={i} className="mb6"><CodeText text={s} /></li>);
   const copy = (text: string) => { void navigator.clipboard?.writeText(text).then(() => toast(t("app.copied"))); };
@@ -81,6 +82,10 @@ export function AiScreen() {
           <pre className="codeblock" data-testid="ai-cli-unix">{cliUnix}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliUnix)}>{t("app.copy")}</Button></p>
           <p className="hint mb12" data-testid="ai-cli-path"><CodeText text={t("ai.cliPath")} /></p>
+          {/* PETTY-333: Claude Code starts petty by its full path, for every project */}
+          <p className="hint mb4">{t("ai.cliClaude")}</p>
+          <pre className="codeblock" data-testid="ai-cli-claude">{cliClaude}</pre>
+          <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliClaude)}>{t("app.copy")}</Button></p>
           <p className="hint mb4">{t("ai.windows")}</p>
           <pre className="codeblock" data-testid="ai-cli-windows">{cliWindows}</pre>
           <p className="mt4 mb12"><Button variant="secondary" onClick={() => copy(cliWindows)}>{t("app.copy")}</Button></p>

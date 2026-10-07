@@ -274,6 +274,10 @@
     "about": {
       "title": "Acerca de Petty",
       "body": "Petty es software libre bajo la GNU Affero General Public License v3 (AGPL-3.0). Puedes usarlo, estudiarlo, cambiarlo y compartirlo. Si ejecutas una versión modificada para otras personas, ofréceles su código fuente."
+    },
+    "ai": {
+      "title": "Petty en tu aplicación de IA",
+      "hint": "Claude, Cursor, VS Code o cualquier aplicación que ejecute servidores MCP locales pueden leer y cambiar tus cajones. Un pequeño programa en tu ordenador los abre allí; este servidor sigue viendo solo cajas cerradas. Elige tu aplicación:"
     }
   },
   "keypad": {
@@ -818,10 +822,11 @@
       },
       "setupHeading": "Configúralo en tu aplicación",
       "setup": {
-        "desktop": "Descarga el complemento, haz doble clic en él y pega la dirección de tu Petty y un token de acceso de Ajustes.",
-        "code": "Un solo comando, cuando la línea de comandos petty ya tiene la sesión iniciada:",
-        "editor": "Guarda petty-mcp.mjs en ~/.petty y pega en {app} el bloque de configuración que imprime este comando:",
-        "any": "Cualquier aplicación que ejecute servidores MCP locales puede usar Petty. En el registro oficial de MCP aparece como:"
+        "desktop": "Descarga el complemento y haz doble clic en él. Después pega esta dirección y un token de acceso de Ajustes:",
+        "code": "En un terminal (Node 20 o posterior): instala la línea de comandos petty, inicia sesión en este Petty (se abre una página suya para permitirlo) y añádelo a Claude Code para todos los proyectos:",
+        "editor": "En un terminal (Node 20 o posterior): guarda petty-mcp.mjs y pega en {app} el bloque de configuración que imprime la segunda línea, con tu token de acceso donde dice petty_pat_…:",
+        "any": "Cualquier aplicación que ejecute servidores MCP locales puede usar Petty. En el registro oficial de MCP aparece como:",
+        "windows": "En Windows, Usar Petty con IA, más abajo, tiene los mismos pasos para PowerShell."
       },
       "badgesLabel": "En resumen",
       "badges": {
@@ -1358,6 +1363,7 @@
     ],
     "cliDownload": "Descargar petty.mjs",
     "cliPath": "Si el terminal dice «command not found: petty», `~/.local/bin` no está en tu PATH. Añade `export PATH=\"$HOME/.local/bin:$PATH\"` a `~/.zshrc` (Mac) o `~/.bashrc` (Linux) y abre un terminal nuevo.",
+    "cliClaude": "Después, para Claude Code, añádelo para todos los proyectos:",
     "askTitle": "3. Pregunta",
     "ask": [
       "¿Qué hay en el cajón de la cocina?",

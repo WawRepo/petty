@@ -274,6 +274,10 @@
     "about": {
       "title": "Über Petty",
       "body": "Petty ist freie Software unter der GNU Affero General Public License v3 (AGPL-3.0). Du darfst es nutzen, untersuchen, ändern und weitergeben. Wenn du eine geänderte Version für andere betreibst, biete ihnen ihren Quellcode an."
+    },
+    "ai": {
+      "title": "Petty in deiner KI-App",
+      "hint": "Claude, Cursor, VS Code und jede App, die lokale MCP-Server startet, können deine Schubladen lesen und ändern. Ein kleines Programm auf deinem Computer öffnet sie dort; dieser Server sieht weiterhin nur verschlossene Kisten. Wähle deine App:"
     }
   },
   "keypad": {
@@ -818,10 +822,11 @@
       },
       "setupHeading": "So richtest du es in deiner App ein",
       "setup": {
-        "desktop": "Lade die Erweiterung herunter, doppelklicke sie und füge dann deine Petty-Adresse und ein Zugriffstoken aus den Einstellungen ein.",
-        "code": "Ein Befehl, sobald die Kommandozeile petty angemeldet ist:",
-        "editor": "Speichere petty-mcp.mjs in ~/.petty und füge dann den Einstellungsblock, den dieser Befehl ausgibt, in {app} ein:",
-        "any": "Jede App, die lokale MCP-Server startet, kann Petty nutzen. In der offiziellen MCP-Registry heißt es:"
+        "desktop": "Lade die Erweiterung herunter und doppelklicke sie. Füge dann diese Adresse und ein Zugriffstoken aus den Einstellungen ein:",
+        "code": "Im Terminal (Node 20 oder neuer): Installiere die Kommandozeile petty, melde dich bei diesem Petty an (eine Seite davon öffnet sich zum Erlauben) und füge es dann für alle Projekte zu Claude Code hinzu:",
+        "editor": "Im Terminal (Node 20 oder neuer): Speichere petty-mcp.mjs und füge dann den Einstellungsblock, den die zweite Zeile ausgibt, in {app} ein – mit deinem Zugriffstoken dort, wo petty_pat_… steht:",
+        "any": "Jede App, die lokale MCP-Server startet, kann Petty nutzen. In der offiziellen MCP-Registry heißt es:",
+        "windows": "Unter Windows stehen dieselben Schritte für PowerShell unten auf „Petty mit KI nutzen“."
       },
       "badgesLabel": "Kurz gesagt",
       "badges": {
@@ -1358,6 +1363,7 @@
     ],
     "cliDownload": "petty.mjs herunterladen",
     "cliPath": "Meldet das Terminal „command not found: petty“, ist `~/.local/bin` nicht im PATH. Füge `export PATH=\"$HOME/.local/bin:$PATH\"` zu `~/.zshrc` (Mac) oder `~/.bashrc` (Linux) hinzu und öffne ein neues Terminal.",
+    "cliClaude": "Dann, für Claude Code, für alle Projekte hinzufügen:",
     "askTitle": "3. Fragen",
     "ask": [
       "Was ist in meiner Küchenschublade?",

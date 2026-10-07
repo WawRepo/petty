@@ -12,6 +12,7 @@ import { lockNow, mySafetyNumber, signOut, useAuth } from "../lib/session.js";
 import { api } from "../lib/api.js";
 import { BackupSection } from "../components/BackupSection.js";
 import { AccessTokens } from "../components/AccessTokens.js";
+import { AiSetup } from "../components/AiSetup.js";
 import { Sheet } from "../components/Sheet.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { SwitchRow } from "../components/SwitchRow.js";
@@ -190,6 +191,12 @@ export function SettingsScreen() {
           <p className="hint my6">{t("drawer.tagsManageHint")}</p>
           <Button variant="secondary" onClick={() => setTagsOpen(true)} data-testid="settings-manage-tags">{t("drawer.tagsManage")}</Button>
           <TagManager open={tagsOpen} onClose={() => setTagsOpen(false)} />
+        </section>
+        {/* PETTY-333: the AI setup for someone signed in too, not only on the landing page */}
+        <section className="card" data-testid="ai-section" aria-labelledby="settings-ai-title">
+          <h2 className="h-card" id="settings-ai-title">{t("settings.ai.title")}</h2>
+          <p className="hint my6">{t("settings.ai.hint")}</p>
+          <AiSetup titleId="settings-ai-title" />
         </section>
         {me && auth.status === "unlocked" ? <AccessTokens me={me} /> : null}
         <BackupSection />
