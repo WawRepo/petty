@@ -14,7 +14,7 @@
     "@petty/crypto": "workspace:*",
     "@petty/ledger": "workspace:*",
     "@petty/protocol": "workspace:*",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.4",
     "fflate": "0.8.3",
     "vitest": "^5.0.3"
   }
