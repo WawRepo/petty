@@ -74,11 +74,11 @@
         "linkMismatch": "Dieser Einladungslink gilt für eine andere E-Mail-Adresse."
       },
       "explainer": {
-        "title": "So funktioniert der Tresor – in einer Minute gelesen",
         "password": "Mit dem Anmeldepasswort meldest du dich an. Wenn du es vergisst, kannst du es per E-Mail zurücksetzen.",
         "passphrase": "Die Tresor-Passphrase öffnet deinen verschlüsselten Tresor. Petty sieht sie nie, und niemand kann sie zurücksetzen. Lass sie von deinem Passwortmanager speichern, wenn er fragt.",
         "recovery": "Danach bekommst du einen Wiederherstellungscode. Schreib ihn auf Papier. Er ist der einzige andere Weg hinein, wenn du alle Passkeys verlierst oder die Passphrase vergisst.",
-        "passkey": "Ein Passkey auf diesem Gerät (Face ID, Touch ID, Windows Hello) öffnet deine Schubladen. Petty sieht ihn nie. Auf einem neuen Gerät kann dein Handy einmal zustimmen, oder du fügst dort einen Passkey hinzu."
+        "passkey": "Ein Passkey auf diesem Gerät (Face ID, Touch ID, Windows Hello) öffnet deine Schubladen. Petty sieht ihn nie. Auf einem neuen Gerät kann dein Handy einmal zustimmen, oder du fügst dort einen Passkey hinzu.",
+        "why": "Warum ein zweites Schloss?"
       },
       "passkeyHint": "Dein Gerät fragt nach Face ID, Touch ID, Windows Hello oder einer PIN. Du musst dir nichts merken.",
       "usePassphrase": "Stattdessen eine Passphrase verwenden",
@@ -89,7 +89,7 @@
     },
     "recovery": {
       "title": "Dein Wiederherstellungscode",
-      "body": "Schreib diesen Code auf und bewahre ihn sicher auf. Er ist der einzige Weg zurück in deinen Tresor, wenn du deine Passkeys verlierst oder die Passphrase vergisst. Er wird nicht noch einmal angezeigt.",
+      "body": "Speichere diesen Code in deinem Passwortmanager oder schreib ihn auf Papier und bewahre ihn sicher auf. Er ist der einzige Weg zurück in deinen Tresor, wenn du deine Passkeys verlierst oder die Passphrase vergisst. Er wird nicht noch einmal angezeigt.",
       "confirmLabel": "Gib den Code ein, um zu bestätigen, dass du ihn gesichert hast",
       "mismatch": "Das stimmt nicht überein. Prüfe jede Gruppe.",
       "done": "Ich habe ihn gesichert"
@@ -140,14 +140,18 @@
       "explainer": {
         "identity": "Du bist angemeldet. Der Tresor ist ein zweites, eigenes Schloss: Er öffnet deine Schubladen auf diesem Gerät. Der Server bewahrt nur eine verschlossene Kopie davon auf."
       },
-      "passkeyAccount": "Petty-Tresor"
+      "passkeyAccount": "Petty-Tresor",
+      "lead": {
+        "passkey": "Noch ein Schritt: Dieses Gerät erzeugt einen Schlüssel, den nur du hast. Wähle „Tresor mit Passkey erstellen“ und bestätige dann mit Face ID, deinem Fingerabdruck oder deiner PIN.",
+        "passphrase": "Noch ein Schritt: Wähle eine Tresor-Passphrase, die nur du kennst. Sie öffnet deine Schubladen, und Petty sieht sie nie."
+      }
     }
   },
   "home": {
     "signOutTitle": "Abmelden?",
     "signOutBody": "Um wieder hineinzukommen, meldest du dich erneut an und öffnest den Tresor mit deinem Passkey oder deiner Passphrase.",
     "empty": "Noch keine Schubladen.",
-    "emptyHint": "Leg eine für jeden Ort an, wo du Bargeld oder Dinge aufbewahrst.",
+    "emptyHint": "Eine Schublade ist alles, worin etwas liegt: eine Kiste, ein Safe, eine Dose. Fang mit einer an:",
     "count": "{count, plural, one {# Schublade} other {# Schubladen}}",
     "addDrawer": "Schublade hinzufügen",
     "totals": "Gesamtwert",
@@ -193,6 +197,21 @@
     "picture": {
       "back": "Zurück zu {place}",
       "backAll": "Zurück zu allen Schubladen"
+    },
+    "startersLabel": "Mit einer Schublade anfangen",
+    "starter": {
+      "things": {
+        "label": "Dinge im Haus",
+        "name": "Ersatzschlüssel"
+      },
+      "papers": {
+        "label": "Familienunterlagen",
+        "name": "Dokumente"
+      },
+      "cash": {
+        "label": "Bargeld zu Hause",
+        "name": "Küchendose"
+      }
     }
   },
   "settings": {

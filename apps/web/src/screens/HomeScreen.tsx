@@ -127,13 +127,13 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
 }
 
 /** Add drawer (PETTY-54/66): a name and a place picked from the tree; a new place can be typed right there. */
-function AddDrawerSheet({ open, tree, onClose, onCreate }: { open: boolean; tree: ReturnType<typeof usePlaceTree>; onClose: () => void; onCreate: (name: string, place: PlacePath | null) => Promise<void> }) {
+function AddDrawerSheet({ open, tree, initialName = "", onClose, onCreate }: { open: boolean; tree: ReturnType<typeof usePlaceTree>; initialName?: string; onClose: () => void; onCreate: (name: string, place: PlacePath | null) => Promise<void> }) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [place, setPlace] = useState<PlacePath | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (open) { setName(""); setPlace(null); setError(null); } }, [open]);
+  useEffect(() => { if (open) { setName(initialName); setPlace(null); setError(null); } }, [open, initialName]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError(t("drawer.errors.nameRequired")); return; }
@@ -155,12 +155,16 @@ function AddDrawerSheet({ open, tree, onClose, onCreate }: { open: boolean; tree
   );
 }
 
+/** PETTY-350: the three ways people start, from the go-to-market review: things, family papers, cash. */
+const STARTERS = ["things", "papers", "cash"] as const;
+
 export function HomeScreen() {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
   const morph = useMorph();
   const state = useDrawers();
   const [adding, setAdding] = useState(false);
+  const [starter, setStarter] = useState("");
   // Search (PETTY-47): the field shows on demand; matching waits ~300 ms after the last keystroke.
   // PETTY-169: give every live access token the drawers it is missing, quietly, once per session.
   useEffect(() => { if (state.status === "ready") void syncTokenWrapsOnce(); }, [state.status]);
@@ -288,7 +292,15 @@ export function HomeScreen() {
           </div>
         ) : null}
         {state.status === "ready" ? <PendingArea /> : null}
-        {state.status === "ready" && state.order.length === 0 ? <div className="empty" data-testid="home-empty">{t("home.empty")}<br />{t("home.emptyHint")}</div> : null}
+        {state.status === "ready" && state.order.length === 0 ? (
+          <div className="empty" data-testid="home-empty">
+            {t("home.empty")}<br />{t("home.emptyHint")}
+            {/* PETTY-350: a blank page was the third place new people gave up; one tap starts a drawer with a name to keep or change */}
+            <div className="starters" role="group" aria-label={t("home.startersLabel")}>
+              {STARTERS.map((s) => <Button key={s} variant="secondary" onClick={() => { setStarter(t(`home.starter.${s}.name`)); setAdding(true); }} data-testid={`starter-${s}`}>{t(`home.starter.${s}.label`)}</Button>)}
+            </div>
+          </div>
+        ) : null}
         {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}
         {totalCard ? (
           <section className={`total-card${homeArt && treeArt ? " tree" : ""}`} data-testid="home-totals">
@@ -371,9 +383,9 @@ export function HomeScreen() {
         </div>
         )}
         </div>
-        <button type="button" className="addbtn" onClick={() => setAdding(true)} disabled={state.status !== "ready"}>+ {t("home.addDrawer")}</button>
+        <button type="button" className="addbtn" onClick={() => { setStarter(""); setAdding(true); }} disabled={state.status !== "ready"}>+ {t("home.addDrawer")}</button>
       </main>
-      <AddDrawerSheet open={adding} tree={tree} onClose={() => setAdding(false)} onCreate={async (name, place) => { const id = await createDrawer(name, place ?? []); nav(`/drawers/${id}`); }} />
+      <AddDrawerSheet open={adding} tree={tree} initialName={starter} onClose={() => setAdding(false)} onCreate={async (name, place) => { const id = await createDrawer(name, place ?? []); nav(`/drawers/${id}`); }} />
     </>
   );
 }

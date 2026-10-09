@@ -4,6 +4,7 @@ import { normalizeRecoveryCode } from "@petty/crypto";
 import { Button } from "./Button.js";
 import { TextField } from "./TextField.js";
 import { TopBar } from "./TopBar.js";
+import { useToast } from "./Toast.js";
 import { deviceLabel, passkeyAvailable, passkeyPrfSupported } from "../lib/passkey.js";
 import { checkPassphrase } from "../lib/passphrase.js";
 
@@ -59,11 +60,32 @@ export function FirstDoorFields({ state, set, pkAvail, errors }: { state: FirstD
   );
 }
 
+/**
+ * PETTY-350: what happens next in one plain line, and why folded away. Right after signing in, a second
+ * lock with four paragraphs to read was where new people gave up (go-to-market review, PETTY-145).
+ */
+export function VaultIntro({ method, items, testId }: { method: DoorMethod; items: readonly string[]; testId: string }) {
+  const { t } = useTranslation();
+  return (
+    <section className="card mb16" data-testid={testId}>
+      <p className="m0 fw600" data-testid="vault-lead">{t(method === "passkey" ? "auth.setup.lead.passkey" : "auth.setup.lead.passphrase")}</p>
+      <details className="vault-why mt8">
+        <summary>{t("auth.join.explainer.why")}</summary>
+        <ol className="list m0 mt8 fs13">{items.map((s, i) => <li key={i} className={i < items.length - 1 ? "mb6" : undefined}>{s}</li>)}</ol>
+      </details>
+    </section>
+  );
+}
+
 /** The recovery code, shown once and typed back. */
 export function RecoveryCodeStep({ code, onDone }: { code: string; onDone: () => void }) {
   const { t } = useTranslation();
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  // PETTY-350: one tap into the password manager. The whole code is still typed back: a wrong group would
+  // lock the person out for good, and with end-to-end encryption nobody can let them back in.
+  const copy = () => { void navigator.clipboard?.writeText(code).then(() => toast(t("app.copied"))); };
   function confirm(ev: FormEvent) {
     ev.preventDefault();
     if (normalizeRecoveryCode(typed) !== normalizeRecoveryCode(code)) { setError(t("auth.recovery.mismatch")); return; }
@@ -75,6 +97,7 @@ export function RecoveryCodeStep({ code, onDone }: { code: string; onDone: () =>
       <main>
         <p>{t("auth.recovery.body")}</p>
         <p className="code" data-testid="recovery-code">{code}</p>
+        <p className="mt0"><Button variant="secondary" onClick={copy} data-testid="recovery-copy">{t("app.copy")}</Button></p>
         <form onSubmit={confirm} noValidate>
           <TextField label={t("auth.recovery.confirmLabel")} value={typed} onChange={(e) => { setTyped(e.target.value); setError(null); }} autoComplete="off" autoCapitalize="characters" spellCheck={false} error={error} />
           <Button type="submit">{t("auth.recovery.done")}</Button>

@@ -74,11 +74,11 @@
         "linkMismatch": "Ce lien d’invitation est destiné à une autre adresse e-mail."
       },
       "explainer": {
-        "title": "Le coffre en une minute de lecture",
         "password": "Le mot de passe de connexion vous connecte. Si vous l’oubliez, vous pouvez le réinitialiser par e-mail.",
         "passphrase": "La phrase secrète du coffre ouvre votre coffre chiffré. Petty ne la voit jamais et personne ne peut la réinitialiser. Laissez votre gestionnaire de mots de passe l’enregistrer quand il le propose.",
         "recovery": "Vous recevrez ensuite un code de récupération. Notez-le sur papier. C’est le seul autre moyen d’entrer si vous perdez toutes vos clés d’accès ou oubliez la phrase secrète.",
-        "passkey": "Une clé d’accès sur cet appareil (Face ID, Touch ID, Windows Hello) ouvre vos tiroirs. Petty ne la voit jamais. Sur un nouvel appareil, votre téléphone peut donner son accord une fois, ou vous y ajoutez une clé d’accès."
+        "passkey": "Une clé d’accès sur cet appareil (Face ID, Touch ID, Windows Hello) ouvre vos tiroirs. Petty ne la voit jamais. Sur un nouvel appareil, votre téléphone peut donner son accord une fois, ou vous y ajoutez une clé d’accès.",
+        "why": "Pourquoi un second verrou ?"
       },
       "passkeyHint": "Votre appareil demandera Face ID, Touch ID, Windows Hello ou un code PIN. Rien à retenir.",
       "usePassphrase": "Utiliser plutôt une phrase secrète",
@@ -89,7 +89,7 @@
     },
     "recovery": {
       "title": "Votre code de récupération",
-      "body": "Notez ce code et gardez-le en lieu sûr. C’est le seul moyen de revenir dans votre coffre si vous perdez vos clés d’accès ou oubliez la phrase secrète. Il ne sera plus affiché.",
+      "body": "Enregistrez ce code dans votre gestionnaire de mots de passe, ou notez-le sur papier et gardez-le en lieu sûr. C’est le seul moyen de revenir dans votre coffre si vous perdez vos clés d’accès ou oubliez la phrase secrète. Il ne sera plus affiché.",
       "confirmLabel": "Saisissez le code pour confirmer que vous l’avez noté",
       "mismatch": "Le code ne correspond pas. Vérifiez chaque groupe.",
       "done": "Je l’ai noté"
@@ -140,14 +140,18 @@
       "explainer": {
         "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil. Le serveur n’en garde qu’une copie verrouillée."
       },
-      "passkeyAccount": "Coffre Petty"
+      "passkeyAccount": "Coffre Petty",
+      "lead": {
+        "passkey": "Encore une étape : cet appareil crée une clé qui n’appartient qu’à vous. Choisissez « Créer le coffre avec une clé d’accès », puis confirmez avec Face ID, votre empreinte ou votre code PIN.",
+        "passphrase": "Encore une étape : choisissez une phrase secrète du coffre que personne d’autre ne connaît. Elle ouvre vos tiroirs, et Petty ne la voit jamais."
+      }
     }
   },
   "home": {
     "signOutTitle": "Se déconnecter ?",
     "signOutBody": "Pour revenir, il faudra vous reconnecter, puis ouvrir le coffre avec votre clé d’accès ou votre phrase secrète.",
     "empty": "Aucun tiroir pour l’instant.",
-    "emptyHint": "Ajoutez-en un pour chaque endroit où vous gardez de l’argent ou des objets.",
+    "emptyHint": "Un tiroir, c’est tout ce qui contient quelque chose : une boîte, un coffre, une boîte en fer. Commencez par un :",
     "count": "{count, plural, one {# tiroir} other {# tiroirs}}",
     "addDrawer": "Ajouter un tiroir",
     "totals": "Valeur totale",
@@ -193,6 +197,21 @@
     "picture": {
       "back": "Retour à {place}",
       "backAll": "Retour à tous les tiroirs"
+    },
+    "startersLabel": "Commencer par un tiroir",
+    "starter": {
+      "things": {
+        "label": "Objets de la maison",
+        "name": "Clés de secours"
+      },
+      "papers": {
+        "label": "Papiers de famille",
+        "name": "Documents"
+      },
+      "cash": {
+        "label": "Argent à la maison",
+        "name": "Boîte de la cuisine"
+      }
     }
   },
   "settings": {

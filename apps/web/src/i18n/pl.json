@@ -74,11 +74,11 @@
         "linkMismatch": "Ten link z zaproszeniem jest przeznaczony dla innego adresu e-mail."
       },
       "explainer": {
-        "title": "Jak działa sejf (minuta czytania)",
         "password": "Hasłem logowania logujesz się do konta. Jeśli je zapomnisz, zresetujesz je przez e-mail.",
         "passphrase": "Hasło sejfu otwiera Twój zaszyfrowany sejf. Petty nigdy go nie widzi i nikt nie może go zresetować. Pozwól menedżerowi haseł je zapisać, gdy zapyta.",
         "recovery": "Potem dostaniesz kod odzyskiwania. Zapisz go na papierze. To jedyna inna droga do środka, jeśli stracisz wszystkie klucze dostępu lub zapomnisz hasła sejfu.",
-        "passkey": "Klucz dostępu na tym urządzeniu (Face ID, Touch ID, Windows Hello) otwiera Twoje szuflady. Petty nigdy go nie widzi. Na nowym urządzeniu możesz raz zatwierdzić logowanie telefonem albo dodać tam klucz dostępu."
+        "passkey": "Klucz dostępu na tym urządzeniu (Face ID, Touch ID, Windows Hello) otwiera Twoje szuflady. Petty nigdy go nie widzi. Na nowym urządzeniu możesz raz zatwierdzić logowanie telefonem albo dodać tam klucz dostępu.",
+        "why": "Po co drugi zamek?"
       },
       "passkeyHint": "Urządzenie poprosi o Face ID, Touch ID, Windows Hello lub PIN. Nie musisz niczego pamiętać.",
       "usePassphrase": "Wolę hasło sejfu",
@@ -89,7 +89,7 @@
     },
     "recovery": {
       "title": "Twój kod odzyskiwania",
-      "body": "Zapisz ten kod i schowaj w bezpiecznym miejscu. To jedyna droga powrotu do sejfu, jeśli stracisz klucze dostępu lub zapomnisz hasła sejfu. Nie pokażemy go ponownie.",
+      "body": "Zapisz ten kod w menedżerze haseł albo na kartce i schowaj w bezpiecznym miejscu. To jedyna droga powrotu do sejfu, jeśli stracisz klucze dostępu lub zapomnisz hasła sejfu. Nie pokażemy go ponownie.",
       "confirmLabel": "Wpisz kod, aby potwierdzić, że masz go zapisany",
       "mismatch": "To się nie zgadza. Sprawdź każdą grupę.",
       "done": "Kod zapisany"
@@ -140,14 +140,18 @@
       "explainer": {
         "identity": "Zalogowano. Sejf to drugi, osobny zamek: otwiera Twoje szuflady na tym urządzeniu. Serwer przechowuje tylko jego zablokowaną kopię."
       },
-      "passkeyAccount": "Sejf Petty"
+      "passkeyAccount": "Sejf Petty",
+      "lead": {
+        "passkey": "Jeszcze jeden krok: to urządzenie utworzy klucz, który masz tylko Ty. Wybierz „Utwórz sejf z kluczem dostępu”, a potem potwierdź Face ID, odciskiem palca lub kodem PIN.",
+        "passphrase": "Jeszcze jeden krok: wybierz hasło sejfu, które znasz tylko Ty. Otwiera ono Twoje szuflady, a Petty nigdy go nie widzi."
+      }
     }
   },
   "home": {
     "signOutTitle": "Wylogować się?",
     "signOutBody": "Aby wrócić, zaloguj się ponownie i otwórz sejf kluczem dostępu lub hasłem sejfu.",
     "empty": "Brak szuflad.",
-    "emptyHint": "Dodaj szufladę dla każdego miejsca, w którym trzymasz gotówkę lub rzeczy.",
+    "emptyHint": "Szuflada to wszystko, w czym coś trzymasz: pudełko, sejf, puszka. Zacznij od jednej:",
     "count": "{count, plural, one {# szuflada} few {# szuflady} many {# szuflad} other {# szuflady}}",
     "addDrawer": "Dodaj szufladę",
     "totals": "Łączna wartość",
@@ -193,6 +197,21 @@
     "picture": {
       "back": "Wróć do: {place}",
       "backAll": "Wróć do wszystkich szuflad"
+    },
+    "startersLabel": "Zacznij od szuflady",
+    "starter": {
+      "things": {
+        "label": "Rzeczy w domu",
+        "name": "Zapasowe klucze"
+      },
+      "papers": {
+        "label": "Dokumenty rodziny",
+        "name": "Dokumenty"
+      },
+      "cash": {
+        "label": "Gotówka w domu",
+        "name": "Puszka w kuchni"
+      }
     }
   },
   "settings": {

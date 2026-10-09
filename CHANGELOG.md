@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- Easier first steps for a new account: the vault step says in one line what happens next, with the reasons
+  folded under "Why a second lock?"; the recovery code has a Copy button for a password manager (the whole
+  code is still typed back); and an empty home offers three starts (things around the home, family papers,
+  cash at home), each opening "Add drawer" with a name to keep or change.
+
 ## [1.5.18] — 2026-10-09
 
 ### Added

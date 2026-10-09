@@ -74,11 +74,11 @@
         "linkMismatch": "Este enlace de invitación es para otra dirección de correo."
       },
       "explainer": {
-        "title": "Cómo funciona la bóveda, en un minuto",
         "password": "La contraseña de acceso sirve para iniciar sesión. Si la olvidas, puedes restablecerla por correo.",
         "passphrase": "La frase de contraseña de la bóveda abre tu bóveda cifrada. Petty nunca la ve y nadie puede restablecerla. Deja que tu gestor de contraseñas la guarde cuando te lo pida.",
         "recovery": "Después recibirás un código de recuperación. Escríbelo en papel. Es la única otra forma de entrar si pierdes todas tus llaves de acceso u olvidas la frase de contraseña.",
-        "passkey": "Una llave de acceso en este dispositivo (Face ID, Touch ID, Windows Hello) abre tus cajones. Petty nunca la ve. En un dispositivo nuevo, tu teléfono puede dar el visto bueno una vez, o puedes añadir allí una llave de acceso."
+        "passkey": "Una llave de acceso en este dispositivo (Face ID, Touch ID, Windows Hello) abre tus cajones. Petty nunca la ve. En un dispositivo nuevo, tu teléfono puede dar el visto bueno una vez, o puedes añadir allí una llave de acceso.",
+        "why": "¿Por qué un segundo cierre?"
       },
       "passkeyHint": "Tu dispositivo te pedirá Face ID, Touch ID, Windows Hello o un PIN. No tienes que recordar nada.",
       "usePassphrase": "Usar una frase de contraseña",
@@ -89,7 +89,7 @@
     },
     "recovery": {
       "title": "Tu código de recuperación",
-      "body": "Anota este código y guárdalo en un lugar seguro. Es la única forma de volver a tu bóveda si pierdes tus llaves de acceso u olvidas la frase de contraseña. No se volverá a mostrar.",
+      "body": "Guarda este código en tu gestor de contraseñas, o anótalo en papel y guárdalo en un lugar seguro. Es la única forma de volver a tu bóveda si pierdes tus llaves de acceso u olvidas la frase de contraseña. No se volverá a mostrar.",
       "confirmLabel": "Escribe el código para confirmar que lo guardaste",
       "mismatch": "No coincide. Revisa cada grupo.",
       "done": "Ya lo guardé"
@@ -140,14 +140,18 @@
       "explainer": {
         "identity": "Ya iniciaste sesión. La bóveda es una segunda cerradura, independiente: abre tus cajones en este dispositivo. El servidor solo guarda una copia bloqueada de ella."
       },
-      "passkeyAccount": "Bóveda de Petty"
+      "passkeyAccount": "Bóveda de Petty",
+      "lead": {
+        "passkey": "Un paso más: este dispositivo crea una llave que solo tienes tú. Elige «Crear bóveda con llave de acceso» y confirma con Face ID, tu huella o tu PIN.",
+        "passphrase": "Un paso más: elige una frase de contraseña de la bóveda que solo conozcas tú. Abre tus cajones, y Petty nunca la ve."
+      }
     }
   },
   "home": {
     "signOutTitle": "¿Cerrar sesión?",
     "signOutBody": "Para volver a entrar, inicias sesión de nuevo y abres la bóveda con tu llave de acceso o tu frase de contraseña.",
     "empty": "Aún no hay cajones.",
-    "emptyHint": "Añade uno por cada lugar donde guardas efectivo o cosas.",
+    "emptyHint": "Un cajón es cualquier cosa que guarda algo: una caja, una caja fuerte, una lata. Empieza con uno:",
     "count": "{count, plural, one {# cajón} other {# cajones}}",
     "addDrawer": "Añadir cajón",
     "totals": "Valor total",
@@ -193,6 +197,21 @@
     "picture": {
       "back": "Volver a {place}",
       "backAll": "Volver a todos los cajones"
+    },
+    "startersLabel": "Empezar con un cajón",
+    "starter": {
+      "things": {
+        "label": "Cosas de casa",
+        "name": "Llaves de repuesto"
+      },
+      "papers": {
+        "label": "Papeles de la familia",
+        "name": "Documentos"
+      },
+      "cash": {
+        "label": "Efectivo en casa",
+        "name": "Lata de la cocina"
+      }
     }
   },
   "settings": {

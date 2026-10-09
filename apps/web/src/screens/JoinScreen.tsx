@@ -7,7 +7,7 @@ import { z, type Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
-import { FirstDoorFields, RecoveryCodeStep, useFirstDoor, validateFirstDoor } from "../components/VaultCreate.js";
+import { FirstDoorFields, RecoveryCodeStep, useFirstDoor, validateFirstDoor, VaultIntro } from "../components/VaultCreate.js";
 import { api, ApiError, NetworkError } from "../lib/api.js";
 import { PasskeyError, rememberPasskey } from "../lib/passkey.js";
 import { afterLogin, unlockWithKeys } from "../lib/session.js";
@@ -95,14 +95,7 @@ export function JoinScreen() {
       <TopBar title={t("auth.join.title")} />
       <main>
         {info.inviter_name ? <p className="hint">{t("auth.join.invitedBy", { name: info.inviter_name })}</p> : null}
-        <section className="card mb16" data-testid="join-explainer">
-          <h2 className="h-card">{t("auth.join.explainer.title")}</h2>
-          <ol className="list m0 fs13">
-            <li className="mb6">{t("auth.join.explainer.password")}</li>
-            <li className="mb6">{t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase")}</li>
-            <li>{t("auth.join.explainer.recovery")}</li>
-          </ol>
-        </section>
+        <VaultIntro method={door.method} testId="join-explainer" items={[t("auth.join.explainer.password"), t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase"), t("auth.join.explainer.recovery")]} />
         <form onSubmit={submit} noValidate>
           <TextField label={t("auth.join.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
           <TextField label={t("auth.join.email")} type="email" inputMode="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required readOnly={!!info.email} error={errors["email"]} />

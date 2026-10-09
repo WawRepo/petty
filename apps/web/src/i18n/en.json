@@ -74,11 +74,11 @@
         "linkMismatch": "This join link is for a different email address."
       },
       "explainer": {
-        "title": "How the vault works, one minute to read",
         "password": "The login password signs you in. If you forget it, you can reset it by email.",
         "passphrase": "The vault passphrase opens your encrypted vault. Petty never sees it and nobody can reset it. Let your password manager save it when asked.",
         "recovery": "Next you get a recovery code. Write it on paper. It is the only other way in if you lose every passkey or forget the passphrase.",
-        "passkey": "A passkey on this device (Face ID, Touch ID, Windows Hello) opens your drawers. Petty never sees it. On a new device your phone can approve once, or you add a passkey there."
+        "passkey": "A passkey on this device (Face ID, Touch ID, Windows Hello) opens your drawers. Petty never sees it. On a new device your phone can approve once, or you add a passkey there.",
+        "why": "Why a second lock?"
       },
       "passkeyHint": "Your device will ask for Face ID, Touch ID, Windows Hello or a PIN. Nothing to remember.",
       "usePassphrase": "Use a passphrase instead",
@@ -89,7 +89,7 @@
     },
     "recovery": {
       "title": "Your recovery code",
-      "body": "Write this code down and keep it somewhere safe. It is the only way back into your vault if you lose your passkeys or forget the passphrase. It will not be shown again.",
+      "body": "Save this code in your password manager, or write it on paper and keep it somewhere safe. It is the only way back into your vault if you lose your passkeys or forget the passphrase. It will not be shown again.",
       "confirmLabel": "Type the code to confirm you saved it",
       "mismatch": "That does not match. Check every group.",
       "done": "I saved it"
@@ -140,14 +140,18 @@
       "explainer": {
         "identity": "You are signed in. The vault is a second, separate lock: it opens your drawers on this device. The server keeps only a locked copy of it."
       },
-      "passkeyAccount": "Petty vault"
+      "passkeyAccount": "Petty vault",
+      "lead": {
+        "passkey": "One more step: this device makes a key that only you hold. Choose “Create vault with passkey”, then confirm with Face ID, your fingerprint or your PIN.",
+        "passphrase": "One more step: choose a vault passphrase that only you know. It opens your drawers, and Petty never sees it."
+      }
     }
   },
   "home": {
     "signOutTitle": "Sign out?",
     "signOutBody": "To get back in, you sign in again and open the vault with your passkey or passphrase.",
     "empty": "No drawers yet.",
-    "emptyHint": "Add one for each place you keep cash or things.",
+    "emptyHint": "A drawer is anything that holds things: a box, a safe, a tin. Start with one:",
     "count": "{count, plural, one {# drawer} other {# drawers}}",
     "addDrawer": "Add drawer",
     "totals": "Total value",
@@ -193,6 +197,21 @@
     "picture": {
       "back": "Back to {place}",
       "backAll": "Back to all drawers"
+    },
+    "startersLabel": "Start with a drawer",
+    "starter": {
+      "things": {
+        "label": "Things around the home",
+        "name": "Spare keys"
+      },
+      "papers": {
+        "label": "Family papers",
+        "name": "Documents"
+      },
+      "cash": {
+        "label": "Cash at home",
+        "name": "Kitchen tin"
+      }
     }
   },
   "settings": {

@@ -6,7 +6,7 @@ import type { Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
-import { FirstDoorFields, RecoveryCodeStep, useFirstDoor, validateFirstDoor } from "../components/VaultCreate.js";
+import { FirstDoorFields, RecoveryCodeStep, useFirstDoor, validateFirstDoor, VaultIntro } from "../components/VaultCreate.js";
 import { api, ApiError, NetworkError } from "../lib/api.js";
 import { PasskeyError, rememberPasskey } from "../lib/passkey.js";
 import { afterLogin, unlockWithKeys, useAuth } from "../lib/session.js";
@@ -58,14 +58,7 @@ export function VaultSetupScreen() {
     <>
       <TopBar title={t("auth.setup.title")} />
       <main>
-        <section className="card mb16" data-testid="setup-explainer">
-          <h2 className="h-card">{t("auth.join.explainer.title")}</h2>
-          <ol className="list m0 fs13">
-            <li className="mb6">{t("auth.setup.explainer.identity")}</li>
-            <li className="mb6">{t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase")}</li>
-            <li>{t("auth.join.explainer.recovery")}</li>
-          </ol>
-        </section>
+        <VaultIntro method={door.method} testId="setup-explainer" items={[t("auth.setup.explainer.identity"), t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase"), t("auth.join.explainer.recovery")]} />
         <form onSubmit={submit} noValidate>
           <TextField label={t("auth.setup.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" hint={t("auth.setup.displayNameHint")} />
           <FirstDoorFields state={door} set={setDoor} pkAvail={pkAvail} errors={errors} />
