@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.19] — 2026-10-09
+
 ### Changed
 - Easier first steps for a new account: the vault step says in one line what happens next, with the reasons
   folded under "Why a second lock?"; the recovery code has a Copy button for a password manager (the whole
@@ -486,7 +488,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.18...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.19...HEAD
+[1.5.19]: https://github.com/WawRepo/petty/releases/tag/v1.5.19
 [1.5.18]: https://github.com/WawRepo/petty/releases/tag/v1.5.18
 [1.5.17]: https://github.com/WawRepo/petty/releases/tag/v1.5.17
 [1.5.16]: https://github.com/WawRepo/petty/releases/tag/v1.5.16
