@@ -212,7 +212,8 @@
         "label": "Cash at home",
         "name": "Kitchen tin"
       }
-    }
+    },
+    "startersSkip": "Skip"
   },
   "settings": {
     "title": "Settings",

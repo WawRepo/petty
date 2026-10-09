@@ -1,4 +1,4 @@
-import { choosePassphraseDoor, expect, makeJoinLink, test } from "./fixtures.js";
+import { choosePassphraseDoor, expect, loginAndUnlock, makeJoinLink, signupViaApi, test } from "./fixtures.js";
 
 /**
  * PETTY-350: the three places a new visitor gave up (go-to-market review, PETTY-145): the vault step read
@@ -48,4 +48,17 @@ test("a new account: one line says what the vault step does, the code copies in 
   await page.getByTestId("starter-papers").click();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
+});
+
+test("the starters on an empty home can be skipped, and stay skipped on this device", async ({ page }) => {
+  const user = await signupViaApi("skipper");
+  await loginAndUnlock(page, user);
+  const empty = page.getByTestId("home-empty");
+  await expect(empty.getByTestId("starter-things")).toBeVisible();
+  await empty.getByRole("button", { name: "Skip" }).click();
+  await expect(empty).toHaveText("No drawers yet.");
+  await expect(empty.getByRole("button")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId("home-empty")).toHaveText("No drawers yet.");
+  await expect(page.getByRole("button", { name: /Add drawer/ })).toBeVisible();
 });

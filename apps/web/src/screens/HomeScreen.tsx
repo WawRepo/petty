@@ -157,6 +157,9 @@ function AddDrawerSheet({ open, tree, initialName = "", onClose, onCreate }: { o
 
 /** PETTY-350: the three ways people start, from the go-to-market review: things, family papers, cash. */
 const STARTERS = ["things", "papers", "cash"] as const;
+/** Skipping the starters is remembered on this device, like the other dismissed hints (components/Nudges.tsx). */
+const STARTERS_KEY = "petty.starters";
+const startersSkipped = (): boolean => { try { return localStorage.getItem(STARTERS_KEY) === "skipped"; } catch { return false; } };
 
 export function HomeScreen() {
   const { t, i18n } = useTranslation();
@@ -165,6 +168,7 @@ export function HomeScreen() {
   const state = useDrawers();
   const [adding, setAdding] = useState(false);
   const [starter, setStarter] = useState("");
+  const [skipStarters, setSkipStarters] = useState(startersSkipped);
   // Search (PETTY-47): the field shows on demand; matching waits ~300 ms after the last keystroke.
   // PETTY-169: give every live access token the drawers it is missing, quietly, once per session.
   useEffect(() => { if (state.status === "ready") void syncTokenWrapsOnce(); }, [state.status]);
@@ -294,11 +298,17 @@ export function HomeScreen() {
         {state.status === "ready" ? <PendingArea /> : null}
         {state.status === "ready" && state.order.length === 0 ? (
           <div className="empty" data-testid="home-empty">
-            {t("home.empty")}<br />{t("home.emptyHint")}
+            {t("home.empty")}
             {/* PETTY-350: a blank page was the third place new people gave up; one tap starts a drawer with a name to keep or change */}
-            <div className="starters" role="group" aria-label={t("home.startersLabel")}>
-              {STARTERS.map((s) => <Button key={s} variant="secondary" onClick={() => { setStarter(t(`home.starter.${s}.name`)); setAdding(true); }} data-testid={`starter-${s}`}>{t(`home.starter.${s}.label`)}</Button>)}
-            </div>
+            {skipStarters ? null : (
+              <>
+                <br />{t("home.emptyHint")}
+                <div className="starters" role="group" aria-label={t("home.startersLabel")}>
+                  {STARTERS.map((s) => <Button key={s} variant="secondary" onClick={() => { setStarter(t(`home.starter.${s}.name`)); setAdding(true); }} data-testid={`starter-${s}`}>{t(`home.starter.${s}.label`)}</Button>)}
+                </div>
+                <p className="mt8 mb0"><Button variant="ghost" onClick={() => { try { localStorage.setItem(STARTERS_KEY, "skipped"); } catch { /* ignore */ } setSkipStarters(true); }} data-testid="starters-skip">{t("home.startersSkip")}</Button></p>
+              </>
+            )}
           </div>
         ) : null}
         {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}

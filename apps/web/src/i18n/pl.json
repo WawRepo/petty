@@ -212,7 +212,8 @@
         "label": "Gotówka w domu",
         "name": "Puszka w kuchni"
       }
-    }
+    },
+    "startersSkip": "Pomiń"
   },
   "settings": {
     "title": "Ustawienia",

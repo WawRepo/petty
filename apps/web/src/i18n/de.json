@@ -212,7 +212,8 @@
         "label": "Bargeld zu Hause",
         "name": "Küchendose"
       }
-    }
+    },
+    "startersSkip": "Überspringen"
   },
   "settings": {
     "title": "Einstellungen",

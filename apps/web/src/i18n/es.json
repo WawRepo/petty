@@ -212,7 +212,8 @@
         "label": "Efectivo en casa",
         "name": "Lata de la cocina"
       }
-    }
+    },
+    "startersSkip": "Omitir"
   },
   "settings": {
     "title": "Ajustes",

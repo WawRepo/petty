@@ -212,7 +212,8 @@
         "label": "Argent à la maison",
         "name": "Boîte de la cuisine"
       }
-    }
+    },
+    "startersSkip": "Passer"
   },
   "settings": {
     "title": "Réglages",
