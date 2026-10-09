@@ -42,6 +42,11 @@ const GROUPERS = /[\s']/g; // \s covers NBSP, narrow NBSP and thin space
  * more than once is a group separator. No sign: the operation gives the sign.
  * "1 234,56" and "1234.56" both give 123456 at exponent 2. "1.5" at exponent 0
  * is refused.
+ *
+ * At exponent 0 there are no decimals, so a single mark followed by exactly three
+ * digits is a group separator: "1,000" (en) and "1.000" (de) give 1000, which is
+ * how formatAmount shows a count of a thousand (PETTY-351). At exponent 1 and up
+ * the same "1,234" stays a decimal mark and is refused: for money it is ambiguous.
  */
 export function parseAmount(text: string, exponent: number): number {
   if (!Number.isInteger(exponent) || exponent < 0 || exponent > MAX_EXPONENT) throw new LedgerError("bad_exponent");
@@ -54,6 +59,7 @@ export function parseAmount(text: string, exponent: number): number {
   if (lastDot >= 0 && lastComma >= 0) decimalMark = lastDot > lastComma ? "." : ",";
   else if (lastDot >= 0) decimalMark = s.indexOf(".") === lastDot ? "." : null;
   else if (lastComma >= 0) decimalMark = s.indexOf(",") === lastComma ? "," : null;
+  if (decimalMark && exponent === 0 && /^\d{1,3}[.,]\d{3}$/.test(s)) decimalMark = null;
   let intPart: string;
   let fracPart = "";
   if (decimalMark) {

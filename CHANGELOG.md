@@ -14,6 +14,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   Nothing is recorded on an instance without terms. Migration 017.
 
 ### Fixed
+- A count of 1,000 or more is shown as "1,000" (or "1.000" in German), but typing that back, for example
+  through the AI tools or the command line, was refused as "too many decimals". For whole numbers one mark
+  before three digits now groups thousands; for money "1,234" is still refused as ambiguous.
 - With Clerk sign-in, the active-user numbers in `/metrics` always read 0 and the admin list showed no "last
   seen", because Clerk keeps no sign-in sessions in Petty. Each user's last activity is now kept on the
   account (at most one write per 5 minutes) in both sign-in modes. Migration 016.

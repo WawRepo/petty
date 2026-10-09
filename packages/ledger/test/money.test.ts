@@ -42,15 +42,25 @@ describe("parseAmount", () => {
     expect(() => parseAmount("12.3456.7", 2)).toThrow(/invalid/);
     expect(() => parseAmount("1,234", 2)).toThrow(/too_many_decimals/); // one mark, once → decimal mark → 3 decimals
     expect(parseAmount("1,234", 3)).toBe(1234);
+    // PETTY-351: a whole number has no decimals, so one mark before three digits groups thousands
+    expect(parseAmount("1,000", 0)).toBe(1000);
+    expect(parseAmount("1.000", 0)).toBe(1000);
+    expect(parseAmount("12,345", 0)).toBe(12345);
+    expect(() => parseAmount("1,5", 0)).toThrow(/too_many_decimals/);
+    expect(() => parseAmount("1,0000", 0)).toThrow(/too_many_decimals/);
+    expect(() => parseAmount("1234,567", 0)).toThrow(/too_many_decimals/);
 
     expect(() => parseAmount("99999999999999999", 2)).toThrow(/too_large/);
   });
   it("format then parse is the identity for any integer and exponent, in en and pl", () => {
     fc.assert(
-      fc.property(fc.integer({ min: 0, max: 9_007_199_254 }), fc.integer({ min: 0, max: 4 }), fc.constantFrom("en", "pl", "de", "fr"), (n, exp, locale) => {
+      fc.property(fc.integer({ min: 0, max: 9_007_199_254 }), fc.integer({ min: 0, max: 4 }), fc.constantFrom("en", "pl", "de", "fr", "es"), (n, exp, locale) => {
         expect(parseAmount(formatAmount(n, exp, locale), exp)).toBe(n);
       }),
+      { numRuns: 2000 },
     );
+    // PETTY-351: the case CI found (seed 2087973570), kept as a fixed example
+    expect(parseAmount(formatAmount(1000, 0, "en"), 0)).toBe(1000);
   });
 });
 
