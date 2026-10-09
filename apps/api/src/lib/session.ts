@@ -84,6 +84,21 @@ async function relinkByVerifiedEmail(sub: string): Promise<SessionUser | null> {
   return u;
 }
 
+/**
+ * PETTY-241: "last seen" per user, in both modes (Clerk keeps no sessions rows here). At most one write per
+ * user per 5 minutes: a per-process memory of the last touch skips the query, and the WHERE skips the write
+ * when another instance touched the row meanwhile. The memory is only an optimisation (several instances
+ * may each write once per window).
+ */
+const touched = new Map<string, number>();
+function touchUser(userId: string): void {
+  const now = Date.now();
+  if (now - (touched.get(userId) ?? 0) < 5 * 60_000) return;
+  touched.set(userId, now);
+  if (touched.size > 10_000) touched.clear();
+  apiPool.query("update users set last_seen_at = now() where id = $1 and (last_seen_at is null or last_seen_at < now() - interval '5 minutes')", [userId]).catch(() => undefined);
+}
+
 export const sessionPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest("user", null);
   app.decorateRequest("sessionId", null);
@@ -97,6 +112,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
       if (!found) return;
       req.user = found.user;
       req.token = found.token;
+      touchUser(found.user.id);
       return;
     }
     if (config.authProvider === "clerk") {
@@ -111,6 +127,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
         [id.sub],
       );
       req.user = rows[0] ?? (await relinkByVerifiedEmail(id.sub));
+      if (req.user) touchUser(req.user.id);
       return;
     }
     const token = req.cookies[COOKIE];
@@ -127,6 +144,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
     req.sessionId = r.sid;
     // At most one write per session per 5 minutes: last_seen_at is what "users active in the last 15m" counts.
     if (r.stale) apiPool.query("update sessions set last_seen_at = now() where id = $1", [r.sid]).catch(() => undefined);
+    touchUser(r.id);
   });
   // Cross-site request forgery guard: mutations must be JSON, which browsers cannot send cross-origin without CORS.
   // A token may only do what tokens.ts allows, and only inside its scope.

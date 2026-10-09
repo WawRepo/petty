@@ -8,7 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- A new account records which version of the operator's terms of service it accepted, and when: a short
+  fingerprint of the terms files in `LEGAL_DIR`, so the operator can match it to the text that was live.
+  Nothing is recorded on an instance without terms. Migration 017.
+
 ### Fixed
+- With Clerk sign-in, the active-user numbers in `/metrics` always read 0 and the admin list showed no "last
+  seen", because Clerk keeps no sign-in sessions in Petty. Each user's last activity is now kept on the
+  account (at most one write per 5 minutes) in both sign-in modes. Migration 016.
 - Adding a passkey on a device that already holds the vault's passkey (it synced there, for example through iCloud
   Keychain or Google Password Manager) said "This device already has a passkey for this vault", as if the device
   were wrong. It now says the passkey may have synced, and to use "Unlock with passkey".

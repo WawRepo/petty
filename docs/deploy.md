@@ -109,6 +109,8 @@ Put Markdown files in a folder and set `LEGAL_DIR` to it:
 `<lang>` is `en`, `pl`, `de`, `es` or `fr`. A visitor gets their language, else English, else the one
 you wrote. When a file is there, the landing page, the sign-in and sign-up pages and Settings link to it,
 and sign-up says that creating an account accepts the terms. Without `LEGAL_DIR` nothing changes.
+Each new account records the terms version it accepted (`users.terms_version`, a `sha256:` fingerprint of
+all `terms.*.md` files, and `terms_accepted_at`); any edit to a terms file gives a new fingerprint.
 
 The files are read once at start; restart after you change them. A `LEGAL_DIR` that is set but missing
 stops the start. Only a small part of Markdown is shown as formatting: `#`, `##` and `###` headings,

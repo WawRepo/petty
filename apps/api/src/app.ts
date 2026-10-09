@@ -13,7 +13,7 @@ import { securityHeaders } from "./lib/headers.js";
 import { requestMetrics, securityRefusals } from "./lib/metrics.js";
 import { safeUrl, tracingHooks } from "./lib/tracing.js";
 import { apiRateLimit } from "./lib/rate-limit.js";
-import { LEGAL_DOCS, legalText, loadLegalTexts } from "./lib/legal.js";
+import { LEGAL_DOCS, legalText, loadLegalTexts, serveLegalTexts } from "./lib/legal.js";
 import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { drawerRoutes } from "./routes/drawers.js";
@@ -39,6 +39,7 @@ export function staticCacheControl(filePath: string): string {
 
 export function buildApp() {
   const legal = loadLegalTexts(config.legalDir);
+  serveLegalTexts(legal);
   const app = Fastify({
     // Error class + ids only, never bodies (CLAUDE.md rule 2). Phase 13 tightens further.
     logger: {

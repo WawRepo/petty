@@ -79,6 +79,10 @@ describe("clerk mode", () => {
     const me = await U.call("GET", "/me");
     expect(me.statusCode).toBe(200);
     expect(me.json().display_name).toBe("Ula");
+    // PETTY-241: a Clerk request marks the user as seen (no sessions rows exist in this mode);
+    // PETTY-216: this instance has no terms, so none is recorded
+    await expect.poll(async () => (await owner.query("select last_seen_at is not null as seen from users where id = $1", [U.id])).rows[0].seen).toBe(true);
+    expect((await owner.query("select terms_version, terms_accepted_at from users where id = $1", [U.id])).rows[0]).toEqual({ terms_version: null, terms_accepted_at: null });
     // no login password exists: PUT /me/vault takes the custody proof only
     const { createVault, unlockVault } = await import("@petty/crypto");
     const rv = await U.call("GET", "/me/recovery-vault");

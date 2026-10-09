@@ -20,7 +20,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const { rows } = await apiPool.query(
       `select u.id, u.email, u.display_name, u.locale, u.created_at, u.is_admin, u.blocked_at, u.deleted_at,
               (select count(*)::int from drawers d where d.owner_id = u.id) as owned,
-              (select max(s.last_seen_at) from sessions s where s.user_id = u.id) as last_seen_at,
+              greatest(u.last_seen_at, (select max(s.last_seen_at) from sessions s where s.user_id = u.id)) as last_seen_at, -- PETTY-241: Clerk mode too
               exists(select 1 from passkey_vaults p where p.user_id = u.id) as has_passkey
          from users u order by u.created_at`,
     );

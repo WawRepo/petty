@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -28,6 +29,24 @@ export function loadLegalTexts(dir: string): LegalTexts {
   }
   return out;
 }
+
+/**
+ * PETTY-216: a short fingerprint of one document in all its languages (sha256 over the sorted language codes
+ * and texts). A sign-up stores the terms' fingerprint, so the operator can tell which text was accepted;
+ * any change to any language gives a new one. Null when the doc is missing.
+ */
+export function legalVersion(texts: LegalTexts, doc: LegalDoc): string | null {
+  const byLang = texts.get(doc);
+  if (!byLang?.size) return null;
+  const h = createHash("sha256");
+  for (const lang of [...byLang.keys()].sort()) h.update(`${lang}\0${byLang.get(lang)}\0`);
+  return `sha256:${h.digest("hex").slice(0, 16)}`;
+}
+
+/** The texts this process serves, set once by buildApp, so the sign-up routes can record the terms version. */
+let served: LegalTexts = new Map();
+export function serveLegalTexts(texts: LegalTexts): void { served = texts; }
+export const termsVersion = (): string | null => legalVersion(served, "terms");
 
 /** The text in this language, else English, else the first language there is; null when the doc is missing. */
 export function legalText(texts: LegalTexts, doc: LegalDoc, lang: string): { lang: string; text: string } | null {

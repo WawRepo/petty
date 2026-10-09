@@ -107,8 +107,9 @@ meter.createObservableGauge("petty_pg_pool_clients", { description: "pg pool cli
 /**
  * Usage, for the story of who uses Petty (PETTY-35): aggregate counts from the
  * database, refreshed at most every 30 s, on scrape. Never a per-user series.
- * "Active" = a session that made a request in the window (sessions.last_seen_at
- * is touched at most every 5 minutes, so "15m" really means 15-20 minutes).
+ * "Active" = a user who made a request in the window (users.last_seen_at, PETTY-241: touched at most every
+ * 5 minutes per user in both sign-in modes, so "15m" really means 15-20 minutes). "Sessions open" counts
+ * Petty's own sign-in sessions, which exist in local mode only; under Clerk it stays 0.
  */
 interface Usage { users_total: number; active_15m: number; active_24h: number; active_7d: number; sessions_open: number; drawers_total: number; drawers_shared: number; entries_stored: number }
 let usageCache: { at: number; value: Promise<Usage | null> } | null = null;
@@ -117,9 +118,9 @@ export function usageSnapshot(): Promise<Usage | null> {
   if (usageCache && now - usageCache.at < 30_000) return usageCache.value;
   const value = apiPool.query<Record<keyof Usage, string>>(`
     select (select count(*) from users where deleted_at is null)                                                                  as users_total,
-           (select count(distinct user_id) from sessions where expires_at > now() and last_seen_at > now() - interval '15 minutes') as active_15m,
-           (select count(distinct user_id) from sessions where expires_at > now() and last_seen_at > now() - interval '24 hours')   as active_24h,
-           (select count(distinct user_id) from sessions where expires_at > now() and last_seen_at > now() - interval '7 days')     as active_7d,
+           (select count(*) from users where deleted_at is null and last_seen_at > now() - interval '15 minutes')                    as active_15m,
+           (select count(*) from users where deleted_at is null and last_seen_at > now() - interval '24 hours')                      as active_24h,
+           (select count(*) from users where deleted_at is null and last_seen_at > now() - interval '7 days')                        as active_7d,
            (select count(*) from sessions where expires_at > now())                                                                as sessions_open,
            (select count(*) from drawers)                                                                                          as drawers_total,
            (select count(distinct drawer_id) from drawer_members)                                                                  as drawers_shared,
@@ -139,7 +140,7 @@ function usageGauge(name: string, help: string, pick: (u: Usage) => number): voi
   meter.createObservableGauge(name, { description: help }).addCallback(async (obs) => { const u = await usageSnapshot(); if (u) obs.observe(pick(u)); });
 }
 usageGauge("petty_users_total", "Accounts that exist (not deleted)", (u) => u.users_total);
-usageGauge("petty_sessions_open", "Unexpired sessions (signed-in devices)", (u) => u.sessions_open);
+usageGauge("petty_sessions_open", "Unexpired local sign-in sessions (signed-in devices; local mode only, 0 under Clerk)", (u) => u.sessions_open);
 usageGauge("petty_drawers_total", "Drawers that exist", (u) => u.drawers_total);
 usageGauge("petty_drawers_shared", "Drawers with at least one member besides the owner", (u) => u.drawers_shared);
 usageGauge("petty_entries_stored", "Entry rows in the ledger (all drawers, all time)", (u) => u.entries_stored);

@@ -71,3 +71,20 @@ describe("what may appear in a log line (SR-1)", () => {
     expect(safeUrl(fake("/drawers/0d1/entries", "/drawers/:id/entries"))).toBe("/drawers/0d1/entries");
   });
 });
+
+describe("active users (PETTY-241)", () => {
+  it("counts a user seen in the window from users.last_seen_at, in any sign-in mode", async () => {
+    const { usageSnapshot } = await import("../src/lib/metrics.js");
+    const u = new Client(app, await userMaterial("seen", { email: `seen-${crypto.randomUUID().slice(0, 8)}@test.local` }));
+    expect((await u.signup(await makeJoinLink())).statusCode).toBe(201);
+    expect((await u.call("GET", "/me")).statusCode).toBe(200);
+    const seen = async () => (await apiPool.query("select last_seen_at is not null as seen from users where id = $1", [u.id])).rows[0].seen as boolean;
+    await expect.poll(seen).toBe(true);
+    // the snapshot is cached for 30 s; wait it out once, then the user is in every window
+    await new Promise((r) => setTimeout(r, 30_500));
+    const s = await usageSnapshot();
+    expect(s!.active_15m).toBeGreaterThanOrEqual(1);
+    expect(s!.active_24h).toBeGreaterThanOrEqual(s!.active_15m);
+    expect(s!.active_7d).toBeGreaterThanOrEqual(s!.active_24h);
+  }, 60_000);
+});

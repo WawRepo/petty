@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ForgotBody, JoinLinkBody, JoinLinkInfo, JoinLinkResponse, LoginBody, Me, ProvisionBody, ResetBody, SignupBody, type PasskeyVault, type VaultBlob } from "@petty/protocol";
 import { config } from "../config.js";
+import { termsVersion } from "../lib/legal.js";
 import { clerkProfile } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
@@ -43,8 +44,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         const exists = await db.query("select 1 from users where clerk_user_id = $1 or (lower(email) = lower($2) and deleted_at is null)", [id.sub, profile.email]);
         if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
         const user = (await db.query<{ id: string }>(
-          "insert into users (email, display_name, password_hash, locale, vault, recovery_vault, clerk_user_id) values ($1, $2, null, $3, $4, $5, $6) returning id",
-          [profile.email, body.display_name ?? profile.name, body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), id.sub],
+          // PETTY-216: creating the account accepts the operator's terms, if this instance has them
+          `insert into users (email, display_name, password_hash, locale, vault, recovery_vault, clerk_user_id, terms_version, terms_accepted_at)
+           values ($1, $2, null, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
+          [profile.email, body.display_name ?? profile.name, body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), id.sub, termsVersion()],
         )).rows[0]!;
         await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
         await insertPasskey(db, user.id, body.passkey);
@@ -79,8 +82,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       const exists = await db.query("select 1 from users where lower(email) = lower($1)", [body.email]);
       if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
       const user = (await db.query<{ id: string }>(
-        "insert into users (email, display_name, password_hash, locale, vault, recovery_vault) values ($1, $2, $3, $4, $5, $6) returning id",
-        [body.email, body.display_name, await hashPassword(body.password), body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault)],
+        // PETTY-216: creating the account accepts the operator's terms, if this instance has them
+        `insert into users (email, display_name, password_hash, locale, vault, recovery_vault, terms_version, terms_accepted_at)
+         values ($1, $2, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
+        [body.email, body.display_name, await hashPassword(body.password), body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), termsVersion()],
       )).rows[0]!;
       await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
       await insertPasskey(db, user.id, body.passkey);
