@@ -184,3 +184,18 @@ test("after an unlock through a passkey this device does not know (the phone via
   await expect(page.getByTestId("passkey-row")).toHaveCount(2);
   await expect(page.getByTestId("passkey-row").nth(1)).toContainText("Laptop");
 });
+
+// PETTY-323: a passkey can sync from another device (iCloud Keychain, Google Password Manager). Then
+// adding "a passkey for this device" finds it already here; the message must say so, not blame the device.
+test("adding a passkey where the vault's passkey already is says it may have synced, and points to unlocking with it", async ({ page }) => {
+  await virtualAuthenticator(page);
+  const user = await joinWithPasskey(page, "pksync");
+  await openSettings(page);
+  await page.getByTestId("passkey-section").getByRole("button", { name: "Add passkey" }).click();
+  const add = page.locator("form").filter({ has: page.getByRole("button", { name: "Add passkey" }) });
+  await add.getByLabel("Name for this passkey").fill("Again");
+  await add.getByLabel("Your login password").fill(user.password);
+  await add.getByRole("button", { name: "Add passkey" }).click();
+  await expect(add.getByRole("alert")).toHaveText("This passkey is already on this device. It may have synced from another device, for example through iCloud Keychain or Google Password Manager. Use “Unlock with passkey”.");
+  await expect(page.getByTestId("passkey-row")).toHaveCount(1);
+});

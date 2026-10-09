@@ -254,7 +254,7 @@
       "addedOn": "Ajoutée le {date}",
       "addHintPasskey": "Votre clé d’accès actuelle doit d’abord le confirmer (si elle est sur votre téléphone, scannez le QR code). Ensuite, cet appareil demande Face ID, Touch ID, un code PIN ou une clé de sécurité.",
       "lastDoor": "C’est votre dernière clé d’accès et il n’y a pas de phrase secrète. Définissez d’abord une phrase secrète de secours.",
-      "exists": "Cet appareil a déjà une clé d’accès pour ce coffre."
+      "exists": "Cette clé d’accès est déjà sur cet appareil. Elle a peut-être été synchronisée depuis un autre appareil, par exemple via le trousseau iCloud ou le Gestionnaire de mots de passe de Google. Utilisez « Déverrouiller avec une clé d’accès »."
     },
     "setPassphrase": "Définir une phrase secrète de secours",
     "setPassphraseHint": "Une phrase secrète ouvre le coffre là où les clés d’accès ne le peuvent pas. Votre clé d’accès actuelle doit d’abord le confirmer.",

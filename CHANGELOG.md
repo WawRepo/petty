@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Adding a passkey on a device that already holds the vault's passkey (it synced there, for example through iCloud
+  Keychain or Google Password Manager) said "This device already has a passkey for this vault", as if the device
+  were wrong. It now says the passkey may have synced, and to use "Unlock with passkey".
+
 ## [1.5.17] — 2026-10-07
 
 ### Added

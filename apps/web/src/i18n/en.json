@@ -254,7 +254,7 @@
       "addedOn": "Added {date}",
       "addHintPasskey": "Your existing passkey confirms this first (if it lives on your phone, scan the QR code). Then this device asks for Face ID, Touch ID, a PIN or a security key.",
       "lastDoor": "This is your last passkey and there is no passphrase. Set a backup passphrase first.",
-      "exists": "This device already has a passkey for this vault."
+      "exists": "This passkey is already on this device. It may have synced from another device, for example through iCloud Keychain or Google Password Manager. Use “Unlock with passkey”."
     },
     "setPassphrase": "Set a backup passphrase",
     "setPassphraseHint": "A passphrase opens the vault where passkeys cannot. Your existing passkey confirms this first.",

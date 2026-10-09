@@ -254,7 +254,7 @@
       "addedOn": "Hinzugefügt am {date}",
       "addHintPasskey": "Zuerst bestätigt das dein vorhandener Passkey (liegt er auf deinem Handy, scanne den QR-Code). Dann fragt dieses Gerät nach Face ID, Touch ID, einer PIN oder einem Sicherheitsschlüssel.",
       "lastDoor": "Das ist dein letzter Passkey, und es gibt keine Passphrase. Lege zuerst eine Ersatz-Passphrase fest.",
-      "exists": "Dieses Gerät hat schon einen Passkey für diesen Tresor."
+      "exists": "Dieser Passkey ist schon auf diesem Gerät. Er wurde vielleicht von einem anderen Gerät synchronisiert, zum Beispiel über den iCloud-Schlüsselbund oder den Google Passwortmanager. Nutze „Mit Passkey entsperren“."
     },
     "setPassphrase": "Ersatz-Passphrase festlegen",
     "setPassphraseHint": "Eine Passphrase öffnet den Tresor dort, wo Passkeys es nicht können. Zuerst bestätigt das dein vorhandener Passkey.",

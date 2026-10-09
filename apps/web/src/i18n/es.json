@@ -254,7 +254,7 @@
       "addedOn": "Añadida el {date}",
       "addHintPasskey": "Primero lo confirma tu llave de acceso actual (si está en tu teléfono, escanea el código QR). Después este dispositivo te pedirá Face ID, Touch ID, un PIN o una llave de seguridad.",
       "lastDoor": "Es tu última llave de acceso y no tienes frase de contraseña. Primero crea una frase de contraseña de respaldo.",
-      "exists": "Este dispositivo ya tiene una llave de acceso para esta bóveda."
+      "exists": "Esta llave de acceso ya está en este dispositivo. Puede haberse sincronizado desde otro dispositivo, por ejemplo con el Llavero de iCloud o el Gestor de contraseñas de Google. Usa «Desbloquear con llave de acceso»."
     },
     "setPassphrase": "Crear frase de contraseña de respaldo",
     "setPassphraseHint": "Una frase de contraseña abre la bóveda donde las llaves de acceso no pueden. Primero lo confirma tu llave de acceso actual.",

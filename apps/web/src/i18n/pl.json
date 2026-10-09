@@ -254,7 +254,7 @@
       "addedOn": "Dodano {date}",
       "addHintPasskey": "Najpierw potwierdzi to Twój obecny klucz dostępu (jeśli jest w telefonie, zeskanuj kod QR). Potem to urządzenie poprosi o Face ID, Touch ID, PIN lub klucz sprzętowy.",
       "lastDoor": "To Twój ostatni klucz dostępu, a nie ma hasła sejfu. Najpierw ustaw zapasowe hasło sejfu.",
-      "exists": "To urządzenie ma już klucz dostępu do tego sejfu."
+      "exists": "Ten klucz dostępu jest już na tym urządzeniu. Mógł się zsynchronizować z innego urządzenia, na przykład przez pęk kluczy iCloud albo Menedżera haseł Google. Użyj „Odblokuj kluczem dostępu”."
     },
     "setPassphrase": "Ustaw zapasowe hasło sejfu",
     "setPassphraseHint": "Hasło sejfu otwiera sejf tam, gdzie klucze dostępu nie działają. Najpierw potwierdzi to Twój obecny klucz dostępu.",
