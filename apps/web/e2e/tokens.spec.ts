@@ -28,6 +28,11 @@ async function addDrawerWithLine(page: Page, name: string): Promise<string> {
   await page.getByLabel("Starting balance").fill("10");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByTestId("line-name").filter({ hasText: "Cash" })).toBeVisible();
+  // PETTY-321: the item shows as soon as the document is saved, but its starting balance is a second write
+  // (the entry). The sheet closes only after that one, and the row then shows the amount. Leaving earlier
+  // (the next page.goto) could cancel the entry under load: the token's +5 then stood alone as "5.00".
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByTestId("line-row").filter({ hasText: "Cash" })).toContainText("10");
   return id;
 }
 
