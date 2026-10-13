@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.20] — 2026-10-13
+
 ### Changed
 - The API no longer keeps an idle database awake. Housekeeping (expired sessions, sign-in requests,
   limit counters, reset tokens, ended invitations, 30-day-old vault history) runs hourly while requests
@@ -496,7 +498,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.19...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.20...HEAD
+[1.5.20]: https://github.com/WawRepo/petty/releases/tag/v1.5.20
 [1.5.19]: https://github.com/WawRepo/petty/releases/tag/v1.5.19
 [1.5.18]: https://github.com/WawRepo/petty/releases/tag/v1.5.18
 [1.5.17]: https://github.com/WawRepo/petty/releases/tag/v1.5.17
