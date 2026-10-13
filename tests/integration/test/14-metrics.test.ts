@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { compose } from "../lib.js";
 
 /**
  * PETTY-266/267: the image reports what two alerts read. A refusal that normal use never triggers is
@@ -14,6 +15,13 @@ describe("the scrape port", () => {
     const text = await r.text();
     expect(text).toContain("# TYPE petty_security_refusals_total counter");
     expect(text).toMatch(/^petty_process_resident_memory_bytes [1-9]\d+$/m);
+  });
+
+  it("PETTY-355: background work has a pool of its own, and housekeeping ran at start", async () => {
+    expect(await (await fetch(METRICS)).text()).toMatch(/^petty_pg_pool_clients\{pool="bg",state="total"\} \d+$/m);
+    const runs = compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"maintenance"'));
+    expect(runs.length).toBeGreaterThan(0);
+    expect(runs[0]).toMatch(/"pending":(true|false)/);
   });
 
   it("PETTY-241: people who used the app in the last 7 days are counted as active", async () => {

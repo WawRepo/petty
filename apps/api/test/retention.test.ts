@@ -2,7 +2,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
-import { apiPool, maintPool } from "../src/db.js";
+import { apiPool, bgPool, maintPool } from "../src/db.js";
 import { sha256 } from "../src/lib/bytes.js";
 import { runMaintenance } from "../src/lib/maintenance.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
@@ -17,7 +17,7 @@ const run = crypto.randomUUID().slice(0, 8);
 const emailOf = async (token: string) => (await owner.query<{ email: string | null }>("select email from join_links where token_hash = $1", [sha256(token)])).rows[0];
 
 beforeAll(async () => { await app.ready(); }, 60_000);
-afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); await owner.end(); });
+afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); await bgPool.end(); await owner.end(); });
 
 describe("personal data is not kept longer than needed (PETTY-341)", () => {
   it("a used join link forgets its email; maintenance deletes ended unused links and dead reset tokens", async () => {

@@ -2,14 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { buildApp } from "../src/app.js";
-import { apiPool, maintPool } from "../src/db.js";
+import { apiPool, bgPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
 import { registry, startMetricsServer } from "../src/lib/metrics.js";
 
 const app = buildApp();
 let metrics: Server;
 beforeAll(async () => { await app.ready(); metrics = await startMetricsServer(0, "127.0.0.1"); });
-afterAll(async () => { await app.close(); metrics.close(); await apiPool.end(); await maintPool.end(); });
+afterAll(async () => { await app.close(); metrics.close(); await apiPool.end(); await maintPool.end(); await bgPool.end(); });
 
 describe("metrics (Phase 15b)", () => {
   it("records every request under its route template, never its URL", async () => {

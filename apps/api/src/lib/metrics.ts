@@ -2,7 +2,8 @@ import http from "node:http";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import client from "prom-client";
 import { metrics as otelApi } from "@opentelemetry/api";
-import { apiPool, maintPool } from "../db.js";
+import { apiPool, bgPool, lastRequestUse, maintPool } from "../db.js";
+import { lastMaintenance } from "./maintenance.js";
 import { isHealthProbe, safeUrl } from "./tracing.js";
 
 /**
@@ -74,11 +75,11 @@ export const securityRefusals = dualCounter(
 // pg pool occupancy: prom collects on scrape; OTel observes on its export interval. Same numbers, two readers.
 new client.Gauge({
   name: "petty_pg_pool_clients",
-  help: "pg pool clients by pool (api, maint) and state (total, idle, waiting)",
+  help: "pg pool clients by pool (api, maint, bg) and state (total, idle, waiting)",
   labelNames: ["pool", "state"] as const,
   registers: [registry],
   collect() {
-    for (const [name, pool] of [["api", apiPool], ["maint", maintPool]] as const) {
+    for (const [name, pool] of [["api", apiPool], ["maint", maintPool], ["bg", bgPool]] as const) {
       this.set({ pool: name, state: "total" }, pool.totalCount);
       this.set({ pool: name, state: "idle" }, pool.idleCount);
       this.set({ pool: name, state: "waiting" }, pool.waitingCount);
@@ -97,7 +98,7 @@ meter.createObservableGauge("petty_process_resident_memory_bytes", { description
   .addCallback((obs) => obs.observe(process.memoryUsage.rss()));
 
 meter.createObservableGauge("petty_pg_pool_clients", { description: "pg pool clients by pool and state" }).addCallback((obs) => {
-  for (const [name, pool] of [["api", apiPool], ["maint", maintPool]] as const) {
+  for (const [name, pool] of [["api", apiPool], ["maint", maintPool], ["bg", bgPool]] as const) {
     obs.observe(pool.totalCount, { pool: name, state: "total" });
     obs.observe(pool.idleCount, { pool: name, state: "idle" });
     obs.observe(pool.waitingCount, { pool: name, state: "waiting" });
@@ -110,13 +111,19 @@ meter.createObservableGauge("petty_pg_pool_clients", { description: "pg pool cli
  * "Active" = a user who made a request in the window (users.last_seen_at, PETTY-241: touched at most every
  * 5 minutes per user in both sign-in modes, so "15m" really means 15-20 minutes). "Sessions open" counts
  * Petty's own sign-in sessions, which exist in local mode only; under Clerk it stays 0.
+ * PETTY-355: refreshed only while the database is awake anyway (a request or housekeeping used it in the
+ * last 4 minutes), never just for a gauge: a database that scales to zero would otherwise never sleep.
+ * While it sleeps the gauges repeat their last values; the totals cannot change then, but the "active"
+ * windows can be stale until the next request.
  */
 interface Usage { users_total: number; active_15m: number; active_24h: number; active_7d: number; sessions_open: number; drawers_total: number; drawers_shared: number; entries_stored: number }
 let usageCache: { at: number; value: Promise<Usage | null> } | null = null;
+const AWAKE_MS = 4 * 60_000;
 export function usageSnapshot(): Promise<Usage | null> {
   const now = Date.now();
   if (usageCache && now - usageCache.at < 30_000) return usageCache.value;
-  const value = apiPool.query<Record<keyof Usage, string>>(`
+  if (now - Math.max(lastRequestUse(), lastMaintenance()) >= AWAKE_MS) return usageCache?.value ?? Promise.resolve(null);
+  const value = bgPool.query<Record<keyof Usage, string>>(`
     select (select count(*) from users where deleted_at is null)                                                                  as users_total,
            (select count(*) from users where deleted_at is null and last_seen_at > now() - interval '15 minutes')                    as active_15m,
            (select count(*) from users where deleted_at is null and last_seen_at > now() - interval '24 hours')                      as active_24h,

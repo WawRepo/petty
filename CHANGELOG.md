@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The API no longer keeps an idle database awake. Housekeeping (expired sessions, sign-in requests,
+  limit counters, reset tokens, ended invitations, 30-day-old vault history) runs hourly while requests
+  use the database and once a day otherwise. The usage gauges (`petty_users_*`, `petty_drawers_*`,
+  `petty_entries_stored`) refresh only while the database is awake anyway; in between, they repeat their
+  last values. On a hosted database that scales to zero and bills while awake, an unused instance now
+  lets it sleep. Point frequent outside probes at `/api/health/live`, not `/api/health` (docs/monitoring.md).
+
 ## [1.5.19] — 2026-10-09
 
 ### Changed

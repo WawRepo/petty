@@ -42,7 +42,7 @@ separate port, not on the app port, so a reverse proxy never exposes them. The c
 | `petty_pg_pool_clients` | `pool` = api, maint; `state` = total, idle, waiting | database pool occupancy |
 | `petty_security_refusals_total` | `code` = CustodyProofInvalid, KeysMismatch, WrapMismatch, DelegationInvalid, DelegationMismatch, DeviceKeyInvalid, TokenCannotVerify, SigningKeyRequired, ReadTokenCannotSign | refusals that normal use never triggers: a forged custody proof, keys or a wrap that do not match, a token asked to do what it may not (`SECURITY_REFUSALS` in `apps/api/src/lib/errors.ts`) |
 | `petty_process_resident_memory_bytes` | none | the API process's resident memory, also on the OTLP push (which has no `process_*` defaults) |
-| `petty_users_total`, `petty_users_active{window}`, `petty_sessions_open`, `petty_drawers_total`, `petty_drawers_shared`, `petty_entries_stored` | `window` = 15m, 24h, 7d | usage counts from the database, refreshed at most every 30 seconds |
+| `petty_users_total`, `petty_users_active{window}`, `petty_sessions_open`, `petty_drawers_total`, `petty_drawers_shared`, `petty_entries_stored` | `window` = 15m, 24h, 7d | usage counts from the database, refreshed at most every 30 seconds and only while the database is awake anyway (see below); otherwise the last values repeat |
 | `process_*`, `nodejs_*` | none | prom-client defaults |
 
 No label carries content, an email address or a user id, and every label has a fixed set of
@@ -91,7 +91,14 @@ data:
 | Path | Meaning |
 |---|---|
 | `/api/health/live` | the process is up (use for liveness) |
-| `/api/health` | the process is up and the database answers: `{"ok":true,"db":"up"}` |
+| `/api/health` | the process is up and the database answers: `{"ok":true,"db":"up"}` (runs one query) |
+
+**A database that scales to zero** (hosted Postgres that suspends after a few idle minutes and bills
+while awake) sleeps only if nothing queries it. Petty itself never wakes it just to poll (PETTY-355): its
+housekeeping runs hourly while requests use the database and once a day otherwise, and the usage gauges
+refresh only while the database is awake anyway. So point frequent outside probes at `/api/health/live`,
+and call `/api/health` (or anything else that connects to the database, such as a Postgres exporter) no
+more often than the idle timeout you can afford to lose.
 
 ## Suggested alerts
 
@@ -114,7 +121,8 @@ and on the OTLP push alike; with several instances, add `by (deployment_environm
 | Memory | `max(petty_process_resident_memory_bytes) / <the machine's memory in bytes> > 0.8` | 15 min |
 | Error logs (Loki) | `count_over_time({service_name="petty"} \| detected_level="error" [10m]) > 5` | — |
 
-Also worth a check from outside: an HTTP probe on `/api/health` that expects `"db":"up"`, and, if you
+Also worth a check from outside: an HTTP probe on `/api/health` that expects `"db":"up"` (on a database
+that scales to zero, probe `/api/health/live` instead, see above), and, if you
 run the backup job from `deploy/backup`, an alert when the last successful backup is older than
 26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`,
 `petty_security_refusals_total`) appear after their first event, so treat "no data" as fine for those
