@@ -12,6 +12,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      # init and analyze fail unless they run the same version
+      codeql-action:
+        patterns: ["github/codeql-action*"]
   - package-ecosystem: docker
     directories:
       - "/"
