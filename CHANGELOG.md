@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.22] — 2026-10-21
+
 ### Fixed
 - A new access token now gets its drawer keys in requests of at most 100 drawers. Before, the web app
   sent all of them in one request, and a web application firewall that limits the number of fields per
@@ -508,7 +510,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.21...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.22...HEAD
+[1.5.22]: https://github.com/WawRepo/petty/releases/tag/v1.5.22
 [1.5.21]: https://github.com/WawRepo/petty/releases/tag/v1.5.21
 [1.5.20]: https://github.com/WawRepo/petty/releases/tag/v1.5.20
 [1.5.19]: https://github.com/WawRepo/petty/releases/tag/v1.5.19
