@@ -69,6 +69,10 @@ jobs:
           IMAGE: ghcr.io/wawrepo/petty-backup:1@${{ steps.build.outputs.digest }}
         run: |
           echo "digest: ${{ steps.build.outputs.digest }}"
-          for p in linux/amd64 linux/arm64; do
-            docker run --rm --platform "$p" "$IMAGE" sh -c "echo \"$p: age \$(age --version), \$(pg_dump --version)\""
+          # Each platform by its own manifest: Docker refuses a second platform under one pulled digest.
+          for arch in amd64 arm64; do
+            d=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest}}' \
+              | jq -r --arg a "$arch" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $a) | .digest')
+            docker run --rm --platform "linux/$arch" "ghcr.io/wawrepo/petty-backup@$d" \
+              sh -c "echo \"linux/$arch: age \$(age --version), \$(pg_dump --version)\""
           done
