@@ -25,6 +25,8 @@ export interface NewTokenOptions {
 /** A short, stable fingerprint of a token's public key, kept in the sealed user document (PETTY-181). */
 export const keyFingerprint = async (pub: string): Promise<string> => toHex(await sha256(utf8(pub)));
 
+const WRAP_BATCH = 100;
+
 const tokenId = (): string => toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 /** Drawer keys, extractable, for the drawers in scope. A drawer this device cannot open is skipped. */
@@ -118,7 +120,9 @@ async function postWraps(tokenId: string, tokenEcdhPub: string, keys: readonly {
   for (const k of keys) {
     wraps.push({ drawer_id: k.drawerId, key_version: k.keyVersion, wrap: await wrapDrawerKey(k.key, sender, tokenEcdhPub, k.drawerId, k.keyVersion) });
   }
-  await api("POST", `/me/tokens/${tokenId}/keys`, { keys: wraps });
+  // PETTY-372: a few requests, not one huge one. A web application firewall in front of the server may
+  // check every JSON field (8 per wrap) and cap their number. The server adds each batch to the last.
+  for (let i = 0; i < wraps.length; i += WRAP_BATCH) await api("POST", `/me/tokens/${tokenId}/keys`, { keys: wraps.slice(i, i + WRAP_BATCH) });
   return wraps.length;
 }
 

@@ -317,6 +317,15 @@ describe("access tokens (PETTY-164)", () => {
     expect(own.statusCode).toBe(200);
     expect(own.json().keys[0].drawer_id).toBe(d.id);
 
+    // PETTY-372: the web app sends wraps in batches. A later batch adds to the earlier ones; a repeated wrap changes nothing.
+    const d2 = await drawer(A, "Attic");
+    const key2 = await A.unwrap((await A.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === d2.id), A.user.pub.ecdh, true);
+    const forToken2 = await wrapDrawerKey(key2, { ecdhPrivate: A.user.keys.ecdh.privateKey, ecdhPublicB64: A.user.pub.ecdh }, pub, d2.id, 1);
+    expect((await A.call("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [{ drawer_id: d.id, key_version: 1, wrap: forToken }, { drawer_id: d2.id, key_version: 1, wrap: forToken2 }] })).statusCode).toBe(204);
+    const both = (await tool(token)("GET", "/me/token/keys")).json().keys as { drawer_id: string; wrap: { salt: string } }[];
+    expect(both.map((k) => k.drawer_id).sort()).toEqual([d.id, d2.id].sort());
+    expect(both.find((k) => k.drawer_id === d.id)!.wrap.salt).toBe(forToken.salt);
+
     // a token cannot add wraps, and a drawer the owner is not in cannot be wrapped
     expect((await tool(token)("POST", `/me/tokens/${tokenRowId}/keys`, { keys: [] })).statusCode).toBe(403);
     const theirs = await drawer(B, "Not mine");

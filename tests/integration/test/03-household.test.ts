@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, toB64, unlockVault, type VaultBlobV1 } from "@petty/crypto";
+import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
 import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
@@ -162,5 +162,29 @@ describe("household", () => {
 
     expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);
     await expect(agent.drawers()).rejects.toMatchObject({ code: "TokenRevoked" });
+  });
+
+  it("a token's drawer keys sent in several requests all reach the tool (PETTY-372)", async () => {
+    // The web app sends a token's wraps in batches: each request adds to the last, and a repeat changes nothing.
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+    const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
+    const secret = patSecret();
+    const bundle = await sealPatBundle(secret, id, { v: 1, user_id: ann.id, drawers: [], ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))) });
+    const made = await ann.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: "Batches", role: "read", scope: null, expires_at: null, bundle, proof: await ann.proof() });
+    expect(made.statusCode).toBe(201);
+    const rowId = made.json().id as string;
+
+    const attic = await ann.createDrawer("Attic");
+    expect(attic.res.statusCode).toBe(201);
+    const wraps = (await ann.call("GET", "/bootstrap")).json().wraps;
+    const forToken = async (drawer: string) => ({ drawer_id: drawer, key_version: 1, wrap: await wrapDrawerKey(await ann.unwrap(wraps.find((w: { drawer_id: string }) => w.drawer_id === drawer), ann.user.pub.ecdh, true), ann.sender, pub, drawer, 1) });
+    const first = await forToken(drawerId);
+    for (const keys of [[first], [await forToken(attic.id)], [first]]) {
+      expect((await ann.call("POST", `/me/tokens/${rowId}/keys`, { keys })).statusCode).toBe(204);
+    }
+    const agent = await connect({ token: patToken(id, secret), apiUrl: API });
+    expect((await agent.drawers()).map((d) => d.id).sort()).toEqual([drawerId, attic.id].sort());
+    expect((await ann.call("DELETE", `/me/tokens/${rowId}`)).statusCode).toBe(204);
   });
 });

@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- A new access token now gets its drawer keys in requests of at most 100 drawers. Before, the web app
+  sent all of them in one request, and a web application firewall that limits the number of fields per
+  request could refuse it: the token then saw none of your drawers.
+
 ## [1.5.21] — 2026-10-21
 
 ### Changed
