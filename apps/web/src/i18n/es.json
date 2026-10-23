@@ -348,7 +348,6 @@
     "noLines": "Este cajón aún no tiene elementos.",
     "dragHandle": "Mover {name}: arrastra o usa las teclas de flecha",
     "lineOptions": "Opciones de {name}",
-    "open": "Abrir {name}",
     "kind": {
       "money": "Dinero",
       "countable": "Por unidades",

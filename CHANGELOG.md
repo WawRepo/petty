@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- A screen reader now reads a drawer's row on Home, and an item's row in a drawer, as it looks: the
+  name, then the amount and the rest of the row. Before, it read only "Open" and the name. Voice control
+  can now press a row by the name you see on it.
+
 ## [1.5.22] — 2026-10-21
 
 ### Fixed

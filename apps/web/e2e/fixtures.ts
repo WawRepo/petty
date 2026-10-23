@@ -3,7 +3,7 @@
  * two different users, signed up through the real API and unlocked through the
  * real UI. Single-context tests cannot catch this app's concurrency bugs.
  */
-import { test as base, expect, type BrowserContext, type Page } from "@playwright/test";
+import { test as base, expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { randomBytes, createHash } from "node:crypto";
 import pg from "pg";
 import { createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys, signingKeyId } from "@petty/crypto";
@@ -204,6 +204,13 @@ export async function swapCiphertexts(drawerId: string, lineId: string): Promise
 export async function openSettings(page: Page): Promise<void> {
   await page.getByTestId("account-menu").click();
   await page.getByRole("dialog").getByRole("button", { name: "Settings" }).click();
+}
+
+/** A drawer's row on Home, or an item's row in a drawer, by its exact name. The rows have no aria-label:
+ * a button is named by what it shows, name first (PETTY-375, axe's label-content-name-mismatch). */
+export function rowNamed(page: Page, name: string): Locator {
+  const exact = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+  return page.locator("button.row").filter({ has: page.getByTestId(/^(drawer|line)-name$/).filter({ hasText: exact }) });
 }
 
 /** Drawers made through the app's own store (dev build, signed in and unlocked), each with its place. */

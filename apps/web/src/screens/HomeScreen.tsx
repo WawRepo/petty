@@ -97,11 +97,13 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const maxExp = Math.max(0, ...subtotals.map(([, v]) => v.exponent));
   subtotals.sort(([ac, a], [bc, b]) => b.amount * 10 ** (maxExp - b.exponent) - a.amount * 10 ** (maxExp - a.exponent) || ac.localeCompare(bc));
   const head = subtotals[0];
+  // PETTY-375: no aria-label. The row is named by what it shows (name, place, amount, count), so a screen
+  // reader also reads the amount and a voice user can say the name they see (WCAG 2.5.3).
   return (
-    <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} aria-label={t("drawer.open", { name })} data-testid="drawer-row">
+    <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row">
       {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className={`tile ${colorClass(view.doc ? colorOf(view.doc) : null)}`} aria-hidden="true" data-icon={drawerIcon(view)}><PIcon name={drawerIcon(view)} /></span>}
       <span className="rowmain">
-        <span className="rowtitle">{name}{place ? <span className="row-sub" data-testid={placeTestId}>{Icon.pin}{place}</span> : null}</span>
+        <span className="rowtitle"><span data-testid="drawer-name">{name}</span>{place ? <span className="row-sub" data-testid={placeTestId}>{Icon.pin}{place}</span> : null}</span>
         {view.error ? <span className="degraded" role="status">{t(`home.degradedReason.${view.error}`)}</span> : (
           <>
             {/* Every currency on the card (PETTY-120, audit F13): the first as the headline, the others under it. */}

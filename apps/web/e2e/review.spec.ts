@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { expect, loginAndUnlock, makeJoinLink, signupViaApi, test, openSettings } from "./fixtures.js";
+import { expect, loginAndUnlock, makeJoinLink, signupViaApi, test, openSettings, rowNamed } from "./fixtures.js";
 
 const OUT = process.env["REVIEW_OUT"] ?? mkdtempSync(join(tmpdir(), "petty-review-"));
 const PL_WITHDRAW = "Wyjmij";
@@ -73,7 +73,7 @@ test("capture every screen and run axe", async ({ page, context }) => {
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByTestId("line-row")).toHaveCount(3);
   await shot(page, "07-drawer");
-  await page.getByRole("button", { name: "Open Złotówki na zakupy" }).click();
+  await rowNamed(page, "Złotówki na zakupy").click();
   await expect(page.getByTestId("line-balance")).toBeVisible();
   await page.getByRole("button", { name: "Withdraw", exact: true }).click();
   for (const d of "40.50") await page.getByRole("group").getByRole("button", { name: d === "." ? "Decimal point" : d, exact: true }).click();
@@ -115,9 +115,9 @@ test("capture every screen and run axe", async ({ page, context }) => {
   await shot(page, "19-settings-pl", false);
   await page.goto("/");
   await shot(page, "20-home-pl", false);
-  await page.getByRole("button", { name: /Otwórz Kitchen/ }).click();
+  await rowNamed(page, "Kitchen").click();
   await shot(page, "21-drawer-pl", false);
-  await page.getByRole("button", { name: /Otwórz Złotówki/ }).click();
+  await rowNamed(page, "Złotówki na zakupy").click();
   await page.getByRole("button", { name: PL_WITHDRAW, exact: true }).click();
   await shot(page, "22-entry-keypad-pl", false);
   await page.keyboard.press("Escape");
@@ -128,9 +128,9 @@ test("capture every screen and run axe", async ({ page, context }) => {
   const dp = await dark.newPage();
   await loginAndUnlock(dp, user);
   await shot(dp, "30-home-dark");
-  await dp.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(dp, "Kitchen").click();
   await shot(dp, "31-drawer-dark");
-  await dp.getByRole("button", { name: "Open Złotówki na zakupy" }).click();
+  await rowNamed(dp, "Złotówki na zakupy").click();
   await shot(dp, "32-line-dark");
   await dp.getByRole("button", { name: "Add", exact: true }).click();
   await shot(dp, "33-entry-dark");

@@ -348,7 +348,6 @@
     "noLines": "Ta szuflada nie ma jeszcze pozycji.",
     "dragHandle": "Przesuń {name}: przeciągnij lub użyj strzałek",
     "lineOptions": "Opcje: {name}",
-    "open": "Otwórz {name}",
     "kind": {
       "money": "Pieniądze",
       "countable": "Policzalne",

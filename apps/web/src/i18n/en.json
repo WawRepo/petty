@@ -348,7 +348,6 @@
     "noLines": "No items in this drawer yet.",
     "dragHandle": "Move {name}: drag, or use the arrow keys",
     "lineOptions": "Options for {name}",
-    "open": "Open {name}",
     "kind": {
       "money": "Money",
       "countable": "Countable",

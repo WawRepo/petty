@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { apiClient, corruptDocument, expect, jpegWithGpsExif, loginAndUnlock, pickTags, shareViaApi, signupViaApi, signupWithKeys, test, openSettings } from "./fixtures.js";
+import { apiClient, corruptDocument, expect, jpegWithGpsExif, loginAndUnlock, pickTags, shareViaApi, signupViaApi, signupWithKeys, test, openSettings, rowNamed } from "./fixtures.js";
 
 async function addDrawer(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -11,7 +11,7 @@ async function addDrawer(page: Page, name: string): Promise<string> {
 }
 /** Open a line from the drawer and pick one of its options (PETTY-71: the options sit on the line's screen). */
 async function lineOption(page: Page, name: string, option: string) {
-  await page.getByRole("button", { name: `Open ${name}` }).click();
+  await rowNamed(page, name).click();
   await page.getByRole("button", { name: `Options for ${name}` }).click();
   await page.getByRole("button", { name: option, exact: true }).click();
 }
@@ -69,7 +69,7 @@ test("create a drawer with money, countable and single lines; totals across two 
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Kitchen" })).not.toContainText("2 currencies");
   await expect(page.getByTestId("totals-across")).toHaveText("Across 2 drawers");
   // "Part of my total" off for Basement: it leaves the total and says so on its row (PETTY-38)
-  await page.getByRole("button", { name: "Open Basement" }).click();
+  await rowNamed(page, "Basement").click();
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByTestId("counted-switch").uncheck();
   await page.keyboard.press("Escape");
@@ -80,21 +80,21 @@ test("create a drawer with money, countable and single lines; totals across two 
   await page.reload();
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Basement" }).getByTestId("not-in-total")).toBeVisible();
   // nothing counted → no TOTAL block at all
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(page, "Kitchen").click();
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByTestId("counted-switch").uncheck();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("home-totals")).toHaveCount(0);
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(page, "Kitchen").click();
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByTestId("counted-switch").check();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("home-totals").getByRole("listitem")).toHaveText(["1,234.56 PLN", "20.00 EUR"]);
   // line screen shows the folded balance
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
-  await page.getByRole("button", { name: "Open PLN kitchen" }).click();
+  await rowNamed(page, "Kitchen").click();
+  await rowNamed(page, "PLN kitchen").click();
   await expect(page.getByTestId("line-balance")).toHaveText("1,234.56");
 });
 
@@ -109,7 +109,7 @@ test("keyboard-only reorder with Move down / Move up; rename; currency relabel k
   // a line's options live on its own screen, behind ⋯ in the top bar (PETTY-71); no dots on the rows
   await expect(page.getByRole("button", { name: /^Options for/ })).toHaveCount(0);
   // keyboard: open A, focus the ⋯ and go through the menu with Enter
-  await page.getByRole("button", { name: "Open A" }).click();
+  await rowNamed(page, "A").click();
   await page.getByRole("button", { name: "Options for A" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -139,7 +139,7 @@ test("keyboard-only reorder with Move down / Move up; rename; currency relabel k
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("line-row").filter({ hasText: "Alpha" })).toContainText("10.00 JPY");
-  await page.getByRole("button", { name: "Open B" }).click();
+  await rowNamed(page, "B").click();
   await page.getByRole("button", { name: "Options for B" }).click();
   await expect(page.getByRole("button", { name: "Change type" })).toBeEnabled();
   await page.keyboard.press("Escape");
@@ -220,7 +220,7 @@ test("two users edit the same drawer: a stale-version write is retried and both 
   await addMoneyLine(pageA, "Three", "PLN", "0");
   await shareViaApi(alice, id, bob, "write");
   await loginAndUnlock(pageB, bob);
-  await pageB.getByRole("button", { name: "Open Shared" }).click();
+  await rowNamed(pageB, "Shared").click();
   await expect.poll(() => lineNames(pageB)).toEqual(["One", "Two", "Three"]);
   // both loaded version N. Alice renames One; Bob (still on N) renames Two → 409 → refetch → re-apply → both present.
   await lineOption(pageA, "One", "Rename");
@@ -500,7 +500,7 @@ test("drawer screen (PETTY-64): icons for the drawer and a line, line tags with 
   await page.getByTestId("line-tag-bar").getByRole("button", { name: "All tags" }).click();
   await expect(page.getByTestId("line-row")).toHaveCount(2);
   // switch Gold coins out of the total: two boxes, status chips, the row says so, the amount is muted
-  await page.getByRole("button", { name: "Open Gold coins" }).click();
+  await rowNamed(page, "Gold coins").click();
   await page.getByRole("button", { name: "Options for Gold coins" }).click();
   await page.getByTestId("line-counted-switch").click(); // the switch flips once the document write lands
   await expect(page.getByTestId("line-counted-switch")).not.toBeChecked();
@@ -548,7 +548,7 @@ test("places editor (PETTY-66): add, nest, rename, move and delete places; the d
   await page.getByRole("button", { name: "Expand clubhouse" }).click();
   // put the drawer at the deepest node through the picker
   await page.getByRole("button", { name: "Back" }).click(); await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "Open Cash box" }).click();
+  await rowNamed(page, "Cash box").click();
   await page.getByRole("button", { name: "Drawer options" }).click(); await page.getByTestId("drawer-tags").click();
   await page.getByTestId("drawer-place-picker").getByTestId("place-option").filter({ hasText: /^locker 12$/ }).click();
   await page.getByRole("button", { name: "Drawer options" }).click();
@@ -648,7 +648,7 @@ test("verification is optional (PETTY-83): the switch hides the Mark as checked 
   await page.getByTestId("verification-switch").uncheck();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("verify-badge")).toHaveCount(0);
-  await page.getByRole("button", { name: "Open Tin" }).click();
+  await rowNamed(page, "Tin").click();
   await expect(page.getByTestId("verify-bar")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Mark as checked" })).toHaveCount(0);
   await page.getByRole("button", { name: "Back" }).click();
@@ -662,7 +662,7 @@ test("totals are optional (PETTY-84): the switch hides the Total value card, the
   const u = await signupWithKeys("toma");
   await loginAndUnlock(page, u);
   await addDrawer(page, "Tin"); await addMoneyLine(page, "Cash", "PLN", "10"); await addMoneyLine(page, "Coins", "PLN", "5");
-  await page.getByRole("button", { name: "Open Coins" }).click(); await page.getByRole("button", { name: "Options for Coins" }).click();
+  await rowNamed(page, "Coins").click(); await page.getByRole("button", { name: "Options for Coins" }).click();
   await page.getByTestId("line-counted-switch").click(); await expect(page.getByTestId("line-counted-switch")).not.toBeChecked(); await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("drawer-totals")).toBeVisible();
@@ -674,7 +674,7 @@ test("totals are optional (PETTY-84): the switch hides the Total value card, the
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("home-totals")).toHaveCount(0);
   await expect(page.getByTestId("drawer-row").getByTestId("row-amount")).toHaveText("10.00 PLN"); // the card's own amount stays
-  await page.getByRole("button", { name: "Open Tin" }).click();
+  await rowNamed(page, "Tin").click();
   await expect(page.getByTestId("drawer-totals")).toHaveCount(0);
   await expect(page.getByTestId("status-bar")).toHaveCount(0);
   await expect(page.getByTestId("line-counted")).toHaveCount(0);
@@ -813,14 +813,14 @@ test("tags (PETTY-147): the picker toggles and adds, the limit shows, Manage tag
   await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
   await addDrawer(page, "Desk");
   await addMoneyLine(page, "Cash", "PLN", "1"); await addMoneyLine(page, "Coins", "PLN", "1");
-  await page.getByRole("button", { name: "Open Cash" }).click(); await page.getByRole("button", { name: "Options for Cash" }).click(); await page.getByTestId("line-tags-btn").click();
+  await rowNamed(page, "Cash").click(); await page.getByRole("button", { name: "Options for Cash" }).click(); await page.getByTestId("line-tags-btn").click();
   const picker = page.getByTestId("tag-picker");
   await expect(picker.getByText("No tags yet")).toBeVisible();
   await pickTags(page, ["food", "cash", "Food"]); // "Food" is the same tag as "food"
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("line-row").filter({ has: page.getByTestId("line-name").getByText("Cash", { exact: true }) }).getByTestId("line-tags")).toHaveText("foodcash");
   // the second line picks from the chips; the counter shows the limit
-  await page.getByRole("button", { name: "Open Coins" }).click(); await page.getByRole("button", { name: "Options for Coins" }).click(); await page.getByTestId("line-tags-btn").click();
+  await rowNamed(page, "Coins").click(); await page.getByRole("button", { name: "Options for Coins" }).click(); await page.getByTestId("line-tags-btn").click();
   await expect(picker.getByRole("button", { name: "cash" })).toHaveAttribute("aria-pressed", "false");
   await picker.getByRole("button", { name: "cash" }).click();
   await expect(picker.getByText("1 of 5 tags")).toBeVisible();
@@ -920,7 +920,7 @@ test("tags per person (PETTY-152): one list across drawers, kept without items, 
   await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
   await addDrawer(page, "Kitchen");
   await addMoneyLine(page, "Jar", "PLN", "1");
-  await page.getByRole("button", { name: "Open Jar" }).click(); await page.getByRole("button", { name: "Options for Jar" }).click(); await page.getByTestId("line-tags-btn").click();
+  await rowNamed(page, "Jar").click(); await page.getByRole("button", { name: "Options for Jar" }).click(); await page.getByTestId("line-tags-btn").click();
   await pickTags(page, ["groceries"]);
   await page.getByRole("button", { name: "Back" }).click();
   // a tag made in the manager with no items yet
@@ -934,7 +934,7 @@ test("tags per person (PETTY-152): one list across drawers, kept without items, 
   await page.goto("/");
   await addDrawer(page, "Office");
   await addMoneyLine(page, "Petty box", "PLN", "1");
-  await page.getByRole("button", { name: "Open Petty box" }).click(); await page.getByRole("button", { name: "Options for Petty box" }).click(); await page.getByTestId("line-tags-btn").click();
+  await rowNamed(page, "Petty box").click(); await page.getByRole("button", { name: "Options for Petty box" }).click(); await page.getByTestId("line-tags-btn").click();
   const picker = page.getByTestId("tag-picker");
   await expect(picker.getByRole("button", { name: "emergency" })).toBeVisible();
   await expect(picker.getByRole("button", { name: "groceries" })).toBeVisible();
@@ -943,7 +943,7 @@ test("tags per person (PETTY-152): one list across drawers, kept without items, 
   await page.getByRole("button", { name: "Back" }).click();
   // PETTY-316 CI: Back is a navigation of its own; a reload started before it lands was aborted
   // (net::ERR_ABORTED, twice on one CI run). Reload once the drawer shows again.
-  await expect(page.getByRole("button", { name: "Open Petty box" })).toBeVisible();
+  await expect(rowNamed(page, "Petty box")).toBeVisible();
   // the list survives a reload (it lives in the user document), and Settings renames the tag in both drawers
   await page.reload();
   await openSettings(page);
@@ -986,7 +986,7 @@ test("tags per person (PETTY-152): a read-only shared drawer keeps the old tag a
   await loginAndUnlock(pageA, alice);
   const id = await addDrawer(pageA, "Safe");
   await addMoneyLine(pageA, "Gold", "PLN", "1");
-  await pageA.getByRole("button", { name: "Open Gold" }).click(); await pageA.getByRole("button", { name: "Options for Gold" }).click(); await pageA.getByTestId("line-tags-btn").click();
+  await rowNamed(pageA, "Gold").click(); await pageA.getByRole("button", { name: "Options for Gold" }).click(); await pageA.getByTestId("line-tags-btn").click();
   await pickTags(pageA, ["valuables"]);
   await shareViaApi(alice, id, bob, "read");
   await loginAndUnlock(pageB, bob);

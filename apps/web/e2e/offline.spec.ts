@@ -1,5 +1,5 @@
 import type { BrowserContext, Page } from "@playwright/test";
-import { dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings } from "./fixtures.js";
+import { dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings, rowNamed } from "./fixtures.js";
 
 async function makeLine(page: Page, drawer: string): Promise<{ drawerId: string; lineId: string }> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -13,7 +13,7 @@ async function makeLine(page: Page, drawer: string): Promise<{ drawerId: string;
   await page.getByLabel("Starting balance").fill("100");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByTestId("line-row").first()).toContainText("100.00 EUR");
-  await page.getByRole("button", { name: "Open Cash" }).click();
+  await rowNamed(page, "Cash").click();
   await expect(page.getByTestId("line-balance")).toHaveText("100.00");
   const lineId = /\/lines\/([0-9a-f-]+)/.exec(page.url())![1]!;
   return { drawerId, lineId };
@@ -131,8 +131,8 @@ test("offline reload: unlock works with no network, drawers come from the cipher
   await expect(page.getByTestId("offline-banner")).toContainText("Showing what was loaded last time");
   expect(apiCalls).toBeGreaterThan(0);
   // an entry logged now goes to the outbox; backdate it two days → the "waited more than a day" warning
-  await page.getByRole("button", { name: "Open Basement" }).click();
-  await page.getByRole("button", { name: "Open Cash" }).click();
+  await rowNamed(page, "Basement").click();
+  await rowNamed(page, "Cash").click();
   await add(page, "9");
   await expect(page.getByTestId("line-balance")).toHaveText("109.00");
   await page.evaluate(async () => {

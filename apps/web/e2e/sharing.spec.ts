@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { unwrapDrawerKey, openEntryUnverified, fromB64, AuthTagMismatch } from "@petty/crypto";
-import { apiClient, dbQuery, expect, loginAndUnlock, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
+import { apiClient, dbQuery, expect, loginAndUnlock, rowNamed, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
 
 async function makeDrawer(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -52,7 +52,7 @@ test("invite by email with safety number; no access before accept; reader sees e
   expect((await bobApi.call("GET", `/drawers/${id}`)).status).toBe(404);
   await loginAndUnlock(pageB, bob);
   await acceptViaUi(pageB);
-  await pageB.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(pageB, "Kitchen").click();
   await expect(pageB.getByTestId("line-row").first()).toContainText("100.00 EUR");
   await expect(pageB.getByRole("button", { name: "Add item" })).toBeVisible();
   // bob's Members screen: alice is confirmed (he compared at accept)
@@ -63,11 +63,11 @@ test("invite by email with safety number; no access before accept; reader sees e
   await inviteViaUi(pageA, id, carol, "read");
   await loginAndUnlock(pageC, carol);
   await acceptViaUi(pageC);
-  await pageC.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(pageC, "Kitchen").click();
   await expect(pageC.getByTestId("line-row").first()).toContainText("100.00 EUR");
   await expect(pageC.getByRole("button", { name: "Add item" })).toHaveCount(0);
   await expect(pageC.getByRole("button", { name: "Mark as checked" })).toHaveCount(0);
-  await pageC.getByRole("button", { name: "Open Cash" }).click();
+  await rowNamed(pageC, "Cash").click();
   await expect(pageC.getByTestId("entry-row")).toHaveCount(1);
   await expect(pageC.getByRole("button", { name: "Add", exact: true })).toHaveCount(0);
   const carolApi = await apiClient(carol);
@@ -105,7 +105,7 @@ test("revoke rotates the key: the removed member's old key cannot open anything 
   expect((await dbQuery("select count(*)::int as n from entries where drawer_id = $1 and key_version = 1", [id]) as { n: number }[])[0]!.n).toBe(0);
   // alice writes a new entry under key 2; bob's old key cannot open it (nor the re-sealed old one)
   await pageA.goto(`/drawers/${id}`);
-  await pageA.getByRole("button", { name: "Open Cash" }).click();
+  await rowNamed(pageA, "Cash").click();
   await pageA.getByRole("button", { name: "Add", exact: true }).click();
   await pageA.getByRole("group").getByRole("button", { name: "7", exact: true }).click();
   await pageA.getByRole("button", { name: "Review" }).click();
@@ -127,7 +127,7 @@ test("revoke rotates the key: the removed member's old key cannot open anything 
   await pageA.goto("/");
   await expect.poll(async () => ((await aliceApi.call("GET", `/drawers/${id}/rotation`)).json as { completed: boolean; key_version: number }), { timeout: 20_000 }).toMatchObject({ completed: true, key_version: 3 });
   expect((await dbQuery("select count(*)::int as n from entries where drawer_id = $1 and key_version < 3", [id]) as { n: number }[])[0]!.n).toBe(0);
-  await pageA.getByRole("button", { name: "Open Shared" }).click();
+  await rowNamed(pageA, "Shared").click();
   await expect(pageA.getByTestId("line-row").first()).toContainText("107.00 EUR");
   await ctxA.close(); await ctxB.close();
 });

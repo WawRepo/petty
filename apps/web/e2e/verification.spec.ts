@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings } from "./fixtures.js";
+import { dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings, rowNamed } from "./fixtures.js";
 
 async function setupDrawer(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -28,7 +28,7 @@ test("confirm state: every line listed, ticks default present, badge turns green
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("verify-badge")).toHaveAttribute("data-status", "never");
   await expect(page.getByTestId("verify-badge")).toContainText("Not checked yet");
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(page, "Kitchen").click();
   // confirm: balances shown, passport ticked by default
   await page.getByRole("button", { name: "Mark as checked" }).click();
   await expect(page.getByTestId("confirm-state-lines")).toContainText("PLN kitchen1,234.56 PLN");
@@ -43,7 +43,7 @@ test("confirm state: every line listed, ticks default present, badge turns green
   await expect(page.getByTestId("verify-badge")).toContainText("Checked · just now");
   await expect(page.getByTestId("verify-badge")).toHaveAttribute("data-status", "verified");
   // any change of any kind makes it stale: a rename
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(page, "Kitchen").click();
   await page.getByRole("button", { name: "Drawer options" }).click();
   await page.getByRole("button", { name: "Rename drawer" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Kitchen 2");
@@ -53,7 +53,7 @@ test("confirm state: every line listed, ticks default present, badge turns green
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("verify-badge")).toContainText("Check again");
   // confirm again with the passport absent → flagged row in history
-  await page.getByRole("button", { name: "Open Kitchen 2" }).click();
+  await rowNamed(page, "Kitchen 2").click();
   await page.getByRole("button", { name: "Mark as checked" }).click();
   await page.getByRole("checkbox", { name: "Passport is present" }).uncheck();
   await page.getByRole("dialog").getByRole("button", { name: "Mark as checked" }).click();
@@ -100,7 +100,7 @@ test("another member's photo change or entry makes the verification stale for ev
   await pageA.getByRole("dialog").getByRole("button", { name: "Mark as checked" }).click();
   await expect(pageA.getByTestId("verify-bar")).toHaveAttribute("data-status", "verified");
   await pageB.goto(`/drawers/${id}`);
-  await pageB.getByRole("button", { name: "Open PLN kitchen" }).click();
+  await rowNamed(pageB, "PLN kitchen").click();
   await pageB.getByRole("button", { name: "Add", exact: true }).click();
   await pageB.getByRole("group").getByRole("button", { name: "5", exact: true }).click();
   await pageB.getByRole("button", { name: "Review" }).click();

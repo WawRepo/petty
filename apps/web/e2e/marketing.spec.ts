@@ -4,7 +4,7 @@
  */
 import { mkdirSync, readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { expect, loginAndUnlock, pickTags, signupViaApi, test } from "./fixtures.js";
+import { expect, loginAndUnlock, pickTags, rowNamed, signupViaApi, test } from "./fixtures.js";
 
 const OUT = process.env["MARKETING_OUT"] ?? "/tmp/petty-marketing";
 test.skip(!process.env["MARKETING"], "marketing capture; set MARKETING=1");
@@ -67,7 +67,7 @@ async function setDrawerIcon(page: Page, label: string, colour?: string) {
 }
 /** From the drawer: open the line, use its ⋯ (PETTY-71), come back. */
 async function lineOption(page: Page, name: string, option: string) {
-  await page.getByRole("button", { name: `Open ${name}` }).click();
+  await rowNamed(page, name).click();
   await page.getByRole("button", { name: `Options for ${name}` }).click();
   await page.getByRole("button", { name: option, exact: true }).click();
 }
@@ -125,13 +125,13 @@ test("capture home, drawer, items, keypad and places per locale and theme", asyn
     await setLineTags(sp, N.trip, P.tags2);
     await setLineIcon(sp, N.trip, "Travel");
     // the trip fund is savings, not drawer cash: out of the total, so the drawer shows both totals
-    await sp.getByRole("button", { name: `Open ${N.trip}` }).click();
+    await rowNamed(sp, N.trip).click();
     await sp.getByRole("button", { name: `Options for ${N.trip}` }).click();
     await sp.getByTestId("line-counted-switch").click();
     await expect(sp.getByTestId("line-counted-switch")).not.toBeChecked();
     await sp.keyboard.press("Escape");
     await sp.getByRole("button", { name: "Back" }).click();
-    await sp.getByRole("button", { name: `Open ${N.groceries}` }).click();
+    await rowNamed(sp, N.groceries).click();
     await sp.getByRole("button", { name: "Withdraw", exact: true }).click();
     for (const d of "40.50") await sp.getByRole("group").getByRole("button", { name: d === "." ? "Decimal point" : d, exact: true }).click();
     await sp.getByLabel("Comment (optional)").fill(N.comment);

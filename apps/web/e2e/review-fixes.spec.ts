@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, loginAndUnlock, makeDrawers, openSettings, shareViaApi, signupViaApi, signupWithKeys, test } from "./fixtures.js";
+import { expect, loginAndUnlock, makeDrawers, openSettings, rowNamed, shareViaApi, signupViaApi, signupWithKeys, test } from "./fixtures.js";
 
 /**
  * PETTY-279: the bugs the UI review found (PETTY-278), each checked where a browser can see it. The ids
@@ -214,7 +214,7 @@ test("M3, M2, M17: the keypad stops at the currency's decimals; no amount is sai
   await addDrawer(page, "Tin");
   await addMoneyLine(page, "Euros", "EUR", "10");
   await addMoneyLine(page, "Dollars", "USD", "500");
-  await page.getByRole("button", { name: "Open Euros" }).click();
+  await rowNamed(page, "Euros").click();
   await page.getByRole("button", { name: "Add", exact: true }).click();
   // M3: EUR has two decimals, from the keypad and from the keyboard alike
   await keypad(page, "1.2345");
@@ -241,7 +241,7 @@ test("M3, M2, M17: the keypad stops at the currency's decimals; no amount is sai
   await expect(page.getByRole("dialog").getByRole("button", { name: "Move down" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("button", { name: "Open Dollars" }).click();
+  await rowNamed(page, "Dollars").click();
   await page.getByRole("button", { name: "Options for Dollars" }).click();
   await expect(page.getByRole("dialog").getByRole("button", { name: "Move up" })).toBeEnabled();
   await expect(page.getByRole("dialog").getByRole("button", { name: "Move down" })).toBeDisabled();

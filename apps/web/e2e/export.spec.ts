@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { openArchive } from "@petty/crypto";
-import { apiClient, expect, loginAndUnlock, shareViaApi, signupWithKeys, test } from "./fixtures.js";
+import { apiClient, expect, loginAndUnlock, rowNamed, shareViaApi, signupWithKeys, test } from "./fixtures.js";
 
 async function keypad(page: Page, op: "Add" | "Withdraw" | "Adjust", digits: string, comment = "") {
   await page.getByRole("button", { name: op, exact: true }).click();
@@ -36,7 +36,7 @@ test("encrypted export → import into another account: same drawers, balances, 
   const jpeg = Buffer.from(await pageA.evaluate(async () => { const c = document.createElement("canvas"); c.width = 200; c.height = 100; c.getContext("2d")!.fillStyle = "#c93"; c.getContext("2d")!.fillRect(0, 0, 200, 100); const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), "image/jpeg", 0.8)); return Array.from(new Uint8Array(await b.arrayBuffer())); }));
   await pageA.locator("#photo-input").setInputFiles({ name: "p.jpg", mimeType: "image/jpeg", buffer: jpeg });
   await expect(pageA.getByTestId("drawer-photo")).toBeVisible();
-  await pageA.getByRole("button", { name: "Open PLN kitchen" }).click();
+  await rowNamed(pageA, "PLN kitchen").click();
   await keypad(pageA, "Withdraw", "30", "pizza");
   await keypad(pageA, "Adjust", "60");
   await keypad(pageA, "Add", "5");
@@ -92,13 +92,13 @@ test("encrypted export → import into another account: same drawers, balances, 
   await expect(pageB.getByTestId("drawer-row").first()).toContainText("Kitchen");
   await expect(pageB.getByTestId("drawer-row").first().getByTestId("row-amount")).toHaveText("60.00 PLN");
   await expect(pageB.getByTestId("drawer-row").first()).toContainText("2 items");
-  await pageB.getByRole("button", { name: "Open Kitchen" }).click();
+  await rowNamed(pageB, "Kitchen").click();
   await expect(pageB.getByTestId("drawer-photo")).toBeVisible();
   // the history came along; the server-side verification status starts fresh on this server (nobody confirmed it here yet)
   await expect(pageB.getByTestId("verify-bar")).toHaveAttribute("data-status", "never");
   await pageB.getByRole("button", { name: "History (1)" }).click();
   await expect(pageB.getByTestId("verification-row").first()).toContainText("[imported: alice]");
-  await pageB.getByRole("button", { name: "Open PLN kitchen" }).click();
+  await rowNamed(pageB, "PLN kitchen").click();
   await expect(pageB.getByTestId("line-balance")).toHaveText("60.00");
   await expect(pageB.getByTestId("entry-row").first()).toContainText("[imported: alice,");
   await expect(pageB.getByTestId("entry-row").first()).toContainText("Reverse");

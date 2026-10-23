@@ -348,7 +348,6 @@
     "noLines": "Aucun élément dans ce tiroir pour l’instant.",
     "dragHandle": "Déplacer {name} : faites glisser ou utilisez les flèches du clavier",
     "lineOptions": "Options pour {name}",
-    "open": "Ouvrir {name}",
     "kind": {
       "money": "Argent",
       "countable": "Quantité",

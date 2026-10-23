@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { deleteNewestEntry, expect, loginAndUnlock, shareViaApi, signupWithKeys, swapCiphertexts, test } from "./fixtures.js";
+import { deleteNewestEntry, expect, loginAndUnlock, rowNamed, shareViaApi, signupWithKeys, swapCiphertexts, test } from "./fixtures.js";
 
 async function makeLine(page: Page, drawer: string, line: string, currency: string, start: string): Promise<{ drawerId: string; lineId: string }> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -12,7 +12,7 @@ async function makeLine(page: Page, drawer: string, line: string, currency: stri
   await page.getByLabel("Currency", { exact: true }).fill(currency);
   await page.getByLabel("Starting balance").fill(start);
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: `Open ${line}` }).click();
+  await rowNamed(page, line).click();
   await expect(page.getByTestId("line-balance")).toBeVisible();
   const lineId = /\/lines\/([0-9a-f-]+)/.exec(page.url())![1]!;
   return { drawerId, lineId };
@@ -60,8 +60,8 @@ test("withdraw with confirm step, negative warning and red balance; Adjust with 
   await expect(page.getByTestId("line-row").first().locator(".rowbalance")).toHaveClass(/negative/);
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByTestId("drawer-attention")).toBeVisible();
-  await page.getByRole("button", { name: "Open Kitchen" }).click();
-  await page.getByRole("button", { name: "Open PLN" }).click();
+  await rowNamed(page, "Kitchen").click();
+  await rowNamed(page, "PLN").click();
   // adjust to 10: checkpoint, delta hint shown, older entries no longer reversible
   await entry(page, "Adjust", "10");
   await expect(page.getByTestId("confirm-summary")).toContainText("Change+50.50 PLN");

@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import type { Browser, CDPSession, Locator, Page } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys, signingKeyId } from "@petty/crypto";
-import { API, expect, loginAndUnlock, makeJoinLink, shareViaApi, test, type TestUserWithKeys } from "./fixtures.js";
+import { API, expect, loginAndUnlock, makeJoinLink, rowNamed, shareViaApi, test, type TestUserWithKeys } from "./fixtures.js";
 
 const OUT = process.env["PROMO_OUT"] ?? "/tmp/petty-promo";
 test.skip(!process.env["PROMO"], "promo footage; set PROMO=1");
@@ -283,7 +283,7 @@ test("seed the six examples and film the app", async ({ browser }) => {
   await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
   const cam = new Camera(page);
   const chip = (name: string) => page.getByTestId("tag-bar").getByRole("button", { name: new RegExp(`^${name}\\b`) });
-  const row = (name: string) => page.getByRole("button", { name: `Open ${name}` });
+  const row = (name: string) => rowNamed(page, name);
   const D = (key: string) => uc(`${CASES.find((c) => c.drawers.some((d) => d.key === key))!.key}.drawers.${key}.name`);
 
   // home: the total and the places as a picture, then down the drawers
@@ -318,7 +318,7 @@ test("seed the six examples and film the app", async ({ browser }) => {
   await tap(page, row(D("kitty")), 500);
   cam.mark("drawer");
   await page.waitForTimeout(2200);
-  await tap(page, page.getByRole("button", { name: `Open ${uc("trip.items.anna.name")}` }), 300);
+  await tap(page, rowNamed(page, uc("trip.items.anna.name")), 300);
   cam.mark("line");
   await page.waitForTimeout(2200);
   await cam.stop();
@@ -570,10 +570,10 @@ test("seed the six examples and film the app", async ({ browser }) => {
   await ccam.start("t-accept");
   await tap(cp, cp.getByRole("checkbox", { name: /I compared this number/ }), 900);
   await tap(cp, cp.getByRole("button", { name: "Accept" }), 600);
-  await expect(cp.getByRole("button", { name: `Open ${D("valuables")}` })).toBeVisible({ timeout: 15_000 });
+  await expect(rowNamed(cp, D("valuables"))).toBeVisible({ timeout: 15_000 });
   ccam.mark("accepted");
   await cp.waitForTimeout(800);
-  await tap(cp, cp.getByRole("button", { name: `Open ${D("valuables")}` }), 400);
+  await tap(cp, rowNamed(cp, D("valuables")), 400);
   ccam.mark("drawer");
   await cp.waitForTimeout(2200);
   await ccam.stop();

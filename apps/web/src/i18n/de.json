@@ -348,7 +348,6 @@
     "noLines": "Diese Schublade hat noch keine Posten.",
     "dragHandle": "{name} verschieben: ziehen oder die Pfeiltasten nutzen",
     "lineOptions": "Optionen für {name}",
-    "open": "{name} öffnen",
     "kind": {
       "money": "Geld",
       "countable": "Zählbar",

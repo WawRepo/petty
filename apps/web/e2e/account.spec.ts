@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { apiClient, dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test } from "./fixtures.js";
+import { apiClient, dbQuery, expect, loginAndUnlock, rowNamed, shareViaApi, signupWithKeys, test } from "./fixtures.js";
 
 async function makeDrawer(page: Page, name: string, withLine = true): Promise<string> {
   await page.goto("/");
@@ -66,7 +66,7 @@ test("delete account: blocked until each shared drawer is decided; hand-over nee
   const b = await apiClient(bob);
   await expect.poll(async () => ((await b.call("GET", `/drawers/${shared}/rotation`)).json as { completed: boolean; key_version: number }), { timeout: 30_000 }).toMatchObject({ completed: true, key_version: 2 });
   await pageB.goto(`/drawers/${shared}`);
-  await pageB.getByRole("button", { name: "Open Cash" }).click();
+  await rowNamed(pageB, "Cash").click();
   await expect(pageB.getByTestId("line-balance")).toHaveText("100.00");
   await expect(pageB.getByTestId("entry-row")).toHaveCount(1);
   await expect(pageB.getByTestId("warn-problems")).toHaveCount(0);

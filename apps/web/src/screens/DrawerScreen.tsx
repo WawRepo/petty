@@ -427,7 +427,7 @@ export function DrawerScreen() {
             return (
               <div className={`line-block${dragId === l.id ? " dragging" : ""}`} key={l.id} data-line-id={l.id} data-testid="line-row">
                 {canWrite && !filtered ? <button type="button" className="drag-handle" aria-label={t("drawer.dragHandle", { name: l.name })} onPointerDown={(e) => onHandleDown(e, l.id)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp} onKeyDown={(e) => onHandleKey(e, l.id, l.name)}>⠿</button> : null}
-                <button type="button" className="row" onClick={() => nav(`/drawers/${id}/lines/${l.id}`)} aria-label={t("drawer.open", { name: l.name })}>
+                <button type="button" className="row" onClick={() => nav(`/drawers/${id}/lines/${l.id}`)}>
                   <span className={`tile small ${KIND_CLASS[l.kind]}`} aria-hidden="true" data-icon={lineIcon(l)}><PIcon name={lineIcon(l)} size={20} /></span>
                   <span className="rowmain">
                     <span className="rowhead">
