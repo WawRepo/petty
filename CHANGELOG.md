@@ -9,9 +9,9 @@ number, also when it adds features, and a new minor or major is started by hand 
 ## [Unreleased]
 
 ### Changed
-- The published images (`ghcr.io/wawrepo/petty` and `ghcr.io/wawrepo/petty-backup`) are built for
-  linux/amd64 only. On an ARM board such as a Raspberry Pi, build your own with `make image` and
-  `make backup-image`, which still build both (docs/deploy.md, "Building the image").
+- The published image (`ghcr.io/wawrepo/petty`) is built for linux/amd64 only. On an ARM board such as
+  a Raspberry Pi, build your own with `make image`, which still builds both (docs/deploy.md, "Building
+  the image").
 
 ## [1.5.23] — 2026-10-23
 
