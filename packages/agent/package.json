@@ -1,6 +1,6 @@
 {
   "name": "@petty/agent",
-  "version": "1.5.23",
+  "version": "1.5.24",
   "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",

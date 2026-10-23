@@ -98,7 +98,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
   tag); `/api/config`, Settings and the landing footer show it.
 - **Releases (2026-09-23/24; PETTY-254).** Images built by CI with provenance and an SBOM, pinned by
-  digest. They were multi-architecture until v1.5.23; since 2026-10-23 (PETTY-385) CI builds the app image
+  digest. They were multi-architecture until v1.5.24; since 2026-10-23 (PETTY-385) CI builds the app image
   for linux/amd64 only, because every instance its maintainers run is on x86 and the arm64 build ran under slow QEMU
   emulation. `make image` still builds both, for an ARM board. The backup image (`petty-backup`) stays
   multi-architecture: its nightly job may start on any node of a mixed cluster (PETTY-386). While CI could not run (v1.5.1–v1.5.8), releases were built by hand with the

@@ -13,6 +13,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   a Raspberry Pi, build your own with `make image`, which still builds both (docs/deploy.md, "Building
   the image").
 
+## [1.5.24] — 2026-10-23
+
+### Changed
+- Maintenance only: dependency and build updates.
+
 ## [1.5.23] — 2026-10-23
 
 ### Security
@@ -527,7 +532,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.23...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.24...HEAD
+[1.5.24]: https://github.com/WawRepo/petty/releases/tag/v1.5.24
 [1.5.23]: https://github.com/WawRepo/petty/releases/tag/v1.5.23
 [1.5.22]: https://github.com/WawRepo/petty/releases/tag/v1.5.22
 [1.5.21]: https://github.com/WawRepo/petty/releases/tag/v1.5.21
