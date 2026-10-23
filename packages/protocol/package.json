@@ -19,7 +19,7 @@
     "corpus:generate": "tsx scripts/generate-export-fixture.ts"
   },
   "dependencies": {
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@petty/crypto": "workspace:*",

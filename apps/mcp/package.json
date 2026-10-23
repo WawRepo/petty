@@ -26,7 +26,7 @@
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@petty/agent": "workspace:*",
     "@petty/ledger": "workspace:*",
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@petty/api": "workspace:*",
