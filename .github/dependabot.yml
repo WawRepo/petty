@@ -22,5 +22,6 @@ updates:
       - "/deploy/compose"
       - "/deploy/backup"
       - "/tests/integration"
+    # PETTY-380: daily, so a base image's security release reaches a pull request within a day.
     schedule:
-      interval: weekly
+      interval: daily

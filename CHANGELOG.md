@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The image runs Node.js 24.22.1, which fixes the issues of Node's October 21, 2026 security release
+  (four rated high, among them an out-of-bounds write in the Brotli decoder and two ways around the TLS
+  host name check).
+
 ### Fixed
 - A screen reader now reads a drawer's row on Home, and an item's row in a drawer, as it looks: the
   name, then the amount and the rest of the row. Before, it read only "Open" and the name. Voice control
