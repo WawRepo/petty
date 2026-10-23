@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.23] — 2026-10-23
+
 ### Security
 - The image runs Node.js 24.22.1, which fixes the issues of Node's October 21, 2026 security release
   (four rated high, among them an out-of-bounds write in the Brotli decoder and two ways around the TLS
@@ -520,7 +522,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.22...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.23...HEAD
+[1.5.23]: https://github.com/WawRepo/petty/releases/tag/v1.5.23
 [1.5.22]: https://github.com/WawRepo/petty/releases/tag/v1.5.22
 [1.5.21]: https://github.com/WawRepo/petty/releases/tag/v1.5.21
 [1.5.20]: https://github.com/WawRepo/petty/releases/tag/v1.5.20
