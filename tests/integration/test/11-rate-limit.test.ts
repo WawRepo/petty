@@ -9,8 +9,10 @@ import { API } from "../lib.js";
  */
 describe("the general API limit", () => {
   it("answers 429 after 600 requests a minute from one address, and only to that address", async () => {
-    const client = `203.0.113.${10 + Math.floor(Math.random() * 200)}`;
-    const get = (who: string) => fetch(`${API}/config`, { headers: { "x-test-client-ip": who } });
+    // PETTY-377: a range of its own. 08-proxy draws its clients from 203.0.113.0/24 a few seconds before,
+    // and an address both drew added 08's 11 requests to this count.
+    const client = `192.0.2.${10 + Math.floor(Math.random() * 200)}`;
+    const get =(who: string) => fetch(`${API}/config`, { headers: { "x-test-client-ip": who } });
     const statuses = await Promise.all(Array.from({ length: 600 }, () => get(client).then((r) => r.status)));
     expect(statuses.filter((s) => s !== 200)).toEqual([]);
     const over = await get(client);
