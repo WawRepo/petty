@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The published image (`ghcr.io/wawrepo/petty`) is built for linux/amd64 only. On an ARM board such as
+  a Raspberry Pi, build your own with `make image`, which still builds both (docs/deploy.md, "Building
+  the image").
+
 ## [1.5.24] — 2026-10-23
 
 ### Changed
