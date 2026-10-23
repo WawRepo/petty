@@ -178,6 +178,9 @@ make image TAG=<tag> IMAGE=<registry>/petty      # linux/amd64 and linux/arm64, 
 
 The image reports `<tag>` as its version (Settings, the landing page's footer, `/api/config`).
 
+The published images on `ghcr.io/wawrepo` are linux/amd64 only. On an ARM board such as a Raspberry Pi,
+build your own with the line above (and `make backup-image` for the backup job's image).
+
 ## Running a changed version (AGPL §13)
 
 If you run a changed Petty for other people, the AGPL asks you to offer them the source of your

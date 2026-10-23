@@ -30,7 +30,6 @@ jobs:
       packages: write   # the image on GHCR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -46,7 +45,8 @@ jobs:
           BUILDX_METADATA_PROVENANCE: disabled
         with:
           context: deploy/backup
-          platforms: linux/amd64,linux/arm64
+          # PETTY-385: amd64 only, like release.yml; `make backup-image` still builds arm64 too
+          platforms: linux/amd64
           push: true
           pull: true
           no-cache: true
@@ -69,10 +69,4 @@ jobs:
           IMAGE: ghcr.io/wawrepo/petty-backup:1@${{ steps.build.outputs.digest }}
         run: |
           echo "digest: ${{ steps.build.outputs.digest }}"
-          # Each platform by its own manifest: Docker refuses a second platform under one pulled digest.
-          for arch in amd64 arm64; do
-            d=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest}}' \
-              | jq -r --arg a "$arch" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $a) | .digest')
-            docker run --rm --platform "linux/$arch" "ghcr.io/wawrepo/petty-backup@$d" \
-              sh -c "echo \"linux/$arch: age \$(age --version), \$(pg_dump --version)\""
-          done
+          docker run --rm "$IMAGE" sh -c 'echo "linux/amd64: age $(age --version), $(pg_dump --version)"'

@@ -40,8 +40,9 @@ test: migrate
 e2e: migrate
 	pnpm e2e
 
-# PETTY-61: every published image is built for both PCs and servers (amd64) and ARM boards such as the
-# Raspberry Pi (arm64): a single-arch image fails on the other kind, for example on a mixed cluster.
+# PETTY-61: built here for both PCs and servers (amd64) and ARM boards such as the Raspberry Pi (arm64):
+# a single-arch image fails on the other kind, for example on a mixed cluster. The images CI publishes
+# are amd64 only (PETTY-385); on an ARM board, build your own with these targets.
 PLATFORMS ?= linux/amd64,linux/arm64
 IMAGE ?= ghcr.io/wawrepo/petty
 image:
