@@ -19,6 +19,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   does not use that copy.
 - fast-uri, which the API's request checks use, is 3.1.9 and 4.2.3: they fix CVE-2026-110180,
   CVE-2026-110306, CVE-2026-110095 and CVE-2026-110725 (host and scheme handling in URIs).
+- body-parser is 2.4.0, which fixes GHSA-27r3-jxmh-p828 (high: bytes after a compressed request body
+  could stall a web server). It comes with the MCP SDK's web server part; the add-on and the command
+  line talk over stdio and never start that server.
 
 ## [1.5.24] — 2026-10-23
 
