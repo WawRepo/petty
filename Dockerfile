@@ -12,7 +12,7 @@
 # packed MCP add-on — are plain JS/HTML, identical on every CPU. This keeps the arm64 image off the slow
 # QEMU emulation for the heavy vite build; only the small per-arch runtime deps below are emulated.
 # pnpm: keep equal to "packageManager" in package.json (the CI setup reads that one).
-ARG PNPM_VERSION=11.28.2
+ARG PNPM_VERSION=11.28.8
 FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
 ARG PNPM_VERSION
 RUN npm install -g pnpm@${PNPM_VERSION}

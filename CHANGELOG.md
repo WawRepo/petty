@@ -13,6 +13,13 @@ number, also when it adds features, and a new minor or major is started by hand 
   a Raspberry Pi, build your own with `make image`, which still builds both (docs/deploy.md, "Building
   the image").
 
+### Security
+- The image's pnpm is 11.28.8, whose own copy of undici (its HTTP client) fixes CVE-2026-109869 (high:
+  a server could crash pnpm with too many content encodings) and CVE-2026-109924. The app's own code
+  does not use that copy.
+- fast-uri, which the API's request checks use, is 3.1.9 and 4.2.3: they fix CVE-2026-110180,
+  CVE-2026-110306, CVE-2026-110095 and CVE-2026-110725 (host and scheme handling in URIs).
+
 ## [1.5.24] — 2026-10-23
 
 ### Changed
