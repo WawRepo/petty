@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { API, ORIGIN, compose, testEnv } from "../lib.js";
@@ -27,6 +29,11 @@ describe("deployment", () => {
     expect(env).not.toContain(testEnv("OWNER_DB_PASSWORD"));
     expect(env).not.toMatch(/^DATABASE_URL=/m);
     expect(env).toMatch(/^API_DATABASE_URL=/m);
+  });
+
+  it("the image's pnpm is the one package.json names (PETTY-388)", () => {
+    const { packageManager } = JSON.parse(readFileSync(join(import.meta.dirname, "../../../package.json"), "utf8")) as { packageManager: string };
+    expect(`pnpm@${compose("exec -T app pnpm --version").trim()}`).toBe(packageManager);
   });
 
   it("entries are append-only for the request role (rule 8)", () => {
