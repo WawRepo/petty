@@ -53,13 +53,15 @@ jobs:
           provenance: mode=min
           sbom: true
           tags: ghcr.io/wawrepo/petty-backup:1
+      # Allowed: noreply addresses, the repository's SSH address and GitHub's address in Dependabot's
+      # sign-off line (`support@github.com`; JSON escapes its `<` as `u003c`), none of them a person (PETTY-394).
       - name: The provenance holds no personal address
         env:
           IMAGE: ghcr.io/wawrepo/petty-backup:1@${{ steps.build.outputs.digest }}
         run: |
           hits=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Provenance}}' \
             | grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
-            | grep -vc -e 'noreply' -e '^git@github\.com$' || true)
+            | grep -vc -e 'noreply' -e '^git@github\.com$' -e '^\(u003c\)\{0,1\}support@github\.com$' || true)
           if [ "$hits" != "0" ]; then
             echo "::error::the image's provenance holds $hits email address(es) that are not noreply ones. Delete this image version and turn on 'Keep my email addresses private' in GitHub."
             exit 1
