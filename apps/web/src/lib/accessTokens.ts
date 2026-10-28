@@ -115,7 +115,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
 async function postWraps(tokenId: string, tokenEcdhPub: string, keys: readonly { drawerId: string; keyVersion: number; key: CryptoKey }[]): Promise<number> {
   const me = getAuth();
   if (me.status !== "unlocked" || keys.length === 0) return 0;
-  const sender = { ecdhPrivate: me.keys.ecdhPrivate, ecdhPublicB64: me.me.pub.ecdh };
+  const sender = { ecdhPrivate: me.keys.ecdhPrivate, ecdhPublicB64: me.keys.pub.ecdh };
   const wraps: { drawer_id: string; key_version: number; wrap: DrawerKeyWrapV1 }[] = [];
   for (const k of keys) {
     wraps.push({ drawer_id: k.drawerId, key_version: k.keyVersion, wrap: await wrapDrawerKey(k.key, sender, tokenEcdhPub, k.drawerId, k.keyVersion) });

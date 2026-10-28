@@ -82,6 +82,8 @@ The server hands out public keys, so it could substitute its own. Petty makes th
 
 - Every user has a **safety number** (a fingerprint of both public keys).
 - Before sharing, the inviter compares the invitee's safety number out of band.
+- Your **own** public keys come from your vault (its additional authenticated data binds them), never
+  from the server's copy. If the two differ, the vault does not open.
 - Keys are **pinned on first use**; if a contact's key changes, the app warns and refuses further
   wraps to them until the new number is confirmed.
 

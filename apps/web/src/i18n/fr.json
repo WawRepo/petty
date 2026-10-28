@@ -113,6 +113,7 @@
       "managerHint": "Votre gestionnaire de mots de passe peut garder cette phrase secrète, comme vos autres mots de passe. S’il se synchronise, la phrase secrète est aussi envoyée dans son cloud.",
       "passkey": "Déverrouiller avec une clé d’accès",
       "passkeyWrong": "La clé d’accès n’a pas ouvert le coffre.",
+      "keyMismatch": "Votre coffre et le serveur n’indiquent pas les mêmes clés pour votre compte, donc Petty ne s’est pas ouvert. Quelqu’un a peut-être modifié le serveur. Prévenez la personne qui gère ce Petty.",
       "passkeyNoPrf": "Ce navigateur ne peut pas utiliser la clé d’accès ici. Utilisez votre phrase secrète.",
       "passkeyHint": "Face ID, Touch ID, Windows Hello ou une clé de sécurité. Si votre clé d’accès est sur votre téléphone, le navigateur affiche un QR code à scanner.",
       "passkeyUnsupported": "Ce navigateur ne gère pas les clés d’accès comme Petty en a besoin. Utilisez votre phrase secrète ou le code de récupération, ou ouvrez Petty dans Safari, Chrome ou Edge.",

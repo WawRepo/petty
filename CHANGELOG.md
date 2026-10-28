@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The web app takes your account's own public keys from your vault, never from the server. If the
+  server names other keys for your account, the vault does not open and the app says why. Before, a
+  server that answered with a key of its own could have been given drawer keys and could have shown
+  you its key as your safety number. After this update, a browser that kept the vault unlocked asks
+  you to unlock it once more.
+
 ## [1.5.26] — 2026-10-26
 
 ### Changed

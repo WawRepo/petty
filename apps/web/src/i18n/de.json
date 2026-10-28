@@ -113,6 +113,7 @@
       "managerHint": "Dein Passwortmanager kann diese Passphrase speichern, wie deine anderen Passwörter. Synchronisiert er, landet die Passphrase auch in seiner Cloud.",
       "passkey": "Mit Passkey entsperren",
       "passkeyWrong": "Der Passkey hat den Tresor nicht geöffnet.",
+      "keyMismatch": "Dein Tresor und der Server nennen verschiedene Schlüssel für dein Konto, deshalb hat Petty nicht geöffnet. Jemand hat den Server vielleicht verändert. Sag der Person Bescheid, die dieses Petty betreibt.",
       "passkeyNoPrf": "Dieser Browser kann den Passkey hier nicht verwenden. Nutze deine Passphrase.",
       "passkeyHint": "Face ID, Touch ID, Windows Hello oder ein Sicherheitsschlüssel. Liegt dein Passkey auf deinem Handy, zeigt der Browser einen QR-Code zum Scannen.",
       "passkeyUnsupported": "Dieser Browser kann Passkeys nicht so nutzen, wie Petty es braucht. Nutze deine Passphrase oder den Wiederherstellungscode, oder öffne Petty in Safari, Chrome oder Edge.",

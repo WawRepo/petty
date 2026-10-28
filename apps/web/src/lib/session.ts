@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Me } from "@petty/protocol";
-import { safetyNumber, sessionKeysFrom, unlockPasskeyVault, unlockVault, zero, type UnlockedKeys, type UserKeyPairs } from "@petty/crypto";
+import { OwnKeyMismatch, safetyNumber, sessionKeysFrom, unlockPasskeyVault, unlockVault, zero, type PublicKeys, type UnlockedKeys, type UserKeyPairs } from "@petty/crypto";
 import { evaluatePrf } from "./passkey.js";
 import { api, ApiError, NetworkError, setSessionGoneHandler } from "./api.js";
 import { idb } from "./idb.js";
@@ -12,7 +12,18 @@ export const UNLOCK_HOURS = 24;
 const K_UNLOCKED = "session.unlocked";
 const K_ME = "session.me";
 
-interface UnlockedRecord { userId: string; ecdhPrivate: CryptoKey; ecdsaPrivate: CryptoKey; expiresAt: number; scope?: string }
+/** `pub` is the vault's, authenticated when it was opened; a record without it (an earlier build) is not used. */
+interface UnlockedRecord { userId: string; ecdhPrivate: CryptoKey; ecdsaPrivate: CryptoKey; pub?: PublicKeys; expiresAt: number; scope?: string }
+
+/**
+ * PETTY-396: the account's own public keys are the vault's (its AAD binds them, so only the vault's secret
+ * could have made them), never GET /me's. A server that answered with other keys could make this client
+ * wrap drawer keys for, and derive the user-document key with, a key of its own. So the two must agree.
+ */
+const samePub = (a: PublicKeys, b: PublicKeys): boolean => a.ecdh === b.ecdh && a.ecdsa === b.ecdsa;
+function checkOwnKeys(me: Me, keys: UnlockedKeys): void {
+  if (!samePub(me.pub, keys.pub)) throw new OwnKeyMismatch({ user_id: me.id });
+}
 
 /**
  * PETTY-140: the cached unlock belongs to ONE identity-provider session. Clerk mode sets the Clerk
@@ -85,8 +96,9 @@ export async function boot(opts: { assumeSignedIn?: boolean } = {}): Promise<voi
     if (!me) { set({ status: "anonymous" }); return; }
   }
   const cached = await idb.get<UnlockedRecord>(K_UNLOCKED);
-  if (cached && cached.userId === me.id && cached.expiresAt > Date.now() && (cached.scope ?? undefined) === sessionScope) {
-    set({ status: "unlocked", me, keys: { ecdhPrivate: cached.ecdhPrivate, ecdsaPrivate: cached.ecdsaPrivate, pub: me.pub }, expiresAt: cached.expiresAt });
+  // A server whose keys for this account changed since the unlock gets a locked vault: the unlock then says why.
+  if (cached && cached.userId === me.id && cached.expiresAt > Date.now() && (cached.scope ?? undefined) === sessionScope && cached.pub && samePub(cached.pub, me.pub)) {
+    set({ status: "unlocked", me, keys: { ecdhPrivate: cached.ecdhPrivate, ecdsaPrivate: cached.ecdsaPrivate, pub: cached.pub }, expiresAt: cached.expiresAt });
     scheduleLock(cached.expiresAt);
     return;
   }
@@ -111,8 +123,9 @@ export async function afterLogin(me: Me): Promise<void> {
 }
 
 function openSession(me: Me, keys: UnlockedKeys): Promise<void> {
+  checkOwnKeys(me, keys);
   const expiresAt = Date.now() + UNLOCK_HOURS * 3_600_000;
-  const record: UnlockedRecord = { userId: me.id, ecdhPrivate: keys.ecdhPrivate, ecdsaPrivate: keys.ecdsaPrivate, expiresAt, ...(sessionScope ? { scope: sessionScope } : {}) };
+  const record: UnlockedRecord = { userId: me.id, ecdhPrivate: keys.ecdhPrivate, ecdsaPrivate: keys.ecdsaPrivate, pub: keys.pub, expiresAt, ...(sessionScope ? { scope: sessionScope } : {}) };
   set({ status: "unlocked", me, keys, expiresAt });
   scheduleLock(expiresAt);
   return idb.set(K_UNLOCKED, record);
@@ -148,6 +161,7 @@ export async function unlockWithPasskey(opts: { hold?: boolean } = {}): Promise<
   try {
     if (!pk) throw new Error("unknown passkey");
     const keys = await unlockPasskeyVault(pk.vault, prf);
+    checkOwnKeys(me, keys); // before the caller may wrap these keys for another passkey
     const extractable = opts.hold ? await unlockPasskeyVault(pk.vault, prf, { extractable: true }) : null;
     let opened = false;
     const open = async () => { if (!opened) { opened = true; await openSession(signedIn(), keys); } }; // signedIn() again: the caller may have added a passkey meanwhile
@@ -207,6 +221,7 @@ async function clearAll(): Promise<void> {
   for (const k of await idb.keys()) if (!k.startsWith("head.")) await idb.del(k);
 }
 
-export async function mySafetyNumber(me: Me): Promise<string> {
-  return safetyNumber(me.pub);
+/** From the unlocked vault's keys (PETTY-396): a number from the server's copy could be the server's own key. */
+export async function mySafetyNumber(keys: UnlockedKeys): Promise<string> {
+  return safetyNumber(keys.pub);
 }

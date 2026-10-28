@@ -113,6 +113,7 @@
       "managerHint": "Your password manager can keep this passphrase, like your other passwords. If it syncs, the passphrase goes to its cloud too.",
       "passkey": "Unlock with passkey",
       "passkeyWrong": "The passkey did not open the vault.",
+      "keyMismatch": "Your vault and the server disagree on your account's keys, so Petty did not open. The server may have been tampered with. Tell whoever runs this Petty.",
       "passkeyNoPrf": "This browser cannot use the passkey here. Use your passphrase.",
       "passkeyHint": "Face ID, Touch ID, Windows Hello or a security key. If your passkey is on your phone, the browser shows a QR code to scan.",
       "passkeyUnsupported": "This browser cannot use passkeys the way Petty needs. Use your passphrase or the recovery code, or open Petty in Safari, Chrome or Edge.",

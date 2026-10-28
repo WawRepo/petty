@@ -19,7 +19,7 @@ function me() { const a = getAuth(); if (a.status !== "unlocked") throw new Erro
 /** A member's ECDH key as pinned; refuses a member whose published key differs from the pin (SPEC "refuses further wraps until re-confirmed"). */
 function pinnedEcdh(m: Member): string {
   const a = me();
-  if (m.user_id === a.me.id) return a.me.pub.ecdh;
+  if (m.user_id === a.me.id) return a.keys.pub.ecdh;
   const p = getPin(m.user_id);
   if (!p || !m.keys || p.ecdh !== m.keys.ecdh_pub) throw new KeyNotConfirmed(m.user_id);
   return p.ecdh;
@@ -31,9 +31,9 @@ export async function rotateDrawer(id: string): Promise<void> {
   const view = getDrawers().drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
   const toVersion = view.summary.key_version + 1;
-  const sender = { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.me.pub.ecdh };
+  const sender = { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh };
   const { selfWrap } = await createDrawerKey(sender, id, toVersion);
-  const newKeyExtractable = await unwrapDrawerKey(selfWrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: toVersion, senderEcdhPublicB64: a.me.pub.ecdh }, { extractable: true });
+  const newKeyExtractable = await unwrapDrawerKey(selfWrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: toVersion, senderEcdhPublicB64: a.keys.pub.ecdh }, { extractable: true });
   const wraps: Array<{ user_id: string; wrap: DrawerKeyWrapV1 }> = [];
   for (const m of view.members) {
     wraps.push({ user_id: m.user_id, wrap: await wrapDrawerKey(newKeyExtractable, sender, pinnedEcdh(m), id, toVersion) });
