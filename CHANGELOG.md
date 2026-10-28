@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.27] — 2026-10-28
+
 ### Security
 - The web app takes your account's own public keys from your vault, never from the server. If the
   server names other keys for your account, the vault does not open and the app says why. Before, a
@@ -568,7 +570,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.26...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.27...HEAD
+[1.5.27]: https://github.com/WawRepo/petty/releases/tag/v1.5.27
 [1.5.26]: https://github.com/WawRepo/petty/releases/tag/v1.5.26
 [1.5.25]: https://github.com/WawRepo/petty/releases/tag/v1.5.25
 [1.5.24]: https://github.com/WawRepo/petty/releases/tag/v1.5.24
