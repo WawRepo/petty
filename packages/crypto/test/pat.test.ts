@@ -36,6 +36,14 @@ describe("access token bundle (PETTY-164)", () => {
     expect(readOnly.ecdsa).toBeUndefined();
   });
 
+  it("carries the owner's key (PETTY-397), and refuses one that is not a string", async () => {
+    const secret = patSecret();
+    const withOwner = await openPatBundle(secret, "tok-1", "user-1", await sealPatBundle(secret, "tok-1", bundle({ owner_ecdh: "b3duZXI=" })));
+    expect(withOwner.owner_ecdh).toBe("b3duZXI=");
+    const broken = await sealPatBundle(secret, "tok-1", bundle({ owner_ecdh: 7 as unknown as string }));
+    await expect(openPatBundle(secret, "tok-1", "user-1", broken)).rejects.toBeInstanceOf(InvalidPayload);
+  });
+
   it("the sealed bundle shows no drawer id or key in the clear", async () => {
     const secret = patSecret();
     const b = bundle();

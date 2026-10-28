@@ -65,9 +65,11 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   const bearer = { authorization: `Bearer petty_pat_${split.tokenId}` };
   const self = await request.get(`${API}/me/token`, { headers: bearer });
   expect(self.status()).toBe(200);
-  const body = (await self.json()) as { user_id: string; role: string; bundle: { nonce: string; ciphertext: string } };
+  const body = (await self.json()) as { user_id: string; role: string; bundle: { nonce: string; ciphertext: string }; owner_ecdh_pub: string };
   expect(body.role).toBe("write");
   const bundle = await openPatBundle(split.secret, split.tokenId, body.user_id, body.bundle);
+  // PETTY-397: the owner's key is sealed in, so later wraps are opened against it, not against the server's copy
+  expect(bundle.owner_ecdh).toBe(body.owner_ecdh_pub);
   expect(bundle.drawers.map((d) => d.drawer_id)).toContain(drawerId);
   expect(bundle.ecdsa).toBeTruthy(); // a writing token carries the signing key
   // the drawer's document opens with the key from the bundle, so the tool can really read

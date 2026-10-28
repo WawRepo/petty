@@ -170,7 +170,7 @@ describe("household", () => {
     const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
     const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
     const secret = patSecret();
-    const bundle = await sealPatBundle(secret, id, { v: 1, user_id: ann.id, drawers: [], ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))) });
+    const bundle = await sealPatBundle(secret, id, { v: 1, user_id: ann.id, drawers: [], ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))), owner_ecdh: ann.user.pub.ecdh });
     const made = await ann.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: "Batches", role: "read", scope: null, expires_at: null, bundle, proof: await ann.proof() });
     expect(made.statusCode).toBe(201);
     const rowId = made.json().id as string;

@@ -43,6 +43,12 @@ export interface PatBundleV1 {
   readonly sig_key_id?: string;
   /** base64 PKCS#8 ECDH P-256 private key: this token's own half, which later drawer keys are wrapped to. */
   readonly ecdh?: string;
+  /**
+   * base64 SPKI of the owner's ECDH P-256 public key, from their vault when the token was made (PETTY-397):
+   * the only sender whose wraps the token opens. The server's copy could be a key of its own. A bundle
+   * without it (made before) opens no wraps at all.
+   */
+  readonly owner_ecdh?: string;
 }
 
 /** What the server stores next to the token row: a nonce and the sealed bundle, both base64. */
@@ -104,6 +110,7 @@ export async function openPatBundle(secret: Bytes, tokenId: string, userId: stri
   }
   if (b.ecdsa !== undefined && typeof b.ecdsa !== "string") throw new InvalidPayload("pat.bundle.ecdsa");
   if (b.ecdh !== undefined && typeof b.ecdh !== "string") throw new InvalidPayload("pat.bundle.ecdh");
+  if (b.owner_ecdh !== undefined && typeof b.owner_ecdh !== "string") throw new InvalidPayload("pat.bundle.owner_ecdh");
   if (b.sig_key_id !== undefined && typeof b.sig_key_id !== "string") throw new InvalidPayload("pat.bundle.sig_key_id");
   return b;
 }

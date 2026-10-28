@@ -81,6 +81,7 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
   try {
     client = await open();
     log(`connected to ${opts.apiUrl} as "${client.identity.name}" (${client.identity.role})`);
+    if (client.notice) log(`warning: ${client.notice}`);
   } catch (e) {
     log(`not connected yet: ${e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message}`);
   }

@@ -14,6 +14,12 @@ number, also when it adds features, and a new minor or major is started by hand 
   server that answered with a key of its own could have been given drawer keys and could have shown
   you its key as your safety number. After this update, a browser that kept the vault unlocked asks
   you to unlock it once more.
+- The Claude add-on and the `petty` command line open a drawer key that arrives after their token was
+  made only if your own key made it: a new token carries your public key, sealed inside. Before, a
+  server could have handed a token a drawer key of its own and read what the tool then wrote. A token
+  made before this update keeps the drawers it was made with, but no longer receives drawers added or
+  re-keyed later: make a new token in Settings and revoke the old one. `petty auth status` and the
+  add-on's log say so.
 
 ## [1.5.26] — 2026-10-26
 

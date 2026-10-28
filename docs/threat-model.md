@@ -112,7 +112,8 @@ progress through the plaintext `key_version`. Rotation protects **future** conte
 A token lets a tool on the owner's machine (for example the Claude Desktop add-on) read, and
 optionally write, the owner's drawers without breaking end-to-end encryption. The token string holds
 a secret that opens a key bundle on the tool's machine; the server stores only the bundle it cannot
-open and a hash of the token id. A token has its own signing key, vouched for by the owner's account
+open and a hash of the token id. The bundle also holds the owner's public key, so the tool opens a drawer key
+sent later only if the owner wrapped it. A token has its own signing key, vouched for by the owner's account
 key. With the write role it may add entries and replace a drawer's document; the server cannot see
 what changed inside the sealed document, so such a token can rename, retag, move or drop items, and
 the owner can restore an earlier version from the drawer's 30-day history. It **can never** touch the
