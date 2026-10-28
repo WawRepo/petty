@@ -16,7 +16,7 @@ import { DocumentHistory, type Bootstrap, type DrawerSummary, type EntryRow, typ
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
-import { getPin, loadPins, pinMembers, pinStatus, pinsBlocked, usePins } from "./pins.js";
+import { acceptedKeyVersion, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, recordKeyVersions, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
 import { custodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
@@ -25,7 +25,7 @@ import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_key_changed" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "key_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -127,24 +127,32 @@ const entryIdentity = (r: EntryRow): RecordIdentity =>
  * key when I stored the wrap, otherwise the key I have PINNED for the sender.
  * First sight of a member pins their published key (trust on first use); after
  * that the pin rules, and a changed key is an error, never a silent re-pin.
+ *
+ * PETTY-398: a key version newer than any this person accepted for the drawer is a rotation. It is
+ * taken only from me or from a member whose safety number I confirmed: the server lists the members,
+ * so a member it added could be the server itself, and this device would then write, and re-seal the
+ * whole drawer, under a key the server knows. Nothing is pinned here: pins come from the member list
+ * and from the invite and accept steps.
  */
 export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Member[]): Promise<{ pub: string } | { error: DrawerError }> {
   const a = me();
   if (wrap.sender_id === a.me.id) return { pub: a.keys.pub.ecdh };
   if (!wrap.sender_id) return { error: "sender_unknown" };
   const pin = getPin(wrap.sender_id);
+  const accepted = acceptedKeyVersion(wrap.drawer_id);
+  if (accepted !== null && wrap.key_version > accepted) {
+    if (!pin) return { error: "sender_unknown" };
+    if (!pin.confirmed_at) return { error: "sender_unconfirmed" };
+    return { pub: pin.ecdh };
+  }
   if (pin) return { pub: pin.ecdh };
   const m = members.find((x) => x.user_id === wrap.sender_id);
   if (m?.keys) return { pub: m.keys.ecdh_pub };
-  // Not a member any more (left, removed, or deleted account): their published keys are kept for exactly this. First sight → pin.
+  // Not a member any more (left, removed, or deleted account): their published keys are kept for exactly this.
   try {
     const r = await api<{ keys: Array<{ ecdh_pub: string; ecdsa_pub: string; sig_key_id: string } | null> }>("GET", `/users/${wrap.sender_id}/keys`);
     const k = r.keys.find((x) => x?.ecdh_pub === wrap.sender_ecdh_pub);
-    if (k) {
-      const { pinMembers: pinList } = await import("./pins.js");
-      await pinList([{ user_id: wrap.sender_id, display_name: "?", role: "read", keys: { ...k, created_at: "", retired_at: null } }]).catch(() => undefined);
-      return { pub: k.ecdh_pub };
-    }
+    if (k) return { pub: k.ecdh_pub };
   } catch { /* offline or unknown user */ }
   return { error: "sender_unknown" };
 }
@@ -343,14 +351,20 @@ async function loadOnce(): Promise<void> {
   const drawers = new Map<string, DrawerView>();
   const toRotate: string[] = [];
   const toResume: string[] = [];
+  const opened = new Map<string, number>(); // PETTY-398: key versions to remember as accepted
   for (const d of boot.drawers) {
     const members = boot.members[d.id] ?? [];
     const prev = state.drawers.get(d.id);
     const wraps = boot.wraps.filter((w) => w.drawer_id === d.id);
     const keyChanged = members.filter((m) => pinStatus(m) === "changed").map((m) => m.user_id);
     const base: DrawerView = { summary: d, members, key: null, doc: null, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: prev?.photo ?? null, docAuthor: boot.documents[d.id]?.author_id ?? d.owner_id, wraps, keyChanged, rotation: prev?.rotation ?? null, pending: new Set(), pendingOps: 0 };
+    // PETTY-398: a drawer whose key is older than one this person already had is refused: the server went back
+    // to a key that a removed member may still hold.
+    const accepted = acceptedKeyVersion(d.id);
+    if (accepted !== null && d.key_version < accepted) { drawers.set(d.id, { ...base, error: "key_rolled_back" }); continue; }
     const k = await unwrapVersion(d, wraps, members, d.key_version);
     if ("error" in k) { drawers.set(d.id, { ...base, error: k.error }); continue; }
+    if (accepted === null || d.key_version > accepted) opened.set(d.id, d.key_version);
     try {
       const row = boot.documents[d.id];
       if (!row) throw new Error("no document");
@@ -369,6 +383,7 @@ async function loadOnce(): Promise<void> {
       drawers.set(d.id, { ...base, key: k.key, error: errorCode(e) });
     }
   }
+  if (opened.size) await recordKeyVersions(opened).catch(() => undefined); // offline: remembered at the next load
   const oldest = outbox.length ? Math.max(...outbox.map((o) => Date.now() - Date.parse(o.created_at))) : null;
   // PETTY-245: what was created or deleted here while this ran stays as it is now
   const order = boot.drawers.map((d) => d.id);

@@ -20,6 +20,12 @@ number, also when it adds features, and a new minor or major is started by hand 
   made before this update keeps the drawers it was made with, but no longer receives drawers added or
   re-keyed later: make a new token in Settings and revoke the old one. `petty auth status` and the
   add-on's log say so.
+- A drawer's new key (made after a member leaves) goes only to members whose safety number you
+  confirmed, and the app uses a new key only when you or such a member made it. It also refuses a key
+  older than one it already used for the drawer. Before, a server that added a member of its own could
+  have been given the new key, or could have made one and had your app re-seal the drawer under it.
+  After this update, a drawer whose new key comes from a member you have not confirmed asks you to
+  compare their safety number in Members first.
 
 ## [1.5.26] — 2026-10-26
 

@@ -224,3 +224,42 @@ export async function makeDrawers(page: Page, list: [string, string[]][]): Promi
   }, list);
   expect(made, "the drawers must be made in the app's own store").toBe(list.length);
 }
+
+/** A drawer with one money item, Cash, 100.00 EUR, made in the UI. */
+export async function makeDrawer(page: Page, name: string): Promise<string> {
+  await page.getByRole("button", { name: "Add drawer" }).click();
+  await page.getByLabel("Name", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("heading", { name })).toBeVisible();
+  const id = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
+  await page.getByRole("button", { name: "Add item" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Cash");
+  await page.getByLabel("Currency", { exact: true }).fill("EUR");
+  await page.getByLabel("Starting balance").fill("100");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByTestId("line-row").first()).toContainText("100.00 EUR"); // the starting entry is committed
+  return id;
+}
+/** An invitation sent in the UI, after ticking that the safety numbers match: the inviter confirms the invitee. */
+export async function inviteViaUi(page: Page, drawerId: string, who: TestUserWithKeys, role: "write" | "read") {
+  await page.goto(`/drawers/${drawerId}/members`);
+  await page.getByRole("button", { name: "Invite someone" }).click();
+  await page.getByLabel("Their email").fill(who.email);
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.getByTestId("invite-found")).toContainText(who.name);
+  await expect(page.getByTestId("invite-safety")).toHaveText(/^(\d{5} ){5}\d{5}$/);
+  if (role === "read") await page.getByLabel(/Reader/).check();
+  await page.getByLabel(/I compared this safety number/).check();
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await expect(page.locator(".toast")).toHaveText("Invitation sent");
+}
+/** The first pending invitation accepted in the UI: the invitee confirms the inviter. */
+export async function acceptViaUi(page: Page) {
+  await page.goto("/");
+  const card = page.getByTestId("pending-invitation").first();
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId("inviter-safety")).toHaveText(/^(\d{5} ){5}\d{5}$/);
+  await card.getByLabel(/I compared this number/).check();
+  await card.getByRole("button", { name: "Accept" }).click();
+  await expect(page.getByTestId("pending-invitation")).toHaveCount(0);
+}

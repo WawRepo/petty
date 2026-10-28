@@ -86,6 +86,12 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   from the server's copy. If the two differ, the vault does not open.
 - Keys are **pinned on first use**; if a contact's key changes, the app warns and refuses further
   wraps to them until the new number is confirmed.
+- The server also lists a drawer's **members**, so a member it adds could be the server itself. A
+  **new drawer key** (after someone leaves) is therefore given only to members whose safety number you
+  confirmed, and taken only from yourself or from such a member. Your sealed user document remembers
+  the newest key of each drawer you opened, so the server can neither push a key of its own nor go back
+  to an older key that a removed member may still hold. The first key of a drawer is still trusted on
+  first sight.
 
 ## Integrity
 

@@ -188,7 +188,9 @@
     "degradedReason": {
       "no_key": "Nie masz jeszcze klucza do tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "sender_unknown": "Klucz udostępniła osoba, której jeszcze nie znasz.",
+      "sender_unconfirmed": "Ta szuflada ma nowy klucz od członka, którego numeru bezpieczeństwa nie potwierdzono. Porównaj go w sekcji Członkowie i wybierz „Numer się zgadza”, aby otworzyć szufladę.",
       "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w sekcji Członkowie.",
+      "key_rolled_back": "Serwer przysłał starszy klucz tej szuflady niż ten, który już był, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
       "unwrap_failed": "Nie udało się otworzyć tej szuflady na tym urządzeniu. Poproś jej właściciela o ponowne udostępnienie.",
       "decrypt_failed": "Nie udało się otworzyć tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "bad_document": "Dane tej szuflady są uszkodzone. Jej właściciel może przywrócić wcześniejszą wersję.",
@@ -634,6 +636,7 @@
   "rotation": {
     "running": "Wymiana klucza szuflady… Ponownie zaszyfrowano {done} z {total, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}}.",
     "needed": "Członek został usunięty. Klucz szuflady zostanie wymieniony, gdy następnym razem otworzy ją ktoś z prawem zapisu.",
+    "confirmFirst": "Twoje urządzenie przekazuje nowy klucz tylko osobom, których numer bezpieczeństwa potwierdzono. Potwierdź: {names} w sekcji Członkowie albo klucz wymieni inny członek.",
     "keyChanged": "Zmiana klucza: {names}. Zanim cokolwiek udostępnisz, sprawdź numer bezpieczeństwa w sekcji Członkowie."
   },
   "offline": {
