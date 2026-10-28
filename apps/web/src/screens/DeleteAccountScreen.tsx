@@ -11,6 +11,7 @@ import { useToast } from "../components/Toast.js";
 import { api, ApiError } from "../lib/api.js";
 import { custodyProof } from "../lib/custody.js";
 import { useDrawers, loadIfIdle } from "../lib/drawers.js";
+import { forgetUserDocVersion } from "../lib/pins.js";
 import { getAuth, signOut } from "../lib/session.js";
 
 type Choice = { action: "transfer"; to_user_id: string } | { action: "delete" };
@@ -42,6 +43,7 @@ export function DeleteAccountScreen() {
       const a = getAuth();
       if (a.status !== "unlocked") throw new Error("locked");
       await api("POST", "/me/delete", { ...(isClerk() ? {} : { password }), proof: await custodyProof(a.keys.ecdsaPrivate), decisions });
+      await forgetUserDocVersion(a.me.id);
       await signOut();
       toast(t("delete.done"));
       nav("/login", { replace: true });

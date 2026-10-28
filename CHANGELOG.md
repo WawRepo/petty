@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A sign-out, or a session that ended, no longer makes the web app forget which version of your list
+  of trusted keys it last saw. Before, a server that ended your session and then dropped that list
+  could have had your next sign-in start the list over without a warning, and trusted a swapped key
+  on first sight. Now the app shows the warning it shows for any lost or older list.
+
 ## [1.5.27] — 2026-10-28
 
 ### Security
