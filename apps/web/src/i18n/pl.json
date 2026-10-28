@@ -621,6 +621,7 @@
     "lookup": "Znajdź",
     "notFound": "Brak konta Petty z tym e-mailem. Najpierw wyślij link z zaproszeniem.",
     "noKeys": "Ta osoba nie dokończyła zakładania konta.",
+    "tooMany": "Za dużo wyszukiwań. Spróbuj ponownie za godzinę.",
     "role": "Rola",
     "roleWrite": "Edytujący — może dodawać i wyjmować, edytować pozycje i oznaczać szufladę jako sprawdzoną",
     "roleRead": "Przeglądający — widzi wszystko, ale nie może niczego zmieniać ani eksportować",

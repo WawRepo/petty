@@ -1,13 +1,13 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, UserDocRow, UserLookup, VaultBlob, type Me as MeT } from "@petty/protocol";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, UserDocRow, UserLookup, UserLookupBody, VaultBlob, type Me as MeT } from "@petty/protocol";
 import { config } from "../config.js";
 import { storageUsed } from "../lib/quota.js";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
-import { z } from "zod";
 import { deleteClerkUser } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { badRequest, conflict, notFound, unauthorized, ApiError } from "../lib/errors.js";
-import { verifyPassword } from "../lib/password.js";
+import { checkRate, verifyPassword } from "../lib/password.js";
+import { clientIp } from "../lib/client-ip.js";
 import { maintPool } from "../db.js";
 import { mails } from "../lib/mail.js";
 import { destroySession, hasLoginPassword } from "../lib/session.js";
@@ -17,6 +17,8 @@ import { endAllTokens } from "../lib/tokens.js";
 import { userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import type { Queryable } from "../lib/tx.js";
+
+const HOUR_MS = 60 * 60_000;
 
 interface PasskeyRow { id: string; credential_id: string; prf_salt: string; vault: unknown; label: string; transports: string[]; created_at: Date }
 const passkeyEntry = (r: PasskeyRow): MeT["passkeys"][number] => PasskeyEntry.parse({ id: r.id, credential_id: r.credential_id, prf_salt: r.prf_salt, vault: r.vault, label: r.label, transports: r.transports, created_at: iso(r.created_at) });
@@ -48,20 +50,33 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     return Me.parse(await loadMe(apiPool, me.id));
   });
 
-  /** Exact-email lookup for inviting. Returns the active public keys so the inviter can pin and show the safety number. */
-  app.get("/users/lookup", async (req) => {
-    requireUser(req);
-    const q = z.object({ email: z.string().email() }).parse(req.query);
+  /**
+   * Exact-email lookup for inviting. Returns the active public keys so the inviter can pin and show the safety number.
+   * PETTY-408: the inviter must learn whether the address has an account (the sheet offers a join link when it has
+   * none), so the answer cannot hide that. Instead each user gets config.lookupLimitPerHour lookups an hour, and each
+   * client address three times as many. The address travels in a POST body; GET ?email= stays for web app tabs opened
+   * before the change, and safeUrl keeps its query string out of logs and traces.
+   */
+  const lookup = async (req: FastifyRequest, reply: FastifyReply, input: unknown) => {
+    const me = requireUser(req);
+    const { email } = UserLookupBody.parse(input);
+    const max = config.lookupLimitPerHour;
+    if (max > 0 && (!(await checkRate(`lookup:${me.id}`, max, HOUR_MS)) || !(await checkRate(`lookup-ip:${clientIp(req)}`, max * 3, HOUR_MS)))) {
+      reply.header("retry-after", "3600");
+      throw new ApiError(429, "TooManyAttempts", "try again later");
+    }
     const { rows } = await apiPool.query(
       `select u.id, u.display_name, k.ecdh_pub, k.ecdsa_pub, k.sig_key_id, k.created_at, k.retired_at
          from users u left join user_keys k on k.user_id = u.id and k.retired_at is null
         where lower(u.email) = lower($1) and u.deleted_at is null`,
-      [q.email],
+      [email],
     );
     const r = rows[0];
     if (!r) throw notFound("UserNotFound");
     return UserLookup.parse({ id: r.id, display_name: r.display_name, keys: userKeys(r) });
-  });
+  };
+  app.post("/users/lookup", async (req, reply) => lookup(req, reply, req.body));
+  app.get("/users/lookup", async (req, reply) => lookup(req, reply, req.query));
 
   /** Every key a user ever published, so old entries can be verified against retired keys. */
   app.get<{ Params: { id: string } }>("/users/:id/keys", async (req) => {

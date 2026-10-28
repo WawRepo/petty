@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- Finding someone by email to invite them is limited: 20 searches an hour per person, and three times
+  as many per client address (`LOOKUP_LIMIT_PER_HOUR`). The search must say whether an address has an
+  account, so the limit is what stops someone from checking a list of addresses. The address now goes
+  in the body of the request, and the API's request log and traces no longer keep any query string,
+  so an address searched for no longer appears in them.
+
 ## [1.5.27] — 2026-10-28
 
 ### Security

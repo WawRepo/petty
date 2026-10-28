@@ -3,7 +3,7 @@ import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, o
 import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, newUser } from "../lib.js";
+import { API, compose, newUser } from "../lib.js";
 
 /**
  * What a household does, end to end, over HTTP against the real image: two people, a shared
@@ -59,6 +59,19 @@ describe("household", () => {
     expect((await ann.postEntry(drawerId, key, lineId, "add", 5000)).res.statusCode).toBe(201);
     expect((await ann.postEntry(drawerId, key, lineId, "withdraw", -1250)).res.statusCode).toBe(201);
     expect(await balance(ann)).toEqual({ balance: 3750, entries: 2 });
+  });
+
+  it("finds the other person by email in a POST body; no address reaches the request log (PETTY-408)", async () => {
+    const found = await ann.call("POST", "/users/lookup", { email: ben.user.email.toUpperCase() });
+    expect(found.statusCode).toBe(200);
+    expect(found.json()).toMatchObject({ id: ben.id, keys: { ecdh_pub: ben.user.pub.ecdh } });
+    expect((await ann.call("POST", "/users/lookup", { email: `nobody-${ben.id}@petty.test` })).statusCode).toBe(404);
+    // a web app tab opened before the change still sends GET ?email=
+    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(ben.user.email)}`)).statusCode).toBe(200);
+    const lines = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"') && l.includes("/users/lookup"));
+    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    expect(lines().join("\n")).not.toContain("email=");
+    expect(lines().join("\n")).not.toContain(ben.user.email);
   });
 
   it("shares the drawer; the other person reads and writes; a stranger cannot", async () => {

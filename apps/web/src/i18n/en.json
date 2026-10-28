@@ -621,6 +621,7 @@
     "lookup": "Find",
     "notFound": "No Petty account with that email. Send them a join link first.",
     "noKeys": "This person has not finished setting up their account.",
+    "tooMany": "Too many searches. Try again in an hour.",
     "role": "Role",
     "roleWrite": "Writer — can add and take out, edit items and mark the drawer checked",
     "roleRead": "Reader — can see everything, cannot change anything or export",

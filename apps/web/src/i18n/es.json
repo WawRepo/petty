@@ -621,6 +621,7 @@
     "lookup": "Buscar",
     "notFound": "No hay ninguna cuenta de Petty con ese correo. Primero envíale un enlace de invitación.",
     "noKeys": "Esta persona aún no ha terminado de configurar su cuenta.",
+    "tooMany": "Demasiadas búsquedas. Vuelve a intentarlo dentro de una hora.",
     "role": "Rol",
     "roleWrite": "Editor — puede añadir y retirar, editar elementos y marcar el cajón como revisado",
     "roleRead": "Lector — puede verlo todo, pero no puede cambiar nada ni exportar",

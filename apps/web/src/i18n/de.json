@@ -621,6 +621,7 @@
     "lookup": "Suchen",
     "notFound": "Kein Petty-Konto mit dieser E-Mail. Schick zuerst einen Einladungslink.",
     "noKeys": "Diese Person hat ihr Konto noch nicht fertig eingerichtet.",
+    "tooMany": "Zu viele Suchen. Versuch es in einer Stunde noch einmal.",
     "role": "Rolle",
     "roleWrite": "Bearbeiter – kann hinzufügen und entnehmen, Posten bearbeiten und die Schublade als geprüft markieren",
     "roleRead": "Leser – sieht alles, kann nichts ändern und nichts exportieren",

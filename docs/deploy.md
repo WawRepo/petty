@@ -74,6 +74,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `LEGAL_DIR` | a folder with your own privacy notice and terms of service, see below. Empty (the default) = none. |
 | `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (the default: all three); `false` = none. See above. |
 | `RATE_LIMIT_PER_MINUTE` | API requests per client address per minute, for every route; `0` = off. The image's default is `600`. Over it, the API answers 429 with `Retry-After: 60`. The web app's own files and `/api/health*` do not count. Sign-in, sign-up, password reset and device codes keep their own, stricter limits. |
+| `LOOKUP_LIMIT_PER_HOUR` | Email lookups (the Invite sheet's *Find*) per person per hour; a client address gets three times as many. Default `20`; `0` = off. Over it, the API answers 429 with `Retry-After: 3600`. The lookup must say whether an address has an account, so this limit is what stops someone from checking a list of addresses. |
 | `CLIENT_IP_HEADER` | a platform proxy's own client-address header, for example `Fly-Client-IP` or `CF-Connecting-IP`; it wins over `X-Forwarded-For`. Empty (the default) = none. See above. |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |
 | `OPEN_SIGNUP` | local mode only: `true` lets anyone create an account without a join link (a public self-hosted instance). Default off = invite-only. In Clerk mode, open sign-up is a setting in the Clerk dashboard, not here. |
