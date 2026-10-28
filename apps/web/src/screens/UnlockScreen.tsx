@@ -11,7 +11,7 @@ import { useToast } from "../components/Toast.js";
 import { ApiError } from "../lib/api.js";
 import { addPasskey, recoverWithCode } from "../lib/custody.js";
 import { checkPassphrase } from "../lib/passphrase.js";
-import { signOut, unlock, unlockWithPasskey, updateMe, updateVault, useAuth, type PasskeyUnlock } from "../lib/session.js";
+import { rememberUnlock, setRememberUnlock, signOut, unlock, unlockWithPasskey, updateMe, updateVault, useAuth, type PasskeyUnlock } from "../lib/session.js";
 import { deviceLabel, knownPasskeyIds, PasskeyError, passkeyPrfSupported, rememberPasskey } from "../lib/passkey.js";
 import { offerToSavePassphrase, vaultUsername } from "../lib/credentials.js";
 import { afterUnlock } from "../lib/afterUnlock.js";
@@ -43,6 +43,7 @@ export function UnlockScreen() {
   const [oLp, setOLp] = useState("");
   const [oErr, setOErr] = useState<string | null>(null);
   const [oBusy, setOBusy] = useState(false);
+  const [remember, setRemember] = useState(rememberUnlock);
   useEffect(() => { void passkeyPrfSupported().then(setPkAvail); }, []);
   const hasPasskey = !!me?.passkeys.length;
   const hasPassphrase = !!me?.vault;
@@ -146,6 +147,8 @@ export function UnlockScreen() {
             <Button type="submit" variant={passkeyFirst ? "secondary" : "primary"} busy={busy}>{busy ? t("auth.unlock.working") : t("auth.unlock.submit")}</Button>
           </form>
         ) : null}
+        <label className="check-row mt12"><input type="checkbox" checked={remember} onChange={(e) => { setRemember(e.target.checked); setRememberUnlock(e.target.checked); }} aria-labelledby="remember-unlock-label" aria-describedby="remember-unlock-hint" data-testid="remember-unlock" /><span id="remember-unlock-label">{t("auth.unlock.remember")}</span></label>
+        <p className="hint mt6" id="remember-unlock-hint">{t("auth.unlock.rememberHint")}</p>
         <p><Button variant="ghost" onClick={() => { setRecover(true); setRErr({}); }}>{t(hasPassphrase ? "auth.unlock.useRecovery" : "auth.unlock.useRecoveryNoPassphrase")}</Button></p>
         <p><Button variant="ghost" onClick={() => { void signOut().then(() => nav("/", { replace: true })); }}>{t("auth.unlock.signOut")}</Button></p>
       </main>

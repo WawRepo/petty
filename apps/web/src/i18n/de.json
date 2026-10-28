@@ -125,7 +125,9 @@
       "addHereTitle": "Passkey für dieses Gerät hinzufügen?",
       "addHereBody": "Du hast mit einem Passkey von einem anderen Gerät entsperrt. Füge hier einen hinzu, dann öffnet dieses Gerät den Tresor beim nächsten Mal selbst.",
       "addHere": "Passkey hinzufügen",
-      "notNow": "Nicht jetzt"
+      "notNow": "Nicht jetzt",
+      "remember": "Tresor auf diesem Gerät 24 Stunden offen lassen",
+      "rememberHint": "Aus: Der Tresor sperrt sich, wenn du Petty schließt oder neu lädst. Schalte es auf einem Computer aus, den auch andere nutzen."
     },
     "lock": {
       "now": "Jetzt sperren",
@@ -743,7 +745,7 @@
       "Wer die Datenbank oder ein Backup liest: Schubladeninhalte, Fotos und Tresore sind nur verschlüsselte Daten. Die oben genannten Konto- und Aktivitätsdaten sind trotzdem sichtbar.",
       "Wer die Datenbank verändert: Verschobene, vertauschte oder gelöschte Buchungen werden erkannt.",
       "Der Server allein: Er hat keine Schlüssel und kann deine Schubladen nicht lesen, außer er verändert auch die App, die er ausliefert (siehe unten).",
-      "Ein verlorenes Handy: Ein gesperrter Tresor braucht deinen Passkey oder deine Passphrase, und ein offener Tresor sperrt sich 24 Stunden nach dem Entsperren selbst.",
+      "Ein verlorenes Handy: Ein gesperrter Tresor braucht deinen Passkey oder deine Passphrase, und ein offener Tresor sperrt sich 24 Stunden nach dem Entsperren selbst, oder beim Schließen von Petty, wenn du das beim Entsperren gewählt hast.",
       "Ein entferntes Mitglied: Nach dem Entfernen wird der Schlüssel der Schublade ersetzt; was danach geschrieben wird, kann es nicht lesen."
     ],
     "notTitle": "Wovor Petty nicht schützen kann",
