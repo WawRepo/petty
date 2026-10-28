@@ -39,6 +39,7 @@ separate port, not on the app port, so a reverse proxy never exposes them. The c
 | `petty_entries_total` | `result` = created, duplicate | entry appends; duplicates are idempotent replays from the offline outbox |
 | `petty_rotations_started_total` | none | drawer key rotations started |
 | `petty_mail_total` | `result` = ok, failed | emails handed to SMTP |
+| `petty_mail_limited_total` | `kind` = invitation, transfer | invitation and ownership-offer emails skipped by the sharing mail limits (`SHARING_MAIL_PER_*`, docs/deploy.md); a steady rise means someone invites in a loop |
 | `petty_pg_pool_clients` | `pool` = api, maint; `state` = total, idle, waiting | database pool occupancy |
 | `petty_security_refusals_total` | `code` = CustodyProofInvalid, KeysMismatch, WrapMismatch, DelegationInvalid, DelegationMismatch, DeviceKeyInvalid, TokenCannotVerify, SigningKeyRequired, ReadTokenCannotSign | refusals that normal use never triggers: a forged custody proof, keys or a wrap that do not match, a token asked to do what it may not (`SECURITY_REFUSALS` in `apps/api/src/lib/errors.ts`) |
 | `petty_process_resident_memory_bytes` | none | the API process's resident memory, also on the OTLP push (which has no `process_*` defaults) |
@@ -124,7 +125,7 @@ and on the OTLP push alike; with several instances, add `by (deployment_environm
 Also worth a check from outside: an HTTP probe on `/api/health` that expects `"db":"up"` (on a database
 that scales to zero, probe `/api/health/live` instead, see above), and, if you
 run the backup job from `deploy/backup`, an alert when the last successful backup is older than
-26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`,
+26 hours. Labelled counters (`petty_auth_events_total`, `petty_mail_total`, `petty_mail_limited_total`,
 `petty_security_refusals_total`) appear after their first event, so treat "no data" as fine for those
 rules. Tampering that only the client can see — a ciphertext that fails to open (`AuthTagMismatch`), a
 broken hash chain — never reaches the server, so no server alert can report it.

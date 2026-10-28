@@ -15,6 +15,8 @@ import { parseTrustProxy } from "./lib/trust-proxy.js";
 }
 
 const env = (name: string, fallback: string): string => process.env[name] ?? fallback;
+/** A whole number ≥ 0 from the environment; anything else (empty, a typo) keeps the default. */
+const count = (name: string, fallback: number): number => { const n = Number(env(name, "").trim() || NaN); return Number.isInteger(n) && n >= 0 ? n : fallback; };
 
 export const config = {
   port: Number(env("API_PORT", "3000")),
@@ -81,6 +83,13 @@ export const config = {
    * PETTY-243: per-user storage limit in MB — ciphertext in the drawers a person owns (photos,
    * documents and their 30-day history, entries). 0 or unset = no limit (a household instance).
    */
+  /**
+   * PETTY-407 (security review #9): drawer invitation and ownership-offer emails per 24 hours, per sender
+   * and per recipient; 0 = no limit. Past a limit the invitation or offer still exists in the app; only its
+   * email is skipped (lib/sharing-mail.ts). One email per drawer and recipient a day applies regardless.
+   */
+  sharingMailPerSender: count("SHARING_MAIL_PER_SENDER", 20),
+  sharingMailPerRecipient: count("SHARING_MAIL_PER_RECIPIENT", 5),
   storageQuotaBytes: Number(env("STORAGE_QUOTA_MB", "0")) > 0 ? Math.round(Number(env("STORAGE_QUOTA_MB", "0")) * 1024 * 1024) : null,
   /** PEM public key for networkless token verification (tests, air-gapped); empty = fetch JWKS with the secret key. */
   clerkJwtKey: env("CLERK_JWT_KEY", ""),

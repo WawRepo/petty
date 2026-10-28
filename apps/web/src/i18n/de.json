@@ -310,6 +310,7 @@
   "errors": {
     "network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuch es noch einmal.",
     "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
+    "displayName": "Gib einen einfachen Namen in einer Zeile ein, ohne Links oder E-Mail-Adressen. Setze nach einem Punkt ein Leerzeichen, wie in „J. Schmidt“.",
     "storageFull": "Dein Speicher ist voll. Entferne Fotos oder Schubladen, die du nicht mehr brauchst. In den Einstellungen siehst du, wie viel du belegst.",
     "ownerStorageFull": "Der Eigentümer dieser Schublade hat keinen Speicher mehr frei, deshalb wurde die Änderung nicht gespeichert. Bitte ihn, Platz freizugeben.",
     "photoTooLarge": "Dieses Foto ist zu groß. Wähle ein kleineres."
@@ -628,6 +629,7 @@
     "blockedChanged": "Der Schlüssel dieser Person hat sich geändert, seit du ihn zuletzt verglichen hast. Akzeptiere zuerst unter Mitglieder den neuen Schlüssel.",
     "send": "Einladen",
     "sent": "Einladung gesendet",
+    "sentNoMail": "Einladung gesendet. Diesmal ohne E-Mail (zu viele in letzter Zeit). Die Person sieht sie, wenn sie Petty öffnet.",
     "joinLink": "Einladungslink senden",
     "joinLinkHint": "Für jemanden, der Petty noch nicht nutzt. Die Person bekommt eine E-Mail mit einem einmaligen Link.",
     "joinLinkSent": "Einladungslink an {email} gesendet",

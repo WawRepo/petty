@@ -17,10 +17,16 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await axe(page);
   const run = crypto.randomUUID().slice(0, 8);
-  await page.getByLabel("Your name").fill("Dana");
+  // PETTY-407: the name goes into other people's mail; one a mail program would turn into a link is refused before any key work
+  await page.getByLabel("Your name").fill("Dana, see dana.example");
   await page.getByLabel("Email").fill(`dana-${run}@e2e.local`);
   await page.getByLabel("Login password").fill(`login-${run}-pw`);
   await choosePassphraseDoor(page);
+  await page.getByLabel("Vault passphrase", { exact: true }).fill(`orange kettle drifts ${run}`);
+  await page.getByLabel("Repeat the vault passphrase").fill(`orange kettle drifts ${run}`);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("alert")).toContainText("without links or email addresses");
+  await page.getByLabel("Your name").fill("Dana");
   await page.getByLabel("Vault passphrase", { exact: true }).fill(`login-${run}-pw`); // same as password → refused
   await page.getByLabel("Repeat the vault passphrase").fill(`login-${run}-pw`);
   await page.getByRole("button", { name: "Create account" }).click();

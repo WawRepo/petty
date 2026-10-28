@@ -33,6 +33,9 @@ describe("mail texts", () => {
       expect(s.passwordReset.text).toContain("https://p.test/reset#TOKEN");
       for (const name of ["invitationWrite", "relinked", "transferOffered"] as const) expect(s[name].text).toContain("https://p.test/");
       expect(s.invitationWrite.text).not.toBe(s.invitationRead.text);
+      // PETTY-407: the stand-in for a name that cannot go into a mail exists in every language
+      expect(MAIL[locale].someone.trim()).not.toBe("");
+      if (locale !== "en") expect(MAIL[locale].someone).not.toBe(MAIL.en.someone);
       // PETTY-281: "tell someone" names who, when the instance has a contact address — and says nothing of it when not
       for (const name of ["relinked", "passwordChanged", "vaultReplaced"] as const) expect(s[name].text, `${locale} ${name}`).toContain("ops@p.test");
       const m = MAIL[locale];

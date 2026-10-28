@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { currentLocale } from "../i18n/index.js";
 import { Navigate, useNavigate } from "react-router";
-import type { Me } from "@petty/protocol";
+import { displayNameProblem, type Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
@@ -33,6 +33,7 @@ export function VaultSetupScreen() {
   async function submit(ev: FormEvent) {
     ev.preventDefault();
     const e = validateFirstDoor(door, t, "", "");
+    if (name.trim() && displayNameProblem(name.trim())) e["name"] = t("errors.displayName"); // PETTY-407: the name goes into other people's mail
     setErrors(e);
     if (Object.keys(e).length) return;
     setBusy(true);
@@ -47,6 +48,7 @@ export function VaultSetupScreen() {
       setStep({ kind: "recovery", code: m.recoveryCode });
     } catch (err) {
       if (err instanceof PasskeyError) setErrors({ form: err.code === "cancelled" ? t("settings.passkey.cancelled") : t(err.code === "no_prf" ? "settings.passkey.noPrf" : "settings.passkey.unsupported") });
+      else if (err instanceof ApiError && err.code === "ValidationError" && err.context["path"] === "display_name") setErrors({ name: t("errors.displayName") });
       else setErrors({ form: err instanceof NetworkError ? t("errors.network") : err instanceof ApiError && err.code === "AlreadyProvisioned" ? t("auth.setup.already") : t("errors.unknown") });
     } finally { setBusy(false); }
   }
@@ -60,7 +62,7 @@ export function VaultSetupScreen() {
       <main>
         <VaultIntro method={door.method} testId="setup-explainer" items={[t("auth.setup.explainer.identity"), t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase"), t("auth.join.explainer.recovery")]} />
         <form onSubmit={submit} noValidate>
-          <TextField label={t("auth.setup.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" hint={t("auth.setup.displayNameHint")} />
+          <TextField label={t("auth.setup.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" hint={t("auth.setup.displayNameHint")} error={errors["name"]} />
           <FirstDoorFields state={door} set={setDoor} pkAvail={pkAvail} errors={errors} />
           {errors["form"] ? <p className="error" role="alert">{errors["form"]}</p> : null}
           <Button type="submit" busy={busy}>{busy ? t("auth.join.working") : t(door.method === "passkey" ? "auth.join.submitPasskey" : "auth.setup.submit")}</Button>

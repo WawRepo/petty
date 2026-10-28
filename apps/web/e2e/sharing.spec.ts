@@ -37,10 +37,32 @@ test("invite by email with safety number; no access before accept; reader sees e
   expect((await carolApi.call("GET", `/drawers/${id}/export`)).status).toBe(403);
   expect((await bobApi.call("GET", `/drawers/${id}/export`)).status).toBe(200);
   // emails
-  const mail = await fetch(`http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:${bob.email}`)}`);
+  const mail = await fetch(`${process.env["MAILPIT_URL"] ?? "http://localhost:8025"}/api/v1/search?query=${encodeURIComponent(`to:${bob.email}`)}`);
   const j = (await mail.json()) as { messages: Array<{ Subject: string }> };
   expect(j.messages.some((m) => m.Subject === "A drawer was shared with you")).toBe(true);
   await ctxA.close(); await ctxB.close(); await ctxC.close();
+});
+
+test("invite, decline, invite again the same day: the invitation stands, the second email does not go, and the inviter is told (PETTY-407)", async ({ browser }) => {
+  const alice = await signupWithKeys("alice");
+  const bob = await signupWithKeys("bob");
+  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
+  await loginAndUnlock(pageA, alice);
+  const id = await makeDrawer(pageA, "Kitchen");
+  await inviteViaUi(pageA, id, bob, "write");
+  const bobApi = await apiClient(bob);
+  const first = (await bobApi.call("GET", "/invitations")).json as { invitations: Array<{ id: string }> };
+  expect((await bobApi.call("POST", `/invitations/${first.invitations[0]!.id}/decline`)).status).toBe(204);
+  await inviteViaUi(pageA, id, bob, "write", "Invitation sent. No email this time (too many recently). They will see it when they open Petty.");
+  expect(((await bobApi.call("GET", "/invitations")).json as { invitations: unknown[] }).invitations).toHaveLength(1); // bob still sees it in the app
+  const shared = async () => {
+    const r = await fetch(`${process.env["MAILPIT_URL"] ?? "http://localhost:8025"}/api/v1/search?query=${encodeURIComponent(`to:${bob.email}`)}`);
+    return ((await r.json()) as { messages: Array<{ Subject: string }> }).messages.filter((m) => m.Subject === "A drawer was shared with you").length;
+  };
+  await expect.poll(shared).toBe(1);
+  await pageA.waitForTimeout(1_000); // a second mail would be on its way by now
+  expect(await shared()).toBe(1);
+  await ctxA.close();
 });
 
 test("revoke rotates the key: the removed member's old key cannot open anything written afterwards; rotation resumes after an interruption", async ({ browser }) => {

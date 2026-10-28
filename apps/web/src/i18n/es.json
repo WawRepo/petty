@@ -310,6 +310,7 @@
   "errors": {
     "network": "No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
     "unknown": "Algo salió mal. Inténtalo de nuevo.",
+    "displayName": "Escribe un nombre sencillo en una sola línea, sin enlaces ni direcciones de correo. Después de un punto, pon un espacio, como en «J. García».",
     "storageFull": "Tu almacenamiento está lleno. Quita fotos o cajones que ya no necesites. En Ajustes puedes ver cuánto usas.",
     "ownerStorageFull": "El propietario de este cajón no tiene espacio libre, así que el cambio no se guardó. Pídele que libere espacio.",
     "photoTooLarge": "Esta foto es demasiado grande. Elige una más pequeña."
@@ -628,6 +629,7 @@
     "blockedChanged": "La clave de esta persona cambió desde la última vez que la comparaste. Primero acepta la nueva clave en Miembros.",
     "send": "Invitar",
     "sent": "Invitación enviada",
+    "sentNoMail": "Invitación enviada. Esta vez sin correo (demasiados últimamente). Esa persona la verá cuando abra Petty.",
     "joinLink": "Enviar un enlace de invitación",
     "joinLinkHint": "Para alguien que aún no usa Petty. Recibirá un correo con un enlace de un solo uso.",
     "joinLinkSent": "Enlace de invitación enviado a {email}",

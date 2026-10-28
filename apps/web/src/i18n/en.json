@@ -310,6 +310,7 @@
   "errors": {
     "network": "Could not reach the server. Check your connection and try again.",
     "unknown": "Something went wrong. Try again.",
+    "displayName": "Use a plain name on one line, without links or email addresses. After a dot, put a space, as in “J. Smith”.",
     "storageFull": "Your storage is full. Remove photos or drawers you no longer need. Settings shows how much you use.",
     "ownerStorageFull": "This drawer's owner has no storage left, so the change was not saved. Ask them to free some space.",
     "photoTooLarge": "This photo is too large. Choose a smaller one."
@@ -628,6 +629,7 @@
     "blockedChanged": "This person's key changed since you last compared it. Accept the new key in Members first.",
     "send": "Invite",
     "sent": "Invitation sent",
+    "sentNoMail": "Invitation sent. No email this time (too many recently). They will see it when they open Petty.",
     "joinLink": "Send a join link",
     "joinLinkHint": "For someone who is not on Petty yet. They get an email with a one-time link.",
     "joinLinkSent": "Join link sent to {email}",
