@@ -11,7 +11,8 @@ import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { PromptSheet } from "../components/PromptSheet.js";
 import { Sheet } from "../components/Sheet.js";
-import { excludedFromTotal, placesShown, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { excludedFromTotal, pinStatus, placesShown, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { useAuth } from "../lib/session.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { ReadOnlyHint } from "../components/ReadOnlyHint.js";
@@ -149,6 +150,7 @@ export function DrawerScreen() {
   const toast = useToast();
   const { id = "" } = useParams();
   const pinsDoc = usePins().doc;
+  const auth = useAuth();
   const counted = !excludedFromTotal(pinsDoc).has(id);
   const showVerification = verificationShown(pinsDoc); // PETTY-83: the bar, the history and the badges are optional
   const showTotals = totalsShown(pinsDoc); // PETTY-84: the totals card, the in-total chips and the row status are optional
@@ -193,10 +195,12 @@ export function DrawerScreen() {
   // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
   if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} /><DrawerSkeleton /></>;
   if (!view) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
-  if (!view.doc) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="error" role="alert">{t(`home.degradedReason.${view.error ?? "decrypt_failed"}`)}</p>{view.error === "sender_key_changed" ? <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button> : null}</main></>;
+  if (!view.doc) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="error" role="alert">{t(`home.degradedReason.${view.error ?? "decrypt_failed"}`)}</p>{view.error === "sender_key_changed" || view.error === "sender_unconfirmed" ? <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button> : null}</main></>;
   const doc = view.doc;
   const canWrite = view.summary.role !== "read";
   const isOwner = view.summary.role === "owner";
+  const meId = auth.status === "unlocked" ? auth.me.id : null;
+  const toConfirm = view.summary.rotation_needed ? view.members.filter((m) => m.user_id !== meId && pinStatus(m) !== "confirmed") : [];
   const lines = doc.lines;
   // Totals (PETTY-64): "included" folds only the lines that count; "all" folds every money line.
   const okForTotals = view.error === null && view.entryProblems.length === 0;
@@ -372,6 +376,8 @@ export function DrawerScreen() {
         ) : null}
         {view.rotation ? <p className="warn-box" role="status" data-testid="rotation-progress">{t("rotation.running", { done: view.rotation.done, total: view.rotation.total })}</p> : null}
         {view.summary.rotation_needed && !view.rotation ? <p className="warn-box" role="status" data-testid="rotation-needed">{t("rotation.needed")}</p> : null}
+        {/* PETTY-398: this device replaces the key only for members whose safety number this person confirmed */}
+        {view.summary.rotation_needed && !view.rotation && canWrite && toConfirm.length ? <p className="warn-box" role="status" data-testid="rotation-confirm">{t("rotation.confirmFirst", { names: toConfirm.map((m) => memberName(view, m.user_id)).join(", ") })} <Button variant="ghost" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button></p> : null}
         {view.keyChanged.length ? <p className="warn-box danger" role="alert" data-testid="key-changed">{t("rotation.keyChanged", { names: view.keyChanged.map((u) => memberName(view, u)).join(", ") })} <Button variant="ghost" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button></p> : null}
         {showVerification ? <section className="verify-bar" data-testid="verify-bar" data-status={st.status}>
           <div className="vtext">{verifyText}</div>

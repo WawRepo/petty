@@ -188,7 +188,9 @@
     "degradedReason": {
       "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
+      "sender_unconfirmed": "Ce tiroir a une nouvelle clé d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
+      "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
       "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
       "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
@@ -634,6 +636,7 @@
   "rotation": {
     "running": "Remplacement de la clé du tiroir… Opérations rechiffrées : {done} sur {total}.",
     "needed": "Un membre a été retiré. La clé du tiroir sera remplacée la prochaine fois qu’un éditeur ouvrira ce tiroir.",
+    "confirmFirst": "Votre appareil ne donne la nouvelle clé qu’aux personnes dont vous avez confirmé le numéro de sécurité. Confirmez {names} dans Membres, ou un autre membre remplacera la clé.",
     "keyChanged": "Clé modifiée pour {names}. Vérifiez les numéros de sécurité dans Membres avant de partager quoi que ce soit."
   },
   "offline": {

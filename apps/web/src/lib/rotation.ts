@@ -7,7 +7,7 @@ import { createDrawerKey, fromB64, reseal, toB64, unwrapDrawerKey, wrapDrawerKey
 import type { DrawerKeyWrap, Member } from "@petty/protocol";
 import { api } from "./api.js";
 import { expectedSender, getDrawers, loadAll, patchRotation, type DrawerView } from "./drawers.js";
-import { getPin } from "./pins.js";
+import { getPin, pinStatus } from "./pins.js";
 import { getAuth } from "./session.js";
 
 const BATCH = 200;
@@ -16,12 +16,17 @@ export class KeyNotConfirmed extends Error { constructor(readonly userId: string
 
 function me() { const a = getAuth(); if (a.status !== "unlocked") throw new Error("vault locked"); return a; }
 
-/** A member's ECDH key as pinned; refuses a member whose published key differs from the pin (SPEC "refuses further wraps until re-confirmed"). */
+/**
+ * A member's ECDH key as pinned; refuses a member whose published key differs from the pin (SPEC "refuses
+ * further wraps until re-confirmed"). PETTY-398: and a member whose safety number this person has not
+ * confirmed. The server lists the members, so one it added could be the server itself; the new key, and
+ * with it everything re-sealed under it, would be readable to it. Rotation waits until they are confirmed.
+ */
 function pinnedEcdh(m: Member): string {
   const a = me();
   if (m.user_id === a.me.id) return a.keys.pub.ecdh;
   const p = getPin(m.user_id);
-  if (!p || !m.keys || p.ecdh !== m.keys.ecdh_pub) throw new KeyNotConfirmed(m.user_id);
+  if (!p || pinStatus(m) !== "confirmed") throw new KeyNotConfirmed(m.user_id);
   return p.ecdh;
 }
 

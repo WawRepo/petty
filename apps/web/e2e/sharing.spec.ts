@@ -1,42 +1,5 @@
-import type { Page } from "@playwright/test";
 import { unwrapDrawerKey, openEntryUnverified, fromB64, AuthTagMismatch } from "@petty/crypto";
-import { apiClient, dbQuery, expect, loginAndUnlock, rowNamed, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
-
-async function makeDrawer(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Add drawer" }).click();
-  await page.getByLabel("Name", { exact: true }).fill(name);
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
-  const id = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
-  await page.getByRole("button", { name: "Add item" }).click();
-  await page.getByLabel("Name", { exact: true }).fill("Cash");
-  await page.getByLabel("Currency", { exact: true }).fill("EUR");
-  await page.getByLabel("Starting balance").fill("100");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await expect(page.getByTestId("line-row").first()).toContainText("100.00 EUR"); // the starting entry is committed
-  return id;
-}
-async function inviteViaUi(page: Page, drawerId: string, who: TestUserWithKeys, role: "write" | "read") {
-  await page.goto(`/drawers/${drawerId}/members`);
-  await page.getByRole("button", { name: "Invite someone" }).click();
-  await page.getByLabel("Their email").fill(who.email);
-  await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByTestId("invite-found")).toContainText(who.name);
-  await expect(page.getByTestId("invite-safety")).toHaveText(/^(\d{5} ){5}\d{5}$/);
-  if (role === "read") await page.getByLabel(/Reader/).check();
-  await page.getByLabel(/I compared this safety number/).check();
-  await page.getByRole("button", { name: "Invite", exact: true }).click();
-  await expect(page.locator(".toast")).toHaveText("Invitation sent");
-}
-async function acceptViaUi(page: Page) {
-  await page.goto("/");
-  const card = page.getByTestId("pending-invitation").first();
-  await expect(card).toBeVisible();
-  await expect(card.getByTestId("inviter-safety")).toHaveText(/^(\d{5} ){5}\d{5}$/);
-  await card.getByLabel(/I compared this number/).check();
-  await card.getByRole("button", { name: "Accept" }).click();
-  await expect(page.getByTestId("pending-invitation")).toHaveCount(0);
-}
+import { acceptViaUi, apiClient, dbQuery, expect, inviteViaUi, loginAndUnlock, makeDrawer, rowNamed, signupWithKeys, test } from "./fixtures.js";
 
 test("invite by email with safety number; no access before accept; reader sees everything but cannot export; emails go out", async ({ browser }) => {
   const alice = await signupWithKeys("alice");

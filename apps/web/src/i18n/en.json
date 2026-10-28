@@ -188,7 +188,9 @@
     "degradedReason": {
       "no_key": "You have no key for this drawer yet. Ask its owner to share it again.",
       "sender_unknown": "The key was shared by someone you have not seen before.",
+      "sender_unconfirmed": "This drawer has a new key from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
+      "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
       "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
@@ -634,6 +636,7 @@
   "rotation": {
     "running": "Replacing the drawer key… {done} of {total} entries re-encrypted.",
     "needed": "A member was removed. The drawer key will be replaced the next time a writer opens this drawer.",
+    "confirmFirst": "Your device gives the new key only to people whose safety number you confirmed. Confirm {names} in Members, or another member replaces the key.",
     "keyChanged": "The key of {names} has changed. Check their safety number in Members before sharing anything."
   },
   "offline": {
