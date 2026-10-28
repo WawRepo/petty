@@ -17,7 +17,7 @@ const TURNSTILE = "https://challenges.cloudflare.com";
 /** Whether a policy lets the bot check run: Turnstile as a script source and as a frame source (PETTY-404). */
 function allowsTurnstile(csp: string | undefined): boolean {
   const sources = (directive: string) => (csp ?? "").split(";").map((d) => d.trim().split(/\s+/)).find((d) => d[0] === directive)?.slice(1) ?? [];
-  return sources("script-src").includes(TURNSTILE) && sources("frame-src").includes(TURNSTILE);
+  return sources("script-src").some((x) => x === TURNSTILE) && sources("frame-src").some((x) => x === TURNSTILE);
 }
 /** The policy of every page of ours the tab loads (PETTY-404), by path; Clerk's own redirects are left out. */
 function recordPolicies(page: Page, base: string): { path: string; csp: string }[] {
