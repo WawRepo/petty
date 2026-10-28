@@ -167,7 +167,8 @@ export function SettingsScreen() {
     } finally { setCBusy(false); }
   }
   const me = auth.status === "unlocked" || auth.status === "locked" ? auth.me : null;
-  useEffect(() => { if (me) void mySafetyNumber(me).then(setSafety); }, [me]);
+  const keys = auth.status === "unlocked" ? auth.keys : null;
+  useEffect(() => { if (keys) void mySafetyNumber(keys).then(setSafety); }, [keys]);
   const [storage, setStorage] = useState<StorageUsage | null>(null);
   useEffect(() => { if (auth.status === "unlocked") void fetchStorage().then(setStorage).catch(() => setStorage(null)); }, [auth.status]);
   const install = useInstallState();

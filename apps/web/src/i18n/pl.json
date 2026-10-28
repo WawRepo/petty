@@ -113,6 +113,7 @@
       "managerHint": "Menedżer haseł może przechowywać to hasło, tak jak inne Twoje hasła. Jeśli synchronizuje dane, hasło trafi też do jego chmury.",
       "passkey": "Odblokuj kluczem dostępu",
       "passkeyWrong": "Klucz dostępu nie otworzył sejfu.",
+      "keyMismatch": "Twój sejf i serwer podają różne klucze Twojego konta, więc Petty się nie otworzyło. Ktoś mógł zmienić serwer. Powiadom osobę, która prowadzi to Petty.",
       "passkeyNoPrf": "Ta przeglądarka nie może tu użyć klucza dostępu. Użyj hasła sejfu.",
       "passkeyHint": "Face ID, Touch ID, Windows Hello lub klucz sprzętowy. Jeśli klucz dostępu jest w telefonie, przeglądarka pokaże kod QR do zeskanowania.",
       "passkeyUnsupported": "Ta przeglądarka nie obsługuje kluczy dostępu tak, jak potrzebuje Petty. Użyj hasła sejfu lub kodu odzyskiwania albo otwórz Petty w Safari, Chrome lub Edge.",

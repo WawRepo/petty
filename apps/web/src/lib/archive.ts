@@ -111,7 +111,7 @@ export async function importPayload(payload: ExportPayloadT, onProgress: (p: Imp
     const doc = ad.document as DrawerDocument;
     assertDocumentShape(doc);
     const id = crypto.randomUUID();
-    const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.me.pub.ecdh }, id, 1);
+    const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
     const importedDoc: DrawerDocument = { ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: `${v.comment ? v.comment + " · " : ""}[imported: ${ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?"}]` })) };
     const sealed = await sealDocument(key, { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: 1 }, importedDoc);
     await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });

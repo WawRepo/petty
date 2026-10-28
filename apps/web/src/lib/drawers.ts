@@ -130,7 +130,7 @@ const entryIdentity = (r: EntryRow): RecordIdentity =>
  */
 export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Member[]): Promise<{ pub: string } | { error: DrawerError }> {
   const a = me();
-  if (wrap.sender_id === a.me.id) return { pub: a.me.pub.ecdh };
+  if (wrap.sender_id === a.me.id) return { pub: a.keys.pub.ecdh };
   if (!wrap.sender_id) return { error: "sender_unknown" };
   const pin = getPin(wrap.sender_id);
   if (pin) return { pub: pin.ecdh };
@@ -440,7 +440,7 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
   if ("error" in sender) throw new Error(sender.error);
   const extractable = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: view.summary.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
   const { wrapDrawerKey } = await import("@petty/crypto");
-  const forInvitee = await wrapDrawerKey(extractable, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.me.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
+  const forInvitee = await wrapDrawerKey(extractable, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
   await api("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee });
 }
 export async function acceptInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/accept`); await loadAll(); }
@@ -477,7 +477,7 @@ export function homeTotals(excluded: ReadonlySet<string> = new Set(), only: Read
 export async function createDrawer(name: string, tags: readonly string[] = []): Promise<string> {
   const a = me();
   const id = crypto.randomUUID();
-  const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.me.pub.ecdh }, id, 1);
+  const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
   const doc = applyOps(newDocument(name), [{ type: "set_tags", tags }], { lineHasEntries: () => false });
   const summary: DrawerSummary = { id, owner_id: a.me.id, role: "owner", version: 1, key_version: 1, last_write_at: new Date().toISOString(), last_verified_at: null, rotation_needed: false, has_photo: false };
   const sealed = await sealDocument(key, docIdentity(summary, a.me.id), doc);

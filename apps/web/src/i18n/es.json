@@ -113,6 +113,7 @@
       "managerHint": "Tu gestor de contraseñas puede guardar esta frase de contraseña, como tus otras contraseñas. Si se sincroniza, la frase de contraseña también llega a su nube.",
       "passkey": "Desbloquear con llave de acceso",
       "passkeyWrong": "La llave de acceso no abrió la bóveda.",
+      "keyMismatch": "Tu bóveda y el servidor no coinciden en las claves de tu cuenta, así que Petty no se abrió. Puede que alguien haya alterado el servidor. Avisa a quien gestiona este Petty.",
       "passkeyNoPrf": "Este navegador no puede usar aquí la llave de acceso. Usa tu frase de contraseña.",
       "passkeyHint": "Face ID, Touch ID, Windows Hello o una llave de seguridad. Si tu llave de acceso está en tu teléfono, el navegador muestra un código QR para escanear.",
       "passkeyUnsupported": "Este navegador no puede usar llaves de acceso como Petty necesita. Usa tu frase de contraseña o el código de recuperación, o abre Petty en Safari, Chrome o Edge.",

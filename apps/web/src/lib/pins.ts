@@ -59,7 +59,7 @@ async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
   const a = getAuth();
   if (a.status !== "unlocked") throw new Error("vault locked");
   if (!selfKey) {
-    const myPub = await importEcdhPublic(a.me.pub.ecdh);
+    const myPub = await importEcdhPublic(a.keys.pub.ecdh);
     const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: myPub }, a.keys.ecdhPrivate, 256));
     selfKey = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(a.me.id), "AES-GCM", ["encrypt", "decrypt"]);
   }

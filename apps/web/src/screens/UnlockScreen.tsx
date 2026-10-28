@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { isClerk } from "../lib/authConfig.js";
 import { useNavigate } from "react-router";
-import { WrongPassphrase } from "@petty/crypto";
+import { OwnKeyMismatch, WrongPassphrase } from "@petty/crypto";
 import { Button } from "../components/Button.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
@@ -57,6 +57,7 @@ export function UnlockScreen() {
     } catch (err) {
       if (err instanceof PasskeyError) setPkErr(err.code === "cancelled" ? null : t(hasPassphrase ? "auth.unlock.passkeyNoPrf" : "auth.unlock.passkeyNoPrfNoPassphrase"));
       else if (err instanceof WrongPassphrase) setPkErr(t("auth.unlock.passkeyWrong"));
+      else if (err instanceof OwnKeyMismatch) setPkErr(t("auth.unlock.keyMismatch"));
       else setPkErr(t("errors.unknown"));
     } finally { setPkBusy(false); }
   }
@@ -118,7 +119,7 @@ export function UnlockScreen() {
       await unlock(passphrase);
       nav(afterUnlock() ?? "/", { replace: true });
     } catch (err) {
-      setError(err instanceof WrongPassphrase ? t("auth.unlock.wrong") : t("errors.unknown"));
+      setError(err instanceof WrongPassphrase ? t("auth.unlock.wrong") : err instanceof OwnKeyMismatch ? t("auth.unlock.keyMismatch") : t("errors.unknown"));
     } finally { setBusy(false); }
   }
 

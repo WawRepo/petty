@@ -40,6 +40,14 @@ export class SignatureInvalid extends PettyCryptoError {
 export class ChainBroken extends PettyCryptoError {
   constructor(context: ErrorContext = {}) { super("ChainBroken", "entry chain broken", context); }
 }
+/**
+ * The server published other public keys for this account than the vault holds. The vault's keys are the
+ * account's own (its AAD binds them); the server's copy would make the client wrap and derive to a key the
+ * server chose. Possible substitution by the server (PETTY-396).
+ */
+export class OwnKeyMismatch extends PettyCryptoError {
+  constructor(context: ErrorContext = {}) { super("OwnKeyMismatch", "the account's published keys differ from the vault's", context); }
+}
 /** A wrapped key did not unwrap: wrong recipient key or altered wrap. */
 export class UnwrapFailed extends PettyCryptoError {
   constructor(context: ErrorContext = {}) { super("UnwrapFailed", "wrapped key did not unwrap", context); }
