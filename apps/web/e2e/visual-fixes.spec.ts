@@ -134,7 +134,8 @@ test("F20, S24, S16: the 404 page's heading is its message; Delete account names
 
   await page.goto("/settings/delete");
   await expect(page.getByTestId("delete-sole").getByRole("listitem")).toHaveCount(2);
-  expect((await page.getByTestId("delete-sole").getByRole("listitem").allTextContents()).sort()).toEqual(["Cash tin", "Shoe box"]);
+  // the names come from the drawers, which open after the list arrives
+  await expect.poll(async () => (await page.getByTestId("delete-sole").getByRole("listitem").allTextContents()).sort()).toEqual(["Cash tin", "Shoe box"]);
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page).not.toHaveURL(/\/settings\/delete$/);
 });
