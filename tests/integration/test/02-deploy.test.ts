@@ -80,7 +80,9 @@ describe("deployment", () => {
     const deny = runInNewContext(list!) as RegExp[];
     const shell = (path: string) => !deny.some((r) => r.test(path));
     for (const file of ["/THIRD_PARTY_NOTICES.md", "/robots.txt", "/downloads/petty.mjs", "/api/health"]) expect(shell(file), file).toBe(false);
-    for (const route of ["/", "/privacy", "/drawers/0b6f4b4e-8c1e-4f7a-9d0e-2b1a3c4d5e6f", "/device?code=BCDF-GHJK-LMNP", "/join/abc_DEF-123"]) expect(shell(route), route).toBe(true);
+    for (const route of ["/", "/privacy", "/drawers/0b6f4b4e-8c1e-4f7a-9d0e-2b1a3c4d5e6f", "/device?code=BCDF-GHJK-LMNP", "/setup", "/unlock"]) expect(shell(route), route).toBe(true);
+    // PETTY-404: the sign-in and sign-up pages always come from the server (in clerk mode their policy differs)
+    for (const page of ["/login", "/login/factor-one", "/join", "/join/abc_DEF-123", "/join?__clerk_ticket=x"]) expect(shell(page), page).toBe(false);
   });
 
   it("API answers are never cached, and a malformed id is a 404 (PETTY-193)", async () => {

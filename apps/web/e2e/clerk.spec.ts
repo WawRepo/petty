@@ -14,6 +14,11 @@ import { test, expect, type Page } from "@playwright/test";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { choosePassphraseDoor } from "./fixtures.js";
 const TURNSTILE = "https://challenges.cloudflare.com";
+/** Whether a policy lets the bot check run: Turnstile as a script source and as a frame source (PETTY-404). */
+function allowsTurnstile(csp: string | undefined): boolean {
+  const sources = (directive: string) => (csp ?? "").split(";").map((d) => d.trim().split(/\s+/)).find((d) => d[0] === directive)?.slice(1) ?? [];
+  return sources("script-src").includes(TURNSTILE) && sources("frame-src").includes(TURNSTILE);
+}
 /** The policy of every page of ours the tab loads (PETTY-404), by path; Clerk's own redirects are left out. */
 function recordPolicies(page: Page, base: string): { path: string; csp: string }[] {
   const seen: { path: string; csp: string }[] = [];
@@ -118,7 +123,7 @@ test("clerk flow", async ({ page, baseURL }) => {
   // PETTY-404: the sign-in pages allow Turnstile; every other page the tab loaded does not
   expect(policies.filter((p) => /^\/login/.test(p.path)).length, JSON.stringify(policies.map((p) => p.path))).toBeGreaterThan(0);
   expect(policies.filter((p) => !/^\/(login|join)/.test(p.path)).length, JSON.stringify(policies.map((p) => p.path))).toBeGreaterThan(0);
-  for (const p of policies) expect(p.csp.includes(TURNSTILE), p.path).toBe(/^\/(login|join)(\/|$)/.test(p.path));
+  for (const p of policies) expect(allowsTurnstile(p.csp), p.path).toBe(/^\/(login|join)(\/|$)/.test(p.path));
   const base = new URL(page.url()).origin;
   expect(scripts.filter((u) => !u.startsWith(base) && !u.startsWith("https://challenges.cloudflare.com/")), "scripts from elsewhere").toEqual([]);
   expect(blocked.filter((t) => /script-src/.test(t)), "script-src violations").toEqual([]);
@@ -154,8 +159,8 @@ test("sign up through Clerk: the email code step stays on screen, with no page l
     // PETTY-404: leaving the sign-up is one fresh page load, and that page's policy has no Turnstile
     expect(loads).toBe(2);
     expect(policies.map((p) => p.path)).toEqual(["/join", "/"]);
-    expect(policies[0]?.csp).toContain(TURNSTILE);
-    expect(policies[1]?.csp).not.toContain(TURNSTILE);
+    expect(allowsTurnstile(policies[0]?.csp)).toBe(true);
+    expect(allowsTurnstile(policies[1]?.csp)).toBe(false);
     await expectNoTurnstile(page);
   } finally {
     const found = await clerkApi(`/users?email_address=${encodeURIComponent(email)}`);
@@ -185,8 +190,8 @@ test("sign up with a Clerk invitation: vault setup opens in a fresh page whose p
     // signed up: Home is loaded fresh, whose policy has no Turnstile, and it moves on to vault setup
     expect(loads).toBe(2);
     expect(policies.map((p) => p.path)).toEqual(["/join", "/"]);
-    expect(policies[0]?.csp).toContain(TURNSTILE);
-    expect(policies[1]?.csp).not.toContain(TURNSTILE);
+    expect(allowsTurnstile(policies[0]?.csp)).toBe(true);
+    expect(allowsTurnstile(policies[1]?.csp)).toBe(false);
     await expectNoTurnstile(page);
   } finally {
     await clerkApi(`/invitations/${invitation.id}/revoke`, { method: "POST" });
