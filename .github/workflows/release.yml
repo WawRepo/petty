@@ -193,7 +193,7 @@ jobs:
       # one. On a hit, nothing more is published; the address is never printed (logs are public).
       # `git@github.com` is the repository's SSH address (the event's repository.ssh_url), not a person.
       # `support@github.com` is GitHub's address in Dependabot's sign-off line, not a person. jq decodes the
-      # JSON first, so an escape such as \n or < does not stick to an address (PETTY-394).
+      # JSON first, so an escape such as \n or \u003c does not stick to an address (PETTY-394).
       - name: The provenance holds no personal address
         env:
           IMAGE: ghcr.io/wawrepo/petty:v${{ needs.prepare.outputs.version }}
