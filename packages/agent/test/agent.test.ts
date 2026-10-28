@@ -31,8 +31,11 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
   return (await tokenAndId(role)).token;
 }
 
-/** A token made the way the web app makes one: its own ECDH pair, the public half on the server. */
-async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
+/**
+ * A token made the way the web app makes one: its own ECDH pair, the public half on the server, and the
+ * owner's ECDH key sealed in (PETTY-397). `older: true` leaves that key out, as tokens made before did.
+ */
+async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
@@ -46,6 +49,7 @@ async function tokenAndId(role: "read" | "write"): Promise<{ token: string; id: 
     user_id: owner.id,
     drawers: [{ drawer_id: drawerId, key_version: 1, key: raw }],
     ecdh: toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey))),
+    ...(opts.older ? {} : { owner_ecdh: owner.user.pub.ecdh }),
     ...(signing ? signing.bundle : {}),
   });
   const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
@@ -154,6 +158,46 @@ describe("headless client (PETTY-165)", () => {
     // now it does
     const after = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
     expect((await after.drawers()).map((d) => d.name).sort()).toEqual(["Attic", "Kitchen"]);
+  });
+
+  it("a server that names a key of its own as the owner's cannot hand the token a drawer key (PETTY-397)", async () => {
+    const made = await tokenAndId("write");
+    // The server's own ECDH pair and a drawer key it knows, wrapped for the token as a newer key of Kitchen.
+    const server = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+    const serverPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", server.publicKey)));
+    const known = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+    const forged = await wrapDrawerKey(known, { ecdhPrivate: server.privateKey, ecdhPublicB64: serverPub }, made.pub, drawerId, 2);
+    const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+    const lying: typeof fetch = async (input, init) => {
+      const path = new URL(String(input)).pathname;
+      const res = await inject(input, init);
+      if (path === "/me/token") return json({ ...(await res.json() as object), owner_ecdh_pub: serverPub });
+      if (path === "/me/token/keys") return json({ keys: [{ drawer_id: drawerId, key_version: 2, wrap: forged }] });
+      return res;
+    };
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: lying });
+    // Kitchen still opens with the key the owner sealed in, and what the token writes is sealed with it:
+    // an honest connection reads the new entry.
+    expect((await c.drawers()).find((d) => d.id === drawerId)?.lines[0]?.name).toBe("Cash");
+    await c.add(drawerId, lineId, "1", "after the swap");
+    const honest = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    expect((await honest.history(drawerId, lineId))[0]!.comment).toBe("after the swap");
+    expect(c.notice).toBeNull();
+  });
+
+  it("a token made before PETTY-397 opens no drawer key wrapped later, and says so", async () => {
+    const older = await tokenAndId("read", { older: true });
+    const laterLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Cellar"), { type: "add_line", line: { id: laterLine, kind: "money", name: "Jar", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const cellar = await owner.createDrawer("Cellar", doc);
+    expect(cellar.res.statusCode).toBe(201);
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === cellar.id);
+    const k = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+    const forToken = await wrapDrawerKey(k, { ecdhPrivate: owner.user.keys.ecdh.privateKey, ecdhPublicB64: owner.user.pub.ecdh }, older.pub, cellar.id, 1);
+    expect((await owner.call("POST", `/me/tokens/${older.id}/keys`, { keys: [{ drawer_id: cellar.id, key_version: 1, wrap: forToken }] })).statusCode).toBe(204);
+    const c = await connect({ token: older.token, apiUrl: "https://petty.test", fetch: inject });
+    expect((await c.drawers()).map((d) => d.name)).not.toContain("Cellar");
+    expect(c.notice).toMatch(/make a new token/);
   });
 
   it("tags and places: list, tag, untag, rename onto an existing tag, remove, and move a drawer (PETTY-174/175)", async () => {

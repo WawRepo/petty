@@ -166,36 +166,37 @@ async function login(io: Io, host: string | undefined, readOnly: boolean, expire
   const id = client.identity;
   saveLogin(io.env, origin, { token, name: id.name, role: id.role, user_id: id.userId, added_at: new Date(io.now()).toISOString() });
   io.err(`Signed in to ${origin} with the token “${clean(id.name)}” (${id.role === "write" ? "may add entries" : "read only"}). Kept in ${storePath(io.env)}.\n`);
+  if (client.notice) io.err(`petty: warning: ${client.notice}\n`);
 }
 
 async function status(io: Io, host: string | undefined, asJson: boolean): Promise<void> {
   const store = readStore(io.env);
   const origins = host ? [originOf(host)] : Object.keys(store.hosts);
   if (!origins.length && !io.env["PETTY_TOKEN"]) throw new CliError(3, "not signed in: run petty auth login --host https://<your Petty>");
-  const rows: { host: string; token: string | null; role: string | null; default: boolean; works: boolean; problem: string | null; from: string }[] = [];
+  const rows: { host: string; token: string | null; role: string | null; default: boolean; works: boolean; problem: string | null; notice: string | null; from: string }[] = [];
   if (io.env["PETTY_TOKEN"]) {
     const c = credentials(io, host);
     rows.push({ host: c.origin, ...(await probe(io, c.origin, c.token)), default: true, from: "PETTY_TOKEN" });
   }
   for (const o of origins) {
     const login = store.hosts[o];
-    if (!login) { rows.push({ host: o, token: null, role: null, default: false, works: false, problem: "not signed in", from: storePath(io.env) }); continue; }
+    if (!login) { rows.push({ host: o, token: null, role: null, default: false, works: false, problem: "not signed in", notice: null, from: storePath(io.env) }); continue; }
     rows.push({ host: o, ...(await probe(io, o, login.token)), default: store.default === o, from: storePath(io.env) });
   }
   if (asJson) json(io, rows);
   else for (const r of rows) {
-    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${r.problem}`}\n  token kept in ${r.from}\n`);
+    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${r.problem}`}\n${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
   }
   if (openToOthers(storePath(io.env))) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
   if (rows.some((r) => !r.works)) throw new CliError(3, "a login does not work: run petty auth login again");
 }
 
-async function probe(io: Io, origin: string, token: string): Promise<{ token: string | null; role: string | null; works: boolean; problem: string | null }> {
+async function probe(io: Io, origin: string, token: string): Promise<{ token: string | null; role: string | null; works: boolean; problem: string | null; notice: string | null }> {
   try {
     const c = await checkToken(io, origin, token);
-    return { token: c.identity.name, role: c.identity.role, works: true, problem: null };
+    return { token: c.identity.name, role: c.identity.role, works: true, problem: null, notice: c.notice };
   } catch (e) {
-    return { token: null, role: null, works: false, problem: e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message };
+    return { token: null, role: null, works: false, problem: e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message, notice: null };
   }
 }
 

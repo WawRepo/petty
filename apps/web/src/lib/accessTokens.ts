@@ -80,7 +80,8 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
   const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
   const ecdh = toB64(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey)));
   const ecdhPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
-  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: me.me.id, drawers, ecdh, ...(signing ? { ecdsa: signing.ecdsa, sig_key_id: signing.sig_key_id } : {}) });
+  // PETTY-397: the owner's key from the vault goes into the bundle; the token opens wraps from that key only.
+  const bundle = await sealPatBundle(secret, id, { v: 1, user_id: me.me.id, drawers, ecdh, owner_ecdh: me.keys.pub.ecdh, ...(signing ? { ecdsa: signing.ecdsa, sig_key_id: signing.sig_key_id } : {}) });
   const row = AccessToken.parse(
     await api<unknown>("POST", "/me/tokens", {
       token_id: id,

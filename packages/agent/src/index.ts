@@ -139,6 +139,7 @@ export class AgentClient {
   private bundleSigKeyId: string | null = null;
   private keys = new Map<string, { key: CryptoKey; keyVersion: number }>();
   private signing: CryptoKey | null = null;
+  private oldBundle = false;
   /** The last seq seen per drawer:line, which an Adjust must state (the server refuses a stale count). */
   private heads = new Map<string, number>();
   /** The checked entries since each drawer:line's latest count, from the last load: what an undo looks at. */
@@ -152,6 +153,14 @@ export class AgentClient {
     this.api = opts.apiUrl.replace(/\/$/, "");
     this.bearer = `petty_pat_${split.tokenId}`;
     this.doFetch = opts.fetch ?? fetch;
+  }
+
+  /**
+   * Set for a token made before PETTY-397: it does not know its owner's key, so it opens only the drawers
+   * copied in when it was made, never a drawer added or re-keyed later.
+   */
+  get notice(): string | null {
+    return this.oldBundle ? "this token is from an older Petty: drawers added or re-keyed after it was made stay out of reach; make a new token in Petty Settings and revoke this one" : null;
   }
 
   /** Who this token belongs to, its role, and the drawers it may open. */
@@ -171,20 +180,21 @@ export class AgentClient {
       this.keys.set(d.drawer_id, { key, keyVersion: d.key_version });
     }
     // PETTY-169: drawers made after this token arrive as wraps for the token's own ECDH key.
-    if (this.bundle.ecdh) {
+    // PETTY-397: only from the owner's key sealed in the bundle, never the server's `owner_ecdh_pub`: with
+    // its own key there, a server could hand the token a drawer key it knows and read what the token writes.
+    this.oldBundle = !!this.bundle.ecdh && !this.bundle.owner_ecdh;
+    if (this.bundle.ecdh && this.bundle.owner_ecdh) {
       const mine = await crypto.subtle.importKey("pkcs8", new Uint8Array(fromB64(this.bundle.ecdh)), { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits", "deriveKey"]);
-      const owner = self.owner_ecdh_pub;
-      if (owner) {
-        const { keys } = (await this.call("GET", "/me/token/keys")) as { keys: { drawer_id: string; key_version: number; wrap: Parameters<typeof unwrapDrawerKey>[0] }[] };
-        for (const k of keys) {
-          const held = this.keys.get(k.drawer_id);
-          if (held && held.keyVersion >= k.key_version) continue; // the bundle already has this or newer
-          try {
-            const key = await unwrapDrawerKey(k.wrap, mine, { drawer_id: k.drawer_id, key_version: k.key_version, senderEcdhPublicB64: owner });
-            this.keys.set(k.drawer_id, { key, keyVersion: k.key_version });
-          } catch {
-            // a wrap this token cannot open is ignored: the drawer simply stays invisible
-          }
+      const owner = this.bundle.owner_ecdh;
+      const { keys } = (await this.call("GET", "/me/token/keys")) as { keys: { drawer_id: string; key_version: number; wrap: Parameters<typeof unwrapDrawerKey>[0] }[] };
+      for (const k of keys) {
+        const held = this.keys.get(k.drawer_id);
+        if (held && held.keyVersion >= k.key_version) continue; // the bundle already has this or newer
+        try {
+          const key = await unwrapDrawerKey(k.wrap, mine, { drawer_id: k.drawer_id, key_version: k.key_version, senderEcdhPublicB64: owner });
+          this.keys.set(k.drawer_id, { key, keyVersion: k.key_version });
+        } catch {
+          // a wrap this token cannot open is ignored: the drawer simply stays invisible
         }
       }
     }
