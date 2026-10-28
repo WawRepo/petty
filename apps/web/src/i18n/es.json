@@ -191,6 +191,7 @@
       "sender_unconfirmed": "Este cajón tiene una clave nueva de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "doc_rolled_back": "El servidor envió una versión de este cajón más antigua que la que ya abriste, así que Petty no lo abrió. Faltarían los elementos añadidos desde entonces. Puede que alguien haya alterado el servidor.",
       "unwrap_failed": "No se pudo abrir este cajón en este dispositivo. Pide a su propietario que vuelva a compartirlo.",
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
       "bad_document": "Los datos de este cajón están dañados. Su propietario puede restaurar una versión anterior.",
