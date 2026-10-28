@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- With Clerk sign-in, Clerk's bot check (Cloudflare Turnstile, the one script Petty does not build
+  itself) may now run only on the sign-in and sign-up pages. The app leaves those pages with a full
+  page load, so your vault is set up and unlocked in a fresh page where that script cannot run.
+  Before, it could stay in the page where you typed your vault passphrase. Signing in now takes one
+  more page load, and the sign-in and sign-up pages always come from the server, also in the
+  installed app. Local sign-in is unchanged.
+
 ## [1.5.27] — 2026-10-28
 
 ### Security

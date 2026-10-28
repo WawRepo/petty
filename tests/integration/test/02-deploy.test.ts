@@ -52,6 +52,8 @@ describe("deployment", () => {
     const csp = page.headers.get("content-security-policy") ?? "";
     expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(csp).toContain("require-trusted-types-for 'script'");
+    // PETTY-404: only clerk mode allows its bot check on the sign-in pages; local mode has one policy everywhere
+    for (const p of ["/login", "/join?x=1"]) expect((await fetch(`${ORIGIN}${p}`)).headers.get("content-security-policy"), p).toBe(csp);
     expect(page.headers.get("x-frame-options")).toBe("DENY");
     expect(page.headers.get("strict-transport-security")).toBeTruthy();
     const addon = await fetch(`${ORIGIN}/downloads/petty.mcpb`);

@@ -49,11 +49,16 @@ deployment, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` 
   frontend API origin (`CLERK_FRONTEND_API`) in clerk mode. Upgrade clerk-js, `@clerk/ui`,
   `@clerk/react` and `@clerk/localizations` together, and run the Clerk tests locally
   (`CLERK_E2E=1 npx playwright test e2e/clerk.spec.ts --project clerk-prod` in `apps/web`): CI has no
-  Clerk keys. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`), the bot check loads
-  Cloudflare Turnstile (`script-src`/`frame-src` `https://challenges.cloudflare.com`),
-  `img-src` adds `https://img.clerk.com`, and Trusted Types enforcement is off. These are the
-  relaxations, all listed in `lib/headers.ts`; local mode keeps the strict policy.
-- Sign in / sign up / reset are Clerk's components at `/login` and `/join`.
+  Clerk keys. Clerk's components inject styles (`style-src 'unsafe-inline'`, `worker-src 'self' blob:`),
+  `img-src` adds `https://img.clerk.com`, and Trusted Types enforcement is off. The bot check loads
+  Cloudflare Turnstile (`script-src`/`frame-src` `https://challenges.cloudflare.com`), allowed on the
+  sign-in and sign-up pages only (PETTY-404). These are the relaxations, all listed in
+  `lib/headers.ts`; local mode keeps the strict policy.
+- Sign in / sign up / reset are Clerk's components at `/login` and `/join`. Going between those pages
+  and any other page is a full page load (`ClerkShell.tsx`), and a sign-in page never boots the app:
+  with a session it loads `/` fresh. So the vault is set up and unlocked in a page whose policy has no
+  Turnstile, and the service worker never answers `/login` or `/join` from its cache. Keep Clerk's
+  "bot protection heartbeat" (a bot check on every page) off: the policy blocks it outside those pages.
 - The token provider is set once Clerk reports a session; every API call adds the header.
 - Sign out: Clerk `signOut()` plus the same IndexedDB wipe as before.
 - Offline: the app keeps the cached `Me` and the unlocked key handles as today; Clerk
