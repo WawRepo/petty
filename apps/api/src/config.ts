@@ -15,8 +15,8 @@ import { parseTrustProxy } from "./lib/trust-proxy.js";
 }
 
 const env = (name: string, fallback: string): string => process.env[name] ?? fallback;
-/** A whole number ≥ 0 from the environment; anything else (empty, a typo) keeps the default. */
-const count = (name: string, fallback: number): number => { const n = Number(env(name, "").trim() || NaN); return Number.isInteger(n) && n >= 0 ? n : fallback; };
+/** A limit from the environment: a whole number, 0 = off. Unset, empty or not a number keeps the default. */
+const limit = (name: string, fallback: number): number => { const raw = env(name, "").trim(); const n = Number(raw); return raw !== "" && Number.isInteger(n) && n >= 0 ? n : fallback; };
 
 export const config = {
   port: Number(env("API_PORT", "3000")),
@@ -44,6 +44,12 @@ export const config = {
   clientIpHeader: env("CLIENT_IP_HEADER", "").trim().toLowerCase(),
   /** API requests per client address per minute (lib/rate-limit.ts); 0 = off. The image sets 600. */
   apiRateLimitPerMinute: Math.max(0, Number(env("RATE_LIMIT_PER_MINUTE", "0")) || 0),
+  /**
+   * PETTY-408: email lookups (POST /users/lookup) per user per hour; a client address gets three times
+   * as many, for several accounts behind one address. Inviting needs a few; checking a list of
+   * addresses for accounts needs many.
+   */
+  lookupLimitPerHour: limit("LOOKUP_LIMIT_PER_HOUR", 20),
   /** OTLP/HTTP base URL of Tempo (spans go to <endpoint>/v1/traces); empty = tracing off. */
   otlpEndpoint: env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
   /** Prometheus /metrics on its own port (never behind the ingress); 0 = off. */
@@ -88,8 +94,8 @@ export const config = {
    * and per recipient; 0 = no limit. Past a limit the invitation or offer still exists in the app; only its
    * email is skipped (lib/sharing-mail.ts). One email per drawer and recipient a day applies regardless.
    */
-  sharingMailPerSender: count("SHARING_MAIL_PER_SENDER", 20),
-  sharingMailPerRecipient: count("SHARING_MAIL_PER_RECIPIENT", 5),
+  sharingMailPerSender: limit("SHARING_MAIL_PER_SENDER", 20),
+  sharingMailPerRecipient: limit("SHARING_MAIL_PER_RECIPIENT", 5),
   storageQuotaBytes: Number(env("STORAGE_QUOTA_MB", "0")) > 0 ? Math.round(Number(env("STORAGE_QUOTA_MB", "0")) * 1024 * 1024) : null,
   /** PEM public key for networkless token verification (tests, air-gapped); empty = fetch JWKS with the secret key. */
   clerkJwtKey: env("CLERK_JWT_KEY", ""),

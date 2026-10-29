@@ -45,11 +45,12 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
     e.preventDefault();
     setError(null); setFound(null);
     try {
-      const r = Lookup.parse(await api<unknown>("GET", `/users/lookup?email=${encodeURIComponent(email)}`));
+      // PETTY-408: the address goes in the body, never in a URL that proxies and logs keep
+      const r = Lookup.parse(await api<unknown>("POST", "/users/lookup", { email }));
       if (!r.keys) { setError(t("invite.noKeys")); return; }
       setFound(r);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? t("invite.notFound") : t("errors.unknown"));
+      setError(err instanceof ApiError && err.status === 404 ? t("invite.notFound") : err instanceof ApiError && err.status === 429 ? t("invite.tooMany") : t("errors.unknown"));
     }
   }
   async function sendJoinLink() {

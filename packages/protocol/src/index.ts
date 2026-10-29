@@ -397,6 +397,8 @@ export const EntriesPage = z.object({ entries: z.array(EntryRow), has_more: z.bo
 
 // ---------------------------------------------------------------- sharing
 export const UserLookup = z.object({ id: uuid, display_name: z.string(), keys: UserKeys.nullable() });
+/** PETTY-408: the address goes in the body of POST /users/lookup, never in a URL that proxies and logs keep. */
+export const UserLookupBody = z.object({ email: z.string().email().max(254) });
 export const InviteBody = z.object({ invitee_id: uuid, role: Role, wrap: DrawerKeyWrap });
 export const TransferBody = z.object({ to_user_id: uuid });
 export const StartRotationBody = z.object({

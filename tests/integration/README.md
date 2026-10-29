@@ -18,7 +18,7 @@ volume at the end. `test.env` holds test-only passwords.
 |---|---|
 | `01-seed` | writes one account, drawer and two entries (with `BASE`, on the older image) |
 | `02-deploy` | health, the one-shot migrate service, no owner password in the app, entries append-only for the API role, security headers, the add-on download, files and the service worker, no caching of API answers |
-| `03-household` | login/logout, drawers, entries, an Adjust, sharing with a second person, a stranger kept out, document restore, an access token and the agent (signatures verified), revoke, a token's drawer keys sent in several requests |
+| `03-household` | login/logout, drawers, entries, an Adjust, finding the second person by email (a POST body, no address in the request log), sharing with them, a stranger kept out, document restore, an access token and the agent (signatures verified), revoke, a token's drawer keys sent in several requests |
 | `04-open-signup` | open sign-up without a join link, and the invite path still works |
 | `05-storage` | the per-person storage quota fills and refuses |
 | `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes |

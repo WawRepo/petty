@@ -16,8 +16,8 @@ import { otelResource } from "./otel-resource.js";
  * What a span may carry: the route TEMPLATE, the method, the status, ids, the
  * SQL text with $n placeholders. What it never carries: request bodies, cookies,
  * who called (client address, user agent: PETTY-341),
- * query parameters (there are none), the values bound to a query, or a URL
- * path that holds a secret token (CLAUDE.md rule 2). `startTracing` MUST run
+ * query strings (PETTY-408), the values bound to a query, or a URL path that
+ * holds a secret token (CLAUDE.md rule 2). `startTracing` MUST run
  * before Fastify is imported — the http instrumentation patches `node:http` as
  * Fastify requires it — which is why index.ts imports the app dynamically.
  */
@@ -34,16 +34,26 @@ export const isHealthProbe = (url: string): boolean => /\/health(\/live)?(\?|$)/
  * server span. Petty's traces need none of it, and an IP address is personal data. The attributes are
  * set when the span starts and the instrumentation has no option to leave them out, so this processor
  * drops them before any exporter sees the span. It runs first in the list.
+ *
+ * PETTY-408: it also cuts the query string off the URL the instrumentation records (an old web app tab
+ * still sends GET /users/lookup?email=). tracingHooks overwrites those attributes with safeUrl, but a request
+ * that never reaches the hook would keep the raw URL.
  */
 const CLIENT_DETAILS = [
   "client.address", "client.port", "network.peer.address", "network.peer.port", "user_agent.original",
   // the older semantic conventions, in case the instrumentation is switched to them
   "http.client_ip", "http.user_agent", "net.peer.ip", "net.peer.port", "net.sock.peer.addr", "net.sock.peer.port",
 ];
-class DropClientDetails implements SpanProcessor {
+const URL_ATTRS = ["http.target", "http.url", "url.full"];
+class DropPersonalDetails implements SpanProcessor {
   private drop(span: SdkSpan | ReadableSpan): void {
     const attrs = span.attributes as Record<string, unknown>;
     for (const k of CLIENT_DETAILS) delete attrs[k];
+    delete attrs["url.query"];
+    for (const k of URL_ATTRS) {
+      const v = attrs[k];
+      if (typeof v === "string" && v.includes("?")) attrs[k] = v.slice(0, v.indexOf("?"));
+    }
   }
   onStart(span: SdkSpan): void { this.drop(span); }
   onEnd(span: ReadableSpan): void { this.drop(span); }
@@ -61,7 +71,7 @@ export function startTracing(opts: TracingOptions): boolean {
   provider = new NodeTracerProvider({
     resource: otelResource(opts.version ?? "dev", opts.deploymentEnv ?? ""),
     // Simple = synchronous export, for tests that read spans right after a request.
-    spanProcessors: [new DropClientDetails(), opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
+    spanProcessors: [new DropPersonalDetails(), opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
   });
   provider.register();
   const prefix = opts.apiPrefix;
@@ -123,13 +133,18 @@ function patchPg(): void {
 }
 
 const TOKEN_ROUTE = /:token\b/;
-/** The URL as it may be logged or traced: a route that carries a secret in its path is reported as the template. */
+/**
+ * The URL as it may be logged or traced: the path, never the query string (PETTY-408: GET
+ * /users/lookup?email= put an address in every log line and span). A route that carries a secret in its
+ * path is reported as the template.
+ */
 export function safeUrl(req: FastifyRequest): string {
   const tpl = req.routeOptions.url;
-  if (tpl) return TOKEN_ROUTE.test(tpl) ? tpl : req.url;
+  const path = req.url.split("?")[0] ?? "";
+  if (tpl) return TOKEN_ROUTE.test(tpl) ? tpl : path;
   // No template: the SPA shell or a 404. /join/<token> and /reset/<token> live here (SR-1),
   // so only the first path segment is reported.
-  const segments = (req.url.split("?")[0] ?? "").split("/").filter(Boolean);
+  const segments = path.split("/").filter(Boolean);
   return `/${segments[0] ?? ""}${segments.length > 1 ? "/…" : ""}`;
 }
 

@@ -625,6 +625,7 @@
     "lookup": "Rechercher",
     "notFound": "Aucun compte Petty avec cet e-mail. Envoyez-lui d’abord un lien d’invitation.",
     "noKeys": "Cette personne n’a pas fini de configurer son compte.",
+    "tooMany": "Trop de recherches. Réessayez dans une heure.",
     "role": "Rôle",
     "roleWrite": "Éditeur — peut ajouter et retirer, modifier les éléments et marquer le tiroir comme contrôlé",
     "roleRead": "Lecteur — voit tout, ne peut rien modifier ni exporter",

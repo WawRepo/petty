@@ -53,6 +53,19 @@ describe("traces (PETTY-34)", () => {
     expect(all).not.toContain("TestBrowser");
   });
 
+  it("PETTY-408: no span keeps a query string, so an address in ?email= never reaches a trace", async () => {
+    exporter.reset();
+    expect((await fetch(`${base}/users/lookup?email=probe-408%40test.local`)).status).toBe(401);
+    expect((await fetch(`${base}/no-such-route?email=probe-408%40test.local`)).status).toBe(404);
+    const spans = exporter.getFinishedSpans();
+    const server = spans.find((s) => s.name === "GET /users/lookup");
+    expect(server, JSON.stringify(spans.map((s) => s.name))).toBeDefined();
+    expect(server!.attributes["url.full"]).toBe("/users/lookup");
+    const all = JSON.stringify(spans.map((s) => ({ name: s.name, attributes: s.attributes })));
+    expect(all).not.toContain("probe-408");
+    expect(all).not.toContain("email=");
+  });
+
   it("health probes are not traced, including /health/live, which platforms call (PETTY-240)", async () => {
     exporter.reset();
     expect((await fetch(`${base}/health`)).status).toBe(200);

@@ -70,6 +70,16 @@ describe("what may appear in a log line (SR-1)", () => {
     expect(safeUrl(fake("/join-links/SECRET", "/join-links/:token"))).toBe("/join-links/:token");
     expect(safeUrl(fake("/drawers/0d1/entries", "/drawers/:id/entries"))).toBe("/drawers/0d1/entries");
   });
+
+  it("never reports a query string (PETTY-408: GET /users/lookup?email= put an address in every request line)", async () => {
+    const { safeUrl } = await import("../src/lib/tracing.js");
+    const fake = (url: string, tpl?: string) => ({ url, routeOptions: { url: tpl } }) as unknown as import("fastify").FastifyRequest;
+    expect(safeUrl(fake("/users/lookup?email=someone%40test.local", "/users/lookup"))).toBe("/users/lookup");
+    expect(safeUrl(fake("/api/users/lookup?email=someone%40test.local", "/api/users/lookup"))).toBe("/api/users/lookup");
+    expect(safeUrl(fake("/join-links/SECRET?email=someone%40test.local", "/join-links/:token"))).toBe("/join-links/:token");
+    expect(safeUrl(fake("/no-such-route?email=someone%40test.local"))).toBe("/no-such-route");
+    expect(safeUrl(fake("/?email=someone%40test.local"))).toBe("/");
+  });
 });
 
 describe("active users (PETTY-241)", () => {
