@@ -21,7 +21,9 @@ provider, if you use a hosted one. The same code runs in both cases.
 - **The operator's staff and admins.** An admin can list, block and unblock accounts, revoke their
   sessions, restore a replaced vault blob and grant admin — and can read no drawer content.
 - **A lost or stolen device.** Nothing readable is written to disk; the vault locks after 24 hours
-  and on "Lock now" or sign-out.
+  and on "Lock now" or sign-out. While it is open, the browser profile holds the key handles (see
+  "Session lock"): someone who gets the device unlocked, or a copy of that profile, inside those
+  24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
 - **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
@@ -37,8 +39,9 @@ Users should be told these plainly.
 - **A malicious frontend build.** Whoever serves the web app can serve JavaScript that captures the
   vault passphrase or keys. This is the fundamental limit of browser-delivered end-to-end encryption:
   **with a hosted instance you trust its operator to serve the published code.** Mitigations are
-  partial: a strict Content-Security-Policy with no inline or third-party script (Clerk's code is
-  bundled at a pinned version, not fetched at run time), subresource integrity, no analytics, pinned
+  partial: a strict Content-Security-Policy with no inline script and no third-party script outside
+  Clerk's sign-in pages (Clerk's code is bundled at a pinned version, not fetched at run time; see the
+  bot check below), subresource integrity, no analytics, pinned
   dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
   built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
   the third party, not the risk class.
@@ -49,6 +52,14 @@ Users should be told these plainly.
   non-extractable `CryptoKey`s — reduced, not eliminated.
 - **The identity provider, in Clerk mode.** Clerk can sign a user in, and so could anyone who
   controls the Clerk account. It still cannot open the vault — the vault key is Petty's alone.
+- **Clerk's bot check, in Clerk mode.** While someone signs up, Clerk loads Cloudflare Turnstile from
+  Cloudflare: the one third-party script, with no pinned version and no integrity check. Only the
+  sign-in and sign-up pages (`/login`, `/join`) allow it (PETTY-404). The app leaves them with a full
+  page load, so vault setup and unlock always run in a fresh page that allows no third-party script,
+  and no key is in memory while the bot check runs. It still runs on Petty's origin: a malicious
+  Turnstile could change what the browser keeps for Petty (the offline copy of the app, IndexedDB) or
+  open a Petty page and read it. Removing it fully means signing in on another origin (Clerk's hosted
+  pages) or turning the bot check off. Local mode loads no third-party script.
 - **Metadata.** See below.
 - **Operator retention.** Backups, logs and telemetry are configured by the operator. The app ships
   no backup job and no retention policy; how long a copy of your email, encrypted vault and
@@ -74,6 +85,11 @@ Users should be told these plainly.
 - **Session lock.** An unlocked vault stays open for 24 hours (a non-extractable key handle cached in
   IndexedDB, never raw key bytes or decrypted content), then asks again. In Clerk mode the cached
   unlock is bound to one Clerk session (PETTY-140). "Lock now" and sign-out clear it at once.
+  Non-extractable means the page cannot read the key bytes out; it does not mean the handle stays
+  off the disk. IndexedDB is part of the browser profile, and the 24 hours are counted by the app,
+  not by the browser. So the unlock screen lets you keep the vault open only in that page's memory
+  (PETTY-405): it then locks when you close or reload Petty. A Clerk session that ended while Petty
+  was closed has its cached unlock and cache wiped at the next start.
 - **Resetting the login password never restores vault access**, and the app says so at reset.
 
 ## Key verification
@@ -92,6 +108,11 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   the newest key of each drawer you opened, so the server can neither push a key of its own nor go back
   to an older key that a removed member may still hold. The first key of a drawer is still trusted on
   first sight.
+- The pins live in that sealed user document, so a server could try to drop it or serve an older
+  copy. Each browser remembers the newest version it saw, also across a sign-out or an expired
+  session (PETTY-402), and warns loudly when the server has none or an older one; until you
+  acknowledge it, nothing is pinned on first sight and no key is wrapped. A browser that never used
+  the account has nothing to compare with.
 
 ## Integrity
 
@@ -103,7 +124,11 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   account deletion.
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
-  the server returns a shorter log.
+  the server returns a shorter log, also an empty one for a line the drawer still lists.
+- **Drawer versions.** Your sealed user document remembers the newest version of each drawer's document
+  you opened. The app refuses an older one, so a server cannot go back to a state where later lines are
+  missing, and never saves a change on top of one. The version number is not inside the encryption: a
+  server that labels an older document with a newer number is not caught.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
 

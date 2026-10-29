@@ -27,3 +27,10 @@ export const contactEmail = (): string | null => current.contact_email ?? null;
 export const openSignup = (): boolean => current.open_signup === true;
 /** PETTY-218: the running server's version (baked into the image), or null before /config is loaded. */
 export const appVersion = (): string | null => current.version ?? null;
+/**
+ * PETTY-404: the sign-in and sign-up pages and Clerk's steps under them. In clerk mode only these pages
+ * may load Clerk's bot check (the server's AUTH_PAGE in apps/api/src/lib/headers.ts is the same pattern).
+ */
+export const isAuthPage = (pathname: string): boolean => /^\/(?:login|join)(?:\/|$)/.test(pathname);
+/** PETTY-404: whether this page was loaded as a sign-in or sign-up page, read once at start (this module loads before the router can move). */
+export const loadedAsAuthPage: boolean = isAuthPage(location.pathname);

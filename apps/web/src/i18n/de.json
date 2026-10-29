@@ -125,7 +125,9 @@
       "addHereTitle": "Passkey für dieses Gerät hinzufügen?",
       "addHereBody": "Du hast mit einem Passkey von einem anderen Gerät entsperrt. Füge hier einen hinzu, dann öffnet dieses Gerät den Tresor beim nächsten Mal selbst.",
       "addHere": "Passkey hinzufügen",
-      "notNow": "Nicht jetzt"
+      "notNow": "Nicht jetzt",
+      "remember": "Tresor auf diesem Gerät 24 Stunden offen lassen",
+      "rememberHint": "Aus: Der Tresor sperrt sich, wenn du Petty schließt oder neu lädst. Schalte es auf einem Computer aus, den auch andere nutzen."
     },
     "lock": {
       "now": "Jetzt sperren",
@@ -191,6 +193,7 @@
       "sender_unconfirmed": "Diese Schublade hat einen neuen Schlüssel von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
       "key_rolled_back": "Der Server hat einen älteren Schlüssel für diese Schublade geschickt als den, den du schon hattest, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
+      "doc_rolled_back": "Der Server hat eine ältere Fassung dieser Schublade geschickt als die, die du schon geöffnet hattest, deshalb hat Petty sie nicht geöffnet. Seitdem hinzugefügte Posten würden fehlen. Jemand hat den Server vielleicht verändert.",
       "unwrap_failed": "Diese Schublade konnte auf diesem Gerät nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "bad_document": "Die Daten dieser Schublade sind beschädigt. Der Eigentümer kann eine frühere Version wiederherstellen.",
@@ -743,7 +746,7 @@
       "Wer die Datenbank oder ein Backup liest: Schubladeninhalte, Fotos und Tresore sind nur verschlüsselte Daten. Die oben genannten Konto- und Aktivitätsdaten sind trotzdem sichtbar.",
       "Wer die Datenbank verändert: Verschobene, vertauschte oder gelöschte Buchungen werden erkannt.",
       "Der Server allein: Er hat keine Schlüssel und kann deine Schubladen nicht lesen, außer er verändert auch die App, die er ausliefert (siehe unten).",
-      "Ein verlorenes Handy: Ein gesperrter Tresor braucht deinen Passkey oder deine Passphrase, und ein offener Tresor sperrt sich 24 Stunden nach dem Entsperren selbst.",
+      "Ein verlorenes Handy: Ein gesperrter Tresor braucht deinen Passkey oder deine Passphrase, und ein offener Tresor sperrt sich 24 Stunden nach dem Entsperren selbst, oder beim Schließen von Petty, wenn du das beim Entsperren gewählt hast.",
       "Ein entferntes Mitglied: Nach dem Entfernen wird der Schlüssel der Schublade ersetzt; was danach geschrieben wird, kann es nicht lesen."
     ],
     "notTitle": "Wovor Petty nicht schützen kann",
