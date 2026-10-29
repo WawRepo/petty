@@ -37,8 +37,9 @@ Users should be told these plainly.
 - **A malicious frontend build.** Whoever serves the web app can serve JavaScript that captures the
   vault passphrase or keys. This is the fundamental limit of browser-delivered end-to-end encryption:
   **with a hosted instance you trust its operator to serve the published code.** Mitigations are
-  partial: a strict Content-Security-Policy with no inline or third-party script (Clerk's code is
-  bundled at a pinned version, not fetched at run time), subresource integrity, no analytics, pinned
+  partial: a strict Content-Security-Policy with no inline script and no third-party script outside
+  Clerk's sign-in pages (Clerk's code is bundled at a pinned version, not fetched at run time; see the
+  bot check below), subresource integrity, no analytics, pinned
   dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
   built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
   the third party, not the risk class.
@@ -49,6 +50,14 @@ Users should be told these plainly.
   non-extractable `CryptoKey`s — reduced, not eliminated.
 - **The identity provider, in Clerk mode.** Clerk can sign a user in, and so could anyone who
   controls the Clerk account. It still cannot open the vault — the vault key is Petty's alone.
+- **Clerk's bot check, in Clerk mode.** While someone signs up, Clerk loads Cloudflare Turnstile from
+  Cloudflare: the one third-party script, with no pinned version and no integrity check. Only the
+  sign-in and sign-up pages (`/login`, `/join`) allow it (PETTY-404). The app leaves them with a full
+  page load, so vault setup and unlock always run in a fresh page that allows no third-party script,
+  and no key is in memory while the bot check runs. It still runs on Petty's origin: a malicious
+  Turnstile could change what the browser keeps for Petty (the offline copy of the app, IndexedDB) or
+  open a Petty page and read it. Removing it fully means signing in on another origin (Clerk's hosted
+  pages) or turning the bot check off. Local mode loads no third-party script.
 - **Metadata.** See below.
 - **Operator retention.** Backups, logs and telemetry are configured by the operator. The app ships
   no backup job and no retention policy; how long a copy of your email, encrypted vault and

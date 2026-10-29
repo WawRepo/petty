@@ -33,7 +33,10 @@ export default defineConfig({
         // metadata live in IndexedDB under the app's own rules, not in the HTTP cache.
         navigateFallback: "/index.html",
         // PETTY-279: a file of its own (THIRD_PARTY_NOTICES.md, robots.txt…) is the file, never the app shell
-        navigateFallbackDenylist: [/^\/api\//, /^\/downloads\//, /\/[^/?]+\.[a-z0-9]+(\?.*)?$/i],
+        // PETTY-404: the sign-in and sign-up pages always come from the server: in clerk mode its policy for
+        // them (and only them) allows Clerk's bot check, and the cached shell carries the policy without it.
+        // Workbox tests path and query together: /join?__clerk_ticket=… (a Clerk invitation) is one of them.
+        navigateFallbackDenylist: [/^\/api\//, /^\/downloads\//, /\/[^/?]+\.[a-z0-9]+(\?.*)?$/i, /^\/(?:login|join)(?:[/?]|$)/],
         globPatterns: ["**/*.{js,css,html,svg,png}"],
         // The Clerk chunk (clerk-js bundled, PETTY-88) is above Workbox's 2 MiB default; it is precached like the rest.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
