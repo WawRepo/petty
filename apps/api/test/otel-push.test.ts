@@ -6,8 +6,7 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { metrics } from "@opentelemetry/api";
-import { logs } from "@opentelemetry/api-logs";
+import { logs, metrics } from "@opentelemetry/api";
 import { otelResource } from "../src/lib/otel-resource.js";
 import { startOtlpMetrics, startOtlpLogs, flushOtlpPush, stopOtlpPush } from "../src/lib/otel-push.js";
 

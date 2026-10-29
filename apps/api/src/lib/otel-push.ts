@@ -1,5 +1,4 @@
-import { metrics } from "@opentelemetry/api";
-import { logs } from "@opentelemetry/api-logs";
+import { logs, metrics } from "@opentelemetry/api";
 import type { Resource } from "@opentelemetry/resources";
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";

@@ -1,12 +1,13 @@
 import pg from "pg";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { SpanKind, SpanStatusCode, context, trace, type Span } from "@opentelemetry/api";
+import { SpanKind, SpanStatusCode, context, propagation, trace, type Span } from "@opentelemetry/api";
+import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
+import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from "@opentelemetry/core";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { PinoInstrumentation } from "@opentelemetry/instrumentation-pino";
-import { BatchSpanProcessor, SimpleSpanProcessor, type ReadableSpan, type Span as SdkSpan, type SpanExporter, type SpanProcessor } from "@opentelemetry/sdk-trace-base";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { BatchSpanProcessor, SimpleSpanProcessor, TracerProvider, type ReadableSpan, type Span as SdkSpan, type SpanExporter, type SpanProcessor } from "@opentelemetry/sdk-trace";
 import { otelResource } from "./otel-resource.js";
 
 /**
@@ -63,17 +64,21 @@ class DropPersonalDetails implements SpanProcessor {
 
 export interface TracingOptions { exporter?: SpanExporter | null; endpoint?: string | undefined; apiPrefix: string; version?: string | undefined; deploymentEnv?: string | undefined; logs?: boolean }
 
-let provider: NodeTracerProvider | null = null;
+let provider: TracerProvider | null = null;
 
 export function startTracing(opts: TracingOptions): boolean {
   const exporter = opts.exporter !== undefined ? opts.exporter : opts.endpoint ? new OTLPTraceExporter({ url: `${opts.endpoint.replace(/\/$/, "")}/v1/traces` }) : null;
   if (!exporter) return false;
-  provider = new NodeTracerProvider({
+  provider = new TracerProvider({
     resource: otelResource(opts.version ?? "dev", opts.deploymentEnv ?? ""),
     // Simple = synchronous export, for tests that read spans right after a request.
-    spanProcessors: [new DropPersonalDetails(), opts.exporter ? new SimpleSpanProcessor(exporter) : new BatchSpanProcessor(exporter)],
+    spanProcessors: [new DropPersonalDetails(), opts.exporter ? new SimpleSpanProcessor({ exporter }) : new BatchSpanProcessor({ exporter })],
   });
-  provider.register();
+  // What NodeTracerProvider.register() did before SDK 3.0 (PETTY-401): the global provider, a context
+  // manager so a span follows its request across awaits, and the W3C trace-context and baggage headers.
+  trace.setGlobalTracerProvider(provider);
+  context.setGlobalContextManager(new AsyncLocalStorageContextManager().enable());
+  propagation.setGlobalPropagator(new CompositePropagator({ propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()] }));
   const prefix = opts.apiPrefix;
   registerInstrumentations({
     instrumentations: [
