@@ -439,6 +439,8 @@ describe("vault custody and security headers", () => {
     await expect(unlockVault(me.json().vault, "a brand new passphrase 2026")).resolves.toBeTruthy();
     expect(me.headers["content-security-policy"]).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(me.headers["content-security-policy"]).not.toContain("unsafe-inline");
+    // PETTY-404: local mode has one strict policy for every page; the sign-in and sign-up pages get no exception
+    for (const url of ["/login", "/join/x"]) expect((await app.inject({ method: "GET", url })).headers["content-security-policy"], url).toBe(me.headers["content-security-policy"]);
     expect(me.headers["x-content-type-options"]).toBe("nosniff");
     expect(me.headers["referrer-policy"]).toBe("no-referrer");
   }, 60_000);

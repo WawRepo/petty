@@ -54,12 +54,29 @@ describe("clerk mode", () => {
     expect((await app.inject({ method: "GET", url: "/me", headers: { authorization: "Bearer not.a.token" } })).statusCode).toBe(401);
     const csp = (await app.inject({ method: "GET", url: "/config" })).headers["content-security-policy"] as string;
     expect(csp).toContain("connect-src 'self' https://clerk.petty.test");
-    expect(csp).toContain("https://challenges.cloudflare.com");
     expect(csp).toContain("worker-src 'self' blob:");
     expect(csp).not.toContain("require-trusted-types-for");
     // PETTY-185 (NR-5): clerk-js is bundled, so Clerk's origin is not a script source
-    expect(csp).toMatch(/script-src 'self' 'wasm-unsafe-eval' https:\/\/challenges\.cloudflare\.com;/);
     expect(/script-src[^;]*clerk\.petty\.test/.test(csp)).toBe(false);
+    // PETTY-404: Turnstile (the bot check) only on the sign-in and sign-up pages; everywhere else, no third party
+    expect(csp).toMatch(/script-src 'self' 'wasm-unsafe-eval';/);
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).not.toContain("challenges.cloudflare.com");
+  });
+
+  it("allows Turnstile on the sign-in and sign-up pages only (PETTY-404)", async () => {
+    const policy = async (url: string) => (await app.inject({ method: "GET", url })).headers["content-security-policy"] as string;
+    for (const url of ["/login", "/login/", "/login/factor-one", "/login/sso-callback?x=1", "/join", "/join/verify-email-address", "/join?__clerk_ticket=t"]) {
+      const csp = await policy(url);
+      expect(csp, url).toMatch(/script-src 'self' 'wasm-unsafe-eval' https:\/\/challenges\.cloudflare\.com;/);
+      expect(csp, url).toContain("frame-src https://challenges.cloudflare.com");
+      expect(csp, url).toContain("connect-src 'self' https://clerk.petty.test");
+    }
+    for (const url of ["/", "/setup", "/unlock", "/settings", "/drawers/x", "/join-links/abc", "/loginx", "/me", "/x/login", "/?next=/login", "/index.html"]) {
+      const csp = await policy(url);
+      expect(csp, url).not.toContain("challenges.cloudflare.com");
+      expect(csp, url).toContain("frame-src 'none'");
+    }
   });
 
   it("a verified identity with no vault gets NoVault, provisions once, then is a normal user; the custody proof alone gates the vault", async () => {

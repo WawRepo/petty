@@ -125,7 +125,9 @@
       "addHereTitle": "¿Añadir una llave de acceso para este dispositivo?",
       "addHereBody": "Desbloqueaste con una llave de acceso de otro dispositivo. Añade una aquí y la próxima vez este dispositivo abrirá la bóveda por sí solo.",
       "addHere": "Añadir llave de acceso",
-      "notNow": "Ahora no"
+      "notNow": "Ahora no",
+      "remember": "Mantener la bóveda abierta en este dispositivo durante 24 horas",
+      "rememberHint": "Desactivado: la bóveda se bloquea al cerrar o recargar Petty. Desactívalo en un ordenador que usan otras personas."
     },
     "lock": {
       "now": "Bloquear ahora",
@@ -191,6 +193,7 @@
       "sender_unconfirmed": "Este cajón tiene una clave nueva de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "doc_rolled_back": "El servidor envió una versión de este cajón más antigua que la que ya abriste, así que Petty no lo abrió. Faltarían los elementos añadidos desde entonces. Puede que alguien haya alterado el servidor.",
       "unwrap_failed": "No se pudo abrir este cajón en este dispositivo. Pide a su propietario que vuelva a compartirlo.",
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
       "bad_document": "Los datos de este cajón están dañados. Su propietario puede restaurar una versión anterior.",
@@ -745,7 +748,7 @@
       "Quien lea la base de datos o una copia de seguridad: el contenido de los cajones, las fotos y las bóvedas son solo datos cifrados. Aun así, ve los datos de cuenta y de actividad indicados arriba.",
       "Quien modifique la base de datos: se detectan los movimientos trasladados, intercambiados o eliminados.",
       "El servidor por sí solo: no tiene claves y no puede leer tus cajones, salvo que también cambie la aplicación que sirve (ver abajo).",
-      "Un teléfono perdido: una bóveda bloqueada necesita tu llave de acceso o tu frase de contraseña, y una bóveda abierta se bloquea sola 24 horas después de desbloquearla.",
+      "Un teléfono perdido: una bóveda bloqueada necesita tu llave de acceso o tu frase de contraseña, y una bóveda abierta se bloquea sola 24 horas después de desbloquearla, o al cerrar Petty si lo elegiste al desbloquear.",
       "Un miembro al que quitas: después, la clave del cajón se sustituye y no puede leer nada de lo que se escriba luego."
     ],
     "notTitle": "Contra qué no puede protegerte Petty",
