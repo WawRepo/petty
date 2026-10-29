@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.28] — 2026-10-29
+
 ### Security
 - A sign-out, or a session that ended, no longer makes the web app forget which version of your list
   of trusted keys it last saw. Before, a server that ended your session and then dropped that list
@@ -609,7 +611,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.27...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.28...HEAD
+[1.5.28]: https://github.com/WawRepo/petty/releases/tag/v1.5.28
 [1.5.27]: https://github.com/WawRepo/petty/releases/tag/v1.5.27
 [1.5.26]: https://github.com/WawRepo/petty/releases/tag/v1.5.26
 [1.5.25]: https://github.com/WawRepo/petty/releases/tag/v1.5.25
