@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.29] — 2026-10-29
+
+### Changed
+- Maintenance only: dependency and build updates.
+
 ## [1.5.28] — 2026-10-29
 
 ### Security
@@ -611,7 +616,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.28...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.29...HEAD
+[1.5.29]: https://github.com/WawRepo/petty/releases/tag/v1.5.29
 [1.5.28]: https://github.com/WawRepo/petty/releases/tag/v1.5.28
 [1.5.27]: https://github.com/WawRepo/petty/releases/tag/v1.5.27
 [1.5.26]: https://github.com/WawRepo/petty/releases/tag/v1.5.26
