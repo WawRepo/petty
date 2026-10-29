@@ -191,6 +191,7 @@
       "sender_unconfirmed": "This drawer has a new key from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
       "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
+      "doc_rolled_back": "The server sent an older version of this drawer than the one you already opened, so Petty did not open it. Items added since then would be missing. The server may have been tampered with.",
       "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",

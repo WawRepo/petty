@@ -108,7 +108,11 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   account deletion.
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
-  the server returns a shorter log.
+  the server returns a shorter log, also an empty one for a line the drawer still lists.
+- **Drawer versions.** Your sealed user document remembers the newest version of each drawer's document
+  you opened. The app refuses an older one, so a server cannot go back to a state where later lines are
+  missing, and never saves a change on top of one. The version number is not inside the encryption: a
+  server that labels an older document with a newer number is not caught.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
 

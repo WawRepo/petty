@@ -13,6 +13,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   of trusted keys it last saw. Before, a server that ended your session and then dropped that list
   could have had your next sign-in start the list over without a warning, and trusted a swapped key
   on first sight. Now the app shows the warning it shows for any lost or older list.
+- The web app warns when an item's whole history is missing. Before, a server that dropped every entry
+  of an item made it show a balance of 0 with no warning. It also refuses a drawer older than one it
+  already opened, where the items added since would be missing, and never saves a change on top of
+  one. An item that another member deleted, or an earlier version that the owner put back, is not
+  reported.
 
 ## [1.5.27] — 2026-10-28
 
