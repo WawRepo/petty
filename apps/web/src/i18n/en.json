@@ -125,7 +125,9 @@
       "addHereTitle": "Add a passkey for this device?",
       "addHereBody": "You unlocked with a passkey from another device. Add one here, and next time this device opens the vault by itself.",
       "addHere": "Add passkey",
-      "notNow": "Not now"
+      "notNow": "Not now",
+      "remember": "Keep the vault open on this device for 24 hours",
+      "rememberHint": "Off: the vault locks when you close or reload Petty. Turn it off on a computer that others use."
     },
     "lock": {
       "now": "Lock now",
@@ -191,6 +193,7 @@
       "sender_unconfirmed": "This drawer has a new key from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
       "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
+      "doc_rolled_back": "The server sent an older version of this drawer than the one you already opened, so Petty did not open it. Items added since then would be missing. The server may have been tampered with.",
       "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
@@ -310,6 +313,7 @@
   "errors": {
     "network": "Could not reach the server. Check your connection and try again.",
     "unknown": "Something went wrong. Try again.",
+    "displayName": "Use a plain name on one line, without links or email addresses. After a dot, put a space, as in “J. Smith”.",
     "storageFull": "Your storage is full. Remove photos or drawers you no longer need. Settings shows how much you use.",
     "ownerStorageFull": "This drawer's owner has no storage left, so the change was not saved. Ask them to free some space.",
     "photoTooLarge": "This photo is too large. Choose a smaller one."
@@ -629,6 +633,7 @@
     "blockedChanged": "This person's key changed since you last compared it. Accept the new key in Members first.",
     "send": "Invite",
     "sent": "Invitation sent",
+    "sentNoMail": "Invitation sent. No email this time (too many recently). They will see it when they open Petty.",
     "joinLink": "Send a join link",
     "joinLinkHint": "For someone who is not on Petty yet. They get an email with a one-time link.",
     "joinLinkSent": "Join link sent to {email}",
@@ -744,7 +749,7 @@
       "Anyone reading the database or a backup: drawer content, photos and vaults are scrambled data only. They still see the account and activity details listed above.",
       "Anyone changing the database: moved, swapped or deleted entries are detected.",
       "The server alone: it holds no keys and cannot read your drawers, unless it also changes the app it serves (see below).",
-      "A lost phone: a locked vault needs your passkey or passphrase, and an open vault locks itself 24 hours after you unlocked it.",
+      "A lost phone: a locked vault needs your passkey or passphrase, and an open vault locks itself 24 hours after you unlocked it, or when you close Petty if you chose that when unlocking.",
       "A removed member: after removal the drawer key is replaced; they cannot read anything written afterwards."
     ],
     "notTitle": "What Petty cannot defend against",

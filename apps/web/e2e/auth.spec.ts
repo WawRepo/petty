@@ -17,10 +17,16 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await axe(page);
   const run = crypto.randomUUID().slice(0, 8);
-  await page.getByLabel("Your name").fill("Dana");
+  // PETTY-407: the name goes into other people's mail; one a mail program would turn into a link is refused before any key work
+  await page.getByLabel("Your name").fill("Dana, see dana.example");
   await page.getByLabel("Email").fill(`dana-${run}@e2e.local`);
   await page.getByLabel("Login password").fill(`login-${run}-pw`);
   await choosePassphraseDoor(page);
+  await page.getByLabel("Vault passphrase", { exact: true }).fill(`orange kettle drifts ${run}`);
+  await page.getByLabel("Repeat the vault passphrase").fill(`orange kettle drifts ${run}`);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("alert")).toContainText("without links or email addresses");
+  await page.getByLabel("Your name").fill("Dana");
   await page.getByLabel("Vault passphrase", { exact: true }).fill(`login-${run}-pw`); // same as password → refused
   await page.getByLabel("Repeat the vault passphrase").fill(`login-${run}-pw`);
   await page.getByRole("button", { name: "Create account" }).click();
@@ -53,6 +59,33 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   expect(idb.isKey).toBe(true);
   expect(idb.extractable).toBe(false);
   expect(idb.expiresInHours).toBeGreaterThan(23);
+});
+
+test("PETTY-405: with \"Keep the vault open\" off, the key handles stay in the page's memory and a reload locks the vault", async ({ page }) => {
+  const user = await signupViaApi("mem");
+  const unlockedRecord = () => page.evaluate(() => new Promise<boolean>((resolve) => { const r = indexedDB.open("petty", 1); r.onsuccess = () => { const g = r.result.transaction("kv", "readonly").objectStore("kv").get("session.unlocked"); g.onsuccess = () => resolve(g.result !== undefined); }; r.onerror = () => resolve(false); }));
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Login password").fill(user.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  const remember = page.getByRole("checkbox", { name: "Keep the vault open on this device for 24 hours" });
+  await expect(remember).toBeChecked(); // on by default, as before
+  await remember.uncheck();
+  await page.getByLabel("Vault passphrase").fill(user.passphrase);
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+  expect(await unlockedRecord()).toBe(false); // nothing in IndexedDB
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Unlock your vault" })).toBeVisible();
+  await expect(remember).not.toBeChecked(); // the choice is the device's
+  // turned on again: the unlock survives a reload
+  await remember.check();
+  await page.getByLabel("Vault passphrase").fill(user.passphrase);
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+  expect(await unlockedRecord()).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
 });
 
 test("Lock now with drawers on view, then unlock: Home loads them again, no reload needed (PETTY-326)", async ({ page }) => {
@@ -124,9 +157,9 @@ test("login, wrong passphrase, unlock, Lock now, sign out — in English and in 
   await bye.getByRole("button", { name: "Wyloguj" }).click();
   await expect(page.getByRole("heading", { name: "Petty", level: 1 })).toBeVisible(); // visitors now land on the marketing page
   await expect(page).toHaveURL(/\/$/);
-  // SR-8: sign-out wipes the ciphertext cache and the outbox; only the tamper-detection heads may remain
+  // SR-8: sign-out wipes the ciphertext cache and the outbox; only the tamper-detection heads and the user-document version may remain (PETTY-402)
   const idbKeys = () => page.evaluate(() => new Promise<string[]>((resolve) => { const r = indexedDB.open("petty", 1); r.onsuccess = () => { const t = r.result.transaction("kv", "readonly").objectStore("kv").getAllKeys(); t.onsuccess = () => resolve(t.result.map(String)); }; r.onerror = () => resolve(["error"]); }));
-  await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head."))).toEqual([]);
+  await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head.") && !k.startsWith("userdoc."))).toEqual([]);
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Zaloguj się" })).toBeVisible(); // the session is really gone
 });

@@ -11,6 +11,8 @@ export const mailLocale = (x: string | null | undefined): MailLocale => ((MAIL_L
 export interface MailText { readonly subject: string; readonly text: string }
 type Role = "write" | "read";
 interface Catalog {
+  /** PETTY-407: stands in for a sender's name that cannot go into a mail as it is (a link, an address). */
+  readonly someone: string;
   joinLink(inviter: string, link: string): MailText;
   invitation(inviter: string, role: Role, app: string): MailText;
   relinked(app: string, contact: string): MailText;
@@ -31,6 +33,7 @@ const reach = (contact: string, sentence: (c: string) => string) => (contact ? `
 
 export const MAIL: Record<MailLocale, Catalog> = {
   en: {
+    someone: "Someone on Petty",
     joinLink: (inviter, link) => ({ subject: "You are invited to Petty", text: `${inviter} invited you to Petty, where you keep track of what you have and where it is.\n\nCreate your account here (the link works once, for 7 days):\n${link}\n` }),
     invitation: (inviter, role, app) => ({ subject: "A drawer was shared with you", text: `${inviter} invited you to a drawer in Petty as ${role === "write" ? "a writer" : "a reader"}.\n\nOpen Petty to accept or decline: ${app}/\n` }),
     relinked: (app, contact) => ({ subject: "A new sign-in method was linked to your Petty account", text: `Someone added a new way to sign in to your Petty account for this address (for example Google or GitHub). Your vault did not change and still needs your passphrase or passkey.\n\nIf this was not you, tell the person who runs your Petty right away.${reach(contact, (c) => `Write to ${c}.`)}\nYour Petty: ${app}/\n` }),
@@ -43,6 +46,7 @@ export const MAIL: Record<MailLocale, Catalog> = {
     handedOver: (from) => ({ subject: "A drawer is now yours", text: `${from} deleted their Petty account and handed one of their drawers to you. You are its owner now.\n` }),
   },
   pl: {
+    someone: "Ktoś w Petty",
     joinLink: (inviter, link) => ({ subject: "Zaproszenie do Petty", text: `${inviter} zaprasza Cię do Petty — miejsca, w którym wiesz, co masz i gdzie to leży.\n\nZałóż konto tutaj (link działa raz, przez 7 dni):\n${link}\n` }),
     invitation: (inviter, role, app) => ({ subject: "Udostępniono Ci szufladę", text: `${inviter} zaprasza Cię do szuflady w Petty — ${role === "write" ? "z prawem zapisu" : "tylko do odczytu"}.\n\nOtwórz Petty, aby przyjąć lub odrzucić zaproszenie: ${app}/\n` }),
     relinked: (app, contact) => ({ subject: "Do Twojego konta Petty dodano nowy sposób logowania", text: `Do Twojego konta Petty z tym adresem e-mail dodano nowy sposób logowania (na przykład przez Google lub GitHub). Twój sejf się nie zmienił i nadal wymaga hasła sejfu lub klucza dostępu.\n\nJeśli to nie Ty, od razu powiadom osobę, która prowadzi Twoje Petty.${reach(contact, (c) => `Napisz na adres ${c}.`)}\nTwoje Petty: ${app}/\n` }),
@@ -55,6 +59,7 @@ export const MAIL: Record<MailLocale, Catalog> = {
     handedOver: (from) => ({ subject: "Szuflada należy teraz do Ciebie", text: `${from} usuwa swoje konto Petty i przekazuje Ci jedną ze swoich szuflad. Od teraz należy do Ciebie.\n` }),
   },
   de: {
+    someone: "Jemand auf Petty",
     joinLink: (inviter, link) => ({ subject: "Du bist zu Petty eingeladen", text: `${inviter} hat dich zu Petty eingeladen – dort weißt du, was du hast und wo es liegt.\n\nErstelle hier dein Konto (der Link funktioniert einmal, 7 Tage lang):\n${link}\n` }),
     invitation: (inviter, role, app) => ({ subject: "Eine Schublade wurde mit dir geteilt", text: `${inviter} hat dich in Petty zu einer Schublade eingeladen – ${role === "write" ? "als Bearbeiter" : "als Leser"}.\n\nÖffne Petty, um anzunehmen oder abzulehnen: ${app}/\n` }),
     relinked: (app, contact) => ({ subject: "Neue Anmeldemethode für dein Petty-Konto", text: `Zu deinem Petty-Konto wurde für diese Adresse eine neue Anmeldung hinzugefügt (zum Beispiel Google oder GitHub). Dein Tresor hat sich nicht geändert und braucht weiterhin deine Passphrase oder deinen Passkey.\n\nWenn du das nicht warst, sag sofort der Person Bescheid, die dein Petty betreibt.${reach(contact, (c) => `Schreib an ${c}.`)}\nDein Petty: ${app}/\n` }),
@@ -67,6 +72,7 @@ export const MAIL: Record<MailLocale, Catalog> = {
     handedOver: (from) => ({ subject: "Eine Schublade gehört jetzt dir", text: `${from} hat das eigene Petty-Konto gelöscht und dir eine Schublade übergeben. Sie gehört jetzt dir.\n` }),
   },
   es: {
+    someone: "Alguien en Petty",
     joinLink: (inviter, link) => ({ subject: "Te han invitado a Petty", text: `${inviter} te ha invitado a Petty, donde llevas el control de lo que tienes y de dónde está.\n\nCrea tu cuenta aquí (el enlace funciona una vez, durante 7 días):\n${link}\n` }),
     invitation: (inviter, role, app) => ({ subject: "Han compartido un cajón contigo", text: `${inviter} te ha invitado a un cajón en Petty ${role === "write" ? "como editor" : "como lector"}.\n\nAbre Petty para aceptar o rechazar: ${app}/\n` }),
     relinked: (app, contact) => ({ subject: "Se vinculó un nuevo método de acceso a tu cuenta de Petty", text: `Se ha añadido una nueva forma de iniciar sesión en tu cuenta de Petty para esta dirección (por ejemplo, Google o GitHub). Tu bóveda no ha cambiado y sigue necesitando tu frase de contraseña o tu llave de acceso.\n\nSi no has sido tú, avisa enseguida a quien gestiona tu Petty.${reach(contact, (c) => `Escribe a ${c}.`)}\nTu Petty: ${app}/\n` }),
@@ -79,6 +85,7 @@ export const MAIL: Record<MailLocale, Catalog> = {
     handedOver: (from) => ({ subject: "Te han traspasado un cajón", text: `${from} eliminó su cuenta de Petty y te traspasó uno de sus cajones. Ahora es tuyo.\n` }),
   },
   fr: {
+    someone: "Quelqu’un sur Petty",
     joinLink: (inviter, link) => ({ subject: "Invitation à Petty", text: `${inviter} vous invite sur Petty, pour savoir ce que vous avez et où cela se trouve.\n\nCréez votre compte ici (le lien fonctionne une fois, pendant 7 jours)\u00a0:\n${link}\n` }),
     invitation: (inviter, role, app) => ({ subject: "Un tiroir a été partagé avec vous", text: `${inviter} vous invite dans un tiroir sur Petty ${role === "write" ? "en tant qu’éditeur" : "en tant que lecteur"}.\n\nOuvrez Petty pour accepter ou refuser\u00a0: ${app}/\n` }),
     relinked: (app, contact) => ({ subject: "Un nouveau moyen de connexion a été lié à votre compte Petty", text: `Un nouveau moyen de connexion a été ajouté à votre compte Petty pour cette adresse (par exemple Google ou GitHub). Votre coffre n’a pas changé et demande toujours votre phrase secrète ou votre clé d’accès.\n\nSi ce n’était pas vous, prévenez tout de suite la personne qui gère votre Petty.${reach(contact, (c) => `Écrivez à ${c}.`)}\nVotre Petty\u00a0: ${app}/\n` }),

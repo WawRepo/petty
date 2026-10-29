@@ -103,6 +103,8 @@ describe("household", () => {
     const now = (await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version;
     expect((await ann.call("POST", `/drawers/${drawerId}/document/restore`, { history_id: last.id, base_version: now })).statusCode).toBe(200);
     expect(await documentName(ann)).toBe("Kitchen tin");
+    // PETTY-403: a restore is a new version, not the old number again: the web app refuses a drawer older than one it opened
+    expect((await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version).toBe(now + 1);
     // PETTY-194: the list the app shows — newest first, the undone version kept too, members cannot read it
     const after = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history as { id: string; by_token: boolean; replaced_at: string }[];
     expect(after.length).toBeGreaterThanOrEqual(2);

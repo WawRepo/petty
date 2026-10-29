@@ -127,8 +127,11 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
 - **The workflow makes the release commit** ("Release X.Y.Z": the version in every `package.json` and in
   `apps/mcp/mcpb/manifest.json`; `## [Unreleased]` in `CHANGELOG.md` becomes `## [X.Y.Z] — date`), tags
   it `vX.Y.Z`, builds and pushes the image, and publishes the GitHub Release with that section as notes.
-  Then a second job lists the add-on in the MCP Registry (`mcp-registry.yml`). The release is already
+  Then a last job lists the add-on in the MCP Registry (`mcp-registry.yml`). The release is already
   out at that point: if only that job fails, run `gh workflow run mcp-registry.yml --ref main -f tag=vX.Y.Z`.
+- **No job that runs dependency code holds a write token** (PETTY-406). `pnpm install` and the packs run in
+  a read-only job; only `publish`, which runs no dependency code, can push to the repository. Keep it so
+  when you change the workflow: any step can read its job's token.
 - **Never bump a version or write a version heading by hand.** Each user-visible change adds its lines
   under `## [Unreleased]` in the same commit as the change. An empty section ships as "Maintenance only".
 - **After a release, pull before you push:** main has the release commit on top. Deploying a release is

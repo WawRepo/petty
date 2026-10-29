@@ -241,7 +241,7 @@ export async function makeDrawer(page: Page, name: string): Promise<string> {
   return id;
 }
 /** An invitation sent in the UI, after ticking that the safety numbers match: the inviter confirms the invitee. */
-export async function inviteViaUi(page: Page, drawerId: string, who: TestUserWithKeys, role: "write" | "read") {
+export async function inviteViaUi(page: Page, drawerId: string, who: TestUserWithKeys, role: "write" | "read", toast = "Invitation sent") {
   await page.goto(`/drawers/${drawerId}/members`);
   await page.getByRole("button", { name: "Invite someone" }).click();
   await page.getByLabel("Their email").fill(who.email);
@@ -251,7 +251,7 @@ export async function inviteViaUi(page: Page, drawerId: string, who: TestUserWit
   if (role === "read") await page.getByLabel(/Reader/).check();
   await page.getByLabel(/I compared this safety number/).check();
   await page.getByRole("button", { name: "Invite", exact: true }).click();
-  await expect(page.locator(".toast")).toHaveText("Invitation sent");
+  await expect(page.locator(".toast")).toHaveText(toast);
 }
 /** The first pending invitation accepted in the UI: the invitee confirms the inviter. */
 export async function acceptViaUi(page: Page) {

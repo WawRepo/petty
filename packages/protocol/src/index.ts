@@ -76,12 +76,33 @@ export const DrawerKeyWrap = z.object({
 });
 export type DrawerKeyWrap = z.infer<typeof DrawerKeyWrap>;
 
+// ---------------------------------------------------------------- display names
+/**
+ * PETTY-407 (security review #9): a display name travels into other people's mail ("Ann invited you
+ * to a drawer"). A new name is one plain line: no control, invisible or direction-changing characters,
+ * and nothing a mail program turns into a link (no "://", "www.", "@", or "word.word"; "J. Smith" is
+ * fine). Names saved before this stay valid; the server cleans them where they enter a mail.
+ */
+const NAME_BREAKS = /[\p{Cc}\p{Zl}\p{Zp}\u00AD\u061C\u200B\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/gu;
+const NAME_LINKISH = /:\/\/|www[.\u3002\uFF0E\uFF61]|@|[\p{L}\p{N}][.\u3002\uFF0E\uFF61]\p{L}{2,}/iu;
+export type DisplayNameProblem = "control" | "link";
+export function displayNameProblem(name: string): DisplayNameProblem | null {
+  if (name.search(NAME_BREAKS) >= 0) return "control";
+  return NAME_LINKISH.test(name) ? "link" : null;
+}
+/** The name as one clean line of at most 80 characters, or null when nothing plain is left (a link, an address, empty). */
+export function mailSafeName(name: string): string | null {
+  const line = [...name.replace(NAME_BREAKS, " ").replace(/\s+/gu, " ").trim()].slice(0, 80).join("").trim();
+  return line && !NAME_LINKISH.test(line) ? line : null;
+}
+export const DisplayName = z.string().trim().min(1).max(80).refine((s) => displayNameProblem(s) === null, { message: "DisplayNameInvalid" });
+
 // ---------------------------------------------------------------- auth
 export const SignupBody = z.object({
   join_token: z.string().min(16).max(128).optional(),   // absent = open signup (server allows it only when OPEN_SIGNUP=true)
   email: z.string().email().max(254),
   password: z.string().min(8).max(1024),
-  display_name: z.string().trim().min(1).max(80),
+  display_name: DisplayName,
   locale: LocaleCode.default("en"),
   keys: z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string().regex(/^[0-9a-f]{32}$/) }),
   /** Passphrase copy of the keys. Optional since PETTY-102: a passkey may be the only everyday door. */
@@ -92,7 +113,7 @@ export const SignupBody = z.object({
 });
 export const LoginBody = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(1024) });
 /** Clerk mode (PETTY-88): the vault for an identity Clerk already verified; email and name come from Clerk. */
-export const ProvisionBody = SignupBody.omit({ join_token: true, email: true, password: true }).extend({ display_name: z.string().trim().min(1).max(80).optional() });
+export const ProvisionBody = SignupBody.omit({ join_token: true, email: true, password: true }).extend({ display_name: DisplayName.optional() });
 /** Public: which identity provider the web app must use. */
 // contact_email (PETTY-160): where "Get an invite" writes to; set by the operator, absent in older answers and caches.
 export const AuthConfig = z.object({ auth: z.enum(["local", "clerk"]), clerk_publishable_key: z.string().nullable(), contact_email: z.string().nullable().optional(), open_signup: z.boolean().optional(), version: z.string().optional(),
@@ -232,7 +253,7 @@ export const AdminUser = z.object({
 export type AdminUser = z.infer<typeof AdminUser>;
 export const AdminUsers = z.object({ users: z.array(AdminUser) });
 export const SetAdminBody = z.object({ is_admin: z.boolean() });
-export const PatchMeBody = z.object({ locale: LocaleCode.optional(), display_name: z.string().trim().min(1).max(80).optional() });
+export const PatchMeBody = z.object({ locale: LocaleCode.optional(), display_name: DisplayName.optional() });
 export const JoinLinkBody = z.object({ email: z.string().email().max(254).optional() });
 export const JoinLinkResponse = z.object({ token: z.string(), expires_at: z.string() });
 export const JoinLinkInfo = z.object({ valid: z.boolean(), inviter_name: z.string().nullable(), email: z.string().nullable() });

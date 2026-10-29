@@ -62,8 +62,8 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
     setBusy(true);
     try {
       await confirmPin(found.id, found.keys);
-      await inviteMember(drawerId, { id: found.id, keys: found.keys }, role);
-      toast(t("invite.sent"));
+      const { mailed } = await inviteMember(drawerId, { id: found.id, keys: found.keys }, role);
+      toast(t(mailed ? "invite.sent" : "invite.sentNoMail"));
       await loadAll();
       onClose();
     } catch (err) {

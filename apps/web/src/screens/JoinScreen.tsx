@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { currentLocale } from "../i18n/index.js";
 import { useNavigate, useParams } from "react-router";
 import { openSignup } from "../lib/authConfig.js";
-import { z, type Me } from "@petty/protocol";
+import { displayNameProblem, z, type Me } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
@@ -44,6 +44,7 @@ export function JoinScreen() {
     ev.preventDefault();
     const e = validateFirstDoor(door, t, password, email);
     if (password.length < 8) e["password"] = t("auth.join.errors.passwordShort");
+    if (displayNameProblem(name.trim())) e["name"] = t("errors.displayName"); // PETTY-407: the name goes into other people's mail
     setErrors(e);
     if (Object.keys(e).length) return;
     setBusy(true);
@@ -64,6 +65,7 @@ export function JoinScreen() {
       else if (err instanceof ApiError && err.code === "EmailTaken") e2["email"] = t("auth.join.errors.emailTaken");
       else if (err instanceof ApiError && err.code === "JoinLinkEmailMismatch") e2["email"] = t("auth.join.errors.linkMismatch");
       else if (err instanceof ApiError && (err.code === "JoinLinkInvalid")) e2["form"] = t("auth.join.invalid");
+      else if (err instanceof ApiError && err.code === "ValidationError" && err.context["path"] === "display_name") e2["name"] = t("errors.displayName");
       else if (err instanceof NetworkError) e2["form"] = t("errors.network");
       else e2["form"] = t("errors.unknown");
       setErrors(e2);
@@ -97,7 +99,7 @@ export function JoinScreen() {
         {info.inviter_name ? <p className="hint">{t("auth.join.invitedBy", { name: info.inviter_name })}</p> : null}
         <VaultIntro method={door.method} testId="join-explainer" items={[t("auth.join.explainer.password"), t(door.method === "passkey" ? "auth.join.explainer.passkey" : "auth.join.explainer.passphrase"), t("auth.join.explainer.recovery")]} />
         <form onSubmit={submit} noValidate>
-          <TextField label={t("auth.join.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
+          <TextField label={t("auth.join.displayName")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required error={errors["name"]} />
           <TextField label={t("auth.join.email")} type="email" inputMode="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required readOnly={!!info.email} error={errors["email"]} />
           <TextField label={t("auth.join.password")} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} hint={t("auth.join.passwordHint")} error={errors["password"]} />
           <FirstDoorFields state={door} set={setDoor} pkAvail={pkAvail} errors={errors} />
