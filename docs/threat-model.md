@@ -92,6 +92,11 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   the newest key of each drawer you opened, so the server can neither push a key of its own nor go back
   to an older key that a removed member may still hold. The first key of a drawer is still trusted on
   first sight.
+- The pins live in that sealed user document, so a server could try to drop it or serve an older
+  copy. Each browser remembers the newest version it saw, also across a sign-out or an expired
+  session (PETTY-402), and warns loudly when the server has none or an older one; until you
+  acknowledge it, nothing is pinned on first sight and no key is wrapped. A browser that never used
+  the account has nothing to compare with.
 
 ## Integrity
 

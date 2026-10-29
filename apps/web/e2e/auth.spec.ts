@@ -124,9 +124,9 @@ test("login, wrong passphrase, unlock, Lock now, sign out — in English and in 
   await bye.getByRole("button", { name: "Wyloguj" }).click();
   await expect(page.getByRole("heading", { name: "Petty", level: 1 })).toBeVisible(); // visitors now land on the marketing page
   await expect(page).toHaveURL(/\/$/);
-  // SR-8: sign-out wipes the ciphertext cache and the outbox; only the tamper-detection heads may remain
+  // SR-8: sign-out wipes the ciphertext cache and the outbox; only the tamper-detection heads and the user-document version may remain (PETTY-402)
   const idbKeys = () => page.evaluate(() => new Promise<string[]>((resolve) => { const r = indexedDB.open("petty", 1); r.onsuccess = () => { const t = r.result.transaction("kv", "readonly").objectStore("kv").getAllKeys(); t.onsuccess = () => resolve(t.result.map(String)); }; r.onerror = () => resolve(["error"]); }));
-  await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head."))).toEqual([]);
+  await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head.") && !k.startsWith("userdoc."))).toEqual([]);
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Zaloguj się" })).toBeVisible(); // the session is really gone
 });

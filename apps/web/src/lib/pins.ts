@@ -56,6 +56,8 @@ export async function acknowledgeRollback(): Promise<void> {
   set({ ...state, status: "idle", lastSeenVersion: 0 });
   await loadPins();
 }
+/** The account was deleted: its remembered version goes with it. A sign-out keeps it (PETTY-402). */
+export async function forgetUserDocVersion(userId: string): Promise<void> { await idb.del(seenKey(userId)); }
 
 let selfKey: CryptoKey | null = null;
 async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
