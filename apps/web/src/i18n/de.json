@@ -191,6 +191,7 @@
       "sender_unconfirmed": "Diese Schublade hat einen neuen Schlüssel von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
       "key_rolled_back": "Der Server hat einen älteren Schlüssel für diese Schublade geschickt als den, den du schon hattest, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
+      "doc_rolled_back": "Der Server hat eine ältere Fassung dieser Schublade geschickt als die, die du schon geöffnet hattest, deshalb hat Petty sie nicht geöffnet. Seitdem hinzugefügte Posten würden fehlen. Jemand hat den Server vielleicht verändert.",
       "unwrap_failed": "Diese Schublade konnte auf diesem Gerät nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "bad_document": "Die Daten dieser Schublade sind beschädigt. Der Eigentümer kann eine frühere Version wiederherstellen.",

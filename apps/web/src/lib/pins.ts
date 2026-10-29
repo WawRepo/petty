@@ -27,8 +27,10 @@ export type TrustedToken = z.infer<typeof TrustedToken>;
 // `drawer_keys` (PETTY-398): per drawer, the highest key version this person has accepted. A newer one is a
 // rotation and is taken only from a confirmed member; an older one means the server went back to a key a
 // removed member may still hold. Sealed here, so the server can neither raise nor lower it.
+// `drawer_docs` (PETTY-403): per drawer, the newest document version this person opened. An older one means
+// the server went back to an earlier state of the drawer: lines added since gone, with their balances.
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional() });
+const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
 
@@ -56,6 +58,8 @@ export async function acknowledgeRollback(): Promise<void> {
   set({ ...state, status: "idle", lastSeenVersion: 0 });
   await loadPins();
 }
+/** The account was deleted: its remembered version goes with it. A sign-out keeps it (PETTY-402). */
+export async function forgetUserDocVersion(userId: string): Promise<void> { await idb.del(seenKey(userId)); }
 
 let selfKey: CryptoKey | null = null;
 async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
@@ -199,13 +203,24 @@ export async function updateTrustedTokens(change: (tokens: readonly TrustedToken
 
 /** The highest key version of this drawer that this person accepted (PETTY-398), or null before the first. */
 export function acceptedKeyVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_keys?.[drawerId] ?? null; }
-/** Remembers newly accepted key versions, saved once. Never lowers one. Skipped while the document is rolled back. */
-export async function recordKeyVersions(versions: ReadonlyMap<string, number>): Promise<void> {
-  if (pinsBlocked() || ![...versions].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0))) return;
+/** The newest document version of this drawer that this person opened (PETTY-403), or null before the first. */
+export function acceptedDocVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_docs?.[drawerId] ?? null; }
+function raised(seen: Readonly<Record<string, number>> | undefined, next: ReadonlyMap<string, number>): Record<string, number> | undefined {
+  const out = { ...seen };
+  for (const [id, v] of next) if (v > (out[id] ?? 0)) out[id] = v;
+  return Object.keys(out).length ? out : undefined;
+}
+/** Remembers newly accepted key versions and opened document versions, saved once. Never lowers one. Skipped while the document is rolled back. */
+export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, docs: ReadonlyMap<string, number>): Promise<void> {
+  const higher = [...keys].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0)) || [...docs].some(([id, v]) => v > (acceptedDocVersion(id) ?? 0));
+  if (pinsBlocked() || !higher) return;
   await save((doc) => {
-    const next = { ...(doc.drawer_keys ?? {}) };
-    for (const [id, v] of versions) if (v > (next[id] ?? 0)) next[id] = v;
-    return { ...doc, drawer_keys: next };
+    const next = { ...doc };
+    const k = raised(doc.drawer_keys, keys);
+    if (k) next.drawer_keys = k;
+    const d = raised(doc.drawer_docs, docs);
+    if (d) next.drawer_docs = d;
+    return next;
   });
 }
 

@@ -191,6 +191,7 @@
       "sender_unconfirmed": "Ce tiroir a une nouvelle clé d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
       "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "doc_rolled_back": "Le serveur a envoyé une version de ce tiroir plus ancienne que celle que vous aviez déjà ouverte, donc Petty ne l’a pas ouvert. Les éléments ajoutés depuis manqueraient. Quelqu’un a peut-être modifié le serveur.",
       "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
       "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
