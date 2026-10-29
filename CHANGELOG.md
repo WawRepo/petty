@@ -24,6 +24,13 @@ number, also when it adds features, and a new minor or major is started by hand 
   Before, it could stay in the page where you typed your vault passphrase. Signing in now takes one
   more page load, and the sign-in and sign-up pages always come from the server, also in the
   installed app. Local sign-in is unchanged.
+- The unlock screen has a new choice, "Keep the vault open on this device for 24 hours". It is on, as
+  before. Turn it off on a computer that others use: the vault then stays open only while the page
+  is open, and locks when you close or reload Petty. The open vault's key handles cannot be read out
+  by the page, but the browser keeps them in its profile on disk until the vault locks.
+- With Clerk sign-in, a session that ended while Petty was closed now also wipes the cached unlock
+  and the local cache at the next start. Before, they stayed in the browser, unused, until the next
+  sign-in.
 
 ## [1.5.27] — 2026-10-28
 

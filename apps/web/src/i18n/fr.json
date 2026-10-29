@@ -125,7 +125,9 @@
       "addHereTitle": "Ajouter une clé d’accès pour cet appareil ?",
       "addHereBody": "Vous avez déverrouillé avec une clé d’accès d’un autre appareil. Ajoutez-en une ici, et la prochaine fois cet appareil ouvrira le coffre tout seul.",
       "addHere": "Ajouter une clé d’accès",
-      "notNow": "Plus tard"
+      "notNow": "Plus tard",
+      "remember": "Garder le coffre ouvert sur cet appareil pendant 24 heures",
+      "rememberHint": "Désactivé : le coffre se verrouille quand vous fermez ou rechargez Petty. Désactivez-le sur un ordinateur que d’autres utilisent."
     },
     "lock": {
       "now": "Verrouiller",
@@ -744,7 +746,7 @@
       "Quiconque lit la base de données ou une sauvegarde : le contenu des tiroirs, les photos et les coffres ne sont que des données chiffrées. Cette personne voit toutefois les détails de compte et d’activité listés ci-dessus.",
       "Quiconque modifie la base de données : les opérations déplacées, échangées ou supprimées sont détectées.",
       "Le serveur seul : il ne détient aucune clé et ne peut pas lire vos tiroirs, sauf s’il modifie aussi l’application qu’il diffuse (voir ci-dessous).",
-      "Un téléphone perdu : un coffre verrouillé exige votre clé d’accès ou votre phrase secrète, et un coffre ouvert se verrouille de lui-même 24 heures après son déverrouillage.",
+      "Un téléphone perdu : un coffre verrouillé exige votre clé d’accès ou votre phrase secrète, et un coffre ouvert se verrouille de lui-même 24 heures après son déverrouillage, ou à la fermeture de Petty si vous l’avez choisi au déverrouillage.",
       "Un membre retiré : après son retrait, la clé du tiroir est remplacée ; il ne peut rien lire de ce qui est écrit ensuite."
     ],
     "notTitle": "Ce contre quoi Petty ne peut pas protéger",

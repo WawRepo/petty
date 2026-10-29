@@ -125,7 +125,9 @@
       "addHereTitle": "Dodać klucz dostępu dla tego urządzenia?",
       "addHereBody": "Sejf odblokowano kluczem dostępu z innego urządzenia. Dodaj klucz tutaj, a następnym razem to urządzenie samo otworzy sejf.",
       "addHere": "Dodaj klucz dostępu",
-      "notNow": "Nie teraz"
+      "notNow": "Nie teraz",
+      "remember": "Zostaw sejf otwarty na tym urządzeniu przez 24 godziny",
+      "rememberHint": "Wyłączone: sejf zablokuje się, gdy zamkniesz lub przeładujesz Petty. Wyłącz to na komputerze, z którego korzystają inni."
     },
     "lock": {
       "now": "Zablokuj teraz",
@@ -744,7 +746,7 @@
       "Każdy, kto czyta bazę lub kopię zapasową: treść szuflad, zdjęcia i sejfy to tylko zaszyfrowane dane. Nadal widzi jednak dane konta i aktywności wymienione wyżej.",
       "Każdy, kto zmienia bazę: przeniesione, zamienione lub usunięte wpisy są wykrywane.",
       "Sam serwer: nie ma kluczy i nie odczyta Twoich szuflad, chyba że zmieni też aplikację, którą udostępnia (patrz niżej).",
-      "Zgubiony telefon: zablokowany sejf wymaga klucza dostępu lub hasła sejfu, a otwarty sejf sam się blokuje 24 godziny po odblokowaniu.",
+      "Zgubiony telefon: zablokowany sejf wymaga klucza dostępu lub hasła sejfu, a otwarty sejf sam się blokuje 24 godziny po odblokowaniu albo po zamknięciu Petty, jeśli tak wybierzesz przy odblokowaniu.",
       "Usunięty członek: po usunięciu klucz szuflady jest wymieniany; nie odczyta niczego dodanego później."
     ],
     "notTitle": "Przed czym Petty nie chroni",

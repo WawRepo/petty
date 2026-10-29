@@ -21,7 +21,9 @@ provider, if you use a hosted one. The same code runs in both cases.
 - **The operator's staff and admins.** An admin can list, block and unblock accounts, revoke their
   sessions, restore a replaced vault blob and grant admin — and can read no drawer content.
 - **A lost or stolen device.** Nothing readable is written to disk; the vault locks after 24 hours
-  and on "Lock now" or sign-out.
+  and on "Lock now" or sign-out. While it is open, the browser profile holds the key handles (see
+  "Session lock"): someone who gets the device unlocked, or a copy of that profile, inside those
+  24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
 - **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
@@ -83,6 +85,11 @@ Users should be told these plainly.
 - **Session lock.** An unlocked vault stays open for 24 hours (a non-extractable key handle cached in
   IndexedDB, never raw key bytes or decrypted content), then asks again. In Clerk mode the cached
   unlock is bound to one Clerk session (PETTY-140). "Lock now" and sign-out clear it at once.
+  Non-extractable means the page cannot read the key bytes out; it does not mean the handle stays
+  off the disk. IndexedDB is part of the browser profile, and the 24 hours are counted by the app,
+  not by the browser. So the unlock screen lets you keep the vault open only in that page's memory
+  (PETTY-405): it then locks when you close or reload Petty. A Clerk session that ended while Petty
+  was closed has its cached unlock and cache wiped at the next start.
 - **Resetting the login password never restores vault access**, and the app says so at reset.
 
 ## Key verification

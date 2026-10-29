@@ -127,6 +127,18 @@ test("clerk flow", async ({ page, baseURL }) => {
   const base = new URL(page.url()).origin;
   expect(scripts.filter((u) => !u.startsWith(base) && !u.startsWith("https://challenges.cloudflare.com/")), "scripts from elsewhere").toEqual([]);
   expect(blocked.filter((t) => /script-src/.test(t)), "script-src violations").toEqual([]);
+  // 3. PETTY-405: the Clerk session ends while Petty is closed; the next start wipes the cached unlock and the cache
+  const ctx = page.context();
+  await page.close();
+  const users = madeUserId ? [{ id: madeUserId }] : ((await (await clerkApi(`/users?email_address=${encodeURIComponent(EMAIL)}`)).json()) as { id: string }[]);
+  for (const u of users) {
+    const sessions = (await (await clerkApi(`/sessions?user_id=${u.id}&status=active`)).json()) as { id: string }[];
+    for (const sess of sessions) expect((await clerkApi(`/sessions/${sess.id}/revoke`, { method: "POST" })).ok).toBe(true);
+  }
+  const again = await ctx.newPage();
+  await again.goto("/");
+  const idbKeys = () => again.evaluate(() => new Promise<string[]>((resolve) => { const r = indexedDB.open("petty", 1); r.onsuccess = () => { const t = r.result.transaction("kv", "readonly").objectStore("kv").getAllKeys(); t.onsuccess = () => resolve(t.result.map(String)); }; r.onerror = () => resolve(["error"]); }));
+  await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head.") && !k.startsWith("userdoc.")), { timeout: 20_000 }).toEqual([]);
 });
 
 test("sign up through Clerk: the email code step stays on screen, with no page load between steps, then vault setup (PETTY-283)", async ({ page, baseURL }) => {

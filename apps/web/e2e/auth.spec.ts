@@ -55,6 +55,33 @@ test("signup through a join link, save the recovery code, land on an empty drawe
   expect(idb.expiresInHours).toBeGreaterThan(23);
 });
 
+test("PETTY-405: with \"Keep the vault open\" off, the key handles stay in the page's memory and a reload locks the vault", async ({ page }) => {
+  const user = await signupViaApi("mem");
+  const unlockedRecord = () => page.evaluate(() => new Promise<boolean>((resolve) => { const r = indexedDB.open("petty", 1); r.onsuccess = () => { const g = r.result.transaction("kv", "readonly").objectStore("kv").get("session.unlocked"); g.onsuccess = () => resolve(g.result !== undefined); }; r.onerror = () => resolve(false); }));
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Login password").fill(user.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  const remember = page.getByRole("checkbox", { name: "Keep the vault open on this device for 24 hours" });
+  await expect(remember).toBeChecked(); // on by default, as before
+  await remember.uncheck();
+  await page.getByLabel("Vault passphrase").fill(user.passphrase);
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+  expect(await unlockedRecord()).toBe(false); // nothing in IndexedDB
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Unlock your vault" })).toBeVisible();
+  await expect(remember).not.toBeChecked(); // the choice is the device's
+  // turned on again: the unlock survives a reload
+  await remember.check();
+  await page.getByLabel("Vault passphrase").fill(user.passphrase);
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+  expect(await unlockedRecord()).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId("home-empty")).toBeVisible();
+});
+
 test("Lock now with drawers on view, then unlock: Home loads them again, no reload needed (PETTY-326)", async ({ page }) => {
   const user = await signupViaApi("lou");
   await loginAndUnlock(page, user);

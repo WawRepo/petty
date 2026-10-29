@@ -76,6 +76,16 @@ if (typeof document !== "undefined") {
   });
 }
 
+/**
+ * PETTY-405: whether this device keeps the unlocked key handles in IndexedDB, so a reload or a new tab
+ * stays unlocked until the 24 h lock. The handles are non-extractable, but IndexedDB is part of the
+ * browser profile on disk. Off (a computer that others use), the keys live in this page's memory only.
+ * A preference of the device, so a sign-out keeps it.
+ */
+const K_REMEMBER = "petty.rememberUnlock";
+export function rememberUnlock(): boolean { try { return localStorage.getItem(K_REMEMBER) !== "0"; } catch { return true; } }
+export function setRememberUnlock(on: boolean): void { try { if (on) localStorage.removeItem(K_REMEMBER); else localStorage.setItem(K_REMEMBER, "0"); } catch { /* ignore */ } }
+
 /** "This browser signed in once and has not signed out": set on sign-in, cleared on sign-out. A visitor without it skips /me (PETTY-133). */
 const K_SIGNED = "petty.session";
 const markSignedIn = (on: boolean) => { try { if (on) localStorage.setItem(K_SIGNED, "1"); else localStorage.removeItem(K_SIGNED); } catch { /* ignore */ } };
@@ -128,7 +138,7 @@ function openSession(me: Me, keys: UnlockedKeys): Promise<void> {
   const record: UnlockedRecord = { userId: me.id, ecdhPrivate: keys.ecdhPrivate, ecdsaPrivate: keys.ecdsaPrivate, pub: keys.pub, expiresAt, ...(sessionScope ? { scope: sessionScope } : {}) };
   set({ status: "unlocked", me, keys, expiresAt });
   scheduleLock(expiresAt);
-  return idb.set(K_UNLOCKED, record);
+  return rememberUnlock() ? idb.set(K_UNLOCKED, record) : idb.del(K_UNLOCKED);
 }
 function signedIn(): Me {
   const s = state;
@@ -202,11 +212,14 @@ export async function signOut(): Promise<void> {
   else { try { await api("POST", "/auth/logout"); } catch { /* offline: local sign-out still happened */ } }
 }
 
-/** Clerk reported no session (signed out elsewhere, or never signed in): drop anything local. */
+/**
+ * Clerk reported no session (signed out elsewhere, or never signed in): drop anything local. Also while
+ * still "loading" (PETTY-405): a Clerk session that ended while the app was closed left the cached
+ * unlock and the cache in IndexedDB, and the next start never got as far as a signed-in state to wipe them.
+ */
 export async function toAnonymous(): Promise<void> {
-  const s = state;
   set({ status: "anonymous" });
-  if (s.status === "locked" || s.status === "unlocked" || s.status === "novault") await clearAll();
+  await clearAll();
 }
 
 /**
