@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { mailSafeName } from "@petty/protocol";
 import { config } from "../config.js";
 import { mailsSent } from "./metrics.js";
 import { MAIL, mailLocale, type MailText } from "./mail-text.js";
@@ -30,15 +31,21 @@ export function sendMail(to: string, subject: string, text: string): void {
 
 /** Each mail in the recipient's language (lib/mail-text.ts; unknown or missing locale → English). */
 const send = (to: string, m: MailText) => sendMail(to, m.subject, m.text);
+/**
+ * PETTY-407 (security review #9): a person's name as it may stand in someone else's mail: one plain line,
+ * or "Someone on Petty" when it holds a link or an address. Names from before the stricter sign-up rule,
+ * and names from Clerk, pass through here too.
+ */
+const who = (name: string, locale: string) => mailSafeName(name) ?? MAIL[mailLocale(locale)].someone;
 export const mails = {
-  joinLink: (to: string, inviter: string, token: string, locale: string) => send(to, MAIL[mailLocale(locale)].joinLink(inviter, `${config.appUrl}/join#${token}`)),
-  invitation: (to: string, inviter: string, role: string, locale: string) => send(to, MAIL[mailLocale(locale)].invitation(inviter, role === "write" ? "write" : "read", config.appUrl)),
+  joinLink: (to: string, inviter: string, token: string, locale: string) => send(to, MAIL[mailLocale(locale)].joinLink(who(inviter, locale), `${config.appUrl}/join#${token}`)),
+  invitation: (to: string, inviter: string, role: string, locale: string) => send(to, MAIL[mailLocale(locale)].invitation(who(inviter, locale), role === "write" ? "write" : "read", config.appUrl)),
   relinked: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].relinked(config.appUrl, config.contactEmail)),
-  revoked: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].revoked(owner)),
-  transferOffered: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferOffered(owner, config.appUrl)),
-  transferDone: (to: string, newOwner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferDone(newOwner)),
+  revoked: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].revoked(who(owner, locale))),
+  transferOffered: (to: string, owner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferOffered(who(owner, locale), config.appUrl)),
+  transferDone: (to: string, newOwner: string, locale: string) => send(to, MAIL[mailLocale(locale)].transferDone(who(newOwner, locale))),
   passwordReset: (to: string, token: string, locale: string) => send(to, MAIL[mailLocale(locale)].passwordReset(`${config.appUrl}/reset#${token}`)),
   passwordChanged: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].passwordChanged(config.contactEmail)),
   vaultReplaced: (to: string, locale: string) => send(to, MAIL[mailLocale(locale)].vaultReplaced(config.contactEmail)),
-  handedOver: (to: string, from: string, locale: string) => send(to, MAIL[mailLocale(locale)].handedOver(from)),
+  handedOver: (to: string, from: string, locale: string) => send(to, MAIL[mailLocale(locale)].handedOver(who(from, locale))),
 };

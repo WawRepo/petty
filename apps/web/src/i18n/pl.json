@@ -313,6 +313,7 @@
   "errors": {
     "network": "Nie udało się połączyć z serwerem. Sprawdź dostęp do internetu i spróbuj ponownie.",
     "unknown": "Coś poszło nie tak. Spróbuj ponownie.",
+    "displayName": "Wpisz zwykłe imię w jednej linii, bez linków i adresów e-mail. Po kropce wstaw spację, np. „J. Kowalski”.",
     "storageFull": "Nie masz już wolnego miejsca na dane. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
     "ownerStorageFull": "Właściciel tej szuflady nie ma już wolnego miejsca na dane, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
     "photoTooLarge": "To zdjęcie jest za duże. Wybierz mniejsze."
@@ -631,6 +632,7 @@
     "blockedChanged": "Klucz tej osoby zmienił się od ostatniego porównania. Najpierw zaakceptuj nowy klucz w sekcji Członkowie.",
     "send": "Zaproś",
     "sent": "Zaproszenie wysłane",
+    "sentNoMail": "Zaproszenie wysłane. Tym razem bez e-maila (za dużo w ostatnim czasie). Ta osoba zobaczy je po otwarciu Petty.",
     "joinLink": "Wyślij link z zaproszeniem",
     "joinLinkHint": "Dla kogoś, kto nie ma jeszcze konta w Petty. Dostanie e-mail z jednorazowym linkiem.",
     "joinLinkSent": "Link z zaproszeniem wysłany na {email}",

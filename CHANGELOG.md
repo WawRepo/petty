@@ -31,6 +31,16 @@ number, also when it adds features, and a new minor or major is started by hand 
 - With Clerk sign-in, a session that ended while Petty was closed now also wipes the cached unlock
   and the local cache at the next start. Before, they stayed in the browser, unused, until the next
   sign-in.
+- Drawer invitations and ownership offers email the other person at most once a day per drawer, and a
+  person gets at most 5 such emails a day and sends at most 20 (`SHARING_MAIL_PER_RECIPIENT`,
+  `SHARING_MAIL_PER_SENDER`; docs/deploy.md). Past a limit the invitation is still made and shows in
+  the app; only the email is skipped, and the app tells the inviter. Before, someone could invite and
+  revoke in a loop and fill another person's inbox. The new `petty_mail_limited_total` metric counts
+  the skipped emails.
+- A new display name may not hold a line break, an invisible or direction-changing character, a link
+  or an email address, because it appears in other people's emails ("J. Smith" is fine, "J.Smith" is
+  not). Names saved before stay; an email shows them on one line, or as "Someone on Petty" when they
+  hold a link or an address.
 
 ## [1.5.27] — 2026-10-28
 

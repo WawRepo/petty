@@ -250,6 +250,92 @@ describe("sharing", () => {
   });
 });
 
+describe("sharing mail limits and names in mail (PETTY-407)", () => {
+  const fresh = async (n: string) => {
+    const c = new Client(app, await userMaterial(n, { email: `${n}-${crypto.randomUUID().slice(0, 8)}@test.local` }));
+    expect((await c.signup(await makeJoinLink())).statusCode).toBe(201);
+    return c;
+  };
+  const drawerOf = async (o: Client) => {
+    const { id, res } = await o.createDrawer("Shed");
+    expect(res.statusCode).toBe(201);
+    return { id, key: await o.unwrap((await o.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === id), o.user.pub.ecdh, true) };
+  };
+  const invite = async (o: Client, d: { id: string; key: CryptoKey }, to: Client) =>
+    o.call("POST", `/drawers/${d.id}/invitations`, { invitee_id: to.id, role: "write", wrap: await o.wrapFor(d.key, to.user.pub.ecdh, d.id, 1) });
+  const mailsTo = async (c: Client, subject: string) => (await import("../src/lib/mail.js")).sentMails.filter((m) => m.to === c.user.email && m.subject === subject);
+  const SHARED = "A drawer was shared with you";
+
+  it("an invite → revoke loop emails once a day per drawer; every invitation still stands and says it was not emailed", async () => {
+    const [O, R] = [await fresh("olga"), await fresh("rafa")];
+    const d = await drawerOf(O);
+    const first = await invite(O, d, R);
+    expect(first.statusCode).toBe(201);
+    expect(first.json().mailed).toBe(true);
+    let last = first;
+    for (let i = 0; i < 3; i++) {
+      expect((await O.call("DELETE", `/invitations/${last.json().id}`)).statusCode).toBe(204);
+      last = await invite(O, d, R);
+      expect(last.statusCode).toBe(201);
+      expect(last.json().mailed).toBe(false);
+    }
+    expect(await mailsTo(R, SHARED)).toHaveLength(1);
+    expect((await R.call("GET", "/invitations")).json().invitations.map((i: { id: string }) => i.id)).toEqual([last.json().id]);
+  });
+
+  it("caps the emails one person gets a day, and the emails one sender sends a day (SHARING_MAIL_PER_*)", async () => {
+    const saved = { to: config.sharingMailPerRecipient, from: config.sharingMailPerSender };
+    const cfg = config as { sharingMailPerRecipient: number; sharingMailPerSender: number };
+    try {
+      cfg.sharingMailPerRecipient = 2; cfg.sharingMailPerSender = 100;
+      const [O, R] = [await fresh("ola"), await fresh("rui")];
+      const mailed = [];
+      for (let i = 0; i < 3; i++) mailed.push((await invite(O, await drawerOf(O), R)).json().mailed);
+      expect(mailed).toEqual([true, true, false]);
+      expect(await mailsTo(R, SHARED)).toHaveLength(2);
+
+      cfg.sharingMailPerRecipient = 100; cfg.sharingMailPerSender = 2;
+      const [S, X, Y, Z] = [await fresh("sam"), await fresh("xia"), await fresh("yan"), await fresh("zoe")];
+      const d = await drawerOf(S);
+      expect([(await invite(S, d, X)).json().mailed, (await invite(S, d, Y)).json().mailed, (await invite(S, d, Z)).json().mailed]).toEqual([true, true, false]);
+      expect(await mailsTo(Z, SHARED)).toHaveLength(0);
+    } finally { cfg.sharingMailPerRecipient = saved.to; cfg.sharingMailPerSender = saved.from; }
+  });
+
+  it("an ownership offer made again and again emails once a day", async () => {
+    const [O, W] = [await fresh("otto"), await fresh("wen")];
+    const d = await drawerOf(O);
+    const inv = await invite(O, d, W);
+    expect((await W.call("POST", `/invitations/${inv.json().id}/accept`)).statusCode).toBe(204);
+    for (let i = 0; i < 3; i++) {
+      expect((await O.call("POST", `/drawers/${d.id}/transfer`, { to_user_id: W.id })).statusCode).toBe(201);
+      expect((await O.call("DELETE", `/drawers/${d.id}/transfer`)).statusCode).toBe(204);
+    }
+    expect(await mailsTo(W, "You were offered a drawer")).toHaveLength(1);
+  });
+
+  it("a new name with a line break, a link or an address is refused; a saved one is cleaned where it enters a mail", async () => {
+    const m = await userMaterial("mallory", { email: `mallory-${run}@test.local` });
+    const M = new Client(app, { ...m, signupBody: { ...m.signupBody, display_name: "Mallory\nYour account is locked" } });
+    const res = await M.signup(await makeJoinLink());
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ code: "ValidationError", context: { path: "display_name" } });
+    const O = await fresh("oona");
+    for (const name of ["www.example.test", "help@example.test", "Visit https://x.test", "Oona\u202Eabc"]) expect((await O.call("PATCH", "/me", { display_name: name })).statusCode, name).toBe(400);
+    expect((await O.call("PATCH", "/me", { display_name: "O. Smith" })).statusCode).toBe(200);
+    // names saved before the rule (or taken from Clerk) still reach mails: cleaned to one line, or "Someone on Petty"
+    const [R1, R2] = [await fresh("rosa"), await fresh("ravi")];
+    await owner.query("update users set display_name = $2 where id = $1", [O.id, "Oona\r\nYour account is locked: https://evil.example"]);
+    await invite(O, await drawerOf(O), R1);
+    const linked = (await mailsTo(R1, SHARED))[0]!.text;
+    expect(linked).toMatch(/^Someone on Petty invited you/);
+    expect(linked).not.toContain("evil");
+    await owner.query("update users set display_name = $2 where id = $1", [O.id, "Oona\u202E\n Smith"]);
+    await invite(O, await drawerOf(O), R2);
+    expect((await mailsTo(R2, SHARED))[0]!.text).toMatch(/^Oona Smith invited you/);
+  });
+});
+
 describe("rotation (SPEC-ISSUES A7)", () => {
   it("publishes the new key first, refuses old-key writes, re-seals in resumable batches, and a stale invitation is refused", async () => {
     const { id, key, line } = await sharedDrawer();
@@ -316,7 +402,7 @@ describe("user document and wrap sender", () => {
 
   it("an invitation sends an email through Mailpit", async () => {
     await sharedDrawer();
-    const res = await fetch(`http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:${B.user.email}`)}`);
+    const res = await fetch(`${process.env["MAILPIT_URL"] ?? "http://localhost:8025"}/api/v1/search?query=${encodeURIComponent(`to:${B.user.email}`)}`);
     if (res.ok) {
       const j = (await res.json()) as { messages: Array<{ Subject: string }> };
       expect(j.messages.some((m) => m.Subject === "A drawer was shared with you")).toBe(true);

@@ -66,6 +66,8 @@ export const entriesAppended = dualCounter(
 export const rotationsStarted = dualCounter("petty_rotations_started_total", "Drawer key rotations started");
 
 export const mailsSent = dualCounter("petty_mail_total", "Notification emails handed to SMTP, by result", ["result"]);
+/** PETTY-407: invitation and ownership-offer emails NOT sent because a sharing mail limit was reached, by kind. */
+export const mailsLimited = dualCounter("petty_mail_limited_total", "Invitation and ownership-offer emails skipped by the sharing mail limits, by kind", ["kind"]);
 
 export const securityRefusals = dualCounter(
   "petty_security_refusals_total",

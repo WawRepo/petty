@@ -12,7 +12,7 @@ import {
   createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
 import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
-import { DocumentHistory, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
+import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
@@ -464,8 +464,10 @@ export function useSharingState(): { invitations: readonly Invitation[]; transfe
   return { invitations: state.invitations, transfers: state.transfers };
 }
 
+/** PETTY-407: `mailed: false` = the invitation stands, but a sharing mail limit skipped its email. Older servers leave it out. */
+const InviteAnswer = z.object({ mailed: z.boolean().optional() });
 /** Owner wraps the current drawer key for the invitee's PINNED key (SPEC-ISSUES B5) and creates the invitation. */
-export async function inviteMember(id: string, invitee: { id: string; keys: { ecdh_pub: string; ecdsa_pub: string; sig_key_id: string } }, role: "write" | "read"): Promise<void> {
+export async function inviteMember(id: string, invitee: { id: string; keys: { ecdh_pub: string; ecdsa_pub: string; sig_key_id: string } }, role: "write" | "read"): Promise<{ mailed: boolean }> {
   const a = me();
   const view = state.drawers.get(id);
   if (!view) throw new Error("drawer not ready");
@@ -479,7 +481,8 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
   const extractable = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: view.summary.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
   const { wrapDrawerKey } = await import("@petty/crypto");
   const forInvitee = await wrapDrawerKey(extractable, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
-  await api("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee });
+  const answer = InviteAnswer.parse(await api<unknown>("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee }));
+  return { mailed: answer.mailed !== false };
 }
 export async function acceptInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/accept`); await loadAll(); }
 export async function declineInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/decline`); await loadAll(); }

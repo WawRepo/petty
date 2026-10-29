@@ -9,6 +9,7 @@ import { requireUser } from "../lib/session.js";
 import { withTx } from "../lib/tx.js";
 import { membersOf } from "./drawers.js";
 import { mails } from "../lib/mail.js";
+import { maySendSharingMail } from "../lib/sharing-mail.js";
 
 export async function sharingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>("/drawers/:id/members", async (req) => {
@@ -29,17 +30,22 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     if (!invitee.key_id) throw badRequest("InviteeHasNoKeys", "invitee has not finished onboarding");
     const member = await apiPool.query("select 1 from drawer_members where drawer_id = $1 and user_id = $2", [drawer.id, body.invitee_id]);
     if (member.rowCount) throw conflict("AlreadyMember", "already a member");
+    let inserted: { id: string; created_at: Date };
     try {
-      const { rows } = await apiPool.query(
+      const { rows } = await apiPool.query<{ id: string; created_at: Date }>(
         "insert into invitations (drawer_id, inviter_id, invitee_id, role, key_version, wrap) values ($1, $2, $3, $4, $5, $6) returning id, created_at",
         [drawer.id, me.id, body.invitee_id, body.role, drawer.key_version, JSON.stringify({ ...body.wrap, sender_id: me.id })],
       );
-      mails.invitation(invitee.email, me.display_name, body.role, invitee.locale);
-      return reply.code(201).send({ id: rows[0]!.id, created_at: iso(rows[0]!.created_at) });
+      inserted = rows[0]!;
     } catch (e) {
       if ((e as { code?: string }).code === "23505") throw conflict("InvitationPending", "an invitation is already pending");
       throw e;
     }
+    // PETTY-407: past a sharing mail limit the invitation stands and only its email is skipped; `mailed` tells the inviter.
+    const mailed = await maySendSharingMail("invitation", me.id, invitee.id, drawer.id);
+    if (mailed) mails.invitation(invitee.email, me.display_name, body.role, invitee.locale);
+    else req.log.info({ drawer_id: drawer.id, kind: "invitation" }, "sharing mail skipped: limit reached");
+    return reply.code(201).send({ id: inserted.id, created_at: iso(inserted.created_at), mailed });
   });
 
   app.get("/invitations", async (req) => {
@@ -127,7 +133,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       [req.params.id, me.id, body.to_user_id],
     );
     const u = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [body.to_user_id])).rows[0];
-    if (u) mails.transferOffered(u.email, me.display_name, u.locale);
+    // PETTY-407: an offer made again and again (offer, cancel, offer) emails once a day at most.
+    if (u && (await maySendSharingMail("transfer", me.id, body.to_user_id, req.params.id))) mails.transferOffered(u.email, me.display_name, u.locale);
     return reply.code(201).send({ drawer_id: req.params.id, to_user_id: body.to_user_id });
   });
 
