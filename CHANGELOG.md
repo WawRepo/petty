@@ -9,6 +9,21 @@ number, also when it adds features, and a new minor or major is started by hand 
 ## [Unreleased]
 
 ### Security
+- A sign-out, or a session that ended, no longer makes the web app forget which version of your list
+  of trusted keys it last saw. Before, a server that ended your session and then dropped that list
+  could have had your next sign-in start the list over without a warning, and trusted a swapped key
+  on first sight. Now the app shows the warning it shows for any lost or older list.
+- The web app warns when an item's whole history is missing. Before, a server that dropped every entry
+  of an item made it show a balance of 0 with no warning. It also refuses a drawer older than one it
+  already opened, where the items added since would be missing, and never saves a change on top of
+  one. An item that another member deleted, or an earlier version that the owner put back, is not
+  reported.
+- With Clerk sign-in, Clerk's bot check (Cloudflare Turnstile, the one script Petty does not build
+  itself) may now run only on the sign-in and sign-up pages. The app leaves those pages with a full
+  page load, so your vault is set up and unlocked in a fresh page where that script cannot run.
+  Before, it could stay in the page where you typed your vault passphrase. Signing in now takes one
+  more page load, and the sign-in and sign-up pages always come from the server, also in the
+  installed app. Local sign-in is unchanged.
 - The unlock screen has a new choice, "Keep the vault open on this device for 24 hours". It is on, as
   before. Turn it off on a computer that others use: the vault then stays open only while the page
   is open, and locks when you close or reload Petty. The open vault's key handles cannot be read out

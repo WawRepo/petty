@@ -223,15 +223,18 @@ export async function toAnonymous(): Promise<void> {
 }
 
 /**
- * Sign-out wipes IndexedDB (SR-8): the ciphertext cache, the outbox, the user-document
- * version, the key handles. Only `head.*` stays: those are the pinned log heads that
- * catch a shortened log, and they are the same for everyone who shares the drawer.
+ * Sign-out wipes IndexedDB (SR-8): the ciphertext cache, the outbox, the key handles. Two kinds of
+ * record stay, because they hold nothing secret and only catch a server that goes back in time:
+ * `head.*`, the pinned log heads (the same for everyone who shares the drawer), and `userdoc.*`, the
+ * newest version of each account's user document seen here (PETTY-402). Without the second, one 401
+ * and then a 404 on /me/doc read as "no document yet", and every pin was back to first sight (SR-3).
  */
+const KEPT = ["head.", "userdoc."];
 async function clearAll(): Promise<void> {
   markSignedIn(false);
   resetDrawers();
   forgetSelfKey();
-  for (const k of await idb.keys()) if (!k.startsWith("head.")) await idb.del(k);
+  for (const k of await idb.keys()) if (!KEPT.some((p) => k.startsWith(p))) await idb.del(k);
 }
 
 /** From the unlocked vault's keys (PETTY-396): a number from the server's copy could be the server's own key. */

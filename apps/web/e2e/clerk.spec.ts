@@ -6,11 +6,38 @@
  * recovery code (PETTY-199), is always covered. CLERK_E2E_EMAIL reuses an existing user instead.
  * Covers: sign in (device-trust email code), vault setup and the recovery code, a drawer, sign out
  * through the account menu, sign in again, unlock, the drawer is still there.
+ * PETTY-404: Clerk's bot check (Cloudflare Turnstile) is allowed on the sign-in and sign-up pages only,
+ * and the vault pages are always a fresh page load whose policy does not allow it.
  */
 import { existsSync } from "node:fs";
 import { test, expect, type Page } from "@playwright/test";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { choosePassphraseDoor } from "./fixtures.js";
+const TURNSTILE = "https://challenges.cloudflare.com";
+/** Whether a policy lets the bot check run: Turnstile as a script source and as a frame source (PETTY-404). */
+function allowsTurnstile(csp: string | undefined): boolean {
+  const sources = (directive: string) => (csp ?? "").split(";").map((d) => d.trim().split(/\s+/)).find((d) => d[0] === directive)?.slice(1) ?? [];
+  return sources("script-src").some((x) => x === TURNSTILE) && sources("frame-src").some((x) => x === TURNSTILE);
+}
+/** The policy of every page of ours the tab loads (PETTY-404), by path; Clerk's own redirects are left out. */
+function recordPolicies(page: Page, base: string): { path: string; csp: string }[] {
+  const seen: { path: string; csp: string }[] = [];
+  page.on("response", (r) => {
+    const url = new URL(r.url());
+    if (r.request().isNavigationRequest() && r.frame() === page.mainFrame() && url.origin === new URL(base).origin) seen.push({ path: url.pathname, csp: r.headers()["content-security-policy"] ?? "" });
+  });
+  return seen;
+}
+/** "restricted" when this Clerk instance takes new accounts by invitation only. */
+async function signUpMode(): Promise<string> {
+  const fapi = process.env["CLERK_FRONTEND_API"] ?? "";
+  const env = await fetch(`${fapi.startsWith("http") ? fapi : `https://${fapi}`}/v1/environment`).then((r) => r.json() as Promise<{ user_settings?: { sign_up?: { mode?: string } } }>);
+  return env.user_settings?.sign_up?.mode ?? "public";
+}
+/** The open page holds no bot check: no Turnstile object, no script from Cloudflare (PETTY-404). */
+async function expectNoTurnstile(page: Page) {
+  expect(await page.evaluate((origin) => "turnstile" in window || !!document.querySelector(`script[src^="${origin}"], iframe[src^="${origin}"]`), TURNSTILE)).toBe(false);
+}
 if (existsSync("../../.env")) process.loadEnvFile("../../.env");
 test.skip(!process.env["CLERK_E2E"], "clerk mode; set CLERK_E2E=1 with the Clerk keys in .env");
 const clerkApi = (path: string, init: RequestInit = {}) =>
@@ -46,7 +73,7 @@ async function clerkSignIn(page: Page) {
     if (!left) await page.getByRole("button", { name: "Continue", exact: true }).click().catch(() => undefined);
   }
 }
-test("clerk flow", async ({ page }) => {
+test("clerk flow", async ({ page, baseURL }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 420, height: 900 });
   await setupClerkTestingToken({ page });
@@ -55,6 +82,7 @@ test("clerk flow", async ({ page }) => {
   page.on("console", (m) => { if (m.type() === "error" && /Content Security Policy/i.test(m.text())) blocked.push(m.text()); });
   const scripts: string[] = [];
   page.on("request", (r) => { if (r.resourceType() === "script") scripts.push(r.url()); });
+  const policies = recordPolicies(page, baseURL!);
   // 1. sign in with Clerk (user created through the backend API), no vault yet -> setup
   await clerkSignIn(page);
   await page.waitForURL(/\/(setup|unlock)/, { timeout: 40_000 }).catch(() => undefined);
@@ -66,6 +94,7 @@ test("clerk flow", async ({ page }) => {
     // PETTY-199: the recovery code must be shown and typed back, not skipped by a redirect home
     const code = await page.getByTestId("recovery-code").textContent({ timeout: 60_000 });
     await page.getByLabel("Type the code to confirm you saved it").fill(code ?? "");
+    await expectNoTurnstile(page);
     await page.getByRole("button", { name: "I saved it" }).click();
   } else {
     await page.getByLabel("Vault passphrase").fill(PASS);
@@ -90,6 +119,11 @@ test("clerk flow", async ({ page }) => {
   await page.getByLabel("Vault passphrase").fill(PASS);
   await page.getByRole("button", { name: /unlock|open/i }).first().click();
   await expect(page.getByTestId("drawer-row").filter({ hasText: "Clerk tin" }).first()).toBeVisible({ timeout: 20_000 });
+  await expectNoTurnstile(page);
+  // PETTY-404: the sign-in pages allow Turnstile; every other page the tab loaded does not
+  expect(policies.filter((p) => /^\/login/.test(p.path)).length, JSON.stringify(policies.map((p) => p.path))).toBeGreaterThan(0);
+  expect(policies.filter((p) => !/^\/(login|join)/.test(p.path)).length, JSON.stringify(policies.map((p) => p.path))).toBeGreaterThan(0);
+  for (const p of policies) expect(allowsTurnstile(p.csp), p.path).toBe(/^\/(login|join)(\/|$)/.test(p.path));
   const base = new URL(page.url()).origin;
   expect(scripts.filter((u) => !u.startsWith(base) && !u.startsWith("https://challenges.cloudflare.com/")), "scripts from elsewhere").toEqual([]);
   expect(blocked.filter((t) => /script-src/.test(t)), "script-src violations").toEqual([]);
@@ -107,7 +141,8 @@ test("clerk flow", async ({ page }) => {
   await expect.poll(async () => (await idbKeys()).filter((k) => !k.startsWith("head.") && !k.startsWith("userdoc.")), { timeout: 20_000 }).toEqual([]);
 });
 
-test("sign up through Clerk: the email code step stays on screen, with no page load between steps, then vault setup (PETTY-283)", async ({ page }) => {
+test("sign up through Clerk: the email code step stays on screen, with no page load between steps, then vault setup (PETTY-283)", async ({ page, baseURL }) => {
+  test.skip((await signUpMode()) === "restricted", "this Clerk instance takes new accounts by invitation only; the invitation test below covers sign-up");
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 420, height: 900 });
   await setupClerkTestingToken({ page });
@@ -115,6 +150,7 @@ test("sign up through Clerk: the email code step stays on screen, with no page l
   // boot the app again and leave the page blank; after the code it was left empty)
   let loads = 0;
   page.on("load", () => { loads++; });
+  const policies = recordPolicies(page, baseURL!);
   const email = `petty-e2e-signup-${Date.now()}+clerk_test@example.com`;
   try {
     await page.goto("/join");
@@ -127,12 +163,50 @@ test("sign up through Clerk: the email code step stays on screen, with no page l
     await expect(code).toBeVisible();
     await page.waitForTimeout(1500);
     await expect(code).toBeVisible(); // it stays
+    expect(loads, "no page load between Clerk's steps").toBe(1);
     await code.click();
     await page.keyboard.type("424242", { delay: 60 });
     await expect(page).toHaveURL(/\/setup$/, { timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "Set up your vault" })).toBeVisible();
-    expect(loads).toBe(1);
+    // PETTY-404: leaving the sign-up is one fresh page load, and that page's policy has no Turnstile
+    expect(loads).toBe(2);
+    expect(policies.map((p) => p.path)).toEqual(["/join", "/"]);
+    expect(allowsTurnstile(policies[0]?.csp)).toBe(true);
+    expect(allowsTurnstile(policies[1]?.csp)).toBe(false);
+    await expectNoTurnstile(page);
   } finally {
+    const found = await clerkApi(`/users?email_address=${encodeURIComponent(email)}`);
+    for (const u of found.ok ? ((await found.json()) as { id: string }[]) : []) await clerkApi(`/users/${u.id}`, { method: "DELETE" });
+  }
+});
+
+test("sign up with a Clerk invitation: vault setup opens in a fresh page whose policy has no bot check (PETTY-404)", async ({ page, baseURL }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 420, height: 900 });
+  await setupClerkTestingToken({ page });
+  let loads = 0;
+  page.on("load", () => { loads++; });
+  const policies = recordPolicies(page, baseURL!);
+  const email = `petty-e2e-invite-${Date.now()}+clerk_test@example.com`;
+  const made = await clerkApi("/invitations", { method: "POST", body: JSON.stringify({ email_address: email, redirect_url: `${baseURL}/join`, notify: false, ignore_existing: true }) });
+  expect(made.ok, `invitation: ${made.status}`).toBe(true);
+  const invitation = (await made.json()) as { id: string; url: string };
+  try {
+    // Clerk sends the invitee to /join?__clerk_ticket=…: a sign-up page, so it allows the bot check
+    await page.goto(invitation.url);
+    await expect(page).toHaveURL(/\/join\?/);
+    await page.getByLabel(/^password/i).first().fill(PW);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect(page).toHaveURL(/\/setup$/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Set up your vault" })).toBeVisible();
+    // signed up: Home is loaded fresh, whose policy has no Turnstile, and it moves on to vault setup
+    expect(loads).toBe(2);
+    expect(policies.map((p) => p.path)).toEqual(["/join", "/"]);
+    expect(allowsTurnstile(policies[0]?.csp)).toBe(true);
+    expect(allowsTurnstile(policies[1]?.csp)).toBe(false);
+    await expectNoTurnstile(page);
+  } finally {
+    await clerkApi(`/invitations/${invitation.id}/revoke`, { method: "POST" });
     const found = await clerkApi(`/users?email_address=${encodeURIComponent(email)}`);
     for (const u of found.ok ? ((await found.json()) as { id: string }[]) : []) await clerkApi(`/users/${u.id}`, { method: "DELETE" });
   }

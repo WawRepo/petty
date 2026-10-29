@@ -1,11 +1,11 @@
-import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ClerkProvider, useAuth as useClerkAuth, useClerk } from "@clerk/react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { currentLocale, type Locale } from "./i18n/index.js";
 import { Clerk } from "@clerk/clerk-js";
 import { ui } from "@clerk/ui";
-import { authConfig } from "./lib/authConfig.js";
+import { authConfig, isAuthPage, loadedAsAuthPage } from "./lib/authConfig.js";
 import { setTokenProvider } from "./lib/api.js";
 import { boot, setSessionScope, setSignOutHandler, toAnonymous } from "./lib/session.js";
 import { useClerkAppearance } from "./lib/clerkAppearance.js";
@@ -32,9 +32,18 @@ const clerkJs = (publishableKey: string): ClerkInstanceProp => (clerkInstance ??
  * a render React threw away is ignored, and the page was left empty after the code).
  */
 let appNavigate: ((to: string, replace: boolean) => void) | null = null;
+/**
+ * PETTY-404 (review finding #6): Clerk's bot check, Cloudflare Turnstile, is a third-party script, and the
+ * server's policy allows it only on the sign-in and sign-up pages. So going between such a page and any
+ * other page is a full page load, never a router step: vault setup and unlock always start in a fresh
+ * page whose policy names no third party (a script the bot check loaded is gone with its page), and a
+ * sign-in page loaded fresh may load the bot check. Within the sign-in and sign-up pages, Clerk's steps
+ * stay router steps (PETTY-283).
+ */
+const crossesPageKind = (pathname: string): boolean => isAuthPage(pathname) !== loadedAsAuthPage;
 const clerkNavigation = (replace: boolean) => (to: string) => {
   const url = new URL(to, location.href);
-  if (url.origin !== location.origin || !appNavigate) { if (replace) location.replace(url.href); else location.assign(url.href); return; }
+  if (url.origin !== location.origin || !appNavigate || crossesPageKind(url.pathname)) { if (replace) location.replace(url.href); else location.assign(url.href); return; }
   appNavigate(url.pathname + url.search + url.hash, replace);
 };
 const routerPush = clerkNavigation(false);
@@ -77,9 +86,17 @@ export function ClerkShell({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider Clerk={clerkJs(publishableKey)} ui={ui} appearance={appearance} {...(localization ? { localization } : {})} telemetry={{ disabled: true }} publishableKey={publishableKey} afterSignOutUrl="/" signInUrl="/login" signUpUrl="/join"
       routerPush={routerPush} routerReplace={routerReplace}>
-      <Bridge>{children}</Bridge>
+      <Bridge><PageKind>{children}</PageKind></Bridge>
     </ClerkProvider>
   );
+}
+
+/** PETTY-404: a router step to the other kind of page (a guard's redirect, a link) loads that page fresh instead; nothing of it renders here first. */
+function PageKind({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const crosses = crossesPageKind(pathname);
+  useLayoutEffect(() => { if (crosses) location.reload(); }, [crosses, pathname]);
+  return crosses ? null : <>{children}</>;
 }
 
 function Bridge({ children }: { children: ReactNode }) {
@@ -88,6 +105,9 @@ function Bridge({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     if (isSignedIn) {
+      // PETTY-404: a sign-in or sign-up page never boots, so the vault is never opened next to the bot
+      // check; with a session, Home is loaded fresh (Clerk's own step there is a full load too)
+      if (loadedAsAuthPage) { location.replace("/"); return; }
       setTokenProvider(() => getToken());
       setSignOutHandler(() => clerk.signOut());
       setSessionScope(sessionId ?? undefined); // PETTY-140: a cached unlock is valid for this Clerk session only

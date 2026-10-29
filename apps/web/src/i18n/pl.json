@@ -193,6 +193,7 @@
       "sender_unconfirmed": "Ta szuflada ma nowy klucz od członka, którego numeru bezpieczeństwa nie potwierdzono. Porównaj go w sekcji Członkowie i wybierz „Numer się zgadza”, aby otworzyć szufladę.",
       "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w sekcji Członkowie.",
       "key_rolled_back": "Serwer przysłał starszy klucz tej szuflady niż ten, który już był, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
+      "doc_rolled_back": "Serwer przysłał starszą wersję tej szuflady niż ta, która była już otwarta, więc Petty jej nie otworzyło. Brakowałoby w niej pozycji dodanych później. Ktoś mógł zmienić serwer.",
       "unwrap_failed": "Nie udało się otworzyć tej szuflady na tym urządzeniu. Poproś jej właściciela o ponowne udostępnienie.",
       "decrypt_failed": "Nie udało się otworzyć tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "bad_document": "Dane tej szuflady są uszkodzone. Jej właściciel może przywrócić wcześniejszą wersję.",
