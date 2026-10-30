@@ -11,6 +11,10 @@ updates:
       default-days: 7
     open-pull-requests-limit: 10
     groups:
+      # PETTY-401: OpenTelemetry's packages move as one (a single SDK line in the process), majors and
+      # 0.x jumps included, so a jump there neither splits over several PRs nor holds back the group below.
+      opentelemetry:
+        patterns: ["@opentelemetry/*"]
       minor-and-patch:
         update-types: [minor, patch]
   - package-ecosystem: github-actions

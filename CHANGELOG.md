@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The API uses OpenTelemetry SDK 3.0. Traces, metrics and logs keep their names, labels and endpoints,
+  and `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_PUSH` work as before. The
+  trace SDK no longer reads `OTEL_TRACES_SAMPLER`, `OTEL_BSP_*` or the span limit variables; Petty never
+  documented them, but if you set one, it now has no effect.
+
 ## [1.5.29] — 2026-10-29
 
 ### Changed

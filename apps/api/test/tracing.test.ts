@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AddressInfo } from "node:net";
-import { InMemorySpanExporter } from "@opentelemetry/sdk-trace-base";
+import { InMemorySpanExporter } from "@opentelemetry/sdk-trace";
 import { startTracing, stopTracing } from "../src/lib/tracing.js";
 
 // Tracing must be set up BEFORE Fastify is loaded (it patches node:http), exactly as index.ts does.
