@@ -164,7 +164,7 @@ jobs:
           git checkout -q --detach "$COMMIT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       # Right before the build that pushes. The Dockerfile's steps run inside BuildKit, which never sees it.
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -255,7 +255,7 @@ jobs:
             petty.mcpb petty-mcp.mjs petty-skill.zip petty.mjs LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS
           echo "Released v$VERSION: \`ghcr.io/wawrepo/petty:v$VERSION@$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
