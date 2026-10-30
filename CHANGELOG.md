@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.30] — 2026-10-30
+
 ### Changed
 - The API uses OpenTelemetry SDK 3.0. Traces, metrics and logs keep their names, labels and endpoints,
   and `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_PUSH` work as before. The
@@ -622,7 +624,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.29...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.30...HEAD
+[1.5.30]: https://github.com/WawRepo/petty/releases/tag/v1.5.30
 [1.5.29]: https://github.com/WawRepo/petty/releases/tag/v1.5.29
 [1.5.28]: https://github.com/WawRepo/petty/releases/tag/v1.5.28
 [1.5.27]: https://github.com/WawRepo/petty/releases/tag/v1.5.27
