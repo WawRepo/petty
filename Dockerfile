@@ -13,7 +13,7 @@
 # QEMU emulation for the heavy vite build; only the small per-arch runtime deps below are emulated.
 # pnpm: keep equal to "packageManager" in package.json (the CI setup reads that one).
 ARG PNPM_VERSION=11.28.8
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
+FROM --platform=$BUILDPLATFORM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS build
 ARG PNPM_VERSION
 RUN npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /app
@@ -40,7 +40,7 @@ RUN pnpm --filter @petty/mcp run pack
 RUN pnpm --filter @petty/cli run pack
 RUN pnpm --filter @petty/web build
 
-FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS deps
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS deps
 ARG PNPM_VERSION
 RUN npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /app
@@ -56,7 +56,7 @@ COPY apps/cli/package.json apps/cli/
 COPY tests/integration/package.json tests/integration/
 RUN pnpm install --frozen-lockfile --prod --filter @petty/api...
 
-FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
 # OCI labels (PETTY-211): GHCR reads image.source to link the package to the repo and inherit its visibility.
 LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
