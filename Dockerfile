@@ -62,6 +62,8 @@ LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
       org.opencontainers.image.title="Petty" \
       org.opencontainers.image.description="End-to-end encrypted ledger for physical cash across places and currencies."
+# Alpine can fix a package before the pinned base image has it, as with zlib 1.4 (PETTY-433).
+RUN apk upgrade --no-cache
 # pnpm starts the app and runs the operator scripts (migrate, join-link, make-admin). npm only installs
 # it; npm, corepack and yarn then leave with their caches, because their bundled packages are what image
 # scanners flag (review S9, PETTY-291).
