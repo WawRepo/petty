@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A pending drawer invitation ends when the drawer gets a new owner: when an ownership offer is
+  accepted, and when an owner who deletes the account hands the drawer over. The new owner decides who
+  joins and invites again. Pending invitations that a former owner made end with this upgrade. The
+  owner can list every pending invitation of a drawer (`GET /api/drawers/:id/invitations`) and revoke
+  any of them (`DELETE /api/invitations/:id`); the app has no screen for this list yet.
+
 ## [1.5.32] — 2026-11-04
 
 ### Changed

@@ -262,6 +262,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
         await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [t.drawer_id, t.to]);
         await db.query("delete from drawer_keys where drawer_id = $1 and user_id = $2", [t.drawer_id, me.id]);
         await db.query("delete from ownership_transfers where drawer_id = $1", [t.drawer_id]);
+        // PETTY-446: a pending invitation ends with the ownership it was made under
+        await db.query("update invitations set state = 'revoked', resolved_at = now() where drawer_id = $1 and state = 'pending'", [t.drawer_id]);
       }
       for (const id of p.memberships) {
         await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [id, me.id]);

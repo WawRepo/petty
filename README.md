@@ -236,9 +236,9 @@ as `Authorization: Bearer …`. Non-members get 404, never 403.
 | `POST /drawers/:id/lines/:lineId/delete` | write | new document + entries removed via `delete_line()` |
 | `POST /drawers/:id/entries` | write | append; idempotent on client id; Adjust needs `expected_head_seq` → 409 `RecountRequired`; Reverse rules → 409 `ReverseRefused` |
 | `GET /drawers/:id/lines/:lineId/entries?before=&limit=` | read | older pages |
-| `GET /drawers/:id/members` `POST /drawers/:id/invitations` `GET /invitations` `POST /invitations/:id/accept|decline` `DELETE /invitations/:id` | read / owner / invitee | wrap at invite time; accept = membership + wrap |
+| `GET /drawers/:id/members` `POST /drawers/:id/invitations` `GET /drawers/:id/invitations` `GET /invitations` `POST /invitations/:id/accept|decline` `DELETE /invitations/:id` | read / owner / invitee | wrap at invite time; accept = membership + wrap; the owner lists and revokes the drawer's pending invitations |
 | `DELETE /drawers/:id/members/:userId` `POST /drawers/:id/leave` | owner / member | removes wraps, sets `rotation_needed` |
-| `POST /drawers/:id/transfer` `POST /drawers/:id/transfer/accept` `DELETE /drawers/:id/transfer` | owner / target | ownership moves only on acceptance |
+| `POST /drawers/:id/transfer` `POST /drawers/:id/transfer/accept` `DELETE /drawers/:id/transfer` | owner / target | ownership moves only on acceptance; the drawer's pending invitations end with it |
 | `POST /drawers/:id/rotation` `PUT /drawers/:id/rotation/batch` `GET /drawers/:id/rotation` | write | publish new key + wraps first; re-seal in batches (petty_maint); status |
 | `GET /drawers/:id/export` | owner, write | everything for the drawer; read members get 403 |
 | `GET /me/delete` `POST /me/delete` | user | preview; delete with per-drawer decisions (hand over / delete), password re-entered |
