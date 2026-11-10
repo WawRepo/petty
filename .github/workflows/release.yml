@@ -254,7 +254,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write   # the release commit, its tag and the GitHub Release
-      packages: write   # `latest` on GHCR
+      packages: write   # the version's tag and `latest` on GHCR
     steps:
       # The only checkout that keeps its token: git pushes with it. No dependency code runs in this job.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
