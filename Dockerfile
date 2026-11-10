@@ -12,10 +12,21 @@
 # packed MCP add-on — are plain JS/HTML, identical on every CPU. This keeps the arm64 image off the slow
 # QEMU emulation for the heavy vite build; only the small per-arch runtime deps below are emulated.
 # pnpm: keep equal to "packageManager" in package.json (the CI setup reads that one).
+# PETTY-418: the registry's file is checked against PNPM_SHA512 before anything installs it, so a file
+# that changed under the same version stops the build. Bump the version AND the hash together:
+#   curl -fsSL https://registry.npmjs.org/pnpm/-/pnpm-<version>.tgz | sha512sum
 ARG PNPM_VERSION=11.28.8
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
+ARG PNPM_SHA512=f6988a32046b9a3f78d7d7ee0747926bbe905ff9dff73bf19abb87bd7d1906a2ac90d93f73be32b5f9e14c2899569bcb0c9c5ec8a19e083f5d71bbab6dd9e0b8
+# Fetched and checked once, on the builder's CPU. The stages below install pnpm from this file only.
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS pnpm
 ARG PNPM_VERSION
-RUN npm install -g pnpm@${PNPM_VERSION}
+ARG PNPM_SHA512
+RUN npm pack "pnpm@${PNPM_VERSION}" --pack-destination / \
+ && echo "${PNPM_SHA512}  /pnpm-${PNPM_VERSION}.tgz" | sha512sum -c - \
+ && mv "/pnpm-${PNPM_VERSION}.tgz" /pnpm.tgz
+
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
+RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
@@ -41,8 +52,7 @@ RUN pnpm --filter @petty/cli run pack
 RUN pnpm --filter @petty/web build
 
 FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS deps
-ARG PNPM_VERSION
-RUN npm install -g pnpm@${PNPM_VERSION}
+RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
@@ -65,8 +75,7 @@ LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
 # pnpm starts the app and runs the operator scripts (migrate, join-link, make-admin). npm only installs
 # it; npm, corepack and yarn then leave with their caches, because their bundled packages are what image
 # scanners flag (review S9, PETTY-291).
-ARG PNPM_VERSION
-RUN npm install -g pnpm@${PNPM_VERSION} \
+RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-* \
            /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg \
            /root/.npm /tmp/*

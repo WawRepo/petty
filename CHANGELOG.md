@@ -26,6 +26,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   shell keeps such a line in its history, and other programs can read it in the process list while
   it runs. Both now start with the command line (`petty auth login`, then `petty mcp`), which needs
   no token to copy. The by-hand way keeps the token in `~/.petty/token`.
+- The image build checks pnpm's file against a pinned SHA-512 before it installs it. Before, it took
+  whatever the registry served under that version. If you build your own image with another pnpm
+  version, set `PNPM_SHA512` with it (the Dockerfile says how).
 
 ### Fixed
 - Self-hosters: the backup command in docs/deploy.md reported success when `pg_dump` failed, and
