@@ -155,7 +155,8 @@ describe("access tokens (PETTY-164)", () => {
   it("a writing token for one drawer can neither read nor write another: document, entries, photo, wraps", async () => {
     const inside = await drawer(A, "In scope");
     const outside = await drawer(A, "Out of scope");
-    const t = tool((await makeToken(A, { role: "write", scope: [inside.id] })).token);
+    const made = await makeToken(A, { role: "write", scope: [inside.id] });
+    const t = tool(made.token);
     const got = (await A.call("GET", `/drawers/${outside.id}`)).json();
     const document = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: got.document.nonce, ciphertext: got.document.ciphertext, verification: false };
     const entry = { id: crypto.randomUUID(), line_id: outside.line, key_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", sig: "AAAA", hash: "AAAA", prev_hash: null };
@@ -176,6 +177,17 @@ describe("access tokens (PETTY-164)", () => {
     expect((await A.call("GET", `/drawers/${outside.id}/lines/${outside.line}/entries`)).json().entries).toHaveLength(0);
     expect((await t("GET", "/me/token/keys")).json().keys).toEqual([]);
     expect((await t("GET", "/me/token/bootstrap")).json().drawers.map((d: { id: string }) => d.id)).toEqual([inside.id]);
+    // the owner's app cannot hand it the other drawer's key later either: a wrap outside the scope is not kept
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+    const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    const wraps = (await A.call("GET", "/bootstrap")).json().wraps;
+    const wrapFor = async (drawerId: string) =>
+      wrapDrawerKey(await A.unwrap(wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId), A.user.pub.ecdh, true), { ecdhPrivate: A.user.keys.ecdh.privateKey, ecdhPublicB64: A.user.pub.ecdh }, pub, drawerId, 1);
+    const later = await A.call("POST", `/me/tokens/${made.res.json().id}/keys`, { keys: [{ drawer_id: outside.id, key_version: 1, wrap: await wrapFor(outside.id) }] });
+    expect(later.statusCode).toBe(400);
+    expect(later.json().code).toBe("OutOfScope");
+    expect((await A.call("POST", `/me/tokens/${made.res.json().id}/keys`, { keys: [{ drawer_id: inside.id, key_version: 1, wrap: await wrapFor(inside.id) }] })).statusCode).toBe(204);
+    expect((await t("GET", "/me/token/keys")).json().keys.map((k: { drawer_id: string }) => k.drawer_id)).toEqual([inside.id]);
     // its own drawer is open to it: the same calls pass the scope check there
     expect((await t("GET", `/drawers/${inside.id}`)).statusCode).toBe(200);
     expect((await t("GET", `/drawers/${inside.id}/lines/${inside.line}/entries`)).statusCode).toBe(200);

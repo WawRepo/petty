@@ -39,15 +39,15 @@ export async function deviceRoutes(app: FastifyInstance) {
   /** The tool asks. No session: this is how a tool without one begins. Limited per address. */
   app.post("/device/code", async (req, reply) => {
     if (!(await checkRate(`device-code:${clientIp(req)}`, 10, 60 * 60_000))) throw tooMany();
-    // PETTY-451: a command line from before the 20-letter code sends none. It is told so by name, because
-    // it prints this code; the shorter code is not made for it.
-    if (typeof req.body === "object" && req.body !== null && !("user_code" in req.body)) throw badRequest("CommandLineTooOld", "this command line is older than this Petty: install the one that goes with it");
     const body = DeviceCodeRequest.parse(req.body);
     try {
       await importEcdhPublic(body.cli_pub);
     } catch {
       throw badRequest("DeviceKeyInvalid");
     }
+    // PETTY-451: a command line from before the 20-letter code sends none. It is told so by name, because
+    // it prints this code; the shorter code is not made for it.
+    if (!body.user_code) throw badRequest("CommandLineTooOld", "this command line is older than this Petty: install the one that goes with it");
     const userCode = body.user_code;
     const deviceCode = randomToken(32);
     const { rows } = await apiPool.query<{ id: string }>(

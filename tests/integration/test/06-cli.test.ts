@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { deviceKeyPair, deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
+import { deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, ORIGIN, newUser } from "../lib.js";
@@ -83,11 +83,12 @@ describe("petty, the shipped command line (PETTY-274)", () => {
   });
 
   it("tells a command line that sends no code of its own to update, and starts no sign-in for it (PETTY-451)", async () => {
-    const key = await deviceKeyPair();
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+    const cliPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
     // what `petty auth login` sent before the 20-letter code
     const res = await fetch(`${API}/device/code`, {
       method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `203.0.113.${10 + Math.floor(Math.random() * 200)}` },
-      body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-older", role: "read", expires_days: 30 }),
+      body: JSON.stringify({ cli_pub: cliPub, client_name: "petty on it-older", role: "read", expires_days: 30 }),
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { code: string; user_code?: string };
