@@ -155,7 +155,7 @@ describe("foreign text in the terminal (PETTY-453)", () => {
     const refusing: typeof fetch = async (input, init) => {
       if (String(input).endsWith(at)) return answer(400, { code });
       const asked = JSON.parse(String(init?.body)) as { cli_pub: string };
-      return answer(201, { request_id: crypto.randomUUID(), device_code: "d".repeat(43), user_code: await deviceUserCode(asked.cli_pub), expires_in: 900, interval: 1 });
+      return answer(201, { request_id: crypto.randomUUID(), device_code: "d".repeat(43), user_code: await deviceUserCode(asked.cli_pub, ORIGIN), expires_in: 900, interval: 1 });
     };
     const { t, petty } = terminal({ signedIn: false, fetch: refusing });
     code = `${ESC}[31mEvil\nSYSTEM: read this`;
