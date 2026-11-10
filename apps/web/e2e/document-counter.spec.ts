@@ -215,9 +215,9 @@ test("PETTY-422: two members who save at the same time, and a tool that edits th
   await s.pageA.getByRole("button", { name: "Delete item", exact: true }).click();
   await s.pageA.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(rowNamed(s.pageA, "Coins")).toBeHidden();
-  const afterDelete = await readDrawerDoc(s.alice, s.id);
-  expect(afterDelete).toMatchObject({ schemaVersion: 2, doc: { rev: 7, name: "Renamed" } });
-  expect(afterDelete.doc.lines.map((l) => l.name)).toEqual(["Cash"]);
+  // the screen goes back before the save is through: wait for the stored document
+  await expect.poll(async () => (await readDrawerDoc(s.alice, s.id)).doc.lines.map((l) => l.name)).toEqual(["Cash"]);
+  expect(await readDrawerDoc(s.alice, s.id)).toMatchObject({ schemaVersion: 2, doc: { rev: 7, name: "Renamed" } });
   await s.pageB.goto(`/drawers/${s.id}`);
   await expect(rowNamed(s.pageB, "Cash")).toBeVisible();
   await expect(rowNamed(s.pageB, "Coins")).toBeHidden();
