@@ -112,6 +112,29 @@ number, also when it adds features, and a new minor or major is started by hand 
   lookup, and `RATE_LIMIT_PER_MINUTE`) counts an IPv6 client by its /64 network, because one home or
   phone connection holds a whole /64. IPv4 is counted per address as before, also when the address
   arrives written as IPv6 (`::ffff:a.b.c.d`). Counts of IPv6 clients start anew with this upgrade.
+- Changing a drawer's key and deleting an item now need proof that your vault is open, as deleting a
+  drawer already does: the app signs a one-time challenge from the server with your account key.
+  Being signed in is not enough for either. When a member is removed, another member's app may still
+  finish the key change that one app began; each app proves its own key, for every step.
+- Every field the server stores now has a size, taken from what the apps really write. A nonce is
+  exactly 12 bytes and a wrapped drawer key 40; salts, public keys, vault copies, signatures, your own
+  settings document and a token's key bundle each have their range. An entry or a drawer's document
+  cannot be smaller than the apps write it, so every stored row counts against the storage limit
+  (`STORAGE_QUOTA_MB`). A key change keeps the size limits of entries and photos, and what it adds
+  counts against the storage limit. A request outside a limit is refused and stores nothing. What is
+  stored already stays readable as it is. The list is in `docs/deploy.md` ("Limits").
+- An account can hold 50 live access tokens (not revoked, not expired) and 20 passkeys. Revoking a
+  token now also erases its sealed key bundle and its wrapped drawer keys on the server; before, only
+  deleting the account did. The same happens to a token that has expired, when you next make one. A
+  token gets wrapped drawer keys only for key versions that you hold.
+
+### Changed
+- **Before you upgrade:** a browser that still runs the web app from before this release cannot change
+  a drawer's key or delete an item. The server answers 403 `CustodyProofRequired` and changes nothing;
+  a key change that is waiting finishes by itself after the app has updated (a reload does it). A
+  script that calls `POST /drawers/:id/rotation`, `PUT /drawers/:id/rotation/batch` or
+  `POST /drawers/:id/lines/:lineId/delete` must now send a `proof`, as for `DELETE /drawers/:id`. The
+  command line and the Claude add-on never call these and are not affected.
 
 ## [1.5.32] — 2026-11-04
 

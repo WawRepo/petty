@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
-import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
+import { createDrawerKey, createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, reseal, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
+import { applyOp, fold, newDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
+import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, compose, http, newUser } from "../lib.js";
 
@@ -155,7 +156,7 @@ describe("household", () => {
 
   it("a broken document can be put back by the owner (PETTY-183)", async () => {
     const got = (await ann.call("GET", `/drawers/${drawerId}`)).json();
-    const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(40))), verification: false };
+    const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))), verification: false };
     expect((await ben.call("PUT", `/drawers/${drawerId}/document`, junk)).statusCode).toBe(200);
     expect(await documentName(ann)).toBeNull();
     const [last] = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history;
@@ -177,6 +178,69 @@ describe("household", () => {
     expect((await ann.call("DELETE", `/drawers/${doomed.id}`)).statusCode).toBe(400);
     expect((await ann.call("DELETE", `/drawers/${doomed.id}`, { proof: await ann.proof() })).statusCode).toBe(204);
     expect((await ann.call("GET", `/drawers/${doomed.id}`)).statusCode).toBe(404);
+  });
+
+  it("a new drawer key and deleting a line need a custody proof; a request without one changes nothing (PETTY-440, PETTY-441)", async () => {
+    const line = crypto.randomUUID();
+    const doc = applyOp(newDocument("Spare tin"), { type: "add_line", line: { id: line, kind: "money", name: "Cash", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const d = await ann.createDrawer("Spare tin", doc);
+    expect(d.res.statusCode).toBe(201);
+    expect((await ann.postEntry(d.id, d.key, line, "add", 700)).res.statusCode).toBe(201);
+    expect((await ann.postEntry(d.id, d.key, line, "add", 300)).res.statusCode).toBe(201);
+    const exported = async () => (await ann.call("GET", `/drawers/${d.id}/export`)).json() as { drawer: { key_version: number; version: number }; document: { author_id: string; nonce: string; ciphertext: string; key_version: number }; entries: { id: string; line_id: string; author_id: string; nonce: string; ciphertext: string; key_version: number }[] };
+    const start = await exported();
+
+    // the next key, made and wrapped the way the web app does it
+    const { key: key2, selfWrap } = await createDrawerKey(ann.sender, d.id, 2);
+    const wraps = [{ user_id: ann.id, wrap: selfWrap }];
+    // as a web app from before this change sends it: refused, and the drawer keeps its key
+    const oldStart = await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps });
+    expect(oldStart.statusCode).toBe(403);
+    expect(oldStart.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(start);
+    // a proof signed with a key that is not the account's
+    const foreign = await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps, proof: await ann.proof(ben.user.keys.ecdsa.privateKey) });
+    expect(foreign.statusCode).toBe(403);
+    expect(foreign.json().code).toBe("CustodyProofInvalid");
+    expect((await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps, proof: await ann.proof() })).statusCode).toBe(201);
+
+    const pending = await exported();
+    expect(pending.drawer.key_version).toBe(2);
+    const entries = [];
+    for (const r of pending.entries) {
+      const sealed = (await reseal(d.key, key2, { record_type: "entry", record_id: r.id, drawer_id: d.id, line_id: r.line_id, author_id: r.author_id, key_version: r.key_version, schema_version: 1 }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) }, 2)).sealed;
+      entries.push({ id: r.id, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+    }
+    const opened = await openDocument(d.key, { record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: pending.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(pending.document.nonce), ciphertext: fromB64(pending.document.ciphertext) });
+    const sealedDoc = await ann.sealDoc(d.id, key2, opened as DrawerDocument, 2);
+    const batch = { to_version: 2, entries, document: { key_version: 2, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext) } };
+    // a batch without a proof: refused, every row stays as it was, and the rotation waits
+    const oldBatch = await ann.call("PUT", `/drawers/${d.id}/rotation/batch`, batch);
+    expect(oldBatch.statusCode).toBe(403);
+    expect(oldBatch.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(pending);
+    expect((await ann.call("GET", `/drawers/${d.id}/rotation`)).json()).toMatchObject({ pending_entries: 2, document_pending: true, completed: false });
+    const done = await ann.call("PUT", `/drawers/${d.id}/rotation/batch`, { ...batch, proof: await ann.proof() });
+    expect(done.statusCode).toBe(200);
+    expect(done.json()).toMatchObject({ pending_entries: 0, document_pending: false, completed: true });
+    // the re-sealed rows open under the new key and hold what was written
+    const after = await exported();
+    const amounts = [];
+    for (const r of after.entries) amounts.push((await openEntryUnverified(key2, { record_type: "entry", record_id: r.id, drawer_id: d.id, line_id: r.line_id, author_id: r.author_id, key_version: 2, schema_version: 1 }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) })).amount);
+    expect(amounts).toEqual([700, 300]);
+
+    // deleting the line: the same rule
+    const without = applyOp(opened as DrawerDocument, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
+    const sealedWithout = await ann.sealDoc(d.id, key2, without, 2);
+    const body = { document: { key_version: 2, schema_version: 1, nonce: toB64(sealedWithout.nonce), ciphertext: toB64(sealedWithout.ciphertext), base_version: after.drawer.version } };
+    const oldDelete = await ann.call("POST", `/drawers/${d.id}/lines/${line}/delete`, body);
+    expect(oldDelete.statusCode).toBe(403);
+    expect(oldDelete.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(after);
+    const deleted = await ann.call("POST", `/drawers/${d.id}/lines/${line}/delete`, { ...body, proof: await ann.proof() });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json().deleted_entries).toBe(2);
+    expect((await exported()).entries).toEqual([]);
   });
 
   it("a new recovery code replaces only the recovery copy, and only with proof of the keys (PETTY-200)", async () => {

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, UserDocRow, UserLookup, UserLookupBody, VaultBlob, type Me as MeT } from "@petty/protocol";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, MAX_PASSKEYS, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, StoredVaultBlob, UserDocRow, UserLookup, UserLookupBody, type Me as MeT } from "@petty/protocol";
 import { config } from "../config.js";
 import { storageUsed } from "../lib/quota.js";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
@@ -91,7 +91,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const r = (await apiPool.query<{ recovery_vault: unknown }>("select recovery_vault from users where id = $1", [me.id])).rows[0];
     if (!r?.recovery_vault) throw notFound("RecoveryVaultNotFound");
-    return { recovery_vault: VaultBlob.parse(r.recovery_vault) };
+    return { recovery_vault: StoredVaultBlob.parse(r.recovery_vault) };
   });
 
   /** A challenge for the destructive custody calls below (security review SR-2). Five minutes, single use. */
@@ -157,6 +157,9 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const v = body.passkey.vault;
     if (v.kind !== "passkey" || v.pub.ecdh !== u.ecdh_pub || v.pub.ecdsa !== u.ecdsa_pub) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
     const pk = PasskeyVault.parse(body.passkey);
+    // PETTY-442: a limit per account. Saving a passkey the account already has (the same credential) replaces it and always passes.
+    const others = (await apiPool.query<{ n: string }>("select count(*)::text as n from passkey_vaults where user_id = $1 and credential_id <> $2", [me.id, pk.credential_id])).rows[0];
+    if (Number(others?.n ?? 0) >= MAX_PASSKEYS) throw conflict("PasskeyLimit", "remove a passkey before adding another", { max: MAX_PASSKEYS });
     const row = (await apiPool.query<PasskeyRow>(
       `insert into passkey_vaults (user_id, credential_id, prf_salt, vault, label, transports) values ($1, $2, $3, $4, $5, $6)
        on conflict (user_id, credential_id) do update set prf_salt = excluded.prf_salt, vault = excluded.vault, label = excluded.label, transports = excluded.transports, created_at = now()

@@ -6,7 +6,7 @@
  */
 import { createPasskeyVault, createRecoveryVault, createVault, generateRecoveryCode, keyPairsOf, signCustodyChallenge, unlockPasskeyVault, unlockVault, zero, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
 import { CustodyChallenge, PasskeyEntry, type CustodyProof, type Me } from "@petty/protocol";
-import { api } from "./api.js";
+import { api, ApiError } from "./api.js";
 import { evaluatePrf, registerPasskey, rememberPasskey } from "./passkey.js";
 
 /**
@@ -18,6 +18,29 @@ import { evaluatePrf, registerPasskey, rememberPasskey } from "./passkey.js";
 export async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProof> {
   const c = CustodyChallenge.parse(await api<unknown>("POST", "/me/custody-challenge"));
   return { challenge: c.challenge, signature: await signCustodyChallenge(ecdsaPrivate, c.challenge) };
+}
+
+/**
+ * One call that needs a custody proof, for work the app does by itself and in steps: a key rotation
+ * (PETTY-440) and deleting a line (PETTY-441). The server keeps one challenge per person and each proof
+ * works once, so these calls go one after another, each with a fresh proof. When another tab or device
+ * asked for a challenge in between, the server answers 403 CustodyProofRequired and the call is made again.
+ */
+let proved: Promise<unknown> = Promise.resolve();
+export function withCustodyProof<T>(ecdsaPrivate: CryptoKey, call: (proof: CustodyProof) => Promise<T>): Promise<T> {
+  const run = async (): Promise<T> => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await call(await custodyProof(ecdsaPrivate));
+      } catch (e) {
+        if (attempt < 2 && e instanceof ApiError && e.code === "CustodyProofRequired") continue;
+        throw e;
+      }
+    }
+  };
+  const next = proved.then(run, run);
+  proved = next.catch(() => undefined);
+  return next;
 }
 
 const pw = (loginPassword?: string) => (loginPassword ? { password: loginPassword } : {});

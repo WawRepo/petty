@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
 import { badRequest, conflict, forbidden, notFound, tooLarge } from "../lib/errors.js";
 import { assertQuota } from "../lib/quota.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
-import { consumeCustodyProof } from "../lib/custody.js";
+import { consumeCustodyProof, requireProofField } from "../lib/custody.js";
 import { drawerSummary, entryRow, sealedRow, userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import { withTx, type Queryable } from "../lib/tx.js";
@@ -25,6 +25,16 @@ export async function membersOf(db: Queryable, drawerIds: string[]): Promise<Rec
   const out: Record<string, Member[]> = {};
   for (const r of rows) (out[r.drawer_id] ??= []).push({ user_id: r.user_id, display_name: r.display_name, role: r.role, keys: userKeys(r) });
   return out;
+}
+
+/**
+ * PETTY-442: a sealed document is padded to 16 KiB, so no client writes a smaller one. The quota counts
+ * ciphertext bytes; with this floor a drawer, and each version kept in the history, always costs storage.
+ */
+function documentBytes(drawerId: string, b64: string): Buffer {
+  const ciphertext = fromB64(b64);
+  if (ciphertext.length < DOCUMENT_MIN_CIPHERTEXT) throw badRequest("DocumentTooSmall", "document under the size every client writes", { drawer_id: drawerId, min_bytes: DOCUMENT_MIN_CIPHERTEXT });
+  return ciphertext;
 }
 
 async function lockDrawer(db: Queryable, drawerId: string): Promise<DrawerRow> {
@@ -56,7 +66,7 @@ async function writeDocument(db: Queryable, drawerId: string, userId: string, bo
   const d = await lockDrawer(db, drawerId);
   if (d.version !== body.base_version) throw conflict("VersionConflict", "document changed since you loaded it", { drawer_id: drawerId, current_version: d.version });
   if (d.key_version !== body.key_version) throw conflict("KeyVersionMismatch", "drawer key rotated; re-seal with the current key", { drawer_id: drawerId, key_version: d.key_version });
-  const ciphertext = fromB64(body.ciphertext);
+  const ciphertext = documentBytes(drawerId, body.ciphertext);
   if (checkQuota) await assertQuota(db, d.owner_id, ciphertext.length);
   await keepHistory(db, drawerId, d.version, userId, tokenId);
   await db.query(
@@ -125,7 +135,7 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = CreateDrawerBody.parse(req.body);
     if (body.self_wrap.drawer_id !== body.id || body.self_wrap.key_version !== 1 || body.document.key_version !== 1) throw badRequest("WrapMismatch", "self wrap must be for this drawer at key version 1");
-    const ciphertext = fromB64(body.document.ciphertext);
+    const ciphertext = documentBytes(body.id, body.document.ciphertext);
     const d = await withTx(apiPool, async (db) => {
       const exists = await db.query("select 1 from drawers where id = $1", [body.id]);
       if (exists.rowCount) throw conflict("DrawerExists", "drawer id already used", { drawer_id: body.id });
@@ -257,12 +267,16 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
    * Write role. The new document (without the line) is written under the version
    * check first; then the line's entries are removed as petty_maint. If the second
    * step fails, the entries are orphaned and unreadable, never resurrected.
+   * PETTY-441: the entries go for good and no history keeps them, so like deleting a drawer this
+   * needs a custody proof. It is checked before anything is written. Tokens cannot call this route.
    */
   app.post<{ Params: { id: string; lineId: string } }>("/drawers/:id/lines/:lineId/delete", async (req) => {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "write");
+    requireProofField(req.body);
     const body = DeleteLineBody.parse(req.body);
     if (req.token && body.document.verification) throw forbidden("TokenCannotVerify", { drawer_id: req.params.id });
+    await consumeCustodyProof(req, me.id, body.proof);
     const res = await withTx(apiPool, (db) => writeDocument(db, req.params.id, me.id, body.document, req.token?.id ?? null, false));
     const { rows } = await maintPool.query<{ n: string }>("select delete_line($1, $2) as n", [req.params.id, req.params.lineId]);
     return { ...res, deleted_entries: Number(rows[0]?.n ?? 0) };
