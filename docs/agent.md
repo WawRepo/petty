@@ -170,9 +170,15 @@ drawers without you making a new token. Open Petty once after adding a drawer.
 - The token and your keys stay on your machine. The Petty server never sees the secret half.
 - Whatever you ask about reaches the model, because you asked. End-to-end encryption covers the
   server and the network, not the assistant you chose to talk to.
-- Item names, tags and comments are your own text. The tools hand them over as labelled data, and
-  writing is always a separate, explicit tool call, so text inside a drawer cannot act as an
-  instruction on its own. Read a proposed write before you accept it.
+- Item names, tags, places, notes and comments are text that you, or anyone you share a drawer with,
+  typed. The tools hand each one to the model as one quoted value on one line, so it cannot pass for a
+  tool's own words. So do they with anything else Petty did not word itself: a currency code that is
+  not plain letters and digits, an old item id, the text of an unexpected error.
+- **The quotes mark that text as data. They do not stop a model from following it.** A model may still
+  act on a sentence it reads inside a name or a comment, and if the app gives it other tools (the web,
+  mail, a shell), it may use those too. Writing in Petty is always a separate, explicit tool call: read
+  a proposed action before you accept it. Give an assistant that reads a shared drawer only the tools
+  it needs, and share a drawer only with people you trust with that.
 - A token cannot replace your vault, delete your account, share a drawer, export, use admin, or
   make another token. Those are refused by the server.
 

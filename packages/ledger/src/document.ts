@@ -159,6 +159,8 @@ export function parsePlace(text: string): string[] { return text.split(/[\s,/>â€
 export function placeLabel(path: readonly string[]): string { return path.join(" â€º "); }
 export function hasTag(doc: DrawerDocument, folded: string): boolean { return tagsOf(doc).some((t) => foldText(t) === folded); }
 
+const NEW_LINE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function applyOp(doc: DrawerDocument, op: DocumentOp, ctx: OpContext): DrawerDocument {
   switch (op.type) {
     case "rename_drawer":
@@ -197,6 +199,8 @@ export function applyOp(doc: DrawerDocument, op: DocumentOp, ctx: OpContext): Dr
       return replaceLine(doc, i, assertLine({ ...rest, counted: op.counted } as Line));
     }
     case "add_line": {
+      // PETTY-414: a new item's id is a UUID. An id already in a document is read as it is (assertLine).
+      if (typeof op.line.id !== "string" || !NEW_LINE_ID.test(op.line.id)) throw new LedgerError("bad_line_id");
       if (doc.lines.some((l) => l.id === op.line.id)) throw new LedgerError("line_exists", { line_id: op.line.id });
       if (doc.lines.length >= MAX_LINES) throw new LedgerError("too_many_lines");
       const line = assertLine(op.line);

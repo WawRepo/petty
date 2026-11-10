@@ -4,48 +4,50 @@ import { LedgerError, applyOp, applyOps, assertDocumentShape, foldText, hasTag, 
 const money = (id: string, currency = "PLN", exponent = 2): Line => ({ id, kind: "money", name: `${currency} ${id}`, currency, exponent });
 const single = (id: string): Line => ({ id, kind: "single", name: "Passport", text: "" });
 const ctx = (withEntries: string[] = []) => ({ lineHasEntries: (id: string) => withEntries.includes(id) });
+// a new item's id is a UUID (PETTY-414)
+const [A, B, C, M1] = ["a", "b", "c", "d"].map((x) => `00000000-0000-4000-8000-00000000000${x}`) as [string, string, string, string];
 
 describe("document ops", () => {
   it("builds a document by applying operations without mutating the input", () => {
     const d0 = newDocument("Kitchen");
-    const d1 = applyOps(d0, [{ type: "add_line", line: money("a") }, { type: "add_line", line: money("b", "eur") }, { type: "add_line", line: single("c") }], ctx());
+    const d1 = applyOps(d0, [{ type: "add_line", line: money(A) }, { type: "add_line", line: money(B, "eur") }, { type: "add_line", line: single(C) }], ctx());
     expect(d0.lines.length).toBe(0);
-    expect(d1.lines.map((l) => l.id)).toEqual(["a", "b", "c"]);
+    expect(d1.lines.map((l) => l.id)).toEqual([A, B, C]);
     expect((d1.lines[1] as { currency: string }).currency).toBe("EUR");
   });
 
   it("move_up / move_down / move_line / reorder work by keyboard semantics", () => {
-    const d = applyOps(newDocument("K"), ["a", "b", "c"].map((id) => ({ type: "add_line" as const, line: money(id) })), ctx());
-    expect(applyOp(d, { type: "move_up", line_id: "c" }, ctx()).lines.map((l) => l.id)).toEqual(["a", "c", "b"]);
-    expect(applyOp(d, { type: "move_up", line_id: "a" }, ctx()).lines.map((l) => l.id)).toEqual(["a", "b", "c"]);
-    expect(applyOp(d, { type: "move_down", line_id: "a" }, ctx()).lines.map((l) => l.id)).toEqual(["b", "a", "c"]);
-    expect(applyOp(d, { type: "move_line", line_id: "a", to: 99 }, ctx()).lines.map((l) => l.id)).toEqual(["b", "c", "a"]);
-    expect(applyOp(d, { type: "reorder", ids: ["c", "a", "b"] }, ctx()).lines.map((l) => l.id)).toEqual(["c", "a", "b"]);
-    expect(() => applyOp(d, { type: "reorder", ids: ["c", "a"] }, ctx())).toThrow(LedgerError);
+    const d = applyOps(newDocument("K"), [A, B, C].map((id) => ({ type: "add_line" as const, line: money(id) })), ctx());
+    expect(applyOp(d, { type: "move_up", line_id: C }, ctx()).lines.map((l) => l.id)).toEqual([A, C, B]);
+    expect(applyOp(d, { type: "move_up", line_id: A }, ctx()).lines.map((l) => l.id)).toEqual([A, B, C]);
+    expect(applyOp(d, { type: "move_down", line_id: A }, ctx()).lines.map((l) => l.id)).toEqual([B, A, C]);
+    expect(applyOp(d, { type: "move_line", line_id: A, to: 99 }, ctx()).lines.map((l) => l.id)).toEqual([B, C, A]);
+    expect(applyOp(d, { type: "reorder", ids: [C, A, B] }, ctx()).lines.map((l) => l.id)).toEqual([C, A, B]);
+    expect(() => applyOp(d, { type: "reorder", ids: [C, A] }, ctx())).toThrow(LedgerError);
   });
 
   it("currency relabel keeps the exponent; kind locks once the line has entries", () => {
-    const d = applyOp(newDocument("K"), { type: "add_line", line: money("a", "USD", 2) }, ctx());
-    const relabelled = applyOp(d, { type: "set_currency", line_id: "a", currency: "jpy" }, ctx());
+    const d = applyOp(newDocument("K"), { type: "add_line", line: money(A, "USD", 2) }, ctx());
+    const relabelled = applyOp(d, { type: "set_currency", line_id: A, currency: "jpy" }, ctx());
     expect(relabelled.lines[0]).toMatchObject({ currency: "JPY", exponent: 2 });
-    const toCountable: Line = { id: "a", kind: "countable", name: "Balls", unit: "balls" };
-    expect(applyOp(d, { type: "change_kind", line_id: "a", line: toCountable }, ctx()).lines[0]?.kind).toBe("countable");
-    expect(() => applyOp(d, { type: "change_kind", line_id: "a", line: toCountable }, ctx(["a"]))).toThrow(/kind_locked/);
+    const toCountable: Line = { id: A, kind: "countable", name: "Balls", unit: "balls" };
+    expect(applyOp(d, { type: "change_kind", line_id: A, line: toCountable }, ctx()).lines[0]?.kind).toBe("countable");
+    expect(() => applyOp(d, { type: "change_kind", line_id: A, line: toCountable }, ctx([A]))).toThrow(/kind_locked/);
   });
 
   it("ops that no longer apply after a concurrent change throw a coded error (offline replay)", () => {
-    const d = applyOp(newDocument("K"), { type: "add_line", line: money("a") }, ctx());
-    const someoneRemovedIt = applyOp(d, { type: "remove_line", line_id: "a" }, ctx());
-    expect(() => applyOp(someoneRemovedIt, { type: "rename_line", line_id: "a", name: "x" }, ctx())).toThrow(/line_not_found/);
-    expect(() => applyOp(d, { type: "add_line", line: money("a") }, ctx())).toThrow(/line_exists/);
-    expect(() => applyOp(d, { type: "set_unit", line_id: "a", unit: "x" }, ctx())).toThrow(/not_countable_line/);
+    const d = applyOp(newDocument("K"), { type: "add_line", line: money(A) }, ctx());
+    const someoneRemovedIt = applyOp(d, { type: "remove_line", line_id: A }, ctx());
+    expect(() => applyOp(someoneRemovedIt, { type: "rename_line", line_id: A, name: "x" }, ctx())).toThrow(/line_not_found/);
+    expect(() => applyOp(d, { type: "add_line", line: money(A) }, ctx())).toThrow(/line_exists/);
+    expect(() => applyOp(d, { type: "set_unit", line_id: A, unit: "x" }, ctx())).toThrow(/not_countable_line/);
     expect(() => applyOp(d, { type: "rename_drawer", name: "   " }, ctx())).toThrow(/bad_name/);
   });
 
   it("assertDocumentShape rejects junk and duplicate line ids", () => {
-    const good = applyOp(newDocument("K"), { type: "add_line", line: money("a") }, ctx());
+    const good = applyOp(newDocument("K"), { type: "add_line", line: money(A) }, ctx());
     expect(() => assertDocumentShape(good)).not.toThrow();
-    expect(() => assertDocumentShape({ ...good, lines: [money("a"), money("a")] })).toThrow(/bad_document/);
+    expect(() => assertDocumentShape({ ...good, lines: [money(A), money(A)] })).toThrow(/bad_document/);
     expect(() => assertDocumentShape({ v: 2 })).toThrow(/bad_document/);
     expect(() => assertDocumentShape({ ...good, lines: [{ id: "z", kind: "money", name: "x", currency: "EUR", exponent: 99 }] })).toThrow(/bad_exponent/);
   });
@@ -115,7 +117,7 @@ describe("totals", () => {
 });
 
 describe("line extras and drawer icon (PETTY-64)", () => {
-  const money = { id: "m1", kind: "money" as const, name: "Cash", currency: "PLN", exponent: 2 };
+  const money = { id: M1, kind: "money" as const, name: "Cash", currency: "PLN", exponent: 2 };
   const base = () => applyOp(newDocument("K"), { type: "add_line", line: money }, ctx());
   it("a line keeps its icon, tags and counted flag through validation; defaults are dropped", () => {
     const d = applyOp(newDocument("K"), { type: "add_line", line: { ...money, icon: "banknote", tags: [" Cash ", "cash", "Valuables"], counted: true } }, ctx());
@@ -124,24 +126,24 @@ describe("line extras and drawer icon (PETTY-64)", () => {
     expect(lineTagsOf(d.lines[0]!)).toEqual(["Cash", "Valuables"]);
   });
   it("set_line_counted false marks the line; true removes the flag", () => {
-    const off = applyOp(base(), { type: "set_line_counted", line_id: "m1", counted: false }, ctx());
+    const off = applyOp(base(), { type: "set_line_counted", line_id: M1, counted: false }, ctx());
     expect(off.lines[0]!.counted).toBe(false);
     expect(lineCounted(off.lines[0]!)).toBe(false);
-    const on = applyOp(off, { type: "set_line_counted", line_id: "m1", counted: true }, ctx());
+    const on = applyOp(off, { type: "set_line_counted", line_id: M1, counted: true }, ctx());
     expect("counted" in on.lines[0]!).toBe(false);
   });
   it("set_line_tags normalises like drawer tags; empty clears", () => {
-    const d = applyOp(base(), { type: "set_line_tags", line_id: "m1", tags: ["electronics", " ELECTRONICS", "home"] }, ctx());
+    const d = applyOp(base(), { type: "set_line_tags", line_id: M1, tags: ["electronics", " ELECTRONICS", "home"] }, ctx());
     expect(d.lines[0]!.tags).toEqual(["electronics", "home"]);
-    expect("tags" in applyOp(d, { type: "set_line_tags", line_id: "m1", tags: [] }, ctx()).lines[0]!).toBe(false);
+    expect("tags" in applyOp(d, { type: "set_line_tags", line_id: M1, tags: [] }, ctx()).lines[0]!).toBe(false);
   });
   it("icons are short slugs; null clears", () => {
-    const d = applyOp(applyOp(base(), { type: "set_line_icon", line_id: "m1", icon: "gem" }, ctx()), { type: "set_icon", icon: "home" }, ctx());
+    const d = applyOp(applyOp(base(), { type: "set_line_icon", line_id: M1, icon: "gem" }, ctx()), { type: "set_icon", icon: "home" }, ctx());
     expect(d.lines[0]!.icon).toBe("gem");
     expect(iconOf(d)).toBe("home");
-    expect(() => applyOp(d, { type: "set_line_icon", line_id: "m1", icon: "Not a slug!" }, ctx())).toThrow(LedgerError);
+    expect(() => applyOp(d, { type: "set_line_icon", line_id: M1, icon: "Not a slug!" }, ctx())).toThrow(LedgerError);
     expect(() => applyOp(d, { type: "set_icon", icon: "" }, ctx())).toThrow(LedgerError);
-    const cleared = applyOp(applyOp(d, { type: "set_line_icon", line_id: "m1", icon: null }, ctx()), { type: "set_icon", icon: null }, ctx());
+    const cleared = applyOp(applyOp(d, { type: "set_line_icon", line_id: M1, icon: null }, ctx()), { type: "set_icon", icon: null }, ctx());
     expect("icon" in cleared.lines[0]!).toBe(false);
     expect(iconOf(cleared)).toBeNull();
   });
@@ -160,7 +162,7 @@ describe("line extras and drawer icon (PETTY-64)", () => {
     expect(() => assertDocumentShape({ ...d, color: "Not a slug!" })).toThrow(LedgerError);
   });
   it("assertDocumentShape accepts the new fields and rejects a bad icon", () => {
-    const d = applyOp(applyOp(base(), { type: "set_line_tags", line_id: "m1", tags: ["cash"] }, ctx()), { type: "set_icon", icon: "home" }, ctx());
+    const d = applyOp(applyOp(base(), { type: "set_line_tags", line_id: M1, tags: ["cash"] }, ctx()), { type: "set_icon", icon: "home" }, ctx());
     expect(() => assertDocumentShape(JSON.parse(JSON.stringify(d)))).not.toThrow();
     expect(() => assertDocumentShape({ ...d, icon: 5 })).toThrow(LedgerError);
     expect(() => assertDocumentShape({ ...d, lines: [{ ...money, counted: "no" }] })).toThrow(LedgerError);

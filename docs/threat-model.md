@@ -47,6 +47,12 @@ Users should be told these plainly.
   the third party, not the risk class.
 - **A malicious collaborator.** Anyone you share a drawer with can read and copy everything in it.
   Removal stops future access, never past access.
+- **Text in a shared drawer that steers an AI assistant.** Anyone who may write to a drawer can put a
+  sentence that reads like an instruction into a name, a tag, a note or a comment. The AI add-on hands
+  all such text to the model as quoted values, and the command line shows its control characters as
+  `?`. That marks the text as data; it does not stop a model from following it. An assistant that also
+  has other tools (the web, mail, a shell) could be talked into sending out what its token can read.
+  See [agent.md](agent.md), *What this does and does not protect*.
 - **Script injection (XSS) in the app itself.** Injected code in the page can reach keys held in
   memory. Countered by the strict CSP, Trusted Types in local mode, no raw HTML rendering, and
   non-extractable `CryptoKey`s — reduced, not eliminated.

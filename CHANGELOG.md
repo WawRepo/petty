@@ -8,6 +8,16 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The AI add-on quotes everything in a tool's answer that Petty did not word itself, not only names,
+  tags and comments: a currency code that is not plain letters and digits, an item id that is not a
+  UUID, the drawer names in a "more than one matches" answer, and the text of an unexpected error. A
+  refusal code from the server is shown only if it is a known one, and an entry's time only if it is
+  a date. The quotes mark text as data; a model can still follow it, as `docs/agent.md` now says.
+- A new item's id must be a UUID, and control characters are dropped from a currency code as it is
+  saved. An older item id already in a drawer is still read; a code already there is cleaned the next
+  time its item is changed.
+
 ## [1.5.32] — 2026-11-04
 
 ### Changed
