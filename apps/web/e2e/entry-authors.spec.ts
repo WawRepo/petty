@@ -196,6 +196,7 @@ test("PETTY-413: an entry that another member's tool wrote verifies under that m
   await pageA.getByTestId("token-new").click();
   await pageA.getByTestId("token-name").fill("Writer");
   await pageA.getByTestId("token-write").check();
+  await pageA.getByTestId("token-scope-all").check(); // PETTY-452: no token without a choice of drawers
   await pageA.getByTestId("token-passphrase").fill(alice.passphrase);
   await pageA.getByTestId("token-create").click();
   const token = (await pageA.getByTestId("token-value").innerText()).trim();
