@@ -53,8 +53,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   as soon as the new version is ready.
 - For operators: do not go back to an image from before this release once people have used it. The
   older web app cannot open the documents that this one saved; it shows those drawers as closed. No
-  data is lost, and everything opens again when you return to this release. The server now refuses a
-  drawer document in an older format than the stored one (409 `DocumentFormatOlder`).
+  data is lost, and everything opens again when you return to this release, with one exception: an
+  owner who puts back an earlier version of a drawer while the older image runs brings back a
+  document without a counter, and every app that already saw a counter for that drawer refuses it
+  after you return. The server now refuses a drawer document in an older format than the stored one
+  (409 `DocumentFormatOlder`).
 
 ## [1.5.32] — 2026-11-04
 
