@@ -28,6 +28,8 @@ export interface FoldResult {
   readonly negative: boolean;
   /** Highest seq seen, or null for an empty log. */
   readonly headSeq: number | null;
+  /** True when the sum left the exact integers at some step. `balance` is then not exact: it must not be shown, added or saved. */
+  readonly overflow: boolean;
 }
 
 /** Sorts by seq and rejects duplicate seqs, an entry that comes twice, or entries from more than one line. */
@@ -75,6 +77,7 @@ export function fold(entries: readonly LedgerEntry[]): FoldResult {
   const applied: LedgerEntry[] = [];
   const reversed = new Set<string>();
   const reversedBy = new Map<string, string>();
+  let overflow = false;
 
   for (const e of window) {
     const p = e.entry;
@@ -82,6 +85,7 @@ export function fold(entries: readonly LedgerEntry[]): FoldResult {
       case "add":
       case "withdraw":
         balance += p.amount;
+        if (!Number.isSafeInteger(balance)) overflow = true;
         applied.push(e);
         break;
       case "reverse": {
@@ -91,6 +95,7 @@ export function fold(entries: readonly LedgerEntry[]): FoldResult {
         if (reversed.has(target.entry.id)) { skipped.push({ entry: e, code: "reverse_duplicate" }); break; }
         if (p.amount !== -target.entry.amount) { skipped.push({ entry: e, code: "reverse_amount_mismatch" }); break; }
         balance += p.amount;
+        if (!Number.isSafeInteger(balance)) overflow = true;
         reversed.add(target.entry.id);
         reversedBy.set(target.entry.id, p.id);
         applied.push(e);
@@ -110,5 +115,6 @@ export function fold(entries: readonly LedgerEntry[]): FoldResult {
     reversedBy,
     negative: balance < 0,
     headSeq: sorted.length ? sorted[sorted.length - 1]!.seq : null,
+    overflow: overflow || !Number.isSafeInteger(balance),
   };
 }

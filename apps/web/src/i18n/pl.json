@@ -199,7 +199,9 @@
       "unwrap_failed": "Nie udało się otworzyć tej szuflady na tym urządzeniu. Poproś jej właściciela o ponowne udostępnienie.",
       "decrypt_failed": "Nie udało się otworzyć tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "bad_document": "Dane tej szuflady są uszkodzone. Jej właściciel może przywrócić wcześniejszą wersję.",
-      "unknown_schema": "Tę szufladę zapisała nowsza wersja Petty. Odśwież stronę, aby zaktualizować Petty."
+      "unknown_schema": "Tę szufladę zapisała nowsza wersja Petty. Odśwież stronę, aby zaktualizować Petty.",
+      "bad_entries": "Wpisy jednej z pozycji w tej szufladzie są w złej kolejności, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
+      "sum_too_large": "Kwoty w tej szufladzie dają razem liczbę zbyt dużą, aby ją pokazać, więc Petty nie pokazuje żadnej z nich. Ktoś mógł dodać wpis z błędną kwotą."
     },
     "otherDrawers": "{count, plural, one {Inna szuflada} few {Inne szuflady} many {Inne szuflady} other {Inne szuflady}}",
     "picture": {
@@ -347,6 +349,8 @@
     "deleteConfirm": "Usunąć „{name}” ze wszystkimi pozycjami i ich historią? Tego nie można cofnąć.",
     "deleteBtn": "Usuń",
     "deleteType": "Wpisz nazwę szuflady, aby potwierdzić",
+    "deleteDamagedConfirm": "Usunąć tę szufladę ze wszystkimi pozycjami i ich historią? Tego nie można cofnąć.",
+    "deleteDamagedType": "Wpisz to słowo, aby potwierdzić",
     "photoAdd": "Dodaj zdjęcie",
     "photoChange": "Zmień zdjęcie",
     "photoRemove": "Usuń zdjęcie",

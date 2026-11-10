@@ -45,6 +45,19 @@ number, also when it adds features, and a new minor or major is started by hand 
   entry sent twice is refused instead of counted twice.
 - `docs/threat-model.md` says what the remembered entry catches, and what the command line and the AI
   add-on check and do not check.
+- A drawer whose content cannot be shown no longer stops the web app. It is listed as damaged, with
+  the reason, and Home and the other drawers keep working. That covers amounts that add up to a number
+  too large to be exact, entries that are out of order, and a saved check that holds something that is
+  not a number. The app shows no amount for such a drawer and marks the total as incomplete. An icon
+  name the app does not know draws the default icon. Each drawer on Home, and each drawer's own
+  screen, is now fenced in, so a drawer that fails to draw for any other reason is shown the same way.
+- A drawer that did not open now offers the ways out on its own screen: the list of its members; for
+  its owner, "Earlier versions" (the drawer's 30-day history) and deleting the drawer; for every other
+  member, leaving it.
+- "Lock now" and signing out reach every open tab of the same browser at once: the other tabs drop
+  the keys and the opened drawers from memory.
+- With local sign-in, a sign-out made while offline is remembered and sent to the server before any
+  other request, at the next start or when the network is back, so the session ends on the server too.
 
 ## [1.5.32] — 2026-11-04
 

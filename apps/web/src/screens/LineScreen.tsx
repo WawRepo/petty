@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
 import { useMorphBack } from "../lib/nav.js";
 import { KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
 import { vtName } from "../components/DrawerArt.js";
@@ -54,9 +54,11 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
   const delta = op === "add" ? magnitude : op === "withdraw" ? -magnitude : magnitude - current;
   const next = op === "adjust" ? magnitude : current + delta;
   const warning = op === "withdraw" && magnitude > 0 ? negativeWarning(current, -magnitude) : null;
+  // PETTY-443: an amount that would take the sum past the exact integers is refused here, before the review formats it
+  const exact = Number.isSafeInteger(delta) && Number.isSafeInteger(next);
 
   function review() {
-    if (magnitude < 0) { setError(t("line.entry.invalid")); return; }
+    if (magnitude < 0 || !exact) { setError(t("line.entry.invalid")); return; }
     if (magnitude === 0 && op !== "adjust") { setError(t("line.entry.zero")); return; }
     setError(null); setStep("confirm");
   }
@@ -102,7 +104,7 @@ function EntrySheet({ view, line, op, onClose, onSaved }: { view: DrawerView; li
       </Sheet>
     );
   }
-  if (step === "confirm") {
+  if (step === "confirm" && exact) {
     return (
       <Sheet open title={t("line.entry.confirmTitle")} onClose={onClose}>
         <div className="confirm-summary" data-testid="confirm-summary">
@@ -188,6 +190,8 @@ export function LineScreen() {
   const view = state.drawers.get(id);
   const line = view?.doc?.lines.find((l) => l.id === lineId);
   const f = useMemo(() => (view && line && line.kind !== "single" ? lineFold(view, lineId) : null), [view, line, lineId]);
+  // PETTY-443: a drawer that did not open has no items to show; its own screen says why and offers the ways out
+  if (view && !view.doc) return <Navigate to={`/drawers/${id}`} replace />;
   // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
   if (!view || !line) return <><TopBar title="" titleAs="p" onBack={back} /><LineSkeleton /></>;
   const optionsButton = <button type="button" className="icon-btn" aria-label={t("drawer.lineOptions", { name: line.name })} onClick={() => setOpts("options")} data-testid="line-options">⋯</button>;

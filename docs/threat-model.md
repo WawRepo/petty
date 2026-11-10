@@ -21,9 +21,9 @@ provider, if you use a hosted one. The same code runs in both cases.
 - **The operator's staff and admins.** An admin can list, block and unblock accounts, revoke their
   sessions, restore a replaced vault blob and grant admin — and can read no drawer content.
 - **A lost or stolen device.** Nothing readable is written to disk; the vault locks after 24 hours
-  and on "Lock now" or sign-out. While it is open, the browser profile holds the key handles (see
-  "Session lock"): someone who gets the device unlocked, or a copy of that profile, inside those
-  24 hours can use them in that browser.
+  and on "Lock now" or sign-out, in every open tab of that browser. While it is open, the browser
+  profile holds the key handles (see "Session lock"): someone who gets the device unlocked, or a
+  copy of that profile, inside those 24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
 - **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
@@ -46,7 +46,11 @@ Users should be told these plainly.
   built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
   the third party, not the risk class.
 - **A malicious collaborator.** Anyone you share a drawer with can read and copy everything in it.
-  Removal stops future access, never past access.
+  Removal stops future access, never past access. A member who may write can also store content the
+  app cannot show, such as amounts that no longer add up to an exact number. The web app then lists
+  that drawer as damaged, with the reason, and shows no number for it; the other drawers and the rest
+  of the app keep working. The damaged drawer's screen offers its owner the 30-day history and
+  deleting it, and every other member a way to leave.
 - **Script injection (XSS) in the app itself.** Injected code in the page can reach keys held in
   memory. Countered by the strict CSP, Trusted Types in local mode, no raw HTML rendering, and
   non-extractable `CryptoKey`s — reduced, not eliminated.
@@ -84,7 +88,11 @@ Users should be told these plainly.
   - **Recovery code** — mandatory, shown once at sign-up, can be regenerated from Settings.
 - **Session lock.** An unlocked vault stays open for 24 hours (a non-extractable key handle cached in
   IndexedDB, never raw key bytes or decrypted content), then asks again. In Clerk mode the cached
-  unlock is bound to one Clerk session (PETTY-140). "Lock now" and sign-out clear it at once.
+  unlock is bound to one Clerk session (PETTY-140). "Lock now" and sign-out clear it at once, and
+  reach every open tab of that browser: the other tabs drop the keys and the opened drawers from
+  memory (a browser without `BroadcastChannel` locks the one tab). With local sign-in, a sign-out made
+  while offline is remembered, with nothing secret stored, and sent to the server before any other
+  request: at the next start, or when the network is back.
   Non-extractable means the page cannot read the key bytes out; it does not mean the handle stays
   off the disk. IndexedDB is part of the browser profile, and the 24 hours are counted by the app,
   not by the browser. So the unlock screen lets you keep the vault open only in that page's memory
@@ -190,7 +198,9 @@ open and a hash of the token id. The bundle also holds the owner's public key, s
 sent later only if the owner wrapped it. A token has its own signing key, vouched for by the owner's account
 key. With the write role it may add entries and replace a drawer's document; the server cannot see
 what changed inside the sealed document, so such a token can rename, retag, move or drop items, and
-the owner can restore an earlier version from the drawer's 30-day history. It **can never** touch the
+the owner can restore an earlier version from the drawer's 30-day history. The web app reaches that
+history also for a document it cannot show: the drawer is listed as damaged, and its screen offers
+"Earlier versions". It **can never** touch the
 vault, the account, sharing, admin or export, or create another token — the server refuses every
 route not on its allow-list. Creating one requires the custody proof. Details
 and diagram: [README.md](README.md).
