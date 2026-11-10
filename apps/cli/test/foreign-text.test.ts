@@ -11,10 +11,10 @@ import { run } from "../src/cli.js";
 import { browserCommand, type Io } from "../src/io.js";
 
 /**
- * PETTY-453: what `petty` prints that a drawer or the server sent. In the terminal every control
- * character of it is shown as "?"; with --json it is escaped and the value stays the same. The drawers
- * here are written the way a changed client could write them: straight into the sealed document, past
- * the app's own checks.
+ * PETTY-453, PETTY-415: what `petty` prints that a drawer or the server sent. In the terminal every
+ * control character of it is shown as "?"; with --json it is escaped and the value stays the same; Tab
+ * completion offers no name that holds one. The drawers here are written the way a changed client could
+ * write them: straight into the sealed document, past the app's own checks.
  */
 const app = buildApp();
 const run_ = crypto.randomUUID().slice(0, 8);
@@ -178,6 +178,26 @@ describe("foreign text in the terminal (PETTY-453)", () => {
     expect(await petty("auth", "login", "--host", ORIGIN)).toBe(1);
     expect(t.err).toMatch(/^petty: \S.*\n$/);
     expect(RAW.test(t.err)).toBe(false);
+  });
+});
+
+describe("Tab completion with names from a drawer (PETTY-415)", () => {
+  it("offers a name as it is, one a line, and leaves out a name with a control character", async () => {
+    const { t, petty } = terminal({ env: { PETTY_COMPLETE_SHELL: "powershell" }, realTime: true });
+    await petty("__complete", "move", "");
+    expect(t.out).toBe("Tin;calc\n");
+    await petty("__complete", "add", "");
+    expect(t.out).toBe("Tin;calc › a'b\nTin;calc › $(x)\nTin;calc › back`tick\n");
+    await petty("__complete", "drawers", "--tag", "");
+    expect(t.out).toBe("");
+    await petty("__complete", "drawers", "--place", "");
+    expect(t.out).toBe("");
+  });
+
+  it("bash still gets each special character escaped", async () => {
+    const { t, petty } = terminal({ env: { PETTY_COMPLETE_SHELL: "bash" }, realTime: true });
+    await petty("__complete", "add", "");
+    expect(t.out).toBe("Tin\\;calc\\ ›\\ a\\'b\nTin\\;calc\\ ›\\ \\$\\(x\\)\nTin\\;calc\\ ›\\ back\\`tick\n");
   });
 });
 

@@ -267,7 +267,8 @@ async function complete(args: readonly string[], io: Io): Promise<void> {
   const hosts = Object.keys(readStore(io.env).hosts);
   let cached: Promise<Names | null> | null = null;
   const names = () => (cached ??= liveNames(io, prior));
-  for (const c of await candidates(prior, cur, names, hosts)) io.out(`${forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
+  // one candidate a line: a name with a new line or another control character cannot be offered, in any shell
+  for (const c of await candidates(prior, cur, names, hosts)) if (clean(c) === c) io.out(`${forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
 }
 
 /** Names for this Tab press: decrypted in memory with the stored login, within 1.5 s, else none. */

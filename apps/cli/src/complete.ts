@@ -144,7 +144,9 @@ Register-ArgumentCompleter -Native -CommandName petty -ScriptBlock {
     $env:PETTY_COMPLETE_CURRENT = '=' + $wordToComplete
     try {
         petty __complete @prior 2>$null | ForEach-Object {
-            $text = if ($_ -match "[\\s'\`"]") { "'" + ($_ -replace "'", "''") + "'" } else { $_ }
+            # PETTY-415: a word of plain letters, digits, - and _ (a command, a flag) goes in as it is. Every other
+            # candidate goes in as one single-quoted string, its quote characters doubled by PowerShell's own rule.
+            $text = if ($_ -cmatch '\\A[A-Za-z0-9_-]+\\z') { $_ } else { "'" + [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($_) + "'" }
             [System.Management.Automation.CompletionResult]::new($text, $_, 'ParameterValue', $_)
         }
     } finally {

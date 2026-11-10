@@ -102,6 +102,9 @@ Tab completes commands, flags and their values, and the names of your items, dra
 places. Names are fetched and decrypted when you press Tab, and never saved on disk; with no network
 or no login, Tab simply offers none. `PETTY_COMPLETE_NAMES=0` turns name completion off.
 
+A name goes onto the command line as one word, quoted or escaped the way your shell needs (in
+PowerShell: single quotes). A name that holds a control character, such as a new line, is not offered.
+
 ## AI agents
 
 An agent that can run commands can call `petty … --json` directly, with no MCP setup. Tell it to

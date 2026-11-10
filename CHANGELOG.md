@@ -22,6 +22,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   it escapes them.
 - On Windows, `petty auth login` opens the sign-in page without `cmd`, and on every system only an
   `http:` or `https:` address is opened.
+- PowerShell Tab completion puts every name onto the command line as one single-quoted word. Update
+  `petty` and open a new PowerShell; if you saved the completion script to a file, make it again. In
+  every shell, Tab no longer offers a name that holds a control character.
 
 ## [1.5.32] — 2026-11-04
 
