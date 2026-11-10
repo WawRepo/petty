@@ -26,6 +26,39 @@ number, also when it adds features, and a new minor or major is started by hand 
 - A drawer key from someone who left a drawer or was removed from it is refused when it is newer than
   the last one they held as a member. If the owner invited them again, compare their safety number in
   Members and choose "Numbers match".
+- The command line (`petty.mjs`), the MCP program (`petty-mcp.mjs`) and the Claude Desktop add-on
+  (`petty.mcpb`) can now be checked before you run them. Each release signs a build attestation for
+  these files, and `gh attestation verify` passes only for a file that the release workflow built.
+  The page *Use Petty with AI*, the setup lines on the landing page and in Settings, and the add-on
+  buttons now take the files from the GitHub release of the version your Petty runs, not from your
+  Petty. The page says how to check a file, and what stays unchecked. Before, nothing checked the
+  copies that an instance serves under `/downloads/`. They are still served. A Petty that runs its own
+  build has no release to point at: it offers its own copies and says that nothing checks them.
+  See docs/cli.md, "Check what you download".
+- Self-hosters: each release also signs a build attestation for its image. docs/deploy.md, "Check
+  the image", has the command. The image's version tag is now set only after the release commit and
+  its tag are on main. Before, a release run that failed late left an image under the version, and
+  the next run put another image under the same tag.
+- *Use Petty with AI* and docs/agent.md no longer show a command with the access token in it. A
+  shell keeps such a line in its history, and other programs can read it in the process list while
+  it runs. Both now start with the command line (`petty auth login`, then `petty mcp`), which needs
+  no token to copy. The by-hand way keeps the token in `~/.petty/token`.
+- The image build checks pnpm's file against a pinned SHA-512 before it installs it. Before, it took
+  whatever the registry served under that version. If you build your own image with another pnpm
+  version, set `PNPM_SHA512` with it (the Dockerfile says how).
+
+### Changed
+- Self-hosters: the image starts the API as `node` itself, with no pnpm and no shell in front of it,
+  and the API now answers a stop. It stops taking requests, lets the open ones finish (for up to 8
+  seconds) and ends with status 0. Before, a stop ended it at once, with status 1. A deployment that
+  sets its own start command (`pnpm start`) works as before.
+
+### Fixed
+- Self-hosters: the backup command in docs/deploy.md reported success when `pg_dump` failed, and
+  replaced that day's dump with an empty file. The new script ends with an error, writes nothing
+  under the day's name, and keeps an earlier dump of the same day. If you copied the old line into a
+  backup job of your own, change it the same way: `set -o pipefail`, write to a `.partial` name,
+  rename at the end.
 
 ## [1.5.33] — 2026-11-10
 

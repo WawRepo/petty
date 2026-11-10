@@ -36,7 +36,8 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
-- Set `PETTY_IMAGE` to a tag and its digest. The Postgres image is pinned by digest too.
+- Set `PETTY_IMAGE` to a tag and its digest ("Check the image" below says how to check a release's
+  image). The Postgres image is pinned by digest too.
 - The compose file has no backup service. Add one (see "Backups") before you keep real data.
 
 ## First account
@@ -172,11 +173,25 @@ builds a small image with `pg_dump` and `age` so a dump is encrypted before it i
 keep the age private key off the server. Drawer content is already ciphertext, but a dump still holds
 emails and vault material, so treat it as personal data.
 
-Dump, from the host, as the database owner (`C=docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env`):
+Below, `$C` stands for `docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env`.
 
+Dump, from the host, as the database owner. Save this as a script (it needs bash) and run it on a
+schedule, with your age public key in `AGE_RECIPIENT`:
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail                      # pipefail: a failed pg_dump fails the script, not only a failed age
+C="docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env"
+out="petty-$(date +%F).dump.age"
+trap 'rm -f "$out.partial"' EXIT
+$C exec -T db pg_dump -U petty -Fc petty | age -r "$AGE_RECIPIENT" > "$out.partial"
+mv "$out.partial" "$out"
 ```
-$C exec -T db pg_dump -U petty -Fc petty | age -r <your age public key> > petty-$(date +%F).dump.age
-```
+
+The dump is written under a `.partial` name and takes the day's name only when `pg_dump` and `age` both
+succeeded. If either fails, the script ends with an error and writes nothing under the day's name: an
+earlier good dump of the same day stays as it was. Let your scheduler tell you about a failed run, and
+use the same three parts (pipefail, a `.partial` name, a rename at the end) in a backup job of your own.
 
 Restore into the database (stop the app first, then start it again):
 
@@ -193,12 +208,46 @@ version as the server (this compose file runs PostgreSQL 16); an older client re
 ## Upgrading
 
 1. Take a backup (above).
-2. In `deploy/compose/.env`, set `PETTY_IMAGE` to the new tag **and** digest from the GitHub release.
+2. In `deploy/compose/.env`, set `PETTY_IMAGE` to the new tag **and** digest from the GitHub release
+   (check the image first, see below).
 3. `$C pull && $C up -d` — the one-shot `migrate` service runs the new migrations as the owner, then
    the app starts on the new image.
 4. Check `/api/health` and the version shown in Settings and the landing-page footer.
 
 Downgrading across a migration is not supported: restore the backup from step 1 instead.
+
+## Check the image
+
+A release's page names its image with a tag and a digest: `ghcr.io/wawrepo/petty:v1.2.3@sha256:…`.
+Put both in `PETTY_IMAGE`. With the digest, Docker runs exactly those bytes or nothing, whatever the
+tag points at later.
+
+To check that this repository's release workflow built that image, use GitHub's command line,
+[`gh`](https://cli.github.com), signed in (`gh auth login`), with the digest from the release page:
+
+```sh
+gh attestation verify oci://ghcr.io/wawrepo/petty@sha256:<digest> --repo WawRepo/petty \
+  --signer-workflow WawRepo/petty/.github/workflows/release.yml --source-ref refs/heads/main
+```
+
+Each release signs a statement of what it built (a build attestation, through Sigstore), and GitHub
+keeps it with the repository. The command passes only if the release workflow, run from `main`, built
+the image with exactly this digest. `oci://ghcr.io/wawrepo/petty:v1.2.3` checks whatever the tag points
+at now instead; pin the digest you checked.
+
+- A release made before attestations were added has none, and neither has an image that was built
+  by hand (`make image`, or the by-hand release steps): the command then finds no attestation and fails.
+- The check says who built the image, not that its code is good.
+- The image also carries BuildKit's provenance and an SBOM
+  (`docker buildx imagetools inspect <image> --format '{{json .Provenance}}'`). Nothing signs those two:
+  read them only for an image whose digest you checked.
+- The backup image (`petty-backup`) has no attestation. Pin it by digest.
+- The release workflow sets a version's tag once, after the release commit and its git tag are on
+  `main`, and never builds a version twice. `latest` moves with every release. A tag is still only a
+  name that the registry can point elsewhere: pin the digest.
+
+The files of a release (the command line, the MCP program, the add-on) are checked the same way:
+[cli.md](cli.md#check-what-you-download).
 
 ## Several instances
 
