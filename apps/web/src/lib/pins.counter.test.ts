@@ -21,7 +21,7 @@ vi.mock("./session.js", () => ({ getAuth: () => mem.auth }));
 vi.mock("react", () => ({ useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot() }));
 
 // `usePins` under a plain name: outside React it is only a read of the store
-import { acceptedDocRev, acknowledgeRollback, forgetSelfKey, loadPins, parseUserDoc, placesShown, recordDrawerVersions, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack } from "./pins.js";
+import { acceptedDocRev, acknowledgeRollback, confirmPin, forgetSelfKey, leftDrawerAt, loadPins, noteMembers, parseUserDoc, pinnedSigningKeys, placesShown, recordDrawerVersions, recordLeft, rotationOwed, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack } from "./pins.js";
 
 const USER = "5b0c6a0e-6f0e-4d7e-9a57-0d6c1f6a2a11";
 const DRAWER = "d1000000-0000-4000-8000-000000000001";
@@ -261,5 +261,92 @@ describe("the user document against a server that kept older copies", () => {
     await recordDrawerVersions(new Map(), new Map(), new Map(), new Map([[DRAWER, 6]]));
     expect(acceptedDocRev(DRAWER)).toBe(6);
     expect(await onServer()).toMatchObject({ version: 3, doc: { rev: 3, drawer_revs: { [DRAWER]: 6 } } });
+  });
+});
+
+/**
+ * The fields of PETTY-413 and PETTY-449 in the user document: earlier confirmed keys (`Pin.earlier`), who was in each
+ * drawer (`drawer_members`) and who left it (`drawer_left`). A document from before the counter that holds them keeps
+ * them through the upgrade to `v` 2, and every write that changes them follows the counter rule.
+ */
+describe("the user document's memory of keys and members, with the counter", () => {
+  const BOB_KEYS = { ecdh_pub: "ecdh-b2", ecdsa_pub: "ecdsa-b2", sig_key_id: "id-b2" };
+  const withMemory = {
+    v: 1,
+    pins: { bob: { ...PIN, earlier: [{ ecdsa: "ecdsa-b0", sig_key_id: "id-b0" }] } },
+    drawer_members: { [DRAWER]: ["bob", "carol"] },
+    drawer_left: { [DRAWER]: { dave: 2 } },
+    drawer_docs: { [DRAWER]: 4 },
+  };
+  const people = (members: string[], key_version = 2) => [{ id: DRAWER, key_version, members: [USER, ...members], wraps: [] }];
+
+  it("a v 1 document with earlier keys, members and leavers comes through the upgrade with all of them", async () => {
+    expect(parseUserDoc(withMemory)).toEqual(withMemory);
+    server.row = await sealedRow(withMemory, 6);
+    await loadPins();
+    expect(status()).toMatchObject({ status: "ready", rev: 1 });
+    expect(await onServer()).toEqual({ version: 7, doc: { ...withMemory, v: 2, rev: 1 } });
+    // and the app reads them back from the upgraded copy
+    reload();
+    await loadPins();
+    expect(pinnedSigningKeys("bob")).toEqual(["BBBB", "ecdsa-b0"]);
+    expect(leftDrawerAt(DRAWER, "dave")).toBe(2);
+    expect(rotationOwed(DRAWER, 2)).toBe(true);
+    expect(server.puts).toBe(1);
+  });
+
+  it("noting members, a removal and a new confirmation each store the loaded counter plus one", async () => {
+    await startUserDoc(); // rev 1
+    await noteMembers(people(["bob", "carol"]));
+    expect(await onServer()).toMatchObject({ version: 2, doc: { v: 2, rev: 2, drawer_members: { [DRAWER]: ["bob", "carol"] } } });
+    await noteMembers(people(["bob"])); // carol is gone
+    expect(await onServer()).toMatchObject({ version: 3, doc: { rev: 3, drawer_members: { [DRAWER]: ["bob"] }, drawer_left: { [DRAWER]: { carol: 2 } } } });
+    expect(await recordLeft(DRAWER, "bob", 2)).toBe(true);
+    expect(await onServer()).toMatchObject({ version: 4, doc: { rev: 4, drawer_left: { [DRAWER]: { carol: 2, bob: 2 } } } });
+    await confirmPin("carol", BOB_KEYS, DRAWER); // compared again on this drawer's Members screen
+    const now = (await onServer())!;
+    expect(now).toMatchObject({ version: 5, doc: { rev: 5, drawer_left: { [DRAWER]: { bob: 2 } } } });
+    expect(now.doc["pins"]).toHaveProperty("carol");
+    expect(seen()).toEqual({ version: 5, rev: 5 });
+    expect(server.puts).toBe(5);
+  });
+
+  it("after a VersionConflict each of them applies its change to the fresh copy and takes that copy's counter", async () => {
+    await startUserDoc();
+    await setPlacesShown(false); // this page holds version 2, rev 2
+    // another device of the same person saves meanwhile, three times: version 3 and rev 3, and so on
+    const fresh = async (extra: Record<string, unknown>) => {
+      const cur = (await onServer())!;
+      server.row = await sealedRow({ ...cur.doc, ...extra, rev: (cur.doc["rev"] as number) + 1 }, cur.version + 1);
+    };
+    await fresh({ hide_totals: true });
+    await noteMembers(people(["bob", "carol"]));
+    expect(await onServer()).toMatchObject({ version: 4, doc: { rev: 4, hide_places: true, hide_totals: true, drawer_members: { [DRAWER]: ["bob", "carol"] } } });
+    await fresh({ drawer_revs: { [DRAWER]: 5 } });
+    expect(await recordLeft(DRAWER, "dave", 2)).toBe(true);
+    expect(await onServer()).toMatchObject({ version: 6, doc: { rev: 6, hide_totals: true, drawer_revs: { [DRAWER]: 5 }, drawer_members: { [DRAWER]: ["bob", "carol"] }, drawer_left: { [DRAWER]: { dave: 2 } } } });
+    await fresh({ line_tags: ["kept"] });
+    await confirmPin("dave", BOB_KEYS, DRAWER);
+    const last = (await onServer())!;
+    expect(last).toMatchObject({ version: 8, doc: { v: 2, rev: 8, line_tags: ["kept"], drawer_revs: { [DRAWER]: 5 } } });
+    expect(last.doc["pins"]).toHaveProperty("dave");
+    expect(last.doc).not.toHaveProperty("drawer_left");
+    expect(seen()).toEqual({ version: 8, rev: 8 });
+  });
+
+  it("none of them writes over a copy that is older inside", async () => {
+    await startUserDoc();
+    await setPlacesShown(false);
+    const old = server.row!;
+    await setTotalsShown(false); // rev 3
+    server.row = { ...old, version: 5 }; // the copy with rev 2, numbered as newer
+    reload();
+    await loadPins();
+    expect(status()).toMatchObject({ status: "rolled_back", olderInside: true });
+    server.puts = 0;
+    await noteMembers(people(["bob"]));
+    expect(await recordLeft(DRAWER, "bob", 2)).toBe(false);
+    await expect(confirmPin("bob", BOB_KEYS, DRAWER)).rejects.toThrow("PinsRolledBack");
+    expect(server.puts).toBe(0);
   });
 });
