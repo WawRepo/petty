@@ -140,6 +140,7 @@
       "displayName": "Imię (opcjonalnie)",
       "displayNameHint": "Tak widzą Cię osoby, z którymi dzielisz szuflady. Jeśli zostawisz to pole puste, zostanie użyte imię z konta, na które się logujesz.",
       "already": "To konto ma już sejf. Odśwież aplikację.",
+      "emailNotVerified": "Twój adres e-mail nie jest jeszcze potwierdzony. Potwierdź go na koncie, na które się logujesz, i spróbuj ponownie.",
       "explainer": {
         "identity": "Zalogowano. Sejf to drugi, osobny zamek: otwiera Twoje szuflady na tym urządzeniu. Serwer przechowuje tylko jego zablokowaną kopię."
       },

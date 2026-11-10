@@ -16,11 +16,13 @@ process.env["CLERK_FRONTEND_API"] = "https://clerk.petty.test";
 
 /** Test hook: the Clerk users whose primary email Clerk has verified. */
 const verified = new Set<string>();
+/** Test hook: a Clerk user whose email is another user's (default: derived from its own id). */
+const aliases = new Map<string, string>();
 vi.mock("../src/lib/clerk.js", async (importOriginal) => {
   const orig = await importOriginal<typeof import("../src/lib/clerk.js")>();
   return {
     ...orig,
-    clerkProfile: async (id: string) => ({ email: `${id.toLowerCase()}@test.local`, emailVerified: verified.has(id), name: `Clerk ${id}` }),
+    clerkProfile: async (id: string) => ({ email: `${(aliases.get(id) ?? id).toLowerCase()}@test.local`, emailVerified: verified.has(id), name: `Clerk ${id}` }),
     deleteClerkUser: async () => undefined,
     revokeClerkSessions: async () => 0,
     clerkUserExists: async () => true,
@@ -67,5 +69,38 @@ describe("clerk mode: changing requests must be same-origin (PETTY-409)", () => 
     expect((await send(null)).statusCode).toBe(200);
     // reading is not touched
     expect((await app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${c.bearer}`, "sec-fetch-site": "cross-site" } })).statusCode).toBe(200);
+  }, 60_000);
+});
+
+describe("clerk mode: an account is made only for an address Clerk verified (PETTY-421)", () => {
+  it("provisioning is refused while the email is unverified and stores nothing; once verified, the same request works", async () => {
+    const sub = `user_${run}unv`;
+    const c = new Client(app, await userMaterial("unv"));
+    c.bearer = await token(sub);
+    const sb = c.user.signupBody;
+    const body = { display_name: sb["display_name"], keys: sb["keys"], vault: sb["vault"], recovery_vault: sb["recovery_vault"] };
+    const refused = await c.call("POST", "/auth/provision", body);
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json()).toMatchObject({ code: "EmailNotVerified" });
+    expect((await owner.query("select 1 from users where clerk_user_id = $1 or lower(email) = lower($2)", [sub, `${sub}@test.local`])).rowCount).toBe(0);
+    expect((await c.call("GET", "/me")).json().code).toBe("NoVault");
+    verified.add(sub);
+    const made = await c.call("POST", "/auth/provision", body);
+    expect(made.statusCode).toBe(201);
+    expect(made.json().email).toBe(`${sub.toLowerCase()}@test.local`);
+  }, 60_000);
+
+  it("an unverified address that already has an account gets the same answer: nothing about that account", async () => {
+    const taken = await provisioned("tkn");
+    const sub = `user_${run}tkn2`;
+    // Clerk reports the first person's address for the second identity, unverified
+    aliases.set(sub, `user_${run}tkn`);
+    const c = new Client(app, await userMaterial("tkn2"));
+    c.bearer = await token(sub);
+    const sb = c.user.signupBody;
+    const refused = await c.call("POST", "/auth/provision", { display_name: sb["display_name"], keys: sb["keys"], vault: sb["vault"], recovery_vault: sb["recovery_vault"] });
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().code).toBe("EmailNotVerified");
+    expect((await owner.query<{ clerk_user_id: string }>("select clerk_user_id from users where id = $1", [taken.id])).rows[0]!.clerk_user_id).toBe(`user_${run}tkn`);
   }, 60_000);
 });

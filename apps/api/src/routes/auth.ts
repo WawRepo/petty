@@ -5,7 +5,7 @@ import { termsVersion } from "../lib/legal.js";
 import { clerkProfile } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
-import { ApiError, badRequest, conflict, unauthorized } from "../lib/errors.js";
+import { ApiError, badRequest, conflict, forbidden, unauthorized } from "../lib/errors.js";
 import { DUMMY_HASH, LOGIN_LIMIT_PER_EMAIL, LOGIN_LIMIT_PER_IP, checkRate, failuresExceeded, hashPassword, recordFailure, verifyPassword } from "../lib/password.js";
 import { createSession, destroySession, requireUser } from "../lib/session.js";
 import { withTx, type Queryable } from "../lib/tx.js";
@@ -40,6 +40,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       const body = ProvisionBody.parse(req.body);
       checkVaultMaterial(body);
       const profile = await clerkProfile(id.sub);
+      // PETTY-421: the account takes its email from Clerk, and drawers are shared by email. An address Clerk
+      // has not verified may be someone else's, so no account is made for it. Checked before the address is
+      // looked up: the answer says nothing about whether it has an account.
+      if (!profile.emailVerified) throw forbidden("EmailNotVerified");
       const me = await withTx(apiPool, async (db) => {
         const exists = await db.query("select 1 from users where clerk_user_id = $1 or (lower(email) = lower($2) and deleted_at is null)", [id.sub, profile.email]);
         if (exists.rowCount) throw conflict("EmailTaken", "email already registered");

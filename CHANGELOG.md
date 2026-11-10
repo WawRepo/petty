@@ -19,6 +19,10 @@ number, also when it adds features, and a new minor or major is started by hand 
   `CrossSiteRequest`, also for a request without a body and for a page on another host under the same
   domain as your instance. The web app is not affected. Programs that send no such header (the command
   line, the add-on, curl) work as before.
+- With Clerk sign-in, Petty makes an account only for an email address that Clerk has verified. For
+  an unverified one the vault setup answers 403 `EmailNotVerified`, stores nothing, and the app asks
+  you to confirm the address first. This matters only if your Clerk instance lets people sign up
+  without verifying their email.
 
 ## [1.5.32] — 2026-11-04
 

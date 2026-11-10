@@ -49,6 +49,7 @@ export function VaultSetupScreen() {
     } catch (err) {
       if (err instanceof PasskeyError) setErrors({ form: err.code === "cancelled" ? t("settings.passkey.cancelled") : t(err.code === "no_prf" ? "settings.passkey.noPrf" : "settings.passkey.unsupported") });
       else if (err instanceof ApiError && err.code === "ValidationError" && err.context["path"] === "display_name") setErrors({ name: t("errors.displayName") });
+      else if (err instanceof ApiError && err.code === "EmailNotVerified") setErrors({ form: t("auth.setup.emailNotVerified") }); // PETTY-421
       else setErrors({ form: err instanceof NetworkError ? t("errors.network") : err instanceof ApiError && err.code === "AlreadyProvisioned" ? t("auth.setup.already") : t("errors.unknown") });
     } finally { setBusy(false); }
   }

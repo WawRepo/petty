@@ -140,6 +140,7 @@
       "displayName": "Nombre (opcional)",
       "displayNameHint": "Así te ven las personas con las que compartes cajones. Si lo dejas vacío, se usa el nombre de la cuenta con la que iniciaste sesión.",
       "already": "Esta cuenta ya tiene una bóveda. Recarga la aplicación.",
+      "emailNotVerified": "Tu dirección de correo aún no está confirmada. Confírmala en la cuenta con la que inicias sesión e inténtalo de nuevo.",
       "explainer": {
         "identity": "Ya iniciaste sesión. La bóveda es una segunda cerradura, independiente: abre tus cajones en este dispositivo. El servidor solo guarda una copia bloqueada de ella."
       },
