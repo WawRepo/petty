@@ -151,10 +151,10 @@ function EntryRow({ view, line, e, reversed, onOpen, fresh = false }: { view: Dr
   const author = memberName(view, p.author_id);
   const amountText = p.op === "adjust" ? `${fmt(line, p.amount, i18n.language)}${p.delta_hint !== null ? ` ${t("line.row.adjustHint", { delta: signed(line, p.delta_hint, i18n.language) })}` : ""}` : signed(line, p.amount, i18n.language);
   return (
-    <div className={`entry${reversed ? " reversed" : ""}${pending ? " pending" : ""}${fresh ? " fresh" : ""}`} data-testid="entry-row" data-entry-id={p.id} data-pending={pending || undefined}>
+    <div className={`entry${reversed ? " reversed" : ""}${pending ? " pending" : ""}${fresh ? " fresh" : ""}`} data-testid="entry-row" data-entry-id={p.id} data-pending={pending || undefined} data-unconfirmed={e.unconfirmed_author || undefined}>
       <button type="button" className="avatar-btn" aria-label={t("line.row.by", { name: author })} onClick={() => toast(author)}><span className="avatar">{initial(author)}</span></button>
       <button type="button" className="left plain-btn" onClick={onOpen} aria-label={t("line.row.options")}>
-        <span className={`op ${p.op}`}>{t(`line.opName.${p.op}`)}{reversed ? ` · ${t("line.row.reversed")}` : ""}{p.op === "reverse" ? ` · ${t("line.row.cancels")}` : ""}{pending ? ` · ${t("offline.pendingEntry")}` : ""}</span>
+        <span className={`op ${p.op}`}>{t(`line.opName.${p.op}`)}{reversed ? ` · ${t("line.row.reversed")}` : ""}{p.op === "reverse" ? ` · ${t("line.row.cancels")}` : ""}{pending ? ` · ${t("offline.pendingEntry")}` : ""}{e.unconfirmed_author ? ` · ${t("line.row.unconfirmed")}` : ""}</span>
         <span className="meta">{when}{p.comment ? ` · ${p.comment}` : ""}</span>
       </button>
       <div className="right"><div className="delta">{amountText}</div></div>
@@ -223,6 +223,8 @@ export function LineScreen() {
   const hist = view.history.get(lineId);
   const chain = view.chains.get(lineId);
   const problems = view.entryProblems.filter((p) => p.line_id === lineId);
+  // PETTY-413: entries of authors this person never pinned: counted, and said to be not confirmed
+  const unconfirmed = window_.filter((e) => e.unconfirmed_author).length;
   const newestFirst = [...window_].reverse();
   const olderNewestFirst = [...(hist?.older ?? [])].reverse();
   const unit = line.kind === "money" ? line.currency : line.unit || t("drawer.line.items");
@@ -250,6 +252,7 @@ export function LineScreen() {
         <ReadOnlyHint view={view} />
         {f.negative ? <p className="warn-box danger" role="status" data-testid="warn-negative">{t("line.warn.negative")}</p> : null}
         {problems.length ? <p className="warn-box danger" role="alert" data-testid="warn-problems">{t("line.warn.problems", { count: problems.length })}</p> : null}
+        {unconfirmed ? <p className="warn-box" role="status" data-testid="warn-unconfirmed">{t("line.warn.unconfirmed", { count: unconfirmed })}</p> : null}
         {f.skipped.length ? <p className="warn-box" role="status">{t("line.warn.skipped", { count: f.skipped.length })}</p> : null}
         {chain && chain.status !== "ok" ? (
           <div className="warn-box danger" role="alert" data-testid={`warn-chain-${chain.status}`}>

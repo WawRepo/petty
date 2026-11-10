@@ -191,6 +191,7 @@
       "no_key": "Du hast noch keinen Schlüssel für diese Schublade. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "sender_unknown": "Den Schlüssel hat jemand geteilt, den du noch nicht kennst.",
       "sender_unconfirmed": "Der Schlüssel dieser Schublade kommt von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
+      "sender_left": "Der Schlüssel dieser Schublade kommt von jemandem, der diese Schublade verlassen hat oder aus ihr entfernt wurde, deshalb hat Petty sie nicht geöffnet. Wenn die Person wieder Mitglied ist, vergleiche ihre Sicherheitsnummer unter Mitglieder und wähle „Nummern stimmen überein“. Wenn nicht, hat jemand den Server vielleicht verändert.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
       "pins_blocked": "Den Schlüssel zu dieser Schublade hat dir eine andere Person gegeben, und Petty kann sie jetzt nicht prüfen: Deine Liste vertrauenswürdiger Schlüssel fehlt auf dem Server, ist älter als zuvor oder wurde nicht geladen. Sieh nach der Warnung auf dem Startbildschirm oder versuche es erneut, wenn du online bist.",
       "key_rolled_back": "Der Server hat einen älteren Schlüssel für diese Schublade geschickt als den, den du schon hattest, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
@@ -510,6 +511,7 @@
     "row": {
       "reversed": "storniert",
       "cancels": "storniert eine frühere Buchung",
+      "unconfirmed": "Autor nicht bestätigt",
       "adjustHint": "({delta})",
       "by": "von {name}",
       "options": "Buchungsoptionen"
@@ -536,6 +538,7 @@
       "truncated": "Der Verlauf ist kürzer als beim letzten Mal. Vielleicht wurden Buchungen entfernt.",
       "acknowledge": "So akzeptieren",
       "skipped": "{count, plural, one {# Buchung fließt nicht in den Saldo ein, weil sie gegen die Regeln verstößt.} other {# Buchungen fließen nicht in den Saldo ein, weil sie gegen die Regeln verstoßen.}}",
+      "unconfirmed": "{count, plural, one {# Buchung stammt von jemandem, der nicht in der Liste deiner vertrauenswürdigen Schlüssel steht, zum Beispiel von einer Person, die gegangen ist, bevor du dazukamst. Petty kann nicht prüfen, wer sie geschrieben hat. Ihr Betrag ist im Saldo enthalten.} other {# Buchungen stammen von jemandem, der nicht in der Liste deiner vertrauenswürdigen Schlüssel steht, zum Beispiel von einer Person, die gegangen ist, bevor du dazukamst. Petty kann nicht prüfen, wer sie geschrieben hat. Ihre Beträge sind im Saldo enthalten.}}",
       "negative": "Negativer Saldo. Zähl diesen Posten nach und korrigiere ihn."
     }
   },
@@ -608,6 +611,7 @@
       "confirmed": "Verglichen",
       "unconfirmed": "Noch nicht verglichen",
       "changed": "Der Schlüssel dieser Person hat sich geändert. Vergleiche die Sicherheitsnummern noch einmal, bevor du etwas teilst.",
+      "back": "Diese Person hat diese Schublade verlassen oder wurde aus ihr entfernt und steht wieder in der Liste. Vergleiche die Sicherheitsnummern noch einmal, wenn du weißt, dass sie wieder eingeladen wurde.",
       "unpinned": "Noch nicht eingerichtet"
     },
     "confirm": "Nummern stimmen überein",

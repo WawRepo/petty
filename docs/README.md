@@ -53,15 +53,17 @@ with your public key ("your wrap"). The drawer document is encrypted with the
 drawer key; every entry is signed with your ECDSA key and then encrypted. The
 server stores ciphertext plus a few plain columns (line id, sequence, author,
 whether it is a count). Reading = unwrap the drawer key with your private key,
-decrypt, verify every signature and the hash links, fold the balance.
+decrypt, verify every signature against the key you pinned for its author, check
+the hash links, fold the balance.
 
 **4. Sharing.** You compare the member's safety number out of band, pin their
 public keys, unwrap the drawer key and re-wrap it with their public key. On
 accept the server stores their wrap; their device unwraps it with their private
 key and reads and writes exactly as you do. It takes a key only from someone
 whose safety number they confirmed; accepting the invitation does that for you.
-Removing a member: a writer makes a new drawer key, wraps it for everyone left
-whom they confirmed and re-encrypts the old rows.
+Removing a member: the app of whoever removes them makes a new drawer key at
+once (any other writer's app does when it sees that someone is gone), wraps it
+for everyone left whom they confirmed and re-encrypts the old rows.
 
 **5. New device.** Login → the vault arrives → passphrase → the same private keys.
 Keys are never regenerated. Lost passphrase → the recovery code opens the

@@ -11,7 +11,9 @@ import { api, ApiError, NetworkError } from "./api.js";
 import { idb } from "./idb.js";
 import { getAuth } from "./session.js";
 
-const Pin = z.object({ ecdh: z.string(), ecdsa: z.string(), sig_key_id: z.string(), pinned_at: z.string(), confirmed_at: z.string().nullable() });
+// `earlier` (PETTY-413): the signing keys this person confirmed for the contact before the current one, so that entries
+// those keys signed still verify. A key that was pinned on first sight and never confirmed is not kept.
+const Pin = z.object({ ecdh: z.string(), ecdsa: z.string(), sig_key_id: z.string(), pinned_at: z.string(), confirmed_at: z.string().nullable(), earlier: z.array(z.object({ ecdsa: z.string(), sig_key_id: z.string() })).optional() });
 // `excluded_from_total` (PETTY-38): drawers this person does not count in the home TOTAL —
 // optional, so documents written before it existed still parse. Older builds ignore it.
 // `hide_places` (PETTY-59): this person wants a plain list on the home screen, no place chips or groups.
@@ -32,8 +34,13 @@ export type TrustedToken = z.infer<typeof TrustedToken>;
 // `drawer_key_fps` (PETTY-438): per drawer and key version, a fingerprint of the key this person accepted. Another
 // key at the same version is refused. A document without it (written before, or saved by an older Petty, which drops
 // the field) keeps the drawer open at the version in `drawer_keys`, and the fingerprint is remembered at the next load.
+// `drawer_members` (PETTY-449): per drawer, the other people this person saw as its members. One who is no longer
+// listed left the drawer or was removed from it.
+// `drawer_left` (PETTY-449): per drawer, the people this person knows left it or were removed, each with the newest
+// key version they may still hold. While the drawer is at that version its key is owed a replacement, whatever the
+// server says. A newer key that such a person wrapped is not taken until this person confirms them again.
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional(), drawer_key_fps: z.record(z.string(), z.record(z.string(), z.string())).optional() });
+const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional(), drawer_key_fps: z.record(z.string(), z.record(z.string(), z.string())).optional(), drawer_members: z.record(z.string(), z.array(z.string())).optional(), drawer_left: z.record(z.string(), z.record(z.string(), z.number().int().positive())).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
 
@@ -270,6 +277,71 @@ export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, do
   });
 }
 
+/** PETTY-449: the newest key version of this drawer that someone who left it may still hold; null for a person not known to have left. */
+export function leftDrawerAt(drawerId: string, userId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_left?.[drawerId]?.[userId] ?? null; }
+/** PETTY-449: someone left this drawer while it had this key version, so its key is owed a replacement. The app does not wait for the server to say so. */
+export function rotationOwed(drawerId: string, keyVersion: number, doc: UserDocT = state.doc): boolean {
+  return Object.values(doc.drawer_left?.[drawerId] ?? {}).some((v) => v >= keyVersion);
+}
+/**
+ * Whether a drawer key at this version is taken from this person (PETTY-438): only when I confirmed their safety number.
+ * PETTY-449: and not when I know they left this drawer and the key is newer than the last one they held, until I
+ * confirm them again for it (`confirmPin` with the drawer).
+ */
+export function confirmedFor(drawerId: string, userId: string, keyVersion: number, doc: UserDocT = state.doc): boolean {
+  const left = leftDrawerAt(drawerId, userId, doc);
+  return !!doc.pins[userId]?.confirmed_at && (left === null || keyVersion <= left);
+}
+/** One drawer as the server lists it: who is in it, and the key wraps it holds for me. */
+export interface DrawerPeople { readonly id: string; readonly key_version: number; readonly members: readonly string[]; readonly wraps: readonly { readonly key_version: number; readonly sender_id?: string | null | undefined }[] }
+/**
+ * PETTY-449: compares who the server lists in each drawer with whom this person saw there before. Someone no longer
+ * listed left or was removed, and is remembered with the newest key version they may hold: the newest this person had
+ * accepted, or a newer one that they wrapped themselves. A key that is newer still, and that someone else wrapped, is
+ * taken to be the one that replaced theirs. Returns `doc` itself when nothing changed.
+ */
+export function membersNoted(doc: UserDocT, meId: string, drawers: readonly DrawerPeople[]): UserDocT {
+  let seen = doc.drawer_members;
+  let left = doc.drawer_left;
+  for (const d of drawers) {
+    const before = doc.drawer_members?.[d.id] ?? [];
+    const listed = [...new Set(d.members)].filter((id) => id !== meId).sort();
+    if (before.length === listed.length && before.every((id, i) => id === listed[i])) continue;
+    seen = { ...seen };
+    if (listed.length) seen[d.id] = listed; else delete seen[d.id];
+    for (const gone of before.filter((id) => !listed.includes(id))) {
+      const held = Math.max(acceptedKeyVersion(d.id, doc) ?? 0, ...d.wraps.filter((w) => w.sender_id === gone && w.key_version <= d.key_version).map((w) => w.key_version)) || d.key_version;
+      left = { ...left, [d.id]: { ...left?.[d.id], [gone]: Math.max(held, left?.[d.id]?.[gone] ?? 0) } };
+    }
+  }
+  if (seen === doc.drawer_members && left === doc.drawer_left) return doc;
+  const next = { ...doc };
+  if (seen && Object.keys(seen).length) next.drawer_members = seen; else delete next.drawer_members;
+  if (left) next.drawer_left = left;
+  return next;
+}
+/** PETTY-449: `membersNoted`, kept in the user document. In memory at once, so the keys opened next already follow it; a save that fails goes out with the next one. */
+export async function noteMembers(drawers: readonly DrawerPeople[]): Promise<void> {
+  const a = getAuth();
+  if (a.status !== "unlocked" || !pinsReady()) return;
+  const meId = a.me.id;
+  const mutate = (doc: UserDocT): UserDocT => membersNoted(doc, meId, drawers);
+  if (mutate(state.doc) === state.doc) return;
+  set({ ...state, doc: mutate(state.doc) });
+  await save(mutate);
+}
+/**
+ * PETTY-449: this person removed someone from a drawer that had this key version. Remembered here, so the key is replaced
+ * from this account's own memory, on this device or the next. Answers whether that was news to the document.
+ */
+export async function recordLeft(drawerId: string, userId: string, keyVersion: number): Promise<boolean> {
+  const mutate = (doc: UserDocT): UserDocT => ((leftDrawerAt(drawerId, userId, doc) ?? 0) >= keyVersion ? doc : { ...doc, drawer_left: { ...doc.drawer_left, [drawerId]: { ...doc.drawer_left?.[drawerId], [userId]: keyVersion } } });
+  if (!pinsReady() || mutate(state.doc) === state.doc) return false;
+  set({ ...state, doc: mutate(state.doc) });
+  await save(mutate);
+  return true;
+}
+
 /** Trust on first use: remember the keys we saw. Never overwrites an existing pin. */
 export async function pinIfNew(m: Member): Promise<void> {
   if (pinsBlocked() || !m.keys || state.doc.pins[m.user_id]) return;
@@ -289,9 +361,34 @@ export async function pinMembers(members: readonly Member[]): Promise<void> {
   });
 }
 
-/** The user compared the safety number out of band (or accepted a key change): pin these keys as confirmed. */
-export async function confirmPin(userId: string, keys: { ecdh_pub: string; ecdsa_pub: string; sig_key_id: string }): Promise<void> {
-  await save((doc) => ({ ...doc, pins: { ...doc.pins, [userId]: { ecdh: keys.ecdh_pub, ecdsa: keys.ecdsa_pub, sig_key_id: keys.sig_key_id, pinned_at: doc.pins[userId]?.pinned_at ?? new Date().toISOString(), confirmed_at: new Date().toISOString() } } }));
+/**
+ * The user compared the safety number out of band (or accepted a key change): pin these keys as confirmed.
+ * PETTY-449: with `drawerId`, the person also counts as a member of that drawer again, if they were known to have left it.
+ * Only where the user acts on that drawer by name: its Members screen and its invite sheet. An invitation card does not
+ * say which drawer it is for, so accepting one never does this.
+ */
+export async function confirmPin(userId: string, keys: { ecdh_pub: string; ecdsa_pub: string; sig_key_id: string }, drawerId?: string): Promise<void> {
+  await save((doc) => pinConfirmed(doc, userId, keys, new Date().toISOString(), drawerId));
+}
+/** `confirmPin` on a document. PETTY-413: a signing key that was confirmed before, and is replaced now, stays in `earlier`. */
+export function pinConfirmed(doc: UserDocT, userId: string, keys: { ecdh_pub: string; ecdsa_pub: string; sig_key_id: string }, now: string, drawerId?: string): UserDocT {
+  const old = doc.pins[userId];
+  const earlier = [...(old?.earlier ?? []), ...(old?.confirmed_at ? [{ ecdsa: old.ecdsa, sig_key_id: old.sig_key_id }] : [])]
+    .filter((k, i, all) => k.ecdsa !== keys.ecdsa_pub && all.findIndex((x) => x.ecdsa === k.ecdsa) === i);
+  const pin: Pin = { ecdh: keys.ecdh_pub, ecdsa: keys.ecdsa_pub, sig_key_id: keys.sig_key_id, pinned_at: old?.pinned_at ?? now, confirmed_at: now, ...(earlier.length ? { earlier } : {}) };
+  const next: UserDocT = { ...doc, pins: { ...doc.pins, [userId]: pin } };
+  if (drawerId && leftDrawerAt(drawerId, userId, doc) !== null) {
+    const left = { ...doc.drawer_left, [drawerId]: { ...doc.drawer_left?.[drawerId] } };
+    delete left[drawerId]![userId];
+    if (!Object.keys(left[drawerId]!).length) delete left[drawerId];
+    if (Object.keys(left).length) next.drawer_left = left; else delete next.drawer_left;
+  }
+  return next;
+}
+/** PETTY-413: every signing key (base64 SPKI) this person pinned for someone, the current one first; null for a person never pinned. */
+export function pinnedSigningKeys(userId: string, doc: UserDocT = state.doc): readonly string[] | null {
+  const p = doc.pins[userId];
+  return p ? [p.ecdsa, ...(p.earlier ?? []).map((k) => k.ecdsa)] : null;
 }
 
 export type PinStatus = "unpinned" | "unconfirmed" | "confirmed" | "changed";
@@ -302,6 +399,12 @@ export function pinStatus(m: Member): PinStatus {
   if (!p) return "unpinned";
   if (p.ecdh !== m.keys.ecdh_pub || p.ecdsa !== m.keys.ecdsa_pub) return "changed";
   return p.confirmed_at ? "confirmed" : "unconfirmed";
+}
+
+/** `pinStatus` for a member of this drawer. PETTY-449: someone I know left it, and who is listed again, counts as not confirmed until I compare again. */
+export function memberStatus(drawerId: string, m: Member): PinStatus {
+  const st = pinStatus(m);
+  return st === "confirmed" && leftDrawerAt(drawerId, m.user_id) !== null ? "unconfirmed" : st;
 }
 
 export async function memberSafetyNumber(m: Member): Promise<string> {

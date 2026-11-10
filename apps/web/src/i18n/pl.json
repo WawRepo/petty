@@ -191,6 +191,7 @@
       "no_key": "Nie masz jeszcze klucza do tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "sender_unknown": "Klucz udostępniła osoba, której jeszcze nie znasz.",
       "sender_unconfirmed": "Klucz tej szuflady pochodzi od członka, którego numeru bezpieczeństwa nie potwierdzono. Porównaj go w sekcji Członkowie i wybierz „Numer się zgadza”, aby otworzyć szufladę.",
+      "sender_left": "Klucz tej szuflady pochodzi od osoby, która opuściła tę szufladę albo została z niej usunięta, więc Petty jej nie otworzyło. Jeśli ta osoba znów jest członkiem, porównaj jej numer bezpieczeństwa w sekcji Członkowie i wybierz „Numer się zgadza”. Jeśli nie, ktoś mógł zmienić serwer.",
       "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w sekcji Członkowie.",
       "pins_blocked": "Klucz do tej szuflady dała Ci inna osoba, a Petty nie może jej teraz sprawdzić: Twojej listy zaufanych kluczy brakuje na serwerze, jest starsza niż wcześniej albo się nie wczytała. Poszukaj ostrzeżenia na ekranie głównym albo spróbuj ponownie, gdy będziesz online.",
       "key_rolled_back": "Serwer przysłał starszy klucz tej szuflady niż ten, który już był, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
@@ -510,6 +511,7 @@
     "row": {
       "reversed": "cofnięte",
       "cancels": "cofa wcześniejszy wpis",
+      "unconfirmed": "autor niepotwierdzony",
       "adjustHint": "({delta})",
       "by": "autor: {name}",
       "options": "Opcje wpisu"
@@ -536,6 +538,7 @@
       "truncated": "Historia jest krótsza niż ostatnio. Wpisy mogły zostać usunięte.",
       "acknowledge": "Zaakceptuj mimo to",
       "skipped": "{count, plural, one {# wpis nie jest wliczony do salda, bo łamie zasady.} few {# wpisy nie są wliczone do salda, bo łamią zasady.} many {# wpisów nie jest wliczonych do salda, bo łamią zasady.} other {# wpisu nie jest wliczone do salda, bo łamią zasady.}}",
+      "unconfirmed": "{count, plural, one {# wpis pochodzi od osoby, której nie ma na liście Twoich zaufanych kluczy, na przykład takiej, która odeszła przed Twoim dołączeniem. Petty nie może sprawdzić, kto go napisał. Jego kwota jest wliczona do salda.} few {# wpisy pochodzą od osoby, której nie ma na liście Twoich zaufanych kluczy, na przykład takiej, która odeszła przed Twoim dołączeniem. Petty nie może sprawdzić, kto je napisał. Ich kwoty są wliczone do salda.} many {# wpisów pochodzi od osoby, której nie ma na liście Twoich zaufanych kluczy, na przykład takiej, która odeszła przed Twoim dołączeniem. Petty nie może sprawdzić, kto je napisał. Ich kwoty są wliczone do salda.} other {# wpisu pochodzi od osoby, której nie ma na liście Twoich zaufanych kluczy, na przykład takiej, która odeszła przed Twoim dołączeniem. Petty nie może sprawdzić, kto je napisał. Ich kwoty są wliczone do salda.}}",
       "negative": "Ujemne saldo. Policz tę pozycję i ją skoryguj."
     }
   },
@@ -608,6 +611,7 @@
       "confirmed": "Porównano",
       "unconfirmed": "Jeszcze nie porównano",
       "changed": "Klucz tej osoby się zmienił. Zanim coś udostępnisz, ponownie porównaj numery bezpieczeństwa.",
+      "back": "Ta osoba opuściła tę szufladę albo została z niej usunięta, a teraz znów jest na liście. Porównaj numery bezpieczeństwa ponownie, jeśli wiesz, że zaproszono ją z powrotem.",
       "unpinned": "Jeszcze nie skonfigurowano"
     },
     "confirm": "Numer się zgadza",

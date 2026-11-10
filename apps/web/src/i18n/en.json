@@ -191,6 +191,7 @@
       "no_key": "You have no key for this drawer yet. Ask its owner to share it again.",
       "sender_unknown": "The key was shared by someone you have not seen before.",
       "sender_unconfirmed": "This drawer’s key comes from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
+      "sender_left": "This drawer’s key comes from someone who left this drawer or was removed from it, so Petty did not open it. If they are a member again, compare their safety number in Members and choose “Numbers match”. If not, the server may have been tampered with.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
       "pins_blocked": "Another person gave you the key to this drawer, and Petty cannot check that person now: your list of trusted keys is missing on the server, older than before, or did not load. Look for the warning on the home screen, or try again when you are online.",
       "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
@@ -510,6 +511,7 @@
     "row": {
       "reversed": "reversed",
       "cancels": "cancels an earlier entry",
+      "unconfirmed": "author not confirmed",
       "adjustHint": "({delta})",
       "by": "by {name}",
       "options": "Entry options"
@@ -536,6 +538,7 @@
       "truncated": "The history is shorter than the last time you saw it. Entries may have been removed.",
       "acknowledge": "Accept as is",
       "skipped": "{count, plural, one {# entry is left out of the balance because it breaks the rules.} other {# entries are left out of the balance because they break the rules.}}",
+      "unconfirmed": "{count, plural, one {# entry is from someone who is not in your list of trusted keys, for example a person who left before you joined. Petty cannot check who wrote it. Its amount is in the balance.} other {# entries are from someone who is not in your list of trusted keys, for example a person who left before you joined. Petty cannot check who wrote them. Their amounts are in the balance.}}",
       "negative": "Negative balance. Count this item and adjust it."
     }
   },
@@ -608,6 +611,7 @@
       "confirmed": "Compared",
       "unconfirmed": "Not compared yet",
       "changed": "Their key changed. Compare safety numbers again before you share.",
+      "back": "Left this drawer or was removed from it, and is listed again. Compare safety numbers again if you know they were invited back.",
       "unpinned": "Not set up yet"
     },
     "confirm": "Numbers match",

@@ -26,6 +26,23 @@ number, also when it adds features, and a new minor or major is started by hand 
   number of each person who shared a drawer with you. Drawers you made yourself open at once.
 - With no connection, the app uses the copy of that list which this browser kept, so drawers that
   others shared still open after a reload.
+- The web app now checks who wrote an entry against a key you hold for that person: your own key,
+  the key in your list of trusted keys, or an earlier key of theirs that you had confirmed. A key that
+  only the server lists is no longer enough. An entry under a known person's name that is signed with
+  another key is reported and left out of the balance. Entries of someone who is not in your list,
+  such as a person who left before you joined, still count and are marked "author not confirmed".
+- When you accept a changed key in Members, the key you had confirmed before stays in your list, so
+  the entries it signed still verify.
+- An invitation from someone whose keys are not the ones in your list of trusted keys now says
+  "Their key changed". You can accept it only after you chose "Accept the new key".
+- After you remove a member, your app replaces the drawer key at once and no longer waits for the
+  server to ask for it. Your list of trusted keys remembers the removal, so another device of yours
+  replaces the key if the first one could not, and every writer's app does so when it sees that
+  someone is gone. If the key must wait because a member's safety number is not confirmed, the drawer
+  and its Members screen say whom to confirm.
+- A drawer key from someone who left a drawer or was removed from it is refused when it is newer than
+  the last one they held as a member. If the owner invited them again, compare their safety number in
+  Members and choose "Numbers match".
 
 ## [1.5.32] — 2026-11-04
 

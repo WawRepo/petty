@@ -191,6 +191,7 @@
       "no_key": "Aún no tienes la clave de este cajón. Pide a su propietario que vuelva a compartirlo.",
       "sender_unknown": "La clave la compartió alguien a quien no habías visto antes.",
       "sender_unconfirmed": "La clave de este cajón viene de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
+      "sender_left": "La clave de este cajón viene de alguien que salió de este cajón o fue quitado de él, así que Petty no lo abrió. Si vuelve a ser miembro, compara su número de seguridad en Miembros y elige «Los números coinciden». Si no, puede que alguien haya alterado el servidor.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
       "pins_blocked": "La clave de este cajón te la dio otra persona, y Petty no puede comprobar ahora quién es: tu lista de claves de confianza falta en el servidor, es más antigua que antes o no se cargó. Busca el aviso en la pantalla de inicio o inténtalo de nuevo cuando tengas conexión.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
@@ -510,6 +511,7 @@
     "row": {
       "reversed": "revertida",
       "cancels": "anula un movimiento anterior",
+      "unconfirmed": "autor sin confirmar",
       "adjustHint": "({delta})",
       "by": "por {name}",
       "options": "Opciones del movimiento"
@@ -536,6 +538,7 @@
       "truncated": "El historial es más corto que la última vez que lo viste. Puede que se hayan eliminado movimientos.",
       "acknowledge": "Aceptar tal cual",
       "skipped": "{count, plural, one {# movimiento queda fuera del saldo porque incumple las reglas.} other {# movimientos quedan fuera del saldo porque incumplen las reglas.}}",
+      "unconfirmed": "{count, plural, one {# movimiento es de alguien que no está en tu lista de claves de confianza, por ejemplo una persona que se fue antes de que llegaras. Petty no puede comprobar quién lo escribió. Su cantidad está en el saldo.} other {# movimientos son de alguien que no está en tu lista de claves de confianza, por ejemplo una persona que se fue antes de que llegaras. Petty no puede comprobar quién los escribió. Sus cantidades están en el saldo.}}",
       "negative": "Saldo negativo. Cuenta este elemento y ajústalo."
     }
   },
@@ -608,6 +611,7 @@
       "confirmed": "Comparado",
       "unconfirmed": "Aún sin comparar",
       "changed": "Su clave cambió. Vuelve a comparar los números de seguridad antes de compartir.",
+      "back": "Esta persona salió de este cajón o fue quitada de él, y vuelve a estar en la lista. Compara de nuevo los números de seguridad si sabes que la invitaron otra vez.",
       "unpinned": "Aún sin configurar"
     },
     "confirm": "Los números coinciden",

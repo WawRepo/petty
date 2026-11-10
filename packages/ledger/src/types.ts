@@ -7,6 +7,8 @@ export interface LedgerEntry {
   /** Server receive time, ISO 8601. Display only. */
   readonly received_at: string;
   readonly entry: SignedEntryV1;
+  /** True when the signature was checked against a key the reader never pinned for the author, so it is not known to be theirs (PETTY-413). Shown as not confirmed; the fold does not look at it. */
+  readonly unconfirmed_author?: boolean;
 }
 
 export type LineKind = "money" | "countable" | "single";
