@@ -1,12 +1,13 @@
 /**
  * The permanent compatibility check. Every fixture in corpus/v1 must open,
  * verify, and equal its recorded plaintext, on every build, forever.
+ * corpus/v2 (PETTY-422) adds drawer documents of format 2, the same way.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
-  fromB64, fromHex, hashEntry, openArchive, openDocument, openEntry, openPhoto, safetyNumber, signingKeyId, toB64,
+  AuthTagMismatch, fromB64, fromHex, hashEntry, openArchive, openDocument, openEntry, openPhoto, safetyNumber, signingKeyId, toB64,
   unlockPasskeyVault, unlockVault, unwrapDrawerKey, verifyEntry, importEcdsaPublic,
   type DrawerKeyWrapV1, type ExportArchiveV1, type RecordIdentity, type SignedEntryV1, type VaultBlobV1,
 } from "../src/index.js";
@@ -102,4 +103,24 @@ describe("corpus v1: archive", () => {
   it("opens under the recorded password", async () => {
     expect(await openArchive(archive.password, archive.archive)).toEqual(archive.payload);
   }, 30_000);
+});
+
+describe("corpus v2: drawer documents with a counter inside (format 2)", () => {
+  const v2 = JSON.parse(readFileSync(fileURLToPath(new URL("../corpus/v2/drawer.json", import.meta.url)), "utf8")) as CorpusDrawer;
+  const key = (version: number) => crypto.subtle.importKey("raw", fromHex(v2.keys[String(version)] ?? ""), "AES-GCM", false, ["decrypt"]);
+
+  it("every record opens under its key version as format 2 and equals its plaintext, counter included", async () => {
+    expect(v2.records.map((r) => [r.identity.record_type, r.identity.key_version, r.identity.schema_version])).toEqual([["document", 1, 2], ["document", 2, 2]]);
+    for (const r of v2.records) {
+      const doc = await openDocument(await key(r.identity.key_version), r.identity, sealedOf(r));
+      expect(doc).toEqual(r.plaintext);
+      expect((doc as { rev: number }).rev).toBe(7);
+    }
+  });
+
+  it("no record opens as format 1: what a build from before the counter would try", async () => {
+    for (const r of v2.records) {
+      await expect(openDocument(await key(r.identity.key_version), { ...r.identity, schema_version: 1 }, sealedOf(r))).rejects.toBeInstanceOf(AuthTagMismatch);
+    }
+  });
 });

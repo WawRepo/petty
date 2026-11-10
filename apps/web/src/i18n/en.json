@@ -730,6 +730,7 @@
   "pins": {
     "rolledBackTitle": "The server has an older copy of your trusted keys",
     "rolledBack": "This device last saw version {seen} of your trusted-keys list; the server now has version {server}. That can be a restored backup, or someone trying to make you trust new keys. Until you start a new list, no new key is trusted automatically and you cannot share drawers.",
+    "rolledBackInside": "The copy of your trusted-keys list that the server sent is older than the one this device last saw, but the server does not number it as older. The server may have been tampered with, or someone is trying to make you trust new keys. Until you start a new list, no new key is trusted automatically and you cannot share drawers.",
     "missingTitle": "The server has no list of your trusted keys",
     "missing": "Your account has drawers, so the server should have this list. It can be missing because your account is older than the list, because a backup was restored, or because someone wants you to trust new keys. Until you start a new list, Petty opens only drawers whose key you made yourself, and you cannot share drawers. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again.",
     "startOver": "Start a new list of trusted keys"

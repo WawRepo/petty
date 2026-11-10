@@ -730,6 +730,7 @@
   "pins": {
     "rolledBackTitle": "Serwer ma starszą kopię Twoich zaufanych kluczy",
     "rolledBack": "To urządzenie widziało ostatnio wersję {seen} listy zaufanych kluczy; serwer ma teraz wersję {server}. To może być przywrócona kopia zapasowa albo próba podsunięcia Ci nowych kluczy. Dopóki nie założysz nowej listy, żaden nowy klucz nie zostanie automatycznie uznany za zaufany i nie możesz udostępniać szuflad.",
+    "rolledBackInside": "Kopia listy zaufanych kluczy, którą przysłał serwer, jest starsza niż ta, którą to urządzenie widziało ostatnio, ale serwer nie oznacza jej numerem jako starszej. Ktoś mógł zmienić serwer albo próbuje podsunąć Ci nowe klucze. Dopóki nie założysz nowej listy, żaden nowy klucz nie zostanie automatycznie uznany za zaufany i nie możesz udostępniać szuflad.",
     "missingTitle": "Serwer nie ma listy Twoich zaufanych kluczy",
     "missing": "Twoje konto ma szuflady, więc serwer powinien mieć tę listę. Może jej brakować, bo konto jest starsze niż ta lista, bo przywrócono kopię zapasową albo ktoś próbuje podsunąć Ci nowe klucze. Dopóki nie założysz nowej listy, Petty otwiera tylko szuflady, których klucz pochodzi od Ciebie, i nie możesz udostępniać szuflad. Potem potwierdź numer bezpieczeństwa każdej osoby, która udostępniła Ci szufladę, a jej szuflady znów się otworzą.",
     "startOver": "Załóż nową listę zaufanych kluczy"

@@ -231,7 +231,7 @@ as `Authorization: Bearer …`. Non-members get 404, never 403.
 | `GET /me/doc` `PUT /me/doc` | user | the user's own encrypted document (key pins), version-checked |
 | `GET /bootstrap` | user | all drawers, documents, my wraps, members, entries since each line's last Adjust, invitations, transfers |
 | `POST /drawers` `GET /drawers/:id` `DELETE /drawers/:id` | user / read / owner | create; read; permanent delete via `delete_drawer()` |
-| `PUT /drawers/:id/document` | write | optimistic lock on `base_version` → 409 `VersionConflict`; `verification: true` stamps `last_verified_at` |
+| `PUT /drawers/:id/document` | write | optimistic lock on `base_version` → 409 `VersionConflict`; `verification: true` stamps `last_verified_at`; a document in an older format (`schema_version`) than the stored one → 409 `DocumentFormatOlder` |
 | `GET/PUT/DELETE /drawers/:id/photo` | read / write | own encrypted row |
 | `POST /drawers/:id/lines/:lineId/delete` | write | new document + entries removed via `delete_line()` |
 | `POST /drawers/:id/entries` | write | append; idempotent on client id; Adjust needs `expected_head_seq` → 409 `RecountRequired`; Reverse rules → 409 `ReverseRefused` |
@@ -246,7 +246,7 @@ as `Authorization: Bearer …`. Non-members get 404, never 403.
 | `POST /me/custody-challenge` | user | a fresh challenge for a custody proof (docs/threat-model.md) |
 | `POST /me/passkeys` `DELETE /me/passkeys/:id` | user | add / remove a passkey that opens the vault |
 | `GET /me/storage` | user | storage used, against `STORAGE_QUOTA_MB` |
-| `GET /drawers/:id/document/history` `POST /drawers/:id/document/restore` | owner | the drawer document's 30-day history; restore an earlier version |
+| `GET /drawers/:id/document/history` | owner | the drawer document's 30-day history, still sealed. The owner's app puts an earlier version back with a normal `PUT /drawers/:id/document`; `POST /drawers/:id/document/restore` now answers 410 |
 | `GET /me/tokens` `POST /me/tokens` `DELETE /me/tokens/:id` `GET/POST /me/tokens/:id/keys` | user | access tokens: list, make (with a custody proof), revoke, their key bundle |
 | `GET /me/token` `GET /me/token/bootstrap` `GET /me/token/keys` `DELETE /me/token` | token | a token about itself, its drawers and its key bundle; a token ends itself |
 | `GET /users/:id/delegations` | user | the tokens a person's key vouched for, to check their signatures |

@@ -378,7 +378,6 @@ export const DocumentHistoryItem = z.object({
 });
 export const DocumentHistory = z.object({ history: z.array(DocumentHistoryItem) });
 export type DocumentHistory = z.infer<typeof DocumentHistory>;
-export const RestoreDocumentBody = z.object({ history_id: z.string().regex(/^\d+$/), base_version: z.number().int().min(1) });
 
 export const PostEntryBody = z.object({
   id: uuid,

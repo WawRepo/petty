@@ -32,20 +32,47 @@ export type TrustedToken = z.infer<typeof TrustedToken>;
 // `drawer_key_fps` (PETTY-438): per drawer and key version, a fingerprint of the key this person accepted. Another
 // key at the same version is refused. A document without it (written before, or saved by an older Petty, which drops
 // the field) keeps the drawer open at the version in `drawer_keys`, and the fingerprint is remembered at the next load.
+// `rev` (PETTY-439): a counter inside the encryption. The server's version number of this document is a plain number
+// that the server writes, so it could give an older sealed copy a newer one. Every save stores the counter it loaded
+// plus one, and each browser remembers the highest it saw. A document with a counter is `v` 2: a build from before the
+// counter knows only `v` 1, does not open it, and so can never save a copy without the counter (or without a newer
+// field) over it. `v` 1 is a document from before the counter; it has none and gets its first one at the next load.
+// `drawer_revs` (PETTY-422): per drawer, the highest counter this person opened inside the drawer's document.
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional(), drawer_key_fps: z.record(z.string(), z.record(z.string(), z.string())).optional() });
+const UserDoc = z.object({ v: z.union([z.literal(1), z.literal(2)]), rev: z.number().int().positive().optional(), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional(), drawer_key_fps: z.record(z.string(), z.record(z.string(), z.string())).optional(), drawer_revs: z.record(z.string(), z.number().int().positive()).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
+/** The document as it came out of the ciphertext. `v` 2 must carry its counter; a `rev` found in a `v` 1 document does not count. */
+export function parseUserDoc(json: unknown): UserDocT {
+  const doc = UserDoc.parse(json);
+  if (doc.v === 2) { if (doc.rev === undefined) throw new Error("user document without its counter"); return doc; }
+  const { rev: _none, ...rest } = doc;
+  void _none;
+  return rest;
+}
+/** What a browser remembers of the newest user document it saw (IndexedDB `userdoc.<user id>`). `rev` is absent until it saw a counter. */
+export interface SeenUserDoc { readonly version: number; readonly rev?: number }
+/**
+ * PETTY-439: is this copy older than one this browser saw? The server's version number says so when it is lower.
+ * The counter inside says so when it is lower or gone, also under a version number that is not lower.
+ */
+export function userDocRolledBack(seen: SeenUserDoc, version: number, doc: { readonly rev?: number | undefined }): boolean {
+  return version < seen.version || (seen.rev !== undefined && (doc.rev ?? 0) < seen.rev);
+}
+const seenOf = (version: number, doc: UserDocT): SeenUserDoc => (doc.rev === undefined ? { version } : { version, rev: doc.rev });
 
 /**
  * rolled_back (SR-3): the server answered 404, or a lower version than this device last
  * saw. Pins stay as they were in memory, nothing new is pinned and no key is wrapped for
  * anyone until the user acknowledges it; otherwise a server that drops the document
  * would turn every confirmed pin back into first sight.
+ * PETTY-439: also a document whose counter inside is lower than the one this device last saw, or that has none
+ * after this device saw one: an older sealed copy under a version number that is not lower.
  * PETTY-438: no document at all counts the same when the account has drawers (`drawersNeedUserDoc`).
  * While rolled back, and while "idle" (not loaded), only drawer keys this person wrapped are opened.
  */
-interface PinsState { readonly status: "idle" | "ready" | "rolled_back"; readonly doc: UserDocT; readonly version: number; readonly lastSeenVersion: number }
+/** `olderInside` (PETTY-439): rolled back by the counter inside the document, while the server's version number is not lower. */
+interface PinsState { readonly status: "idle" | "ready" | "rolled_back"; readonly doc: UserDocT; readonly version: number; readonly lastSeenVersion: number; readonly olderInside?: boolean }
 let state: PinsState = { status: "idle", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 };
 const seenKey = (userId: string) => `userdoc.${userId}`;
 /** PETTY-438: the sealed document as last loaded or saved here, for a start with no connection. Ciphertext only; wiped at sign-out with the rest of the cache. */
@@ -74,7 +101,7 @@ export async function startUserDoc(): Promise<void> {
   if (state.status === "idle") await loadPins();
   if (state.status === "ready" && state.version === 0) await save((doc) => doc);
 }
-/** The user read the warning and chose to start over: forget the remembered version and load whatever the server has. */
+/** The user read the warning and chose to start over: forget the remembered version and counter and load whatever the server has. */
 export async function acknowledgeRollback(): Promise<void> {
   const a = getAuth();
   if (a.status !== "unlocked") return;
@@ -100,10 +127,12 @@ async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
 }
 export function forgetSelfKey(): void { selfKey = null; resetPins(); }
 
+let upgrading = false;
 export async function loadPins(): Promise<void> {
   const { key: k, identity } = await key();
   const userId = identity.record_id;
-  const seen = (await idb.get<{ version: number }>(seenKey(userId)))?.version ?? 0;
+  const remembered = (await idb.get<SeenUserDoc>(seenKey(userId))) ?? { version: 0 };
+  const seen = remembered.version;
   try {
     const raw = await api<unknown>("GET", "/me/doc");
     if (raw === undefined) { // 204: no document yet (PETTY-133)
@@ -113,11 +142,17 @@ export async function loadPins(): Promise<void> {
       return;
     }
     const row = UserDocRow.parse(raw);
-    const doc = UserDoc.parse(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))));
-    if (row.version < seen) { set({ status: "rolled_back", doc, version: row.version, lastSeenVersion: seen }); return; }
-    await idb.set(seenKey(userId), { version: row.version });
+    const doc = parseUserDoc(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))));
+    if (userDocRolledBack(remembered, row.version, doc)) { set({ status: "rolled_back", doc, version: row.version, lastSeenVersion: seen, olderInside: row.version >= seen }); return; }
+    await idb.set(seenKey(userId), seenOf(row.version, doc));
     await idb.set(K_DOC, { userId, version: row.version, nonce: row.nonce, ciphertext: row.ciphertext } satisfies CachedDoc);
     set({ status: "ready", doc, version: row.version, lastSeenVersion: row.version });
+    // PETTY-439: a document from before the counter gets its first one now, in one write of its own. Left to the
+    // next change, a settled account would keep a document that the server can still swap for an older copy.
+    if (doc.rev === undefined && !upgrading) {
+      upgrading = true;
+      try { await save((d) => d); } catch { /* at the next load */ } finally { upgrading = false; }
+    }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
       if (seen > 0) { set({ status: "rolled_back", doc: state.doc, version: 0, lastSeenVersion: seen }); return; }
@@ -129,8 +164,8 @@ export async function loadPins(): Promise<void> {
     if (e instanceof NetworkError && state.status === "idle") {
       const c = await idb.get<CachedDoc>(K_DOC);
       if (c && c.userId === userId && c.version >= seen) {
-        const doc = UserDoc.parse(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(c.nonce), ciphertext: fromB64(c.ciphertext) }))));
-        set({ status: "ready", doc, version: c.version, lastSeenVersion: seen });
+        const doc = parseUserDoc(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(c.nonce), ciphertext: fromB64(c.ciphertext) }))));
+        if (!userDocRolledBack(remembered, c.version, doc)) set({ status: "ready", doc, version: c.version, lastSeenVersion: seen });
       }
     }
     throw e;
@@ -142,11 +177,12 @@ async function save(mutate: (doc: UserDocT) => UserDocT): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     if (state.status === "idle") await loadPins();
     if (state.status === "rolled_back") throw new Error("PinsRolledBack");
-    const next = mutate(state.doc);
+    // PETTY-439: the counter this copy was loaded with, plus one. After a VersionConflict the copy is the fresh one.
+    const next: UserDocT = { ...mutate(state.doc), v: 2, rev: (state.doc.rev ?? 0) + 1 };
     const sealed = await seal(k, identity, utf8(canonicalJson(next)));
     try {
       const r = await api<{ version: number }>("PUT", "/me/doc", { base_version: state.version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
-      await idb.set(seenKey(identity.record_id), { version: r.version });
+      await idb.set(seenKey(identity.record_id), seenOf(r.version, next));
       await idb.set(K_DOC, { userId: identity.record_id, version: r.version, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) } satisfies CachedDoc);
       set({ status: "ready", doc: next, version: r.version, lastSeenVersion: r.version });
       return;
@@ -243,6 +279,8 @@ export async function updateTrustedTokens(change: (tokens: readonly TrustedToken
 export function acceptedKeyVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_keys?.[drawerId] ?? null; }
 /** The newest document version of this drawer that this person opened (PETTY-403), or null before the first. */
 export function acceptedDocVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_docs?.[drawerId] ?? null; }
+/** The highest counter this person opened inside this drawer's document (PETTY-422), or null before the first document with one. */
+export function acceptedDocRev(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_revs?.[drawerId] ?? null; }
 /** The fingerprint of the key this person accepted for this drawer at this key version (PETTY-438), or null when none is remembered. */
 export function acceptedKeyFingerprint(drawerId: string, keyVersion: number, doc: UserDocT = state.doc): string | null { return doc.drawer_key_fps?.[drawerId]?.[String(keyVersion)] ?? null; }
 function raised(seen: Readonly<Record<string, number>> | undefined, next: ReadonlyMap<string, number>): Record<string, number> | undefined {
@@ -253,9 +291,10 @@ function raised(seen: Readonly<Record<string, number>> | undefined, next: Readon
 /**
  * Remembers newly accepted key versions and opened document versions, saved once. Never lowers one. Skipped while the document is rolled back.
  * PETTY-438: `fps` holds the fingerprint of each accepted key that has none yet; one already remembered is never replaced.
+ * PETTY-422: `revs` holds the counters found inside the opened documents.
  */
-export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, docs: ReadonlyMap<string, number>, fps: ReadonlyMap<string, { readonly version: number; readonly fp: string }> = new Map()): Promise<void> {
-  const higher = [...keys].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0)) || [...docs].some(([id, v]) => v > (acceptedDocVersion(id) ?? 0)) || [...fps].some(([id, k]) => acceptedKeyFingerprint(id, k.version) === null);
+export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, docs: ReadonlyMap<string, number>, fps: ReadonlyMap<string, { readonly version: number; readonly fp: string }> = new Map(), revs: ReadonlyMap<string, number> = new Map()): Promise<void> {
+  const higher = [...keys].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0)) || [...docs].some(([id, v]) => v > (acceptedDocVersion(id) ?? 0)) || [...fps].some(([id, k]) => acceptedKeyFingerprint(id, k.version) === null) || [...revs].some(([id, v]) => v > (acceptedDocRev(id) ?? 0));
   if (pinsBlocked() || !higher) return;
   await save((doc) => {
     const next = { ...doc };
@@ -263,6 +302,8 @@ export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, do
     if (k) next.drawer_keys = k;
     const d = raised(doc.drawer_docs, docs);
     if (d) next.drawer_docs = d;
+    const r = raised(doc.drawer_revs, revs);
+    if (r) next.drawer_revs = r;
     const f = { ...doc.drawer_key_fps };
     for (const [id, key] of fps) if (acceptedKeyFingerprint(id, key.version, doc) === null) f[id] = { ...f[id], [String(key.version)]: key.fp };
     if (Object.keys(f).length) next.drawer_key_fps = f;
