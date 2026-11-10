@@ -5,7 +5,7 @@
  */
 import Fastify from "fastify";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { deviceKeyPair } from "@petty/crypto";
+import { deviceKeyPair, deviceUserCode } from "@petty/crypto";
 
 // Small limits and open sign-up, so one request per route shows the key and a handful shows a limit.
 process.env["LOGIN_LIMIT_PER_IP"] = "3";
@@ -34,6 +34,11 @@ const hex = () => (1 + Math.floor(Math.random() * 0xfffe)).toString(16);
 const freshNet6 = () => `2001:db8:${hex()}:${hex()}`;
 const freshV4 = () => `198.51.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
 const json = { "content-type": "application/json" };
+// a sign-in request as the command line sends it: its key, and the code that goes with the key and the address (PETTY-451)
+const deviceAsk = async () => {
+  const key = await deviceKeyPair();
+  return JSON.stringify({ cli_pub: key.publicB64, user_code: await deviceUserCode(key.publicB64, "https://petty.test"), client_name: "petty on net-test", role: "read", expires_days: 30 });
+};
 
 describe("networkOf: the key of an address", () => {
   it("an IPv4 address counts as it is", () => {
@@ -78,13 +83,12 @@ describe("every per-address limit counts an IPv6 client by its /64 (PETTY-458)",
     const U = new Client(app, await userMaterial("net-u", { email: `net-u-${run}@test.local` }));
     expect((await U.signup(await makeJoinLink())).statusCode).toBe(201);
     counted.length = 0;
-    const key = await deviceKeyPair();
     const fresh = await userMaterial("net-open", { email: `net-open-${run}@test.local` });
     const sent = [
       await app.inject({ method: "POST", url: "/auth/login", remoteAddress: from(1), headers: json, payload: JSON.stringify({ email: `nobody-${run}@test.local`, password: "wrong-password" }) }),
       await app.inject({ method: "POST", url: "/auth/forgot", remoteAddress: from(2), headers: json, payload: JSON.stringify({ email: `nobody-${run}@test.local` }) }),
       await app.inject({ method: "POST", url: "/auth/signup", remoteAddress: from(3), headers: json, payload: JSON.stringify(fresh.signupBody) }),
-      await app.inject({ method: "POST", url: "/device/code", remoteAddress: from(4), headers: json, payload: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on net-test", role: "read", expires_days: 30 }) }),
+      await app.inject({ method: "POST", url: "/device/code", remoteAddress: from(4), headers: json, payload: await deviceAsk() }),
       await app.inject({ method: "POST", url: "/device/token", remoteAddress: from(5), headers: json, payload: JSON.stringify({ device_code: "x".repeat(43) }) }),
       await app.inject({ method: "POST", url: "/users/lookup", remoteAddress: from(6), cookies: { petty_session: U.cookie! }, headers: json, payload: JSON.stringify({ email: U.user.email }) }),
     ];
@@ -96,10 +100,7 @@ describe("every per-address limit counts an IPv6 client by its /64 (PETTY-458)",
 
   it("a limit holds across the addresses of one /64, and another /64 has its own", async () => {
     const net = freshNet6();
-    const ask = async (remoteAddress: string) => {
-      const key = await deviceKeyPair();
-      return (await app.inject({ method: "POST", url: "/device/code", remoteAddress, headers: json, payload: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on net-test", role: "read", expires_days: 30 }) })).statusCode;
-    };
+    const ask = async (remoteAddress: string) => (await app.inject({ method: "POST", url: "/device/code", remoteAddress, headers: json, payload: await deviceAsk() })).statusCode;
     const codes: number[] = [];
     for (let i = 0; i < 11; i++) codes.push(await ask(`${net}:${hex()}:${hex()}:${hex()}:${hex()}`)); // 10 device codes an hour
     expect(codes).toEqual([...Array<number>(10).fill(201), 429]);

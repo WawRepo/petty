@@ -54,7 +54,7 @@ describe("per-IP limits behind a proxy", () => {
       return (await fetch(`${API}/device/code`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-test-client-ip": who },
-        body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
+        body: JSON.stringify({ cli_pub: key.publicB64, user_code: await deviceUserCode(key.publicB64, ORIGIN), client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
       })).status;
     };
     const net = `2001:db8:${hex()}:${hex()}`;
