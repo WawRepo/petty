@@ -89,6 +89,14 @@ Name an item as `"Drawer › Item"` (Tab completes it), by words (`kitchen cash`
 For scripts and agents, `--json` prints JSON. Exit codes: **0** done, **1** error, **2** usage,
 **3** not signed in, the token ended, or it may only read, **4** nothing or more than one thing matches.
 
+`petty` checks what it reads. An entry that does not open, or whose signature does not check, is left
+out of the balance, and the hash links between an item's entries must hold. Whatever the command,
+each such finding is one line on the error output: `petty: warning: drawer "Kitchen" / item "Cash":
+1 entry could not be opened; left out of the balance`. In `--json`, an item carries `unreadable`,
+`unverified` and `chain` (`"ok"` or `"broken"`), and a drawer `unreadable`. Open Petty in the browser
+when you see a warning. `petty` remembers nothing about your drawers between two runs, so it cannot
+notice a history that got shorter; the web app can ([threat model](threat-model.md#integrity)).
+
 ## Tab completion
 
 | Shell | Set it up once |

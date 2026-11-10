@@ -1,4 +1,4 @@
-import { checkApiUrl, connect, type AgentClient } from "@petty/agent";
+import { checkApiUrl, connect, warningText, type AgentClient } from "@petty/agent";
 import { deviceKeyPair, deviceUserCode, openDeviceToken, splitPatToken } from "@petty/crypto";
 import { DeviceCodeResponse, DeviceTokenResponse } from "@petty/protocol";
 import { CliError, type Io } from "./io.js";
@@ -92,5 +92,15 @@ export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
 /** Opens the token's key bundle once, to check it works and to learn its name and role. */
 export async function checkToken(io: Io, origin: string, token: string): Promise<AgentClient> {
   try { splitPatToken(token); } catch { throw new CliError(3, "that is not a Petty access token (petty_pat_…)"); }
-  return connect({ token, apiUrl: apiOf(origin), fetch: io.fetch });
+  // PETTY-445: what a load could not open or check is said on stderr, whatever the command, once per run
+  const said = new Set<string>();
+  return connect({
+    token, apiUrl: apiOf(origin), fetch: io.fetch,
+    onWarnings: (list) => {
+      for (const text of list.map((w) => warningText(w))) {
+        if (!said.has(text)) io.err(`petty: warning: ${text}\n`);
+        said.add(text);
+      }
+    },
+  });
 }

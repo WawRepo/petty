@@ -191,6 +191,36 @@ describe("petty auth login through the page (PETTY-274)", () => {
   });
 });
 
+describe("what a load could not check reaches the person (PETTY-445)", () => {
+  /** The API as a changed database would serve it: the newest entry of Cash comes with another row's ciphertext. */
+  const damaged: typeof fetch = async (input, init) => {
+    const res = await inject(input, init);
+    if (new URL(String(input)).pathname !== "/api/me/token/bootstrap") return res;
+    const boot = (await res.json()) as { entries: { line_id: string; ciphertext: string }[] };
+    const rows = boot.entries.filter((e) => e.line_id === lineId);
+    rows.at(-1)!.ciphertext = rows[0]!.ciphertext;
+    return new Response(JSON.stringify(boot), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  it("says on stderr, once per run, that an entry did not open; the answer still comes, and --json counts it", async () => {
+    const { t, io } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api` } });
+    const petty = (...argv: string[]) => run(argv, { ...io, fetch: damaged });
+    expect(await petty("find", "kitchen", "cash")).toBe(0); // find loads the drawers more than once
+    expect(t.out).toContain("Kitchen › Cash  ");
+    expect(t.err.match(/petty: warning: /g)).toHaveLength(1);
+    expect(t.err).toContain('petty: warning: drawer "Kitchen" / item "Cash": 1 entry could not be opened; left out of the balance\n');
+    t.out = "";
+    expect(await petty("drawers", "--json")).toBe(0);
+    expect(JSON.parse(t.out)[0].lines[0]).toMatchObject({ name: "Cash", unreadable: 1, unverified: 0, chain: "ok" });
+  });
+
+  it("says nothing when everything checks out", async () => {
+    const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api` } });
+    expect(await petty("drawers")).toBe(0);
+    expect(t.err).toBe("");
+  });
+});
+
 describe("Tab completion (PETTY-274)", () => {
   it("completes commands, flags and values without a login", async () => {
     const { t, petty } = terminal();

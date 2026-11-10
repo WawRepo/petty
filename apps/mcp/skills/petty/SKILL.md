@@ -115,6 +115,11 @@ that computer and hands you what you ask for. Petty's server never sees it.
   them.
 - "signature did not check" means an entry may have been changed or forged. Petty leaves it out of
   the balance. Tell the user and suggest opening Petty.
+- An answer may end with other lines that start with `warning:` (the command line prints them as
+  `petty: warning:` on its error output). They say what could not be opened or checked: entries or a
+  drawer left out of the balance, or history links that do not match, which means entries may have
+  been removed or changed on the server. Always tell the user, in plain words, and suggest opening
+  Petty in the browser.
 - Do not save what you read from Petty to files, notes or memory unless the user asks. Petty itself
   never writes it to disk.
 - A token cannot share a drawer, delete or export anything, or make another token. For those, the

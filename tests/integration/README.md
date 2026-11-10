@@ -21,7 +21,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `03-household` | login/logout, drawers, entries, an Adjust, finding the second person by email (a POST body, no address in the request log), sharing with them, a stranger kept out, document restore, an access token and the agent (signatures verified), revoke, a token's drawer keys sent in several requests |
 | `04-open-signup` | open sign-up without a join link, and the invite path still works |
 | `05-storage` | the per-person storage quota fills and refuses |
-| `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes |
+| `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes; its entry links to the one before it, and a history that checks out brings no warning |
 | `07-mail` | a password reset through the image, both emails read from the mail catcher, the contact address in them |
 | `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`) |
 | `09-upgrade` | after an app restart (and the upgrade), the seeded data still logs in, opens and folds to the same balance |

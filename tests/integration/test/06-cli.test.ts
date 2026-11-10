@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
+import { deviceUserCode, fromB64, hashEntry, openEntryUnverified, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, ORIGIN, newUser } from "../lib.js";
@@ -17,7 +17,7 @@ import { API, ORIGIN, newUser } from "../lib.js";
 const dir = mkdtempSync(join(tmpdir(), "petty-it-cli-"));
 const cli = join(dir, "petty.mjs");
 let ann: Client;
-let drawerId: string, lineId: string, raw: string;
+let drawerId: string, lineId: string, raw: string, key: CryptoKey;
 
 function petty(args: string[], stdin?: string) {
   const child = spawn(process.execPath, [cli, ...args], { env: { ...process.env, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "" }, stdio: ["pipe", "pipe", "pipe"] });
@@ -41,6 +41,7 @@ beforeAll(async () => {
   const doc = applyOp(newDocument("Garage box"), { type: "add_line", line: { id: lineId, kind: "money", name: "Cash", currency: "EUR", exponent: 2 } }, { lineHasEntries: () => false });
   const made = await ann.createDrawer("Garage box", doc);
   drawerId = made.id;
+  key = made.key;
   expect((await ann.postEntry(drawerId, made.key, lineId, "add", 2500)).res.statusCode).toBe(201);
   const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
   raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
@@ -73,6 +74,13 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const add = petty(["add", "Garage box › Cash", "1.50", "--note", "-"], "from the shipped CLI");
     expect(await add.done).toBe(0);
     expect(add.out()).toBe("Garage box › Cash: 26.50 EUR\n");
+    // PETTY-445: the shipped program links its entry to the one before it, as the web app does, and says
+    // nothing about a drawer whose history checks out
+    expect(add.err()).not.toContain("warning");
+    const rows = (await ann.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries`)).json().entries as { id: string; author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }[];
+    const [newest, first] = await Promise.all(rows.map((r) => openEntryUnverified(key, { record_type: "entry", record_id: r.id, drawer_id: drawerId, line_id: lineId, author_id: r.author_id, key_version: r.key_version, schema_version: r.schema_version }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) })));
+    expect(rows).toHaveLength(2);
+    expect(newest!.prev_hash).toBe(await hashEntry(first!));
 
     const logout = petty(["auth", "logout"]);
     expect(await logout.done).toBe(0);

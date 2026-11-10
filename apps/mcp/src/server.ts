@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connect, TokenError, type AgentClient, type AgentDrawer, type AgentLine, type AgentPlace } from "@petty/agent";
 import { foldText } from "@petty/ledger";
 import pkg from "../package.json" with { type: "json" };
+import { warningText } from "@petty/agent";
 
 /**
  * Petty as tools for an agent host, Claude Desktop first (PETTY-166). A thin layer over
@@ -62,6 +63,7 @@ How to answer:
 - After any change, tell the user the new balance or tags the tool reports.
 - history lists each entry's own amount (for adjust: what was counted), newest first; it is not a running balance.
 - A "signature did not check" warning means an entry may have been changed or forged; it is left out of the balance. Tell the user and suggest opening Petty.
+- Other lines that start with "warning:" say what this program could not open or check: entries or a drawer that could not be opened (they are left out of the balance), or history links that do not match (entries may have been removed or changed on the server). Always pass these on to the user, in plain words, and suggest opening Petty in the browser.
 - Tags: tag_item, untag_item, rename_tag (renaming onto an existing tag merges them), remove_tag. Places: list_places, move_drawer with a path such as "House › Kitchen".
 - add_item puts a new item into an existing drawer: kind "money" needs a currency code such as EUR, "countable" may take a unit, "single" may take a note. A starting amount is optional. Ask the user before adding, and do not invent items they did not mention.
 - undo_entry undoes one add or withdraw by its entry id (from history, or from the answer of add or withdraw). Undo a mistake this way, never with a made-up opposite entry. A count (adjust) cannot be undone: count again instead.
@@ -71,6 +73,9 @@ How to answer:
 - Errors come back as a code and a reason (for example ReadOnly, NotFound, Ambiguous, Offline). Explain them plainly; ReadOnly means this token may only read.`;
 /** "Kitchen › shelf", "Kitchen > shelf" or "Kitchen/shelf" → ["Kitchen", "shelf"]. */
 const splitPlace = (place: string): string[] => place.split(/\s*(?:›|>|\/)\s*/).map((p) => p.trim()).filter(Boolean);
+
+/** An answer as it is. Inside buildServer, `asText` also adds the warnings of the load behind the answer (PETTY-445). */
+const plainText = asText;
 
 export async function buildServer(opts: ServerOptions): Promise<McpServer> {
   // PETTY-172: never quit at start. If Petty cannot be reached yet (no network, a macOS permission
@@ -89,6 +94,9 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     if (!client) client = await open();
     return client;
   };
+  // PETTY-445: every answer ends with what the load behind it could not open or check, so it reaches the person.
+  // It takes the plain helper's name on purpose: no tool below can answer without the warnings.
+  const asText = (text: string) => plainText([text, ...(client?.warnings ?? []).map((w) => `warning: ${warningText(w, q)}`)].join("\n"));
   // PETTY-296 (review S11): the release this server comes from, not a number typed once (it said 1.2.0)
   const server = new McpServer({ name: "petty", version: pkg.version }, { instructions: INSTRUCTIONS });
   // Unknown role (not connected yet): offer the write tools; a read-only token is still refused by the server.
