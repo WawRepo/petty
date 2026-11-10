@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { AccessToken, type AccessToken as AccessTokenT } from "@petty/protocol";
-import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
+import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
 import { custodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
-import { expectedSender, getDrawers, type DrawerView, loadIfIdle } from "./drawers.js";
+import { getDrawers, openWrap, type DrawerView, loadIfIdle } from "./drawers.js";
 import { getAuth } from "./session.js";
+import { openVaultAgain } from "./custody.js";
 
 /**
  * Access tokens (PETTY-164): the owner hands one of their own tools a copy of the keys it needs.
@@ -18,8 +19,11 @@ export interface NewTokenOptions {
   /** null = every drawer I can open */
   readonly scope: readonly string[] | null;
   readonly expiresAt: string | null;
-  /** Needed for a writing token: its bundle carries the signing key, so entries are mine. */
-  readonly unlocked?: UnlockedKeys;
+  /**
+   * PETTY-452: what the person gave just now to open the vault again: the passphrase, or null for a
+   * passkey prompt. Every token needs it, a reading one too: an unlocked session alone makes none.
+   */
+  readonly passphrase: string | null;
 }
 
 /** A short, stable fingerprint of a token's public key, kept in the sealed user document (PETTY-181). */
@@ -38,14 +42,9 @@ async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId
     if (scope && !scope.includes(v.summary.id)) continue;
     const wrap = [...v.wraps].sort((a, b) => b.key_version - a.key_version)[0];
     if (!wrap) continue;
-    const sender = await expectedSender(wrap, v.members);
-    if (!("pub" in sender)) continue;
-    try {
-      const key = await unwrapDrawerKey(wrap, me.keys.ecdhPrivate, { drawer_id: v.summary.id, key_version: wrap.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
-      out.push({ drawerId: v.summary.id, keyVersion: wrap.key_version, key });
-    } catch {
-      // a drawer whose wrap this device cannot open simply stays out of the bundle
-    }
+    // a drawer whose wrap this device cannot open, or does not take (PETTY-438), simply stays out of the bundle
+    const opened = await openWrap(v.summary.id, wrap.key_version, wrap, v.members, { extractable: true });
+    if ("key" in opened) out.push({ drawerId: v.summary.id, keyVersion: wrap.key_version, key: opened.key });
   }
   return out;
 }
@@ -54,7 +53,11 @@ async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId
 export async function createAccessToken(opts: NewTokenOptions): Promise<{ token: string; row: AccessTokenT }> {
   const me = getAuth();
   if (me.status !== "unlocked") throw new Error("vault locked");
-  if (opts.role === "write" && !opts.unlocked) throw new Error("writing token needs the vault");
+  // PETTY-452: the vault is opened again here, with what the person gave for this token. A wrong passphrase
+  // or a cancelled passkey prompt ends it before anything is made. The keys it gives must be this
+  // session's own, and they sign what the server checks below (the delegation and the custody proof).
+  const again: UnlockedKeys = await openVaultAgain(me.me, opts.passphrase);
+  if (again.pub.ecdh !== me.keys.pub.ecdh || again.pub.ecdsa !== me.keys.pub.ecdsa) throw new Error("vault keys differ");
   const id = tokenId();
   const secret = patSecret();
   const openable = await openableKeys(opts.scope);
@@ -66,7 +69,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
   if (opts.role === "write") {
     const sig = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
     const ecdsaPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", sig.publicKey)));
-    const delegation = await signDelegation(me.keys.ecdsaPrivate, {
+    const delegation = await signDelegation(again.ecdsaPrivate, {
       user_id: me.me.id,
       account_sig_key_id: me.me.keys.sig_key_id,
       token_ecdsa_pub: ecdsaPub,
@@ -91,7 +94,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
       scope: opts.scope ? [...opts.scope] : null,
       expires_at: opts.expiresAt,
       bundle,
-      proof: await custodyProof(me.keys.ecdsaPrivate),
+      proof: await custodyProof(again.ecdsaPrivate),
       ...(signing ? { signing: signing.body } : {}),
     }),
   );

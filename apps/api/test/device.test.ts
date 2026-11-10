@@ -23,14 +23,15 @@ beforeAll(async () => {
 afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); });
 
 // PETTY-334: the per-address limits count in the database and outlive this process: one address per run
-const remoteAddress = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
+const address = () => `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
+const remoteAddress = address();
 
-/** What `petty auth login` sends; no cookie, no bearer. */
+/** What `petty auth login` sends; no cookie, no bearer. The code is the tool's own, from its key and the site's address. */
 async function ask(role: "read" | "write" = "write") {
   const tool = await deviceKeyPair();
   const res = await app.inject({
     method: "POST", url: "/device/code", remoteAddress, headers: { "content-type": "application/json" },
-    payload: JSON.stringify({ cli_pub: tool.publicB64, client_name: "petty on laptop", role, expires_days: 90 }),
+    payload: JSON.stringify({ cli_pub: tool.publicB64, user_code: await deviceUserCode(tool.publicB64, ORIGIN), client_name: "petty on laptop", role, expires_days: 90 }),
   });
   return { res, tool, body: res.statusCode === 201 ? (res.json() as { request_id: string; device_code: string; user_code: string; expires_in: number; interval: number }) : null };
 }
@@ -41,7 +42,8 @@ describe("device login (PETTY-274)", () => {
   it("relays a token sealed to the tool's key: asked, allowed on the page, picked up once", async () => {
     const { res, tool, body } = await ask();
     expect(res.statusCode).toBe(201);
-    expect(body!.user_code).toBe(await deviceUserCode(tool.publicB64));
+    expect(body!.user_code).toBe(await deviceUserCode(tool.publicB64, ORIGIN));
+    expect(body!.user_code).toMatch(/^[B-DF-HJ-NP-TV-XZ]{4}(-[B-DF-HJ-NP-TV-XZ]{4}){4}$/);
     expect(body!.expires_in).toBe(900);
     expect(body!.interval).toBe(5);
 
@@ -100,7 +102,8 @@ describe("device login (PETTY-274)", () => {
       app.inject({ method, url, headers: { authorization: `Bearer ${bearer}`, ...(payload ? { "content-type": "application/json" } : {}) }, ...(payload ? { payload: JSON.stringify(payload) } : {}) });
     expect((await asToken("GET", `/device/${code}`)).json().code).toBe("TokenNotAllowed");
     expect((await asToken("POST", `/device/${code}/deny`)).json().code).toBe("TokenNotAllowed");
-    expect((await A.call("GET", "/device/BCDF-GHJK-LMNP")).json().code).toBe("DeviceCodeUnknown");
+    expect((await A.call("GET", "/device/BCDF-GHJK-LMNP-QRST-VWXZ")).json().code).toBe("DeviceCodeUnknown");
+    expect((await A.call("GET", "/device/BCDF-GHJK-LMNP")).json().code).toBe("DeviceCodeUnknown"); // the earlier 12-letter form is no code
     expect((await A.call("GET", "/device/not-a-code")).json().code).toBe("DeviceCodeUnknown");
     expect((await poll(body!.device_code)).json().code).toBe("AuthorizationPending"); // still waiting for the person
   });
@@ -108,9 +111,40 @@ describe("device login (PETTY-274)", () => {
   it("refuses a key that is not a P-256 public key", async () => {
     const res = await app.inject({
       method: "POST", url: "/device/code", remoteAddress, headers: { "content-type": "application/json" },
-      payload: JSON.stringify({ cli_pub: "AAAA", client_name: "x", role: "read", expires_days: null }),
+      payload: JSON.stringify({ cli_pub: "AAAA", user_code: "BCDF-GHJK-LMNP-QRST-VWXZ", client_name: "x", role: "read", expires_days: null }),
     });
     expect(res.json().code).toBe("DeviceKeyInvalid");
+  });
+
+  // PETTY-451: the code has 20 letters and the tool makes it. The earlier form is neither made nor kept.
+  it("tells a command line from before the 20-letter code to update, by name, and starts nothing for it", async () => {
+    const tool = await deviceKeyPair();
+    const res = await app.inject({
+      method: "POST", url: "/device/code", remoteAddress: address(), headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ cli_pub: tool.publicB64, client_name: "petty on laptop", role: "write", expires_days: 90 }),
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe("CommandLineTooOld");
+    expect(res.json().user_code).toBeUndefined();
+    expect((await apiPool.query("select 1 from device_requests where cli_pub = $1", [tool.publicB64])).rowCount).toBe(0);
+  });
+
+  it("keeps only a code of the 20-letter form, and one request per code", async () => {
+    const tool = await deviceKeyPair();
+    const from = address(); // ten an hour per address: these have their own
+    const send = (user_code: unknown) => app.inject({
+      method: "POST", url: "/device/code", remoteAddress: from, headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ cli_pub: tool.publicB64, user_code, client_name: "petty on laptop", role: "read", expires_days: 30 }),
+    });
+    for (const bad of ["BCDF-GHJK-LMNP", "bcdf-ghjk-lmnp-qrst-vwxz", "BCDF-GHJK-LMNP-QRST-VWXA", "", null]) {
+      const res = await send(bad);
+      expect(res.statusCode, String(bad)).toBe(400);
+      expect(res.json().code, String(bad)).toBe("ValidationError");
+    }
+    expect((await apiPool.query("select 1 from device_requests where cli_pub = $1", [tool.publicB64])).rowCount).toBe(0);
+    const code = await deviceUserCode(tool.publicB64, ORIGIN);
+    expect((await send(code)).statusCode).toBe(201);
+    expect((await send(code)).json().code).toBe("DeviceCodeTaken");
   });
 
   it("lets a token end itself (petty auth logout), a read-only one too", async () => {

@@ -32,14 +32,15 @@ describe("traces (PETTY-34)", () => {
     expect(JSON.stringify(spans.map((s) => s.attributes))).not.toContain("nobody@test.local");
   });
 
-  it("a secret in the URL path is reported as the route template", async () => {
+  it("a secret in the URL path of an address no route answers is not reported (PETTY-457: an older web app still asks GET /join-links/<token>)", async () => {
     exporter.reset();
     const res = await fetch(`${base}/join-links/not-a-real-token-abc123`);
-    expect(res.status).toBeLessThan(500);
-    const server = exporter.getFinishedSpans().find((s) => s.name === "GET /join-links/:token");
-    expect(server).toBeDefined();
-    expect(JSON.stringify(server!.attributes)).not.toContain("not-a-real-token");
-    expect(server!.attributes["url.path"]).toBe("/join-links/:token");
+    expect(res.status).toBe(404);
+    const spans = exporter.getFinishedSpans();
+    const server = spans.find((s) => s.name === "GET unmatched");
+    expect(server, JSON.stringify(spans.map((s) => s.name))).toBeDefined();
+    expect(JSON.stringify(spans.map((s) => ({ name: s.name, attributes: s.attributes })))).not.toContain("not-a-real-token");
+    expect(server!.attributes["url.path"]).toBe("/join-links/…");
   });
 
   it("PETTY-341: a span keeps no client address and no browser name (GDPR: data minimisation)", async () => {
@@ -55,12 +56,12 @@ describe("traces (PETTY-34)", () => {
 
   it("PETTY-408: no span keeps a query string, so an address in ?email= never reaches a trace", async () => {
     exporter.reset();
-    expect((await fetch(`${base}/users/lookup?email=probe-408%40test.local`)).status).toBe(401);
+    // PETTY-457: the GET form of the lookup is gone; an older tab that still sends it is a 404 like any other
+    expect((await fetch(`${base}/users/lookup?email=probe-408%40test.local`)).status).toBe(404);
     expect((await fetch(`${base}/no-such-route?email=probe-408%40test.local`)).status).toBe(404);
     const spans = exporter.getFinishedSpans();
-    const server = spans.find((s) => s.name === "GET /users/lookup");
-    expect(server, JSON.stringify(spans.map((s) => s.name))).toBeDefined();
-    expect(server!.attributes["url.full"]).toBe("/users/lookup");
+    const server = spans.filter((s) => s.name === "GET unmatched");
+    expect(server.map((s) => s.attributes["url.full"]).sort(), JSON.stringify(spans.map((s) => s.name))).toEqual(["/no-such-route", "/users/…"]);
     const all = JSON.stringify(spans.map((s) => ({ name: s.name, attributes: s.attributes })));
     expect(all).not.toContain("probe-408");
     expect(all).not.toContain("email=");

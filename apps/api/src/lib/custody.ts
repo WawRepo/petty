@@ -25,6 +25,15 @@ export async function issueChallenge(userId: string): Promise<{ challenge: strin
 }
 
 /**
+ * For the calls that took no proof before PETTY-440 and PETTY-441 (key rotation, deleting a line): a web
+ * app cached from before sends none. It is answered like a missing challenge, 403 CustodyProofRequired,
+ * before anything is read or written, so it learns what is wrong and nothing changes.
+ */
+export function requireProofField(body: unknown): void {
+  if (typeof body !== "object" || body === null || (body as { proof?: unknown }).proof === undefined) throw forbidden("CustodyProofRequired");
+}
+
+/**
  * Verifies and consumes the proof against the user's CURRENT signing key.
  * 403 CustodyProofRequired when there is no live challenge or it does not match;
  * 403 CustodyProofInvalid when the signature is wrong.

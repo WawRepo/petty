@@ -7,6 +7,10 @@ export interface LedgerEntry {
   /** Server receive time, ISO 8601. Display only. */
   readonly received_at: string;
   readonly entry: SignedEntryV1;
+  /** The server's plain "this is a count" column, when the caller has the row. It is outside the encryption: verifyChain compares it with the sealed operation. */
+  readonly is_checkpoint?: boolean;
+  /** True when an access token's own key signed the entry: a tool wrote it. Tools before PETTY-445 never set `prev_hash`. */
+  readonly by_token?: boolean;
 }
 
 export type LineKind = "money" | "countable" | "single";

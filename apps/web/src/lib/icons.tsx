@@ -24,9 +24,12 @@ export const KIND_CLASS: Record<LineKind, string> = { money: "k-money", countabl
 /** A line's icon slug: its own, else its kind's. */
 export const lineIcon = (l: { readonly kind: LineKind; readonly icon?: string | undefined }): string => l.icon ?? DEFAULT_LINE_ICON[l.kind];
 
-/** One icon by slug; an unknown slug (a newer build wrote it) falls back to the default drawer icon. */
+/**
+ * One icon by slug; an unknown slug (a newer build wrote it) falls back to the default drawer icon.
+ * Only the table's own names count: "constructor" or "toString" is a valid slug and names no icon.
+ */
 export function PIcon({ name, size = 22 }: { name: string; size?: number }) {
-  const C = ICONS[name] ?? ICONS[DEFAULT_DRAWER_ICON]!;
+  const C = (Object.hasOwn(ICONS, name) ? ICONS[name] : undefined) ?? ICONS[DEFAULT_DRAWER_ICON]!;
   return <C size={size} strokeWidth={1.8} aria-hidden="true" />;
 }
 

@@ -140,6 +140,7 @@
       "displayName": "Name (optional)",
       "displayNameHint": "How the people you share drawers with see you. If you leave it empty, the name from your sign-in is used.",
       "already": "This account already has a vault. Reload the app.",
+      "emailNotVerified": "Your email address is not confirmed yet. Confirm it in your sign-in account, then try again.",
       "explainer": {
         "identity": "You are signed in. The vault is a second, separate lock: it opens your drawers on this device. The server keeps only a locked copy of it."
       },
@@ -190,14 +191,18 @@
     "degradedReason": {
       "no_key": "You have no key for this drawer yet. Ask its owner to share it again.",
       "sender_unknown": "The key was shared by someone you have not seen before.",
-      "sender_unconfirmed": "This drawer has a new key from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
+      "sender_unconfirmed": "This drawer’s key comes from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
+      "pins_blocked": "Another person gave you the key to this drawer, and Petty cannot check that person now: your list of trusted keys is missing on the server, older than before, or did not load. Look for the warning on the home screen, or try again when you are online.",
       "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
+      "key_replaced": "The server sent another key for this drawer than the one you already used, so Petty did not open it. The server may have been tampered with.",
       "doc_rolled_back": "The server sent an older version of this drawer than the one you already opened, so Petty did not open it. Items added since then would be missing. The server may have been tampered with.",
       "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
-      "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty."
+      "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty.",
+      "bad_entries": "The entries of an item in this drawer are out of order, so Petty did not open it. The server may have been tampered with.",
+      "sum_too_large": "The amounts in this drawer add up to a number too large to show, so Petty shows none of them. Someone may have added an entry with a wrong amount."
     },
     "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}",
     "picture": {
@@ -345,6 +350,8 @@
     "deleteConfirm": "Delete “{name}” with all its items and their history? This cannot be undone.",
     "deleteBtn": "Delete",
     "deleteType": "Type the drawer's name to confirm",
+    "deleteDamagedConfirm": "Delete this drawer with all its items and their history? This cannot be undone.",
+    "deleteDamagedType": "Type this word to confirm",
     "photoAdd": "Add photo",
     "photoChange": "Change photo",
     "photoRemove": "Remove photo",
@@ -728,6 +735,8 @@
   "pins": {
     "rolledBackTitle": "The server has an older copy of your trusted keys",
     "rolledBack": "This device last saw version {seen} of your trusted-keys list; the server now has version {server}. That can be a restored backup, or someone trying to make you trust new keys. Until you start a new list, no new key is trusted automatically and you cannot share drawers.",
+    "missingTitle": "The server has no list of your trusted keys",
+    "missing": "Your account has drawers, so the server should have this list. It can be missing because your account is older than the list, because a backup was restored, or because someone wants you to trust new keys. Until you start a new list, Petty opens only drawers whose key you made yourself, and you cannot share drawers. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again.",
     "startOver": "Start a new list of trusted keys"
   },
   "privacy": {
@@ -1335,7 +1344,19 @@
     "addonTitle": "Use it in Claude Desktop",
     "addonBody": "Download the add-on, double-click it and click Install. Claude Desktop then asks for two things: the address below and the token above.",
     "addonDownload": "Get the Claude Desktop add-on",
-    "address": "Petty address"
+    "address": "Petty address",
+    "scope": "Drawers it can use",
+    "scopeAll": "All drawers",
+    "scopeAllHint": "Also every drawer you add or are given later.",
+    "scopeSome": "Only the drawers I pick",
+    "scopeSomeHint": "A drawer you add later stays out of it.",
+    "scopePick": "Drawers for this token",
+    "scopeNone": "You have no drawer to pick yet.",
+    "scopeNeeded": "Choose which drawers this token can use.",
+    "scopeAllShort": "all drawers",
+    "scopeCount": "{count, plural, one {# drawer} other {# drawers}}",
+    "confirm": "A token carries drawer keys. So making one asks for your vault passphrase or passkey again, also while the vault is open.",
+    "passphraseNeeded": "Enter your vault passphrase."
   },
   "device": {
     "title": "Sign in a command-line tool",
@@ -1343,15 +1364,15 @@
     "code": "Code",
     "continue": "Continue",
     "checking": "Checking the code…",
-    "notACode": "That is not a code. A code has 12 letters, like BCDF-GHJK-LMNP.",
+    "notACode": "That is not a code. A code has 20 letters, like BCDF-GHJK-LMNP-QRST-VWXZ.",
     "unknown": "No request is waiting with this code. It may have expired after 15 minutes, or it was already used. Run `petty auth login` again.",
     "tooMany": "Too many tries. Wait a few minutes and try again.",
-    "mismatch": "This request does not match its code: it was changed on its way here. Do not allow it. Run `petty auth login` again, and tell the person who runs this Petty.",
+    "mismatch": "This request does not match its code. It was changed on its way here, or your terminal was given another address than this page's ({origin}). Do not allow it. Run `petty auth login --host {origin}` again. If it happens again, tell the person who runs this Petty.",
     "askTitle": "Allow “{name}”?",
     "checkCode": "Check that your terminal shows this code:",
     "asked": "Asked {when}.",
     "askedFrom": "Asked {when}, from {ip}.",
-    "onlyYours": "Allow it only if you started it yourself, just now. The tool gets a copy of your drawer keys: it can read every drawer you can open.",
+    "onlyYours": "Allow it only if you started it yourself, just now. The tool gets a copy of the keys of the drawers you pick below: it can read every one of them.",
     "readOnly": "It asks to read only. It cannot change anything.",
     "allow": "Allow",
     "deny": "Deny",

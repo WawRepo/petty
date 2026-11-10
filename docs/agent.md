@@ -18,8 +18,10 @@ runs this same server with that login.
 ## 1. Make a token
 
 In Petty: **Settings → Access tokens → New token**. Give it a name, switch on **Can make changes**
-if it should add entries and change names, items, tags and places (a new token only reads), pick an
-expiry, and confirm with your passkey or passphrase. The token is shown once:
+if it should add entries and change names, items, tags and places (a new token only reads). Choose
+which drawers it can use: **All drawers**, which includes drawers you add later, or **Only the drawers
+I pick**. Pick an expiry (90 days unless you change it), and confirm with your passkey or passphrase;
+every token asks for it, also one that only reads. The token is shown once:
 
 ```
 petty_pat_<id>.<secret>
@@ -165,16 +167,33 @@ A token has its own key pair. When you make a drawer, or someone shares one with
 app wraps that drawer's key for every live token the next time it starts. So the tool sees new
 drawers without you making a new token. Open Petty once after adding a drawer.
 
+That holds for a token made for **All drawers**. A token made for chosen drawers keeps to them: it
+does not see a drawer you add later, the server refuses it every other drawer, and the tool tells the
+AI app that it opens only those drawers. Make a new token to change the choice.
+
 ## What this does and does not protect
 
 - The token and your keys stay on your machine. The Petty server never sees the secret half.
 - Whatever you ask about reaches the model, because you asked. End-to-end encryption covers the
   server and the network, not the assistant you chose to talk to.
-- Item names, tags and comments are your own text. The tools hand them over as labelled data, and
-  writing is always a separate, explicit tool call, so text inside a drawer cannot act as an
-  instruction on its own. Read a proposed write before you accept it.
+- Item names, tags, places, notes and comments are text that you, or anyone you share a drawer with,
+  typed. The tools hand each one to the model as one quoted value on one line, so it cannot pass for a
+  tool's own words. So do they with anything else Petty did not word itself: a currency code that is
+  not plain letters and digits, an old item id, the text of an unexpected error.
+- **The quotes mark that text as data. They do not stop a model from following it.** A model may still
+  act on a sentence it reads inside a name or a comment, and if the app gives it other tools (the web,
+  mail, a shell), it may use those too. Writing in Petty is always a separate, explicit tool call: read
+  a proposed action before you accept it. Give an assistant that reads a shared drawer only the tools
+  it needs, and share a drawer only with people you trust with that.
 - A token cannot replace your vault, delete your account, share a drawer, export, use admin, or
   make another token. Those are refused by the server.
+- The tool checks what it reads: every entry must open and carry a valid signature, and the hash
+  links between an item's entries must hold. What fails is left out of the balance, and the answer
+  ends with `warning:` lines that say so (an entry or a drawer that could not be opened, a signature
+  that did not check, history links that do not match). Open Petty in the browser when you see one.
+  The tool remembers nothing between two runs, so it cannot notice a history that got shorter or a
+  drawer put back to an older state; the web app can
+  ([threat model](threat-model.md#integrity)).
 
 ## Troubleshooting
 
@@ -195,6 +214,9 @@ Restart Claude Desktop after either change.
 certificate authority, point `NODE_EXTRA_CA_CERTS` at its certificate in the same `env` block.
 
 **"TokenRevoked"**: the token was revoked or expired; make a new one in Settings.
+
+**"NotFound" for something you know is there**: the token may have been made for other drawers.
+Settings → Access tokens shows how many drawers each token opens.
 
 ## On a phone
 

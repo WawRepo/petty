@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
+import { deviceUserCode, fromB64, hashEntry, openEntryUnverified, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, ORIGIN, newUser } from "../lib.js";
@@ -11,13 +11,15 @@ import { API, ORIGIN, newUser } from "../lib.js";
 /**
  * PETTY-274: the command line as it ships. The image serves /downloads/petty.mjs; this test downloads
  * that file and runs it against the stack over HTTP. `petty auth login` asks, the person allows it (the
- * web page's steps, done here through the API: check the code against the tool's key, make a token,
- * seal it to the tool), and the downloaded program then reads and writes with it.
+ * web page's steps, done here through the API: check the code against the tool's key and this site's
+ * address, make a token, seal it to the tool), and the downloaded program then reads and writes with it.
+ * PETTY-451: the code has 20 letters; a request without one (an older command line) is told to update.
+ * PETTY-452: a token for chosen drawers reads those only.
  */
 const dir = mkdtempSync(join(tmpdir(), "petty-it-cli-"));
 const cli = join(dir, "petty.mjs");
 let ann: Client;
-let drawerId: string, lineId: string, raw: string;
+let drawerId: string, lineId: string, raw: string, key: CryptoKey;
 
 function petty(args: string[], stdin?: string) {
   const child = spawn(process.execPath, [cli, ...args], { env: { ...process.env, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "" }, stdio: ["pipe", "pipe", "pipe"] });
@@ -41,6 +43,7 @@ beforeAll(async () => {
   const doc = applyOp(newDocument("Garage box"), { type: "add_line", line: { id: lineId, kind: "money", name: "Cash", currency: "EUR", exponent: 2 } }, { lineHasEntries: () => false });
   const made = await ann.createDrawer("Garage box", doc);
   drawerId = made.id;
+  key = made.key;
   expect((await ann.postEntry(drawerId, made.key, lineId, "add", 2500)).res.statusCode).toBe(201);
   const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
   raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
@@ -51,14 +54,15 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 describe("petty, the shipped command line (PETTY-274)", () => {
   it("signs in through the device flow, reads and writes, and ends its token on logout", async () => {
     const login = petty(["auth", "login", "--host", ORIGIN, "--no-browser"]);
-    await expect.poll(login.err, { timeout: 30_000 }).toMatch(/code: [A-Z]{4}-[A-Z]{4}-[A-Z]{4}/);
-    const code = /code: ([A-Z]{4}-[A-Z]{4}-[A-Z]{4})/.exec(login.err())![1]!;
+    await expect.poll(login.err, { timeout: 30_000 }).toMatch(/code: [A-Z]{4}(-[A-Z]{4}){4}\n/);
+    const code = /code: ([A-Z]{4}(?:-[A-Z]{4}){4})\n/.exec(login.err())![1]!;
     // PETTY-322: the address follows the code in a write of its own; the v1.5.12 upgrade run read in between
     await expect.poll(login.err, { timeout: 5_000 }).toContain(`${ORIGIN}/device?code=${code}`);
 
-    // the page's part: find the request, check the code is the tool's key's, make a token, seal it to the tool
+    // the page's part: find the request, check the code is the tool's key's at this address, make a token, seal it to the tool
     const view = (await ann.call("GET", `/device/${code}`)).json();
-    expect(await deviceUserCode(view.cli_pub)).toBe(code);
+    expect(await deviceUserCode(view.cli_pub, ORIGIN)).toBe(code);
+    expect(await deviceUserCode(view.cli_pub, "https://petty.example")).not.toBe(code);
     const tok = await ann.makeAccessToken("write", [{ drawer_id: drawerId, key_version: 1, key: raw }]);
     const sealed = await sealDeviceToken(view.cli_pub, tok.token, { requestId: view.id, userCode: code, origin: ORIGIN });
     expect((await ann.call("POST", `/device/${code}/approve`, { sealed })).statusCode).toBe(204);
@@ -73,10 +77,49 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const add = petty(["add", "Garage box › Cash", "1.50", "--note", "-"], "from the shipped CLI");
     expect(await add.done).toBe(0);
     expect(add.out()).toBe("Garage box › Cash: 26.50 EUR\n");
+    // PETTY-445: the shipped program links its entry to the one before it, as the web app does, and says
+    // nothing about a drawer whose history checks out
+    expect(add.err()).not.toContain("warning");
+    const rows = (await ann.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries`)).json().entries as { id: string; author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }[];
+    const [newest, first] = await Promise.all(rows.map((r) => openEntryUnverified(key, { record_type: "entry", record_id: r.id, drawer_id: drawerId, line_id: lineId, author_id: r.author_id, key_version: r.key_version, schema_version: r.schema_version }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) })));
+    expect(rows).toHaveLength(2);
+    expect(newest!.prev_hash).toBe(await hashEntry(first!));
 
     const logout = petty(["auth", "logout"]);
     expect(await logout.done).toBe(0);
     expect((await fetch(`${API}/me/token`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(401);
+  });
+
+  it("tells a command line that sends no code of its own to update, and starts no sign-in for it (PETTY-451)", async () => {
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+    const cliPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    // what `petty auth login` sent before the 20-letter code
+    const res = await fetch(`${API}/device/code`, {
+      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `203.0.113.${10 + Math.floor(Math.random() * 200)}` },
+      body: JSON.stringify({ cli_pub: cliPub, client_name: "petty on it-older", role: "read", expires_days: 30 }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string; user_code?: string };
+    expect(body.code).toBe("CommandLineTooOld");
+    expect(body.user_code).toBeUndefined();
+    // and a code of the earlier form opens no request on the page's side
+    expect((await ann.call("GET", "/device/BCDF-GHJK-LMNP")).statusCode).toBe(404);
+  });
+
+  it("with a token for one drawer, reads that drawer only and says why another is not found (PETTY-452)", async () => {
+    const other = await ann.createDrawer("Loft chest", applyOp(newDocument("Loft chest"), { type: "add_line", line: { id: crypto.randomUUID(), kind: "money", name: "Coins", currency: "EUR", exponent: 2 } }, { lineHasEntries: () => false }));
+    expect(other.res.statusCode).toBe(201);
+    const tok = await ann.makeAccessToken("read", [{ drawer_id: drawerId, key_version: 1, key: raw }], [drawerId]);
+    const login = petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`);
+    expect(await login.done).toBe(0);
+    expect(login.err()).toContain("It opens only the 1 drawer chosen for it.");
+    const list = petty(["drawers", "--json"]);
+    expect(await list.done).toBe(0);
+    expect((JSON.parse(list.out()) as { name: string }[]).map((d) => d.name)).toEqual(["Garage box"]);
+    const find = petty(["find", "loft", "coins"]);
+    expect(await find.done).toBe(4);
+    expect(find.err()).toContain("(this token opens only the 1 drawer chosen for it)");
+    expect((await fetch(`${API}/drawers/${other.id}`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(403);
   });
 
   it("signs in with a token on stdin, for scripts", async () => {
@@ -88,5 +131,34 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     expect(find.out()).toContain("Garage box › Cash  26.50 EUR");
     const write = petty(["take", "Garage box › Cash", "1"]);
     expect(await write.done).toBe(3); // read only
+  });
+
+  it("shows text from a drawer with its control characters as ?, and escaped with --json (PETTY-453)", async () => {
+    // a drawer written past the app's checks, as a changed client could write it
+    const ESC = "\u001b";
+    const coins = crypto.randomUUID();
+    const odd = {
+      v: 1 as const, name: `Odd${ESC}[2J box`, has_photo: false, verifications: [],
+      lines: [{ id: coins, kind: "money" as const, name: "Coins", currency: `E${ESC}UR`, exponent: 2 }, { id: `old${ESC} id`, kind: "single" as const, name: "Key", text: "" }],
+    };
+    const made = await ann.createDrawer(odd.name, odd);
+    expect(made.res.statusCode).toBe(201);
+    expect((await ann.postEntry(made.id, made.key, coins, "add", 500)).res.statusCode).toBe(201);
+    const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === made.id);
+    const key = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
+    const tok = await ann.makeAccessToken("read", [{ drawer_id: made.id, key_version: 1, key }]);
+    expect(await petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`).done).toBe(0);
+
+    const list = petty(["drawers"]);
+    expect(await list.done).toBe(0);
+    expect(list.out()).toBe("Odd?[2J box\n  Coins     5.00 E?UR\n  Key       single item\n");
+    const find = petty(["find", "odd", "key"]);
+    expect(await find.done).toBe(0);
+    expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
+    const json = petty(["drawers", "--json"]);
+    expect(await json.done).toBe(0);
+    // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there
+    expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }] }]);
   });
 });

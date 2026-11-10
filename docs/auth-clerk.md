@@ -22,7 +22,9 @@ deployment, `make demo` and the test suite run as before. `AUTH_PROVIDER=clerk` 
 - **Provisioning** — `POST /auth/provision`: after the first Clerk sign-in the app finds no
   vault (`GET /me` → 404 `NoVault`) and shows the vault setup screen (same keys, passphrase
   and recovery code flow as the old join screen); the server takes the email and name from
-  Clerk (backend API) and creates the `users` row with `clerk_user_id`, no password.
+  Clerk (backend API) and creates the `users` row with `clerk_user_id`, no password. It does so
+  only when Clerk has verified that email (PETTY-421): otherwise 403 `EmailNotVerified`, nothing is
+  stored, and the setup screen asks the person to confirm the address first.
 - **Off**: `/auth/signup`, `/auth/login`, `/auth/forgot`, `/auth/reset`, `/auth/logout`,
   `/join-links*` answer 404 `NotAvailable`. Invitations are Clerk's (Restricted sign-up mode).
 - **Relink by verified email (PETTY-104)**: when a bearer token's `sub` matches no
@@ -76,7 +78,8 @@ One Clerk application has exactly one production instance, and a production inst
 bound to one domain. Use one application per deployment domain.
 
 Recommended settings: organizations off, `sign_up_mode: restricted` (people come in by
-invitation) or public if anyone may sign up, device trust on. Social sign-in (for example
+invitation) or public if anyone may sign up, device trust on, and email verification required at
+sign-up (Petty makes no account for an unverified address). Social sign-in (for example
 GitHub) works with Clerk's shared credentials on a development instance; production needs
 your own OAuth app.
 

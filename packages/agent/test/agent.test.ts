@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { patSecret, patToken, sealPatBundle, toB64, wrapDrawerKey } from "@petty/crypto";
+import { fromB64, hashEntry, openEntryUnverified, patSecret, patToken, sealEntry, sealPatBundle, signEntry, toB64, wrapDrawerKey, type EntryPayloadV1, type SignedEntryV1 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
+import type { EntryRow, TokenBootstrap } from "@petty/protocol";
 import { buildApp } from "../../../apps/api/src/app.js";
 import { apiPool, maintPool } from "../../../apps/api/src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../../../apps/api/src/devtools/fixtures.js";
-import { checkApiUrl, connect, TokenError, type AgentClient } from "../src/index.js";
+import { checkApiUrl, connect, TokenError, warningText, type AgentClient, type AgentWarning } from "../src/index.js";
 
 /**
  * The headless client (PETTY-165) against the real API, in memory. It holds the token, opens the
@@ -35,7 +36,7 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
  * A token made the way the web app makes one: its own ECDH pair, the public half on the server, and the
  * owner's ECDH key sealed in (PETTY-397). `older: true` leaves that key out, as tokens made before did.
  */
-async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
+async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string; signing: Awaited<ReturnType<Client["tokenSigning"]>> | null }> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
@@ -54,7 +55,7 @@ async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}
   });
   const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
   expect(res.statusCode).toBe(201);
-  return { token: patToken(id, secret), id: res.json().id as string, pair, pub };
+  return { token: patToken(id, secret), id: res.json().id as string, pair, pub, signing };
 }
 
 beforeAll(async () => {
@@ -280,6 +281,35 @@ describe("headless client (PETTY-165)", () => {
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);
   });
 
+  // PETTY-452: the web app now makes tokens for chosen drawers. This client must work with one.
+  it("a token made for chosen drawers lists only those, and says so when asked for another", async () => {
+    const outLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Strongbox"), { type: "add_line", line: { id: outLine, kind: "money", name: "Gold", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const outside = await owner.createDrawer("Strongbox", doc);
+    expect(outside.res.statusCode).toBe(201);
+    // made as the web app makes it: the one drawer's key in the bundle, the one drawer as its scope
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
+    const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await owner.unwrap(wrap, owner.user.pub.ecdh, true))));
+    const made = await owner.makeAccessToken("write", [{ drawer_id: drawerId, key_version: 1, key: raw }], [drawerId]);
+    expect(made.res.statusCode).toBe(201);
+
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    expect(c.identity.scope).toEqual([drawerId]);
+    const listed = await c.drawers();
+    expect(listed.map((d) => d.id)).toEqual([drawerId]);
+    expect(listed[0]!.lines.map((l) => l.id)).toContain(lineId);
+    // by id: the client knows it is not one of its drawers
+    await expect(c.history(outside.id, outLine)).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    await expect(c.add(outside.id, outLine, "1")).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    // by name: to this token the drawer does not exist
+    await expect(c.find("strongbox gold")).rejects.toMatchObject({ code: "NotFound" });
+    await expect(c.findDrawer("Strongbox")).rejects.toMatchObject({ code: "NotFound" });
+    // and the server refuses it whatever the client does
+    const direct = await app.inject({ method: "GET", url: `/drawers/${outside.id}`, headers: { authorization: `Bearer ${made.bearer}` } });
+    expect(direct.statusCode).toBe(403);
+    expect(direct.json().code).toBe("TokenOutOfScope");
+  });
+
   it("PETTY-193 (NR-13): the opened bundle is dropped once its keys are imported", async () => {
     const c = await client("write");
     expect((c as unknown as { bundle: unknown }).bundle).toBeNull();
@@ -383,5 +413,166 @@ describe("headless client (PETTY-165)", () => {
     const reader = await client("read");
     await expect(reader.editItem(drawerId, id, { name: "x" })).rejects.toMatchObject({ code: "ReadOnly" });
     await expect(reader.undo(drawerId, id, added.id)).rejects.toMatchObject({ code: "ReadOnly" });
+  });
+
+  describe("history checks (PETTY-444, PETTY-445, PETTY-448)", () => {
+    /** The rows the server holds for one item, oldest first, opened with the drawer key as the owner would. */
+    const rowsOf = async (line: string): Promise<{ row: EntryRow; entry: SignedEntryV1 }[]> => {
+      const { entries } = (await owner.call("GET", `/drawers/${drawerId}/lines/${line}/entries?limit=200`)).json() as { entries: EntryRow[] };
+      const out = [];
+      for (const row of [...entries].reverse()) {
+        out.push({ row, entry: await openEntryUnverified(key, { record_type: "entry", record_id: row.id, drawer_id: drawerId, line_id: line, author_id: row.author_id, key_version: row.key_version, schema_version: row.schema_version }, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }) });
+      }
+      return out;
+    };
+    /** Signs, seals and posts one entry with every field chosen here, the plain count flag too. */
+    const post = async (line: string, over: Partial<EntryPayloadV1>, body: { is_checkpoint: boolean; expected_head_seq?: number }, as: { privateKey: CryptoKey; sigKeyId: string; bearer?: string } = { privateKey: owner.user.keys.ecdsa.privateKey, sigKeyId: owner.user.sig_key_id }) => {
+      const id = crypto.randomUUID();
+      const payload: EntryPayloadV1 = { v: 1, id, drawer_id: drawerId, line_id: line, op: "add", amount: 100, exponent: 2, comment: "", logged_at: new Date().toISOString(), reverses: null, prev_hash: null, delta_hint: null, author_id: owner.id, sig_key_id: as.sigKeyId, ...over };
+      const signed = await signEntry(payload, as.privateKey);
+      const sealed = await sealEntry(key, { record_type: "entry", record_id: id, drawer_id: drawerId, line_id: line, author_id: owner.id, key_version: 1, schema_version: 1 }, signed);
+      const json = { id, line_id: line, reverses_entry_id: null, key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), ...body };
+      const res = as.bearer
+        ? await app.inject({ method: "POST", url: `/drawers/${drawerId}/entries`, headers: { authorization: `Bearer ${as.bearer}`, "content-type": "application/json" }, payload: JSON.stringify(json) })
+        : await owner.call("POST", `/drawers/${drawerId}/entries`, json);
+      expect(res.statusCode).toBe(201);
+      return signed;
+    };
+    /** A connection whose start-up load (and, with `page`, each page of older rows) is changed on the way, as a changed database would serve it. */
+    const served = async (role: "read" | "write", change: (boot: TokenBootstrap) => void, opts: { onWarnings?: (w: readonly AgentWarning[]) => void; page?: (rows: EntryRow[]) => void } = {}): Promise<AgentClient> => {
+      const lying: typeof fetch = async (input, init) => {
+        const res = await inject(input, init);
+        const path = new URL(String(input)).pathname;
+        const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+        if (path === "/me/token/bootstrap") { const boot = (await res.json()) as TokenBootstrap; change(boot); return json(boot); }
+        if (opts.page && path.endsWith("/entries") && (init?.method ?? "GET") === "GET") { const body = (await res.json()) as { entries: EntryRow[] }; opts.page(body.entries); return json(body); }
+        return res;
+      };
+      return connect({ token: await tokenFor(role), apiUrl: "https://petty.test", fetch: lying, ...(opts.onWarnings ? { onWarnings: opts.onWarnings } : {}) });
+    };
+    const about = (c: AgentClient, line: string) => c.warnings.filter((w) => w.lineId === line);
+    const item = async (name: string, start = "5"): Promise<string> => (await (await client("write")).addItem(drawerId, { kind: "money", name, currency: "EUR", start })).line.id;
+    const lineOf = async (c: AgentClient, line: string) => (await c.drawers()).find((d) => d.id === drawerId)!.lines.find((l) => l.id === line)!;
+
+    it("PETTY-445: an entry a tool writes links to the newest entry it checked, across a count too", async () => {
+      const c = await client("write");
+      const line = await item("Linked");
+      await c.add(drawerId, line, "1");
+      await c.withdraw(drawerId, line, "2");
+      await c.adjust(drawerId, line, "9");
+      const undo = await c.add(drawerId, line, "3");
+      await c.undo(drawerId, line, undo.id);
+      const rows = await rowsOf(line);
+      expect(rows.map((r) => r.entry.op)).toEqual(["add", "add", "withdraw", "adjust", "add", "reverse"]);
+      expect(rows[0]!.entry.prev_hash).toBeNull(); // the item's first entry
+      for (let i = 1; i < rows.length; i++) expect(rows[i]!.entry.prev_hash).toBe(await hashEntry(rows[i - 1]!.entry));
+      expect(await lineOf(c, line)).toMatchObject({ balance: 900, chain: "ok", unreadable: 0, unverified: 0 });
+      expect(about(c, line)).toEqual([]);
+    });
+
+    it("PETTY-445: entries an older tool wrote without a link are not reported; a second unlinked entry from an account key is", async () => {
+      const made = await tokenAndId("write");
+      const old = { privateKey: made.signing!.pair.privateKey, sigKeyId: made.signing!.bundle.sig_key_id, bearer: made.token.split(".")[0]! };
+      const line = await item("Old tool");
+      await post(line, { amount: 200 }, { is_checkpoint: false }, old);
+      await post(line, { amount: 300 }, { is_checkpoint: false }, old);
+      const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+      expect(await lineOf(c, line)).toMatchObject({ balance: 1000, chain: "ok", unverified: 0 });
+      expect(about(c, line)).toEqual([]);
+      // the next entry of today's tool links to the newest of them
+      await c.add(drawerId, line, "1");
+      const rows = await rowsOf(line);
+      expect(rows[3]!.entry.prev_hash).toBe(await hashEntry(rows[2]!.entry));
+      expect((await lineOf(c, line)).chain).toBe("ok");
+
+      // an account key signs the web app's entries, which always link: a second one without a link is reported
+      const other = await item("Unlinked");
+      await post(other, { amount: 100 }, { is_checkpoint: false });
+      await post(other, { amount: 100 }, { is_checkpoint: false });
+      expect(await lineOf(c, other)).toMatchObject({ balance: 700, chain: "broken" });
+      expect(about(c, other)).toEqual([{ code: "history_broken", drawerId, drawer: expect.any(String), lineId: other, item: "Unlinked", count: 1 }]);
+      expect(warningText(about(c, other)[0]!)).toMatch(/ \/ item "Unlinked": the history links do not match; entries may have been removed or changed$/);
+    });
+
+    it("PETTY-445: rows that do not open are counted and reported, on the item, on the drawer, and in history", async () => {
+      const line = await item("Damaged");
+      const w = await client("write");
+      await w.add(drawerId, line, "1");
+      await w.add(drawerId, line, "2");
+      const ids = (await rowsOf(line)).map((r) => r.row.id);
+      const heard: AgentWarning[][] = [];
+      // the last two rows trade ciphertexts: each is bound to its own row, so neither opens
+      const swap = (rows: EntryRow[]) => {
+        const [a, b] = [rows.find((e) => e.id === ids[1]), rows.find((e) => e.id === ids[2])];
+        if (a && b) [a.nonce, a.ciphertext, b.nonce, b.ciphertext] = [b.nonce, b.ciphertext, a.nonce, a.ciphertext];
+      };
+      const c = await served("read", (boot) => swap(boot.entries), { onWarnings: (list) => heard.push([...list]), page: swap });
+      expect(await lineOf(c, line)).toMatchObject({ balance: 500, unreadable: 2, unverified: 0, chain: "ok" });
+      const mine = about(c, line);
+      expect(mine).toEqual([{ code: "entries_unreadable", drawerId, drawer: expect.any(String), lineId: line, item: "Damaged", count: 2 }]);
+      expect(warningText(mine[0]!)).toMatch(/ \/ item "Damaged": 2 entries could not be opened; left out of the balance$/);
+      expect(heard.at(-1)).toEqual(c.warnings);
+
+      // a row filed under an item the drawer does not list: reported on the drawer
+      const stray = await served("read", (boot) => { boot.entries.find((e) => e.id === ids[2])!.line_id = crypto.randomUUID(); });
+      const d = (await stray.drawers()).find((x) => x.id === drawerId)!;
+      expect(d.unreadable).toBe(1);
+      expect(d.lines.find((l) => l.id === line)).toMatchObject({ balance: 600, unreadable: 0 });
+      expect(stray.warnings.map((x) => warningText(x))).toContainEqual(expect.stringMatching(/^drawer "[^"]+": 1 entry could not be opened and belong to no item; left out of the balance$/));
+
+      // a drawer whose document does not open is named, not dropped without a word
+      const gone = await served("read", (boot) => { boot.documents[drawerId]!.ciphertext = boot.documents[drawerId]!.ciphertext.replace(/^..../, "AAAA"); });
+      expect((await gone.drawers()).map((x) => x.id)).not.toContain(drawerId);
+      expect(gone.warnings).toContainEqual({ code: "drawer_unreadable", drawerId, drawer: null, lineId: null, item: null, count: 1 });
+
+      // history leaves the same two rows out, and does not count them a second time
+      expect((await c.history(drawerId, line)).map((h) => h.id)).toEqual([ids[0]]);
+      expect(about(c, line)).toEqual(mine);
+      // a row that only the history shows (it lies before the latest count) is counted there
+      await w.adjust(drawerId, line, "8");
+      const older = await served("read", () => undefined, { page: (rows) => { const r = rows.find((e) => e.id === ids[1]); if (r) r.ciphertext = r.ciphertext.replace(/^..../, "AAAA"); } });
+      expect(about(older, line)).toEqual([]);
+      expect((await older.history(drawerId, line)).map((h) => h.op)).toEqual(["adjust", "add", "add"]);
+      expect(about(older, line)).toEqual([{ code: "entries_unreadable", drawerId, drawer: expect.any(String), lineId: line, item: "Damaged", count: 1 }]);
+    });
+
+    it("PETTY-445: the tools check the hash links: an entry missing from the middle is reported", async () => {
+      const line = await item("Gap");
+      const w = await client("write");
+      await w.add(drawerId, line, "1");
+      await w.add(drawerId, line, "2");
+      const ids = (await rowsOf(line)).map((r) => r.row.id);
+      const c = await served("read", (boot) => { boot.entries = boot.entries.filter((e) => e.id !== ids[1]); });
+      expect(await lineOf(c, line)).toMatchObject({ balance: 700, chain: "broken" });
+      expect(about(c, line).map((x) => x.code)).toEqual(["history_broken"]);
+    });
+
+    it("PETTY-448: a row flagged as a count that is not one does not start the balance, and is reported", async () => {
+      const line = await item("Flagged", "50");
+      const w = await client("write");
+      await w.adjust(drawerId, line, "40");
+      await w.add(drawerId, line, "2");
+      const before = await rowsOf(line);
+      // an ordinary "add" stored with the count flag set
+      await post(line, { amount: 100, prev_hash: await hashEntry(before.at(-1)!.entry) }, { is_checkpoint: true, expected_head_seq: before.at(-1)!.row.seq });
+      await w.add(drawerId, line, "3");
+      const c = await client("read");
+      // 40.00 counted, then +2, +1, +3: folded from the real count, not from the flagged row
+      expect(await lineOf(c, line)).toMatchObject({ balance: 4600, amount: "46.00 EUR", chain: "broken" });
+      expect(about(c, line).map((x) => x.code)).toEqual(["history_broken"]);
+      // the same when the flagged entry links to nothing, as an item's first entry does
+      const bare = await item("Flagged bare", "50");
+      await post(bare, { amount: 100 }, { is_checkpoint: true, expected_head_seq: 1 }, { privateKey: owner.user.keys.ecdsa.privateKey, sigKeyId: owner.user.sig_key_id });
+      expect(await lineOf(c, bare)).toMatchObject({ balance: 5100, chain: "broken" });
+    });
+
+    it("PETTY-448: the same row served twice is refused, not counted twice", async () => {
+      const line = await item("Twice");
+      const c = await served("read", (boot) => {
+        const row = boot.entries.find((e) => e.line_id === line)!;
+        boot.entries.push({ ...row, seq: row.seq + 1 });
+      });
+      await expect(c.drawers()).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("duplicate_entry") });
+    });
   });
 });

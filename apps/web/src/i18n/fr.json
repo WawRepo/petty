@@ -140,6 +140,7 @@
       "displayName": "Nom (facultatif)",
       "displayNameHint": "Le nom que voient les personnes avec qui vous partagez des tiroirs. Si vous le laissez vide, le nom de votre compte de connexion est utilisé.",
       "already": "Ce compte a déjà un coffre. Rechargez l’application.",
+      "emailNotVerified": "Votre adresse e-mail n’est pas encore confirmée. Confirmez-la dans votre compte de connexion, puis réessayez.",
       "explainer": {
         "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil. Le serveur n’en garde qu’une copie verrouillée."
       },
@@ -190,14 +191,18 @@
     "degradedReason": {
       "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
-      "sender_unconfirmed": "Ce tiroir a une nouvelle clé d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
+      "sender_unconfirmed": "La clé de ce tiroir vient d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
+      "pins_blocked": "La clé de ce tiroir vous a été donnée par une autre personne, et Petty ne peut pas vérifier cette personne pour l’instant : votre liste de clés de confiance manque sur le serveur, est plus ancienne qu’avant ou ne s’est pas chargée. Cherchez l’avertissement sur l’écran d’accueil, ou réessayez une fois en ligne.",
       "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "key_replaced": "Le serveur a envoyé pour ce tiroir une autre clé que celle que vous utilisiez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
       "doc_rolled_back": "Le serveur a envoyé une version de ce tiroir plus ancienne que celle que vous aviez déjà ouverte, donc Petty ne l’a pas ouvert. Les éléments ajoutés depuis manqueraient. Quelqu’un a peut-être modifié le serveur.",
       "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
       "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
-      "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour."
+      "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour.",
+      "bad_entries": "Les opérations d’un élément de ce tiroir ne sont pas dans l’ordre, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "sum_too_large": "Les montants de ce tiroir donnent ensemble un nombre trop grand pour être affiché, donc Petty n’en affiche aucun. Quelqu’un a peut-être ajouté une opération avec un montant erroné."
     },
     "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}",
     "picture": {
@@ -345,6 +350,8 @@
     "deleteConfirm": "Supprimer « {name} » avec tous ses éléments et leur historique ? Cette action est irréversible.",
     "deleteBtn": "Supprimer",
     "deleteType": "Saisissez le nom du tiroir pour confirmer",
+    "deleteDamagedConfirm": "Supprimer ce tiroir avec tous ses éléments et leur historique ? Cette action est irréversible.",
+    "deleteDamagedType": "Saisissez ce mot pour confirmer",
     "photoAdd": "Ajouter une photo",
     "photoChange": "Changer la photo",
     "photoRemove": "Supprimer la photo",
@@ -728,6 +735,8 @@
   "pins": {
     "rolledBackTitle": "Le serveur a une copie plus ancienne de vos clés de confiance",
     "rolledBack": "Sur cet appareil, votre liste de clés de confiance était en version {seen} ; le serveur a maintenant la version {server}. Il peut s’agir d’une sauvegarde restaurée, ou de quelqu’un qui tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "missingTitle": "Le serveur n’a pas votre liste de clés de confiance",
+    "missing": "Votre compte a des tiroirs, le serveur devrait donc avoir cette liste. Elle peut manquer parce que votre compte est plus ancien que la liste, parce qu’une sauvegarde a été restaurée, ou parce que quelqu’un tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, Petty n’ouvre que les tiroirs dont vous avez créé la clé, et vous ne pouvez pas partager de tiroirs. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau.",
     "startOver": "Commencer une nouvelle liste"
   },
   "privacy": {
@@ -1335,7 +1344,19 @@
     "addonTitle": "L’utiliser dans Claude Desktop",
     "addonBody": "Téléchargez l’extension, double-cliquez dessus et cliquez sur Installer. Claude Desktop demande alors deux choses : l’adresse ci-dessous et le jeton ci-dessus.",
     "addonDownload": "Obtenir l’extension Claude Desktop",
-    "address": "Adresse Petty"
+    "address": "Adresse Petty",
+    "scope": "Tiroirs qu’il peut utiliser",
+    "scopeAll": "Tous les tiroirs",
+    "scopeAllHint": "Y compris chaque tiroir que vous ajouterez ou recevrez plus tard.",
+    "scopeSome": "Seulement les tiroirs que je choisis",
+    "scopeSomeHint": "Un tiroir ajouté plus tard reste en dehors.",
+    "scopePick": "Tiroirs pour ce jeton",
+    "scopeNone": "Vous n’avez pas encore de tiroir à choisir.",
+    "scopeNeeded": "Choisissez les tiroirs que ce jeton peut utiliser.",
+    "scopeAllShort": "tous les tiroirs",
+    "scopeCount": "{count, plural, one {# tiroir} other {# tiroirs}}",
+    "confirm": "Un jeton contient des clés de tiroir. C’est pourquoi sa création redemande votre phrase secrète du coffre ou votre clé d’accès, même si le coffre est ouvert.",
+    "passphraseNeeded": "Saisissez la phrase secrète du coffre."
   },
   "device": {
     "title": "Connecter un outil en ligne de commande",
@@ -1343,15 +1364,15 @@
     "code": "Code",
     "continue": "Continuer",
     "checking": "Vérification du code…",
-    "notACode": "Ce n’est pas un code. Un code compte 12 lettres, comme BCDF-GHJK-LMNP.",
+    "notACode": "Ce n’est pas un code. Un code compte 20 lettres, comme BCDF-GHJK-LMNP-QRST-VWXZ.",
     "unknown": "Aucune demande en attente ne correspond à ce code. Elle a peut-être expiré au bout de 15 minutes, ou elle a déjà servi. Relancez `petty auth login`.",
     "tooMany": "Trop de tentatives. Patientez quelques minutes, puis réessayez.",
-    "mismatch": "Cette demande ne correspond pas à son code : elle a été modifiée en chemin. Ne l’autorisez pas. Relancez `petty auth login` et prévenez la personne qui gère ce Petty.",
+    "mismatch": "Cette demande ne correspond pas à son code. Elle a été modifiée en chemin, ou votre terminal a reçu une autre adresse que celle de cette page ({origin}). Ne l’autorisez pas. Relancez `petty auth login --host {origin}`. Si cela se reproduit, prévenez la personne qui gère ce Petty.",
     "askTitle": "Autoriser « {name} » ?",
     "checkCode": "Vérifiez que votre terminal affiche ce code :",
     "asked": "Demande envoyée {when}.",
     "askedFrom": "Demande envoyée {when}, depuis {ip}.",
-    "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie de vos clés de tiroir : il pourra lire tous les tiroirs que vous pouvez ouvrir.",
+    "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie des clés des tiroirs que vous choisissez ci-dessous : il pourra lire chacun d’eux.",
     "readOnly": "Il ne demande qu’un accès en lecture. Il ne peut rien modifier.",
     "allow": "Autoriser",
     "deny": "Refuser",

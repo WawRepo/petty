@@ -140,6 +140,7 @@
       "displayName": "Nombre (opcional)",
       "displayNameHint": "Así te ven las personas con las que compartes cajones. Si lo dejas vacío, se usa el nombre de la cuenta con la que iniciaste sesión.",
       "already": "Esta cuenta ya tiene una bóveda. Recarga la aplicación.",
+      "emailNotVerified": "Tu dirección de correo aún no está confirmada. Confírmala en la cuenta con la que inicias sesión e inténtalo de nuevo.",
       "explainer": {
         "identity": "Ya iniciaste sesión. La bóveda es una segunda cerradura, independiente: abre tus cajones en este dispositivo. El servidor solo guarda una copia bloqueada de ella."
       },
@@ -190,14 +191,18 @@
     "degradedReason": {
       "no_key": "Aún no tienes la clave de este cajón. Pide a su propietario que vuelva a compartirlo.",
       "sender_unknown": "La clave la compartió alguien a quien no habías visto antes.",
-      "sender_unconfirmed": "Este cajón tiene una clave nueva de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
+      "sender_unconfirmed": "La clave de este cajón viene de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
+      "pins_blocked": "La clave de este cajón te la dio otra persona, y Petty no puede comprobar ahora quién es: tu lista de claves de confianza falta en el servidor, es más antigua que antes o no se cargó. Busca el aviso en la pantalla de inicio o inténtalo de nuevo cuando tengas conexión.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "key_replaced": "El servidor envió una clave de este cajón distinta de la que ya usabas, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
       "doc_rolled_back": "El servidor envió una versión de este cajón más antigua que la que ya abriste, así que Petty no lo abrió. Faltarían los elementos añadidos desde entonces. Puede que alguien haya alterado el servidor.",
       "unwrap_failed": "No se pudo abrir este cajón en este dispositivo. Pide a su propietario que vuelva a compartirlo.",
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
       "bad_document": "Los datos de este cajón están dañados. Su propietario puede restaurar una versión anterior.",
-      "unknown_schema": "Este cajón lo guardó una versión más reciente de Petty. Recarga para actualizar Petty."
+      "unknown_schema": "Este cajón lo guardó una versión más reciente de Petty. Recarga para actualizar Petty.",
+      "bad_entries": "Los movimientos de un elemento de este cajón no están en orden, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "sum_too_large": "Las cantidades de este cajón suman un número demasiado grande para mostrarlo, así que Petty no muestra ninguna. Puede que alguien haya añadido un movimiento con una cantidad incorrecta."
     },
     "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}",
     "picture": {
@@ -345,6 +350,8 @@
     "deleteConfirm": "¿Eliminar «{name}» con todos sus elementos y su historial? Esto no se puede deshacer.",
     "deleteBtn": "Eliminar",
     "deleteType": "Escribe el nombre del cajón para confirmar",
+    "deleteDamagedConfirm": "¿Eliminar este cajón con todos sus elementos y su historial? Esto no se puede deshacer.",
+    "deleteDamagedType": "Escribe esta palabra para confirmar",
     "photoAdd": "Añadir foto",
     "photoChange": "Cambiar foto",
     "photoRemove": "Quitar foto",
@@ -728,6 +735,8 @@
   "pins": {
     "rolledBackTitle": "El servidor tiene una copia más antigua de tus claves de confianza",
     "rolledBack": "Este dispositivo vio por última vez la versión {seen} de tu lista de claves de confianza; ahora el servidor tiene la versión {server}. Puede ser una copia de seguridad restaurada, o alguien que intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
+    "missingTitle": "El servidor no tiene tu lista de claves de confianza",
+    "missing": "Tu cuenta tiene cajones, así que el servidor debería tener esta lista. Puede faltar porque tu cuenta es más antigua que la lista, porque se restauró una copia de seguridad o porque alguien intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, Petty solo abre los cajones cuya clave creaste tú y no podrás compartir cajones. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse.",
     "startOver": "Empezar una lista nueva de claves de confianza"
   },
   "privacy": {
@@ -1335,7 +1344,19 @@
     "addonTitle": "Úsalo en Claude Desktop",
     "addonBody": "Descarga el complemento, haz doble clic en él y haz clic en Instalar. Claude Desktop te pedirá dos cosas: la dirección de abajo y el token de arriba.",
     "addonDownload": "Descargar el complemento",
-    "address": "Dirección de Petty"
+    "address": "Dirección de Petty",
+    "scope": "Cajones que puede usar",
+    "scopeAll": "Todos los cajones",
+    "scopeAllHint": "También cada cajón que añadas o recibas más adelante.",
+    "scopeSome": "Solo los cajones que yo elija",
+    "scopeSomeHint": "Un cajón que añadas después queda fuera.",
+    "scopePick": "Cajones para este token",
+    "scopeNone": "Aún no tienes ningún cajón para elegir.",
+    "scopeNeeded": "Elige qué cajones puede usar este token.",
+    "scopeAllShort": "todos los cajones",
+    "scopeCount": "{count, plural, one {# cajón} other {# cajones}}",
+    "confirm": "Un token lleva claves de cajones. Por eso, al crearlo, Petty vuelve a pedir tu frase de contraseña de la bóveda o tu llave de acceso, aunque la bóveda esté abierta.",
+    "passphraseNeeded": "Escribe la frase de contraseña de la bóveda."
   },
   "device": {
     "title": "Conectar una herramienta de línea de comandos",
@@ -1343,15 +1364,15 @@
     "code": "Código",
     "continue": "Continuar",
     "checking": "Comprobando el código…",
-    "notACode": "Eso no es un código. Un código tiene 12 letras, como BCDF-GHJK-LMNP.",
+    "notACode": "Eso no es un código. Un código tiene 20 letras, como BCDF-GHJK-LMNP-QRST-VWXZ.",
     "unknown": "No hay ninguna solicitud pendiente con este código. Puede que haya caducado a los 15 minutos o que ya se haya usado. Vuelve a ejecutar `petty auth login`.",
     "tooMany": "Demasiados intentos. Espera unos minutos y vuelve a probar.",
-    "mismatch": "Esta solicitud no coincide con su código: alguien la cambió por el camino. No la permitas. Vuelve a ejecutar `petty auth login` y avisa a la persona que administra este Petty.",
+    "mismatch": "Esta solicitud no coincide con su código. Alguien la cambió por el camino, o tu terminal recibió otra dirección que la de esta página ({origin}). No la permitas. Vuelve a ejecutar `petty auth login --host {origin}`. Si se repite, avisa a la persona que administra este Petty.",
     "askTitle": "¿Permitir «{name}»?",
     "checkCode": "Comprueba que tu terminal muestra este código:",
     "asked": "Solicitado {when}.",
     "askedFrom": "Solicitado {when} desde {ip}.",
-    "onlyYours": "Permítelo solo si lo acabas de iniciar tú. La herramienta recibe una copia de las claves de tus cajones: podrá leer todos los cajones que puedes abrir.",
+    "onlyYours": "Permítelo solo si lo acabas de iniciar tú. La herramienta recibe una copia de las claves de los cajones que elijas abajo: podrá leer cada uno de ellos.",
     "readOnly": "Solo pide permiso de lectura. No puede cambiar nada.",
     "allow": "Permitir",
     "deny": "Rechazar",

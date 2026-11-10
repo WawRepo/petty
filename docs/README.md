@@ -58,8 +58,10 @@ decrypt, verify every signature and the hash links, fold the balance.
 **4. Sharing.** You compare the member's safety number out of band, pin their
 public keys, unwrap the drawer key and re-wrap it with their public key. On
 accept the server stores their wrap; their device unwraps it with their private
-key and reads and writes exactly as you do. Removing a member: a writer makes a
-new drawer key, wraps it for everyone left and re-encrypts the old rows.
+key and reads and writes exactly as you do. It takes a key only from someone
+whose safety number they confirmed; accepting the invitation does that for you.
+Removing a member: a writer makes a new drawer key, wraps it for everyone left
+whom they confirmed and re-encrypts the old rows.
 
 **5. New device.** Login → the vault arrives → passphrase → the same private keys.
 Keys are never regenerated. Lost passphrase → the recovery code opens the
@@ -75,11 +77,13 @@ tool's machine. Generated the same way:
 `python3 docs/generate-token-diagram.py` then
 `python3 docs/render-excalidraw.py docs/petty-token.excalidraw docs/petty-token.svg`.
 
-**1. Make a token.** In Settings you name it and pick read or write, and it takes
-a custody proof (a challenge signed by your account key — a stolen session alone
-cannot make one). Your device makes a random token id and secret, the token's own
+**1. Make a token.** In Settings you name it, pick read or write and which drawers
+it may use (all, or the ones you tick), and open the vault again with your
+passphrase or passkey (PETTY-452). It takes a custody proof (a challenge signed by
+your account key — a stolen session alone cannot make one), signed with the keys
+that door just gave. Your device makes a random token id and secret, the token's own
 ECDH keypair, and, for a write token, its own ECDSA keypair with a delegation
-signed by your account key. A **bundle** — the drawer keys you can open plus the
+signed by your account key. A **bundle** — the keys of the drawers you chose plus the
 token's private keys — is sealed with HKDF(secret) (AES-256-GCM). The server is
 given the id hash, the sealed bundle it cannot open, and the public halves
 (ecdh_pub, and for a write token ecdsa_pub + sig_key_id + delegation). The token
@@ -95,11 +99,13 @@ ECDSA key, never your account key.
 
 **3. Drawers made later.** A drawer you make or one shared with you is wrapped for
 the token's ECDH public key (`access_token_keys`), like wrapping for a member, so
-the tool sees it next time it starts — no new token needed.
+the tool sees it next time it starts — no new token needed. A token made for
+chosen drawers gets no later drawer.
 
 **4. Trust, revoke, delete.** Others verify a token-signed entry through the
 account-signed delegation, accepted only for entries received before the token
-expired or was revoked. Revoke stops the id at once; account delete erases the
-bundle and the wraps but keeps the public delegation so past entries still verify.
+expired or was revoked. Revoke stops the id at once and erases the bundle and the
+wraps; account delete does the same for every token, and an expired token loses
+them when you next make one. The public delegation stays, so past entries still verify.
 A token can never open the vault, the account, sharing, admin or export, or make
 another token — the server refuses every route off its allow-list.

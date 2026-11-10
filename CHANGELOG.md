@@ -8,6 +8,134 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The web app takes a drawer key that someone else made only when you confirmed that person's safety
+  number. This now holds for the first key of a drawer too, not only for a key replaced after a member
+  left. Accepting an invitation confirms the inviter, so sharing works as before, and a drawer you
+  already opened stays open. If a drawer says its key comes from a member you have not confirmed,
+  compare their safety number in Members and choose "Numbers match".
+- Your list of trusted keys now keeps a fingerprint of each drawer key you accepted. The app refuses
+  another key at the same key version. After a member leaves, it re-seals a drawer only under a key
+  that you or a member you confirmed made.
+- While your list of trusted keys is missing on the server, older than this browser remembers, or
+  cannot be loaded, the app opens only drawers whose key you made yourself and replaces no drawer key.
+  The other drawers say why they stay closed.
+- An account that has drawers always has this list, so the app now also warns when the server has
+  none on a browser that never used the account. An account that last opened the web app before
+  1.5.27 may see this warning once: choose "Start a new list of trusted keys", then confirm the safety
+  number of each person who shared a drawer with you. Drawers you made yourself open at once.
+- With no connection, the app uses the copy of that list which this browser kept, so drawers that
+  others shared still open after a reload.
+- The web app finds the newest entry it remembers for an item by its hash, not by the row's number. A
+  history that lost entries is reported as shorter whatever numbers the server gives the rows that are
+  left, and rows that only changed their numbers are reported too. After a count the app looks for the
+  remembered entry in the rows before that count, which can take one more request per item when you
+  open the app.
+- The command line and the AI add-on link each entry they write to the entry before it, as the web app
+  does. Before, an entry from a tool made the web app say "The history links do not match" on that item
+  until the next count, and the app stopped moving its remembered entry on. Entries that tools already
+  wrote without a link no longer raise that warning.
+- The command line and the AI add-on check the hash links between an item's entries, and say when an
+  entry or a drawer could not be opened or checked: `petty` prints `petty: warning: …` on its error
+  output, and an answer of the add-on ends with `warning:` lines. In `--json`, an item carries
+  `unreadable`, `unverified` and `chain`. Download the command line (`petty.mjs`) and the add-on
+  (`petty.mcpb`) again to get this; the ones you have keep working.
+- A row that the server calls a count while its sealed content is not one no longer resets an item's
+  balance: the web app and the tools read back to the latest real count and report the item. The same
+  entry sent twice is refused instead of counted twice.
+- `docs/threat-model.md` says what the remembered entry catches, and what the command line and the AI
+  add-on check and do not check.
+- A drawer whose content cannot be shown no longer stops the web app. It is listed as damaged, with
+  the reason, and Home and the other drawers keep working. That covers amounts that add up to a number
+  too large to be exact, entries that are out of order, and a saved check that holds something that is
+  not a number. The app shows no amount for such a drawer and marks the total as incomplete. An icon
+  name the app does not know draws the default icon. Each drawer on Home, and each drawer's own
+  screen, is now fenced in, so a drawer that fails to draw for any other reason is shown the same way.
+- A drawer that did not open now offers the ways out on its own screen: the list of its members; for
+  its owner, "Earlier versions" (the drawer's 30-day history) and deleting the drawer; for every other
+  member, leaving it.
+- "Lock now" and signing out reach every open tab of the same browser at once: the other tabs drop
+  the keys and the opened drawers from memory.
+- With local sign-in, a sign-out made while offline is remembered and sent to the server before any
+  other request, at the next start or when the network is back, so the session ends on the server too.
+- The AI add-on quotes everything in a tool's answer that Petty did not word itself, not only names,
+  tags and comments: a currency code that is not plain letters and digits, an item id that is not a
+  UUID, the drawer names in a "more than one matches" answer, and the text of an unexpected error. A
+  refusal code from the server is shown only if it is a known one, and an entry's time only if it is
+  a date. The quotes mark text as data; a model can still follow it, as `docs/agent.md` now says.
+- A new item's id must be a UUID, and control characters are dropped from a currency code as it is
+  saved. An older item id already in a drawer is still read; a code already there is cleaned the next
+  time its item is changed.
+- The command line shows control characters as `?` in everything it prints from a drawer or from the
+  server: names, tags and comments, and also an item id, a currency code and an error. With `--json`
+  it escapes them.
+- On Windows, `petty auth login` opens the sign-in page without `cmd`, and on every system only an
+  `http:` or `https:` address is opened.
+- PowerShell Tab completion puts every name onto the command line as one single-quoted word. Update
+  `petty` and open a new PowerShell; if you saved the completion script to a file, make it again. In
+  every shell, Tab no longer offers a name that holds a control character.
+- The code that `petty auth login` shows has 20 letters in five groups, and it depends on your Petty's
+  address as well as on the command line's one-time key. The page works the code out again and does
+  not allow a request whose key does not fit its code. Before, the code had 12 letters and came from
+  the key alone. **`petty` and your Petty must now match:** an older `petty` is told to update
+  (`CommandLineTooOld`), and a newer `petty` stops at an older Petty and says so. Install `petty`
+  again after this update; a login you already have keeps working.
+- Making an access token asks for your vault passphrase or passkey every time: also for a token that
+  only reads, and also while the vault is open. Before, only a token that can make changes asked.
+- You choose which drawers a new access token can use, in Settings and on the page that allows `petty
+  auth login`: all drawers, later ones included, or only the ones you tick. Nothing is chosen for
+  you. Before, every token was for all drawers. Settings shows how many drawers each token opens. A
+  token for chosen drawers gets no drawer you add later. The command line says at sign-in how many
+  drawers its token opens, and says so again when something is not found; the AI add-on tells the AI
+  app the same. A new token still ends after 90 days unless you pick another time or "Never".
+- A pending drawer invitation ends when the drawer gets a new owner: when an ownership offer is
+  accepted, and when an owner who deletes the account hands the drawer over. The new owner decides who
+  joins and invites again. Pending invitations that a former owner made end with this upgrade. The
+  owner can list every pending invitation of a drawer (`GET /api/drawers/:id/invitations`) and revoke
+  any of them (`DELETE /api/invitations/:id`); the app has no screen for this list yet.
+- The API takes a request that changes something from a browser only when the browser marks it as
+  coming from Petty's own pages (`Sec-Fetch-Site: same-origin`). Any other mark gets 403
+  `CrossSiteRequest`, also for a request without a body and for a page on another host under the same
+  domain as your instance. The web app is not affected. Programs that send no such header (the command
+  line, the add-on, curl) work as before.
+- With Clerk sign-in, Petty makes an account only for an email address that Clerk has verified. For
+  an unverified one the vault setup answers 403 `EmailNotVerified`, stores nothing, and the app asks
+  you to confirm the address first. This matters only if your Clerk instance lets people sign up
+  without verifying their email.
+- A join link's token no longer travels in a web address. The sign-up page asks about the link with
+  the token in the request body (`POST /api/join-links/lookup`), and the operator's `join-link` script
+  prints the link as `/join#<token>`, like the emailed links: a browser never sends the part after
+  `#`. `GET /api/join-links/<token>` and `GET /api/users/lookup?email=` are removed and answer 404.
+  A web app copy from before this release may say once that a join link is not valid; it reloads
+  itself to the new version, and the link still works.
+- Every per-address limit (sign-in, sign-up, password reset, device codes and polls, the email
+  lookup, and `RATE_LIMIT_PER_MINUTE`) counts an IPv6 client by its /64 network, because one home or
+  phone connection holds a whole /64. IPv4 is counted per address as before, also when the address
+  arrives written as IPv6 (`::ffff:a.b.c.d`). Counts of IPv6 clients start anew with this upgrade.
+- Changing a drawer's key and deleting an item now need proof that your vault is open, as deleting a
+  drawer already does: the app signs a one-time challenge from the server with your account key.
+  Being signed in is not enough for either. When a member is removed, another member's app may still
+  finish the key change that one app began; each app proves its own key, for every step.
+- Every field the server stores now has a size, taken from what the apps really write. A nonce is
+  exactly 12 bytes and a wrapped drawer key 40; salts, public keys, vault copies, signatures, your own
+  settings document and a token's key bundle each have their range. An entry or a drawer's document
+  cannot be smaller than the apps write it, so every stored row counts against the storage limit
+  (`STORAGE_QUOTA_MB`). A key change keeps the size limits of entries and photos, and what it adds
+  counts against the storage limit. A request outside a limit is refused and stores nothing. What is
+  stored already stays readable as it is. The list is in `docs/deploy.md` ("Limits").
+- An account can hold 50 live access tokens (not revoked, not expired) and 20 passkeys. Revoking a
+  token now also erases its sealed key bundle and its wrapped drawer keys on the server; before, only
+  deleting the account did. The same happens to a token that has expired, when you next make one. A
+  token gets wrapped drawer keys only for key versions that you hold.
+
+### Changed
+- **Before you upgrade:** a browser that still runs the web app from before this release cannot change
+  a drawer's key or delete an item. The server answers 403 `CustodyProofRequired` and changes nothing;
+  a key change that is waiting finishes by itself after the app has updated (a reload does it). A
+  script that calls `POST /drawers/:id/rotation`, `PUT /drawers/:id/rotation/batch` or
+  `POST /drawers/:id/lines/:lineId/delete` must now send a `proof`, as for `DELETE /drawers/:id`. The
+  command line and the Claude add-on never call these and are not affected.
+
 ## [1.5.32] — 2026-11-04
 
 ### Changed
