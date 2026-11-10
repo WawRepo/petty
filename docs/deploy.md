@@ -154,7 +154,7 @@ mv "$out.partial" "$out"
 ```
 
 The dump is written under a `.partial` name and takes the day's name only when `pg_dump` and `age` both
-succeeded. If either fails, the script ends with an error, leaves no file under the day's name, and an
+succeeded. If either fails, the script ends with an error and writes nothing under the day's name: an
 earlier good dump of the same day stays as it was. Let your scheduler tell you about a failed run, and
 use the same three parts (pipefail, a `.partial` name, a rename at the end) in a backup job of your own.
 
