@@ -26,8 +26,10 @@ provider, if you use a hosted one. The same code runs in both cases.
   copy of that profile, inside those 24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
-- **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
-  read anything written afterwards.
+- **A removed collaborator, going forward.** After removal the drawer key is replaced; they cannot
+  read anything written under the new key. The app of the person who removes a member replaces the
+  key at once and does not wait for the server to ask for it. What is written before the new key is
+  there is still under the old one; "Key rotation" says when that takes longer.
 - **Another site open in your browser.** A page of another site cannot make your browser change
   anything with your sign-in, also not a page on another host under the same domain as the instance.
   A browser marks where a request comes from (`Sec-Fetch-Site`), and the API takes a request that
@@ -131,6 +133,17 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   confirms the inviter, and for every later one. A **new drawer key** (after someone leaves) is given
   only to members whose safety number you confirmed, and a drawer is re-sealed only under a key that
   you or such a member wrapped.
+- A confirmed safety number outlives a membership. So your sealed user document also remembers who
+  was in each drawer, and who left it or was removed (PETTY-449). A drawer key that such a person
+  wrapped, newer than the last one they held as a member, stays closed, and your device gives them
+  no new key, also when the server lists them as a member again. That ends when you compare their
+  safety number again in Members or, as the owner, invite them again. Keys they wrapped while they
+  were a member still open what was sealed under them. Only the owner knows of a removal first-hand.
+  Every other member learns it from the member list, which the server gives: a server that never
+  shows a member's app that someone is gone is not caught by that app.
+- An **invitation** shows the inviter's safety number, and accepting it confirms the inviter. When
+  the inviter's keys are not the ones you already pinned for that person, the invitation shows the
+  key change and cannot be accepted until you accepted the new key as a changed key (PETTY-447).
 - Your sealed user document remembers, for each drawer, the newest key version you accepted and a
   fingerprint of every key you accepted. So the server can neither push a key of its own, nor put
   another key in the place of one you accepted, nor go back to an older key that a removed member may
@@ -157,8 +170,19 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   `record_type || record_id || drawer_id || line_id || author_id || key_version || schema_version`,
   so it cannot be decrypted in any other row, line, drawer, author or key generation.
 - **Signed entries.** Each entry is signed (ECDSA) by its author's key, or by an access token's own
-  delegated key; public keys are never deleted, so old entries still verify after revocation or
-  account deletion.
+  delegated key. The web app checks the signature against a key that **you hold** for the author
+  (PETTY-413): your own key from your vault, the key you pinned for them, or an earlier key of theirs
+  that you had confirmed before you accepted a new one. A key that only the server lists for an
+  author you pinned is not used, and a token's key counts only when a key you hold for the author
+  vouches for it. An entry under the name of someone you pinned that is signed with any other key is
+  reported and left out of the balance. The server never deletes a public key or a delegation, and
+  your pins stay when a person leaves a drawer or deletes the account, so old entries still verify
+  after a token is revoked or an account is deleted. Someone you never pinned, such as a person who
+  left before you joined, cannot be checked this way: the app checks their entries against the key
+  the server lists, counts them, and marks them "author not confirmed". A person who holds the
+  drawer key and can write the database can therefore still add an entry under a name you never
+  pinned; it carries that mark. A signature says who wrote an entry, not that they were allowed to:
+  roles are enforced by the server alone.
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
   the server returns a shorter log, also an empty one for a line the drawer still lists.
@@ -207,6 +231,34 @@ A batch replaces rows in place, and the server cannot tell a re-encrypted row fr
 publishing the new key and every batch need a custody proof from the member whose client sends them
 (see "Custody proofs"): a session without the vault key can neither start a rotation nor continue one.
 A rotation that one member began can be finished by another, each with a proof of their own key.
+
+The app does not wait for the server to say that a new key is needed (PETTY-449). The app of the owner
+who removes a member replaces the key right after the removal. It also notes the removal in the
+owner's sealed user document, so another device or a later session of the owner replaces the key when
+the first one could not. Every other member's app keeps, in that member's user document, who it saw
+in the drawer; when someone is no longer listed, a write member's app replaces the key as well. The
+note lives in the user document because only its owner can write it; the drawer document is sealed
+with the drawer key, which the removed person still holds. What remains of the wait:
+
+- Entries written after the removal and before the new key are under the old key, which the removed
+  person holds.
+- A device gives a new key only to members whose safety number its user confirmed. While one is not
+  confirmed, that device waits, and the drawer and its Members screen say whom to confirm. Another
+  write member who confirmed everyone can replace the key in the meantime.
+- A read-only member cannot replace a key. A drawer that only read-only members open keeps its key
+  until a write member opens it.
+- While the user document is missing or rolled back, no key is replaced. A list of trusted keys that
+  was started over, or one that an older copy of the web app saved (it drops what it does not know),
+  no longer remembers who left; then a new key waits for the server's word, as it did before.
+- A member who leaves by themselves, or deletes their account, is noticed from the member list,
+  which the server gives.
+- A member's app compares the list with what it saw the last time. When the key was replaced in
+  between, it takes that key to be the one that followed the removal. Had the person left only after
+  it, this app would not replace the key once more. The owner's app, which removes at a moment it
+  knows, does.
+- A key that the leaver wrapped, and that your app first sees together with their leaving, counts as
+  one they held as a member: the app opens it, so that nothing they re-encrypted is lost, and
+  replaces it like any key they hold. A key from them that comes later stays closed.
 
 ## Access tokens
 

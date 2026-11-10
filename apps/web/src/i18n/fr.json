@@ -192,6 +192,7 @@
       "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
       "sender_unconfirmed": "La clé de ce tiroir vient d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
+      "sender_left": "La clé de ce tiroir vient d’une personne qui a quitté ce tiroir ou en a été retirée, donc Petty ne l’a pas ouvert. Si elle est de nouveau membre, comparez son numéro de sécurité dans Membres et choisissez « Même numéro ». Sinon, quelqu’un a peut-être modifié le serveur.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
       "pins_blocked": "La clé de ce tiroir vous a été donnée par une autre personne, et Petty ne peut pas vérifier cette personne pour l’instant : votre liste de clés de confiance manque sur le serveur, est plus ancienne qu’avant ou ne s’est pas chargée. Cherchez l’avertissement sur l’écran d’accueil, ou réessayez une fois en ligne.",
       "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
@@ -515,6 +516,7 @@
     "row": {
       "reversed": "inversé",
       "cancels": "compense une opération antérieure",
+      "unconfirmed": "auteur non confirmé",
       "adjustHint": "({delta})",
       "by": "par {name}",
       "options": "Options de l’opération"
@@ -541,6 +543,7 @@
       "truncated": "L’historique est plus court que lors de votre dernière consultation. Des opérations ont peut-être été supprimées.",
       "acknowledge": "Accepter tel quel",
       "skipped": "{count, plural, one {# opération n’est pas prise en compte dans le solde, car elle enfreint les règles.} other {# opérations ne sont pas prises en compte dans le solde, car elles enfreignent les règles.}}",
+      "unconfirmed": "{count, plural, one {# opération vient d’une personne qui n’est pas dans votre liste de clés de confiance, par exemple quelqu’un qui est parti avant votre arrivée. Petty ne peut pas vérifier qui l’a écrite. Son montant est compté dans le solde.} other {# opérations viennent d’une personne qui n’est pas dans votre liste de clés de confiance, par exemple quelqu’un qui est parti avant votre arrivée. Petty ne peut pas vérifier qui les a écrites. Leurs montants sont comptés dans le solde.}}",
       "negative": "Solde négatif. Comptez cet élément et ajustez-le."
     }
   },
@@ -613,6 +616,7 @@
       "confirmed": "Comparé",
       "unconfirmed": "Pas encore comparé",
       "changed": "Sa clé a changé. Comparez à nouveau les numéros de sécurité avant de partager.",
+      "back": "Cette personne a quitté ce tiroir ou en a été retirée, et figure de nouveau dans la liste. Comparez à nouveau les numéros de sécurité si vous savez qu’elle a été réinvitée.",
       "unpinned": "Pas encore configuré"
     },
     "confirm": "Même numéro",

@@ -11,6 +11,8 @@ export interface LedgerEntry {
   readonly is_checkpoint?: boolean;
   /** True when an access token's own key signed the entry: a tool wrote it. Tools before PETTY-445 never set `prev_hash`. */
   readonly by_token?: boolean;
+  /** True when the signature was checked against a key the reader never pinned for the author, so it is not known to be theirs (PETTY-413). Shown as not confirmed; the fold does not look at it. */
+  readonly unconfirmed_author?: boolean;
 }
 
 export type LineKind = "money" | "countable" | "single";

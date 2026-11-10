@@ -8,7 +8,7 @@ import type { DrawerKeyWrap, Member } from "@petty/protocol";
 import { api } from "./api.js";
 import { withCustodyProof } from "./custody.js";
 import { getDrawers, loadAll, openWrap, patchRotation, type DrawerView } from "./drawers.js";
-import { getPin, pinStatus, pinsReady } from "./pins.js";
+import { confirmedFor, getPin, memberStatus, pinStatus, pinsReady } from "./pins.js";
 import { getAuth } from "./session.js";
 
 const BATCH = 200;
@@ -31,10 +31,13 @@ function pinnedEcdh(m: Member): string {
   return p.ecdh;
 }
 
-/** PETTY-438: a drawer is re-sealed only under a key that I wrapped, or that a member I confirmed wrapped, and only while my user document is in place. */
+/**
+ * PETTY-438: a drawer is re-sealed only under a key that I wrapped, or that a member I confirmed wrapped, and only while my user document is in place.
+ * PETTY-449: not under a key from someone I know left the drawer, newer than the last one they held.
+ */
 function wrappedByConfirmed(wrap: DrawerKeyWrap, meId: string): boolean {
   if (!pinsReady()) return false;
-  return wrap.sender_id === meId || (!!wrap.sender_id && !!getPin(wrap.sender_id)?.confirmed_at);
+  return wrap.sender_id === meId || (!!wrap.sender_id && confirmedFor(wrap.drawer_id, wrap.sender_id, wrap.key_version));
 }
 
 /** Step 1 + 2: new key generation, wraps for everyone still in, publish. Then the batches. */
@@ -43,6 +46,9 @@ export async function rotateDrawer(id: string): Promise<void> {
   const view = getDrawers().drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
   if (!pinsReady()) throw new Error("PinsRolledBack"); // PETTY-438: no rotation while the user document is missing, rolled back or not loaded
+  // PETTY-449: someone I know left this drawer, and whom the server lists again, gets no new key until I confirm them again
+  const back = view.members.find((m) => m.user_id !== a.me.id && memberStatus(id, m) !== "confirmed");
+  if (back) throw new KeyNotConfirmed(back.user_id);
   const toVersion = view.summary.key_version + 1;
   const sender = { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh };
   const { selfWrap } = await createDrawerKey(sender, id, toVersion);

@@ -16,16 +16,16 @@ import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, 
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
-import { acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, drawersNeedUserDoc, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, pinsReady, recordDrawerVersions, startUserDoc, usePins } from "./pins.js";
+import { acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, confirmedFor, drawersNeedUserDoc, getPin, leftDrawerAt, loadPins, noteMembers, pinMembers, pinStatus, pinnedSigningKeys, pinsBlocked, pinsReady, recordDrawerVersions, recordLeft, rotationOwed, startUserDoc, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
 import { custodyProof, withCustodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
-import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, toHex, zero } from "@petty/crypto";
+import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, signingKeyId, toHex, zero } from "@petty/crypto";
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_left" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -147,6 +147,10 @@ const entryIdentity = (r: EntryRow): RecordIdentity =>
  * taken only when I confirmed their safety number, or when it is the key I already accepted for this drawer: the
  * version my user document lists, with the fingerprint it keeps (`openWrap` compares it). While that document is
  * missing, rolled back or not loaded, only a key I wrapped myself is taken.
+ *
+ * PETTY-449: a confirmed pin outlives the membership. So a key from someone I know left this drawer, or was removed from
+ * it, is taken only up to the newest version they held then (`confirmedFor`). A newer one stays closed until I confirm
+ * them again as a member. Keys I already accepted still open.
  */
 export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Member[]): Promise<{ pub: string } | { error: DrawerError }> {
   const a = me();
@@ -154,9 +158,9 @@ export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Memb
   if (!pinsReady()) return { error: "pins_blocked" };
   if (!wrap.sender_id) return { error: "sender_unknown" };
   const pin = getPin(wrap.sender_id);
-  if (pin?.confirmed_at) return { pub: pin.ecdh };
+  if (pin && confirmedFor(wrap.drawer_id, wrap.sender_id, wrap.key_version)) return { pub: pin.ecdh };
   const accepted = acceptedKeyFingerprint(wrap.drawer_id, wrap.key_version) !== null || acceptedKeyVersion(wrap.drawer_id) === wrap.key_version;
-  if (!accepted) return { error: pin ? "sender_unconfirmed" : "sender_unknown" };
+  if (!accepted) return { error: !pin ? "sender_unknown" : pin.confirmed_at && leftDrawerAt(wrap.drawer_id, wrap.sender_id) !== null ? "sender_left" : "sender_unconfirmed" };
   if (pin) return { pub: pin.ecdh };
   const m = members.find((x) => x.user_id === wrap.sender_id);
   if (m?.keys) return { pub: m.keys.ecdh_pub };
@@ -220,7 +224,7 @@ async function keyResolver(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], me
 function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
   // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
-  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
+  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
   if (e instanceof LedgerError) return "bad_document";
   return "decrypt_failed";
 }
@@ -233,7 +237,7 @@ async function decryptDocument(key: CryptoKey, d: DrawerSummary, row: SealedRow)
 
 /** Display names of authors who are no longer members (left, removed, deleted), learned from /users/:id/keys. */
 const nameCache = new Map<string, string>();
-/** Signing keys by sig_key_id. Current keys come from the member list; retired ones from /users/:id/keys. */
+/** Imported signing keys, by author, key id and the key itself (PETTY-413): a key found for one author never serves another's entry. */
 const keyCache = new Map<string, CryptoKey>();
 /** One fetch per author per minute, so a log full of token-signed entries does not fetch once per entry. */
 const FETCH_TTL_MS = 60_000;
@@ -247,15 +251,29 @@ function fetchOnce<T>(url: string): Promise<T> {
   return p;
 }
 
-/** The author's ACCOUNT signing key with this id, as base64 SPKI: from the member list, else from every key they ever published. */
-async function accountSpki(members: readonly Member[], authorId: string, sigKeyId: string): Promise<string | null> {
-  const m = members.find((x) => x.user_id === authorId && x.keys?.sig_key_id === sigKeyId)?.keys?.ecdsa_pub;
-  if (m) return m;
-  try {
-    const r = await fetchOnce<{ display_name: string; keys: Array<{ sig_key_id: string; ecdsa_pub: string } | null> }>(`/users/${authorId}/keys`);
-    nameCache.set(authorId, r.display_name);
-    return r.keys.find((k) => k?.sig_key_id === sigKeyId)?.ecdsa_pub ?? null;
-  } catch { return null; }
+/**
+ * The author's ACCOUNT signing key with this id, as base64 SPKI. PETTY-413: it counts as the author's (`pinned`) only when
+ * this person holds it for them: my own key, from my vault, or a key in my pin of the author, the current one or an
+ * earlier one I confirmed. The server lists keys too, in the member list and in /users/:id/keys, and could list one of
+ * its own: for an author I pinned, no key from there is taken. For an author I never pinned (someone who left before I
+ * came), the listed key checks the signature and the entry is shown as not confirmed. The id asked for must be the id
+ * of the very key that is returned, whatever id the server put next to it.
+ */
+async function accountSpki(members: readonly Member[], authorId: string, sigKeyId: string): Promise<{ spki: string; pinned: boolean } | null> {
+  const a = getAuth();
+  const member = members.find((x) => x.user_id === authorId);
+  let listed: Array<string | undefined> = [member?.keys?.ecdsa_pub];
+  if (!member) {
+    // not a member any more (left, removed, or deleted account): the server keeps their name and every key they published
+    try {
+      const r = await fetchOnce<{ display_name: string; keys: Array<{ ecdsa_pub: string } | null> }>(`/users/${authorId}/keys`);
+      nameCache.set(authorId, r.display_name);
+      listed = r.keys.map((k) => k?.ecdsa_pub);
+    } catch { /* offline or unknown user */ }
+  }
+  const held = a.status === "unlocked" && authorId === a.me.id ? [a.keys.pub.ecdsa] : pinnedSigningKeys(authorId);
+  for (const spki of held ?? listed) if (spki && (await signingKeyId(spki)) === sigKeyId) return { spki, pinned: held !== null };
+  return null;
 }
 
 /**
@@ -263,35 +281,40 @@ async function accountSpki(members: readonly Member[], authorId: string, sigKeyI
  * account key signed a delegation for it, and only for entries the server received before the
  * delegation expired or was revoked. The server hands out the delegations but cannot forge one.
  */
-async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<CryptoKey | null> {
+async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; sig_key_id: string; pinned: boolean } | null> {
   let list: UserDelegations["delegations"];
   try { list = (await fetchOnce<UserDelegations>(`/users/${authorId}/delegations`)).delegations; } catch { return null; }
   const hit = list.find((x) => x.delegation.token_sig_key_id === sigKeyId && x.delegation.user_id === authorId);
   if (!hit) return null;
-  const spki = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
-  if (!spki) return null;
+  // PETTY-413: the account key that vouches for the token's key is found by the same rule as an entry's own key
+  const account = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
+  if (!account) return null;
   try {
-    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: spki });
+    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: account.spki });
     if (!delegationCovers(d, receivedAt, hit.revoked_at)) return null;
-    return await importEcdsaPublic(d.token_ecdsa_pub);
+    return { key: await importEcdsaPublic(d.token_ecdsa_pub), sig_key_id: d.token_sig_key_id, pinned: account.pinned };
   } catch { return null; }
 }
 
-/** The key an entry must verify against, and whether it is a token's own key (a tool wrote the entry) rather than an account key. */
-async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; byToken: boolean } | null> {
-  const cached = keyCache.get(sigKeyId);
-  if (cached) return { key: cached, byToken: false };
-  const spki = await accountSpki(members, authorId, sigKeyId);
-  if (!spki) { const d = await delegatedKey(members, authorId, sigKeyId, receivedAt); return d && { key: d, byToken: true }; }
-  const k = await importEcdsaPublic(spki);
-  keyCache.set(sigKeyId, k);
-  return { key: k, byToken: false };
+/**
+ * The key an entry must verify against, the id of that key, whether this person holds the account key behind it for the
+ * author (`pinned`, see accountSpki), and whether it is a token's own key (a tool wrote the entry) rather than an account key.
+ */
+async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; sig_key_id: string; pinned: boolean; byToken: boolean } | null> {
+  const account = await accountSpki(members, authorId, sigKeyId);
+  if (!account) { const d = await delegatedKey(members, authorId, sigKeyId, receivedAt); return d && { ...d, byToken: true }; }
+  const cacheKey = `${authorId} ${sigKeyId} ${account.spki}`;
+  const k = keyCache.get(cacheKey) ?? await importEcdsaPublic(account.spki);
+  keyCache.set(cacheKey, k);
+  return { key: k, sig_key_id: sigKeyId, pinned: account.pinned, byToken: false };
 }
 
 /**
  * Open every row; verify each signature against the author's key. A row that
  * fails to open or verify is reported as a problem and left out of the window
  * (a forged or unreadable entry must not move a balance silently).
+ * PETTY-413: an entry of an author this person pinned counts only under a key pinned for them. An entry of an author
+ * never pinned here stays in the window, since the entries after it link to it, marked `unconfirmed_author`.
  * `windows`: the rows are each line's window, so one that does not start at a count is read further back (backToCount).
  */
 async function decryptEntries(keyFor: (version: number) => Promise<CryptoKey>, rows: readonly EntryRow[], members: readonly Member[], windows = true): Promise<{ byLine: Map<string, LedgerEntry[]>; problems: EntryProblem[] }> {
@@ -301,12 +324,13 @@ async function decryptEntries(keyFor: (version: number) => Promise<CryptoKey>, r
     let entry: SignedEntryV1;
     try { entry = await openEntryUnverified(await keyFor(r.key_version), entryIdentity(r), sealedOf(r)); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "decrypt_failed" }); continue; }
-    const k = await authorKey(members, entry.author_id, entry.sig_key_id, r.received_at);
+    // PETTY-413: the author is the row's (the ciphertext is bound to it, and to the row's drawer and line); the key id is that of the key used
+    const k = await authorKey(members, r.author_id, entry.sig_key_id, r.received_at);
     if (!k) { problems.push({ line_id: r.line_id, entry_id: r.id, code: "author_key_missing" }); continue; }
-    try { await verifyEntry(entry, { author_id: entry.author_id, sig_key_id: entry.sig_key_id, ecdsaPublic: k.key }); }
+    try { await verifyEntry(entry, { author_id: r.author_id, sig_key_id: k.sig_key_id, ecdsaPublic: k.key }); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "signature_invalid" }); continue; }
     const list = byLine.get(r.line_id) ?? [];
-    list.push({ seq: r.seq, received_at: r.received_at, entry, is_checkpoint: r.is_checkpoint, by_token: k.byToken });
+    list.push({ seq: r.seq, received_at: r.received_at, entry, is_checkpoint: r.is_checkpoint, by_token: k.byToken, ...(k.pinned ? {} : { unconfirmed_author: true }) });
     byLine.set(r.line_id, list);
   }
   if (windows) await backToCount(keyFor, rows, members, byLine, problems);
@@ -420,6 +444,12 @@ export async function acknowledgeChain(drawerId: string, lineId: string): Promis
   }
 }
 
+/**
+ * PETTY-449: a drawer as the server lists it, with its key also due for replacement when this person's sealed user
+ * document says that someone left while the drawer had this key. The server's own `rotation_needed` is not waited for.
+ */
+const withOwed = (d: DrawerSummary): DrawerSummary => (!d.rotation_needed && rotationOwed(d.id, d.key_version) ? { ...d, rotation_needed: true } : d);
+
 /** GET /bootstrap, then decrypt everything. A drawer that fails stays listed with an error, never silently dropped. */
 let loading: Promise<void> | null = null;
 let again: Promise<void> | null = null;
@@ -470,6 +500,8 @@ async function loadOnce(): Promise<void> {
   for (const list of Object.values(boot.members)) for (const m of list) everyone.set(m.user_id, m);
   for (const inv of boot.invitations) if (inv.inviter.keys) everyone.set(inv.inviter.id, { user_id: inv.inviter.id, display_name: inv.inviter.display_name, role: "owner", keys: inv.inviter.keys });
   try { await pinMembers([...everyone.values()]); } catch { /* keep going with what we have */ }
+  // PETTY-449: who is in each drawer now, against who was there before. Someone no longer listed left: the key they hold is owed a replacement.
+  if (!fromCache) await noteMembers(boot.drawers.map((d) => ({ id: d.id, key_version: d.key_version, members: (boot.members[d.id] ?? []).map((m) => m.user_id), wraps: boot.wraps.filter((w) => w.drawer_id === d.id) }))).catch(() => undefined);
   const drawers = new Map<string, DrawerView>();
   const toRotate: string[] = [];
   const toResume: string[] = [];
@@ -481,7 +513,7 @@ async function loadOnce(): Promise<void> {
     const prev = state.drawers.get(d.id);
     const wraps = boot.wraps.filter((w) => w.drawer_id === d.id);
     const keyChanged = members.filter((m) => pinStatus(m) === "changed").map((m) => m.user_id);
-    const base: DrawerView = { summary: d, members, key: null, doc: null, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: prev?.photo ?? null, docAuthor: boot.documents[d.id]?.author_id ?? d.owner_id, wraps, keyChanged, rotation: prev?.rotation ?? null, pending: new Set(), pendingOps: 0 };
+    const base: DrawerView = { summary: withOwed(d), members, key: null, doc: null, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: prev?.photo ?? null, docAuthor: boot.documents[d.id]?.author_id ?? d.owner_id, wraps, keyChanged, rotation: prev?.rotation ?? null, pending: new Set(), pendingOps: 0 };
     // PETTY-398: a drawer whose key is older than one this person already had is refused: the server went back
     // to a key that a removed member may still hold.
     const accepted = acceptedKeyVersion(d.id);
@@ -510,7 +542,7 @@ async function loadOnce(): Promise<void> {
       if (damage) drawers.set(d.id, { ...base, key: k.key, name: merged.doc.name, error: damage });
       // PETTY-438: no rotation starts or goes on while the user document is missing, rolled back or not loaded
       if (d.role !== "read" && !fromCache && pinsReady()) {
-        if (d.rotation_needed) toRotate.push(d.id);
+        if (base.summary.rotation_needed) toRotate.push(d.id);
         else if (row.key_version < d.key_version || rows.some((e) => e.key_version < d.key_version)) toResume.push(d.id);
       }
     } catch (e) {
@@ -530,6 +562,7 @@ async function loadOnce(): Promise<void> {
   // Anything queued while offline goes out now (idempotent by client id); a reload mid-send just resumes here.
   if (!fromCache && outbox.length) { const sync = await import("./sync.js"); void sync.syncOutbox(); }
   // A removed member means the key must turn (SPEC-ISSUES A7); any writer's client does it, and resumes an unfinished one.
+  // PETTY-449: also when only this person's user document says that someone left (`withOwed`), not the server.
   if (toRotate.length || toResume.length) {
     const rot = await import("./rotation.js");
     for (const id of toRotate) rot.rotateDrawer(id).catch(() => undefined);
@@ -597,7 +630,19 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
 }
 export async function acceptInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/accept`); await loadAll(); }
 export async function declineInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/decline`); await loadAll(); }
-export async function removeMember(id: string, userId: string): Promise<void> { await api("DELETE", `/drawers/${id}/members/${userId}`); await loadAll(); }
+/**
+ * PETTY-449: once the server took the removal, this person's sealed user document remembers it, and the drawer key is
+ * replaced at once from that memory (`withOwed`), here or in a later session or on another device of this account,
+ * whether or not the server ever says that a rotation is needed. The load notes who is gone from the list. The one
+ * removed held every key up to the one the drawer has right now, which may be newer than the one this device had
+ * accepted, or the server may still list them: that is noted after the load, and the key replaced then.
+ */
+export async function removeMember(id: string, userId: string): Promise<void> {
+  await api("DELETE", `/drawers/${id}/members/${userId}`);
+  await loadAll();
+  const now = state.drawers.get(id);
+  if (now?.key && await recordLeft(id, userId, now.summary.key_version).catch(() => false)) await loadAll();
+}
 export async function leaveDrawer(id: string): Promise<void> { await api("POST", `/drawers/${id}/leave`); await loadAll(); }
 export async function offerTransfer(id: string, userId: string): Promise<void> { await api("POST", `/drawers/${id}/transfer`, { to_user_id: userId }); await loadAll(); }
 export async function acceptTransfer(id: string): Promise<void> { await api("POST", `/drawers/${id}/transfer/accept`); await loadAll(); }
@@ -673,7 +718,7 @@ async function refetch(id: string): Promise<DrawerView> {
     throw new Error("doc_rolled_back");
   }
   const doc = await decryptDocument(view.key, r.drawer, r.document);
-  patch(id, { summary: r.drawer, doc, docAuthor: r.document.author_id });
+  patch(id, { summary: withOwed(r.drawer), doc, docAuthor: r.document.author_id });
   return state.drawers.get(id)!;
 }
 
