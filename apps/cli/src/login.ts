@@ -1,4 +1,4 @@
-import { checkApiUrl, connect, warningText, type AgentClient } from "@petty/agent";
+import { checkApiUrl, connect, serverCode, warningText, type AgentClient } from "@petty/agent";
 import { deviceKeyPair, deviceUserCode, openDeviceToken, splitPatToken } from "@petty/crypto";
 import { DeviceCodeResponse, DeviceTokenResponse } from "@petty/protocol";
 import { CliError, type Io } from "./io.js";
@@ -37,6 +37,9 @@ async function post(io: Io, url: string, body: unknown): Promise<{ status: numbe
   return { status: res.status, json };
 }
 
+/** What a refusal is printed as (PETTY-453): the server's code if it is one this program knows, never its own text; without a code, the status. */
+const said = (r: { status: number; json: Record<string, unknown> }): string => ((r.json["code"] ?? null) === null ? String(r.status) : serverCode(r.json["code"]));
+
 /** Runs the whole device login and returns the token string. */
 export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
   const api = apiOf(ask.origin);
@@ -50,7 +53,7 @@ export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
     throw new CliError(1, `cannot reach ${ask.origin}`);
   }
   if (started.status === 429) throw new CliError(1, "too many sign-ins from this address: wait a while and try again");
-  if (started.status !== 201) throw new CliError(1, `${ask.origin} did not start a sign-in (${String(started.json["code"] ?? started.status)}). An older Petty has no browser sign-in: make a token in Settings → Access tokens and use petty auth login --with-token`);
+  if (started.status !== 201) throw new CliError(1, `${ask.origin} did not start a sign-in (${said(started)}). An older Petty has no browser sign-in: make a token in Settings → Access tokens and use petty auth login --with-token`);
   const code = DeviceCodeResponse.parse(started.json);
   // the code is derived from our key; one that is not was made for another key
   if (code.user_code !== (await deviceUserCode(key.publicB64))) throw new CliError(1, "the server answered with a code that is not this request's: stopped");
@@ -84,7 +87,7 @@ export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
     if (answer === "SlowDown" || r.status === 429) { interval += 5000; continue; }
     if (answer === "AccessDenied") throw new CliError(3, "denied on the page: not signed in");
     if (answer === "ExpiredToken") break;
-    throw new CliError(1, `unexpected answer from ${ask.origin} (${String(answer ?? r.status)})`);
+    throw new CliError(1, `unexpected answer from ${ask.origin} (${said(r)})`);
   }
   throw new CliError(3, "the code expired before it was allowed: run petty auth login again");
 }

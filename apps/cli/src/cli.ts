@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { TokenError, type AgentClient, type AgentDrawer, type AgentEntry, type AgentPlace, type AgentTag } from "@petty/agent";
+import { jsonText, TokenError, type AgentClient, type AgentDrawer, type AgentEntry, type AgentPlace, type AgentTag } from "@petty/agent";
 import { foldText } from "@petty/ledger";
 import { buildServer } from "@petty/mcp/server";
 import pkg from "../package.json" with { type: "json" };
@@ -29,7 +29,7 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
       return e.exitCode;
     }
     if (e instanceof TokenError) {
-      io.err(`petty: ${e.code}: ${e.message}\n`);
+      io.err(`petty: ${e.code}: ${clean(e.message)}\n`);
       return ["WrongToken", "TokenRevoked", "ReadOnly", "OutOfScope"].includes(e.code) ? 3 : ["NotFound", "Ambiguous"].includes(e.code) ? 4 : 1;
     }
     const code = (e as { code?: unknown }).code;
@@ -37,15 +37,21 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
       io.err(`petty: ${(e as Error).message}\nRun petty help for the commands.\n`);
       return 2;
     }
-    io.err(`petty: ${(e as Error).message}\n`);
+    // not this program's own words (the text of a library, or of the server's answer): one line, cleaned
+    io.err(`petty: ${clean(String((e as Error)?.message ?? e).replace(/\s*\n\s*/g, " "))}\n`);
     return 1;
   }
 }
 
-/** Names come from other people too: control characters would reach the terminal, so they are shown as "?". */
+/**
+ * Names come from other people too: control characters would reach the terminal, so they are shown as "?".
+ * PETTY-453: so is everything else printed that a drawer or the server sent: an item's id, a currency
+ * code inside an amount, a date, the text of an error.
+ */
 // eslint-disable-next-line no-control-regex -- control characters are exactly what this replaces
 const clean = (s: string): string => s.replace(/[\u0000-\u001f\u007f-\u009f]/g, "?");
-const json = (io: Io, v: unknown) => io.out(`${JSON.stringify(v, null, 2)}\n`);
+/** --json keeps every value as it is; the control characters JSON.stringify leaves raw are escaped (jsonText). */
+const json = (io: Io, v: unknown) => io.out(`${jsonText(v, 2)}\n`);
 
 async function main(argv: readonly string[], io: Io): Promise<void> {
   const first = argv[0];
@@ -99,7 +105,7 @@ async function main(argv: readonly string[], io: Io): Promise<void> {
     }
     case "find": {
       const hit = await resolveItem(client, positionals.join(" "));
-      return asJson ? json(io, { drawer: { id: hit.drawer.id, name: hit.drawer.name, place: hit.drawer.place }, item: hit.line }) : io.out(`${clean(itemLabel(hit.drawer, hit.line))}  ${hit.line.amount || "single item"}  (${hit.drawer.id}/${hit.line.id})\n`);
+      return asJson ? json(io, { drawer: { id: hit.drawer.id, name: hit.drawer.name, place: hit.drawer.place }, item: hit.line }) : io.out(`${clean(itemLabel(hit.drawer, hit.line))}  ${clean(hit.line.amount) || "single item"}  (${hit.drawer.id}/${clean(hit.line.id)})\n`);
     }
     case "history": {
       const hit = await resolveItem(client, arg(0));
@@ -118,7 +124,7 @@ async function main(argv: readonly string[], io: Io): Promise<void> {
       const entry = spec.name === "add" ? await client.add(hit.drawer.id, hit.line.id, amount, note)
         : spec.name === "take" ? await client.withdraw(hit.drawer.id, hit.line.id, amount, note)
         : await client.adjust(hit.drawer.id, hit.line.id, amount, note);
-      return asJson ? json(io, { drawer: hit.drawer.id, item: hit.line.id, ...entry }) : io.out(`${clean(itemLabel(hit.drawer, hit.line))}: ${entry.balanceAfter ?? entry.amount}\n`);
+      return asJson ? json(io, { drawer: hit.drawer.id, item: hit.line.id, ...entry }) : io.out(`${clean(itemLabel(hit.drawer, hit.line))}: ${clean(entry.balanceAfter ?? entry.amount)}\n`);
     }
     case "tags": {
       const tags = await client.tags();
@@ -185,7 +191,7 @@ async function status(io: Io, host: string | undefined, asJson: boolean): Promis
   }
   if (asJson) json(io, rows);
   else for (const r of rows) {
-    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${r.problem}`}\n${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
+    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${clean(r.problem ?? "")}`}\n${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
   }
   if (openToOthers(storePath(io.env))) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
   if (rows.some((r) => !r.works)) throw new CliError(3, "a login does not work: run petty auth login again");
@@ -261,7 +267,8 @@ async function complete(args: readonly string[], io: Io): Promise<void> {
   const hosts = Object.keys(readStore(io.env).hosts);
   let cached: Promise<Names | null> | null = null;
   const names = () => (cached ??= liveNames(io, prior));
-  for (const c of await candidates(prior, cur, names, hosts)) io.out(`${forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
+  // one candidate a line: a name with a new line or another control character cannot be offered, in any shell
+  for (const c of await candidates(prior, cur, names, hosts)) if (clean(c) === c) io.out(`${forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
 }
 
 /** Names for this Tab press: decrypted in memory with the stored login, within 1.5 s, else none. */
@@ -292,7 +299,7 @@ function drawersText(list: readonly AgentDrawer[]): string {
   return list.map((d) => {
     const head = `${clean(d.name)}${d.place.length ? `  (${clean(d.place.join(" › "))})` : ""}${d.role === "read" ? "  read only" : ""}`;
     const lines = d.lines.map((l) => {
-      const amount = l.kind === "single" ? "single item" : l.amount;
+      const amount = l.kind === "single" ? "single item" : clean(l.amount);
       const tags = l.tags.length ? `  ${l.tags.map((t) => `#${clean(t)}`).join(" ")}` : "";
       const warn = l.unverified ? `  ! ${l.unverified} unverified entr${l.unverified === 1 ? "y" : "ies"} left out` : "";
       return `  ${clean(l.name).padEnd(width)}${amount}${l.countedInTotal || l.kind === "single" ? "" : "  (not in total)"}${tags}${warn}`;
@@ -303,7 +310,7 @@ function drawersText(list: readonly AgentDrawer[]): string {
 
 function historyText(entries: readonly AgentEntry[]): string {
   if (!entries.length) return "No entries yet.\n";
-  return entries.map((e) => `${e.at.slice(0, 16).replace("T", " ")}  ${e.op.padEnd(8)}${e.amount}${e.comment ? `  ${JSON.stringify(clean(e.comment))}` : ""}${e.verified ? "" : "  ! signature did not check"}`).join("\n") + "\n";
+  return entries.map((e) => `${clean(e.at).slice(0, 16).replace("T", " ")}  ${e.op.padEnd(8)}${clean(e.amount)}${e.comment ? `  ${JSON.stringify(clean(e.comment))}` : ""}${e.verified ? "" : "  ! signature did not check"}`).join("\n") + "\n";
 }
 
 function tagsText(tags: readonly AgentTag[]): string {

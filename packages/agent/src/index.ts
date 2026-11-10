@@ -39,6 +39,31 @@ export class TokenError extends Error {
   }
 }
 
+/**
+ * PETTY-414: text that a member or the server wrote (a name, a tag, a comment, a currency code, an item
+ * id) goes into a message or a tool's answer only as one quoted JSON string on one line. `JSON.stringify`
+ * leaves DEL, the C1 control characters and the Unicode line separators as they are; here they are
+ * escaped too, and the value read back is the same. Quoting marks the text as someone's data. It does
+ * not stop a model from following what the text says.
+ */
+export const jsonText = (value: unknown, indent?: number): string =>
+  JSON.stringify(value, null, indent).replace(/[\u007f-\u009f\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+export const quote = (text: string): string => jsonText(text);
+
+/**
+ * The codes the server refuses a tool with that a person may be shown (PETTY-414). The server's own text
+ * goes no further than this list: any other code is the one word "UnknownCode".
+ */
+const SERVER_CODES = ["KeyVersionMismatch", "EntryIdReused", "ReverseRefused", "DeviceKeyInvalid", "DeviceCodeTaken", "ValidationError", "BadRequest", "NotFound", "Internal"] as const;
+export const serverCode = (code: unknown): string => SERVER_CODES.find((c) => c === code) ?? "UnknownCode";
+
+/** `received_at` is the server's text. It leaves this client only as a date, in one fixed form; anything else is refused. */
+function serverDate(text: string): string {
+  const t = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/.test(text) ? Date.parse(text) : NaN;
+  if (Number.isNaN(t)) throw new TokenError("Refused", "the server sent a date that is not a date");
+  return new Date(t).toISOString();
+}
+
 export interface ConnectOptions {
   readonly token: string;
   /** Where the API lives, for example https://petty.example.com/api */
@@ -53,10 +78,10 @@ export interface ConnectOptions {
 /** PETTY-191 (NR-11): the token travels in every request, so only https, or http to this machine. */
 export function checkApiUrl(apiUrl: string, allowInsecureHttp = false): void {
   let u: URL;
-  try { u = new URL(apiUrl); } catch { throw new TokenError("Refused", `not an address: ${apiUrl}`); }
+  try { u = new URL(apiUrl); } catch { throw new TokenError("Refused", `not an address: ${quote(apiUrl)}`); }
   const local = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(u.hostname);
   if (u.protocol === "https:" || (u.protocol === "http:" && (local || allowInsecureHttp))) return;
-  throw new TokenError("Refused", `the Petty address must start with https:// (got ${u.protocol}//${u.host})`);
+  throw new TokenError("Refused", `the Petty address must start with https:// (got ${quote(`${u.protocol}//${u.host}`)})`);
 }
 
 export interface AgentLine {
@@ -259,9 +284,10 @@ export class AgentClient {
       });
     } catch (e) {
       // Node's fetch hides the real reason in `cause` (EHOSTUNREACH, ENOTFOUND, a certificate error…).
-      const cause = (e as { cause?: { code?: string; message?: string } }).cause;
-      const why = cause?.code ?? cause?.message ?? (e as Error).message;
-      throw new TokenError("Offline", `cannot reach ${this.api}: ${(e as Error).message} (${why})`);
+      // A code such as EHOSTUNREACH is Node's own word. Any other reason (a certificate's names, say) is foreign text: quoted.
+      const cause = (e as { cause?: { code?: unknown; message?: unknown } }).cause;
+      const why = typeof cause?.code === "string" && /^[A-Z][A-Z0-9_]{1,40}$/.test(cause.code) ? cause.code : quote(String(cause?.message ?? (e as Error).message));
+      throw new TokenError("Offline", `cannot reach ${quote(this.api)}: fetch failed (${why})`);
     }
     if (res.status === 401) throw new TokenError("TokenRevoked", "this token is unknown, revoked or expired");
     if (res.status === 403) {
@@ -271,10 +297,10 @@ export class AgentClient {
     }
     if (res.status === 404) throw new TokenError("NotFound", "not found");
     if (res.status === 409) {
-      const body = (await res.json().catch(() => ({}))) as { code?: string };
+      const body = (await res.json().catch(() => ({}))) as { code?: unknown };
       if (body.code === "RecountRequired") throw new TokenError("RecountRequired", "the item changed since it was read; count it again");
       if (body.code === "VersionConflict") throw new TokenError("Conflict", "the drawer changed meanwhile");
-      throw new TokenError("Refused", body.code ?? "the server refused this entry");
+      throw new TokenError("Refused", (body.code ?? null) === null ? "the server refused this entry" : serverCode(body.code));
     }
     if (!res.ok) throw new TokenError("Refused", `the server answered ${res.status}`);
     return res.status === 204 ? undefined : await res.json();
@@ -481,8 +507,8 @@ export class AgentClient {
         if (q.split(/\s+/).every((word) => hay.includes(word))) hits.push({ drawer, line });
       }
     }
-    if (hits.length === 0) throw new TokenError("NotFound", `nothing matches ${JSON.stringify(query)}`);
-    if (hits.length > 1) throw new TokenError("Ambiguous", `${JSON.stringify(query)} matches ${hits.map((h) => `${JSON.stringify(h.drawer.name)} / ${JSON.stringify(h.line.name)}`).join(", ")}`);
+    if (hits.length === 0) throw new TokenError("NotFound", `nothing matches ${quote(query)}`);
+    if (hits.length > 1) throw new TokenError("Ambiguous", `${quote(query)} matches ${hits.map((h) => `${quote(h.drawer.name)} / ${quote(h.line.name)}`).join(", ")}`);
     return hits[0]!;
   }
 
@@ -493,7 +519,8 @@ export class AgentClient {
     const line = drawer.lines.find((l) => l.id === lineId);
     if (!line) throw new TokenError("NotFound", "no such item");
     const held = this.keys.get(drawerId)!;
-    const rows = (await this.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=${limit}`)) as { entries: unknown[] };
+    // an item's id is a member's text (PETTY-414): it goes into the address as one path part, whatever it holds
+    const rows = (await this.call("GET", `/drawers/${drawerId}/lines/${encodeURIComponent(lineId)}/entries?limit=${limit}`)) as { entries: unknown[] };
     const list = EntryRow.array().parse(rows.entries ?? []);
     const out: AgentEntry[] = [];
     let unreadable = 0;
@@ -506,7 +533,7 @@ export class AgentClient {
           op: entry.op,
           amount: `${formatAmount(entry.amount, entry.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`,
           comment: entry.comment,
-          at: row.received_at,
+          at: serverDate(row.received_at),
           mine: row.author_id === this.identity.userId,
           verified: await this.signatureOk(entry, row.received_at),
         });
@@ -566,7 +593,7 @@ export class AgentClient {
     if (!r.ok) throw new TokenError("Refused", UNDO_REFUSED[r.code]);
     const fmt = (n: number) => `${formatAmount(n, line.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`;
     const t = target.entry;
-    const undone: AgentEntry = { id: t.id, seq: target.seq, op: t.op, amount: fmt(t.amount), comment: t.comment, at: target.received_at, mine: t.author_id === this.identity.userId, verified: true };
+    const undone: AgentEntry = { id: t.id, seq: target.seq, op: t.op, amount: fmt(t.amount), comment: t.comment, at: serverDate(target.received_at), mine: t.author_id === this.identity.userId, verified: true };
     return { ...(await this.post(drawerId, line, "reverse", r.amount, comment, r.reverses)), undone };
   }
 
@@ -665,8 +692,8 @@ export class AgentClient {
     const q = foldText(target.trim());
     const hits = all.filter((d) => foldText(d.name) === q);
     const loose = hits.length ? hits : all.filter((d) => q.split(/\s+/).every((w) => foldText(d.name).includes(w)));
-    if (loose.length === 0) throw new TokenError("NotFound", `no drawer matches "${target}"`);
-    if (loose.length > 1) throw new TokenError("Ambiguous", `"${target}" matches ${loose.map((d) => d.name).join(", ")}`);
+    if (loose.length === 0) throw new TokenError("NotFound", `no drawer matches ${quote(target)}`);
+    if (loose.length > 1) throw new TokenError("Ambiguous", `${quote(target)} matches ${loose.map((d) => quote(d.name)).join(", ")}`);
     return loose[0]!;
   }
 
@@ -750,7 +777,7 @@ export class AgentClient {
       await this.mutate(d.id, ops);
       changed += ops.length;
     }
-    if (!changed) throw new TokenError("NotFound", `no item carries the tag "${from}"`);
+    if (!changed) throw new TokenError("NotFound", `no item carries the tag ${quote(from)}`);
     return changed;
   }
 
@@ -767,7 +794,7 @@ export class AgentClient {
     if (drawer.role === "read") throw new TokenError("ReadOnly", "you may only read this drawer");
     const name = item.name.trim();
     if (!name) throw new TokenError("Refused", "an item needs a name");
-    if (drawer.lines.some((l) => foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called "${name}"`);
+    if (drawer.lines.some((l) => foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called ${quote(name)}`);
     const id = crypto.randomUUID();
     const start = item.kind === "single" ? "" : (item.start ?? "").trim();
     let line: Line;
@@ -810,7 +837,7 @@ export class AgentClient {
     if (change.name !== undefined) {
       const name = change.name.trim();
       if (!name) throw new TokenError("Refused", "an item needs a name");
-      if (drawer.lines.some((l) => l.id !== lineId && foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called "${name}"`);
+      if (drawer.lines.some((l) => l.id !== lineId && foldText(l.name) === foldText(name))) throw new TokenError("Refused", `the drawer already has an item called ${quote(name)}`);
       ops.push({ type: "rename_line", line_id: lineId, name });
     }
     if (change.currency !== undefined) { only("money", "a currency"); ops.push({ type: "set_currency", line_id: lineId, currency: change.currency }); }

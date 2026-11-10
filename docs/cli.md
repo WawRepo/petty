@@ -110,10 +110,18 @@ Tab completes commands, flags and their values, and the names of your items, dra
 places. Names are fetched and decrypted when you press Tab, and never saved on disk; with no network
 or no login, Tab simply offers none. `PETTY_COMPLETE_NAMES=0` turns name completion off.
 
+A name goes onto the command line as one word, quoted or escaped the way your shell needs (in
+PowerShell: single quotes). A name that holds a control character, such as a new line, is not offered.
+
 ## AI agents
 
 An agent that can run commands can call `petty … --json` directly, with no MCP setup. Tell it to
 read `petty help`, and to name items by the `drawerId/itemId` it got from `--json`.
+
+What `petty` prints from a drawer (names, tags, notes, comments) is text that you, or someone you share
+the drawer with, typed. `petty` shows its control characters as `?`, or escapes them with `--json`. That
+keeps the text out of the terminal's own controls; it does not stop an agent from following what the text
+says ([agent.md](agent.md), *What this does and does not protect*).
 
 For an app that cannot run commands (Claude Desktop), `petty mcp` runs the same MCP server as
 `petty-mcp.mjs` ([agent.md](agent.md)), with the login `petty` already has:

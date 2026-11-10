@@ -58,6 +58,22 @@ number, also when it adds features, and a new minor or major is started by hand 
   the keys and the opened drawers from memory.
 - With local sign-in, a sign-out made while offline is remembered and sent to the server before any
   other request, at the next start or when the network is back, so the session ends on the server too.
+- The AI add-on quotes everything in a tool's answer that Petty did not word itself, not only names,
+  tags and comments: a currency code that is not plain letters and digits, an item id that is not a
+  UUID, the drawer names in a "more than one matches" answer, and the text of an unexpected error. A
+  refusal code from the server is shown only if it is a known one, and an entry's time only if it is
+  a date. The quotes mark text as data; a model can still follow it, as `docs/agent.md` now says.
+- A new item's id must be a UUID, and control characters are dropped from a currency code as it is
+  saved. An older item id already in a drawer is still read; a code already there is cleaned the next
+  time its item is changed.
+- The command line shows control characters as `?` in everything it prints from a drawer or from the
+  server: names, tags and comments, and also an item id, a currency code and an error. With `--json`
+  it escapes them.
+- On Windows, `petty auth login` opens the sign-in page without `cmd`, and on every system only an
+  `http:` or `https:` address is opened.
+- PowerShell Tab completion puts every name onto the command line as one single-quoted word. Update
+  `petty` and open a new PowerShell; if you saved the completion script to a file, make it again. In
+  every shell, Tab no longer offers a name that holds a control character.
 
 ## [1.5.32] — 2026-11-04
 
