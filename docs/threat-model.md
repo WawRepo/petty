@@ -30,7 +30,8 @@ provider, if you use a hosted one. The same code runs in both cases.
   read anything written afterwards.
 - **A leaked access token of limited scope.** A tool token can read the drawers in its scope. With
   the write role it can also add entries and replace a drawer's sealed document: its name, items,
-  tags and places (the drawer's 30-day history can restore them). Nothing else (see "Access tokens").
+  tags and places (the drawer's 30-day history can restore them). Nothing else. Its owner sets that
+  scope when they make it: the drawers they tick, or all of them if they choose so (see "Access tokens").
 
 ## What Petty does not defend against
 
@@ -152,6 +153,20 @@ vault, the account, sharing, admin or export, or create another token — the se
 route not on its allow-list. Creating one requires the custody proof. Details
 and diagram: [README.md](README.md).
 
+**Making a token (PETTY-452).** The owner says which drawers it may use: only the ones they tick, or
+all drawers, later ones included. Nothing is chosen for them. The server keeps that list and refuses
+the token every other drawer. The app puts only those drawers' keys into the bundle, and wraps the key
+of a later drawer for a token only when the token was made for all drawers; the list it goes by is its
+own copy in the sealed user document, not the server's. A token ends after 90 days unless the owner
+picks another time or "Never". Making any token, also one that only reads, opens the vault again with
+the passphrase or a passkey: the function that makes the token does this itself, stops on a wrong
+passphrase or a cancelled prompt before anything is made, and signs the custody proof with the keys
+that door gave. So someone who finds Petty unlocked cannot make a token through the app. This is the
+app's own rule, not the server's: the server sees a custody proof signed by the account key and cannot
+tell whether the vault was just opened or the key came from the open session. Code that runs in the
+page (see *Script injection*), or someone who can run their own code in the unlocked browser, is not
+stopped by it.
+
 ## Device login
 
 `petty auth login` (PETTY-274) signs the command line in through the web app, the way `gh auth login`
@@ -160,16 +175,24 @@ ordinary access token and seals it to a one-time key that only the command line 
 relays the sealed blob once and deletes the request; it never sees the token.
 
 - **A server or database that swaps the key.** To receive the token, it would have to put a key of
-  its own in the request. The code a person sees is derived from the command line's key; the page
-  works it out again from the key it was given and refuses a mismatch, and the command line checks
-  the code the server returns. A substitute key with the same 12-letter code takes about 2^52 tries
-  within the request's 15 minutes. A server that ships altered web-app code is the *malicious
-  frontend build* above, as everywhere in the app.
+  its own in the request. The code a person sees is derived (SHA-256) from the command line's key and
+  from the address of the Petty it signs in to. The command line makes it; the page works it out
+  again from the key it was given and from its own address, and refuses a mismatch; the command line
+  refuses any other code in the server's answer. The code has 20 letters from 20 (PETTY-451), so a
+  substitute key with the same code for that address takes about 2^86 tries, each a new key and a
+  hash. It does not matter when the tries are made, and tries made for one address are of no use for
+  another. For scale, an estimate: at a billion tries a second (about one fast graphics card), 2^86
+  tries take some 2 billion years, and 2^66 tries made ahead of time (some 2,000 years of that card)
+  would fit about one sign-in in a million. The earlier 12-letter code is no longer made or taken by
+  the command line, the page or the server, so none of them can be moved back to it; a command line
+  and a Petty of different ages stop with a message instead ([cli.md](cli.md)). A server that ships
+  altered web-app code is the *malicious frontend build* above, as everywhere in the app.
 - **Phishing** ("please allow this code"). The page shows what asks (its name, address and time) and
-  what it gets (read or write, expiry), says to allow only a request the person started, and a token
-  that may write needs the passphrase or passkey. Someone who allows an attacker's request gives that
-  attacker a token, as with any device login; revoking it in Settings stops it at once.
-- **Guessing codes.** 12 letters from 20 (about 2^52), one-time, 15 minutes. Lookups are limited per
+  what it gets (read or write, which drawers, expiry), says to allow only a request the person
+  started, and every token needs the passphrase or a passkey. Someone who allows an attacker's
+  request gives that attacker a token, as with any device login; revoking it in Settings stops it at
+  once.
+- **Guessing codes.** 20 letters from 20 (about 2^86), one-time, 15 minutes. Lookups are limited per
   person, only a signed-in and unlocked person can allow one, and a token can never
   allow a token. Asking for codes is limited per address.
 - **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's

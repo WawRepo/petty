@@ -189,9 +189,10 @@ export type AccessTokenKey = z.infer<typeof AccessTokenKey>;
 /**
  * Device login (PETTY-274): `petty auth login` asks, the web app approves, the tool polls. The page
  * seals an ordinary access token to the tool's one-time key; the server relays that blob and cannot
- * open it. The code the person sees is derived from the tool's key (@petty/crypto deviceUserCode).
+ * open it. The code the person sees is derived from the tool's key and the site's address
+ * (@petty/crypto deviceUserCode): 20 letters since PETTY-451.
  */
-const DeviceCode = z.string().regex(/^[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}$/);
+const DeviceCode = z.string().regex(/^[BCDFGHJKLMNPQRSTVWXZ]{4}(-[BCDFGHJKLMNPQRSTVWXZ]{4}){4}$/);
 export const DeviceCodeRequest = z.object({
   /** The tool's one-time ECDH P-256 public key, base64 SPKI. */
   cli_pub: b64.max(200),
@@ -200,6 +201,8 @@ export const DeviceCodeRequest = z.object({
   role: z.enum(["read", "write"]),
   /** How long the token lasts; null = until revoked. The same choices as Settings → Access tokens. */
   expires_days: z.union([z.literal(30), z.literal(90), z.literal(365)]).nullable(),
+  /** The code the tool shows (PETTY-451). The tool makes it; the server keeps it; the page checks it against the key. */
+  user_code: DeviceCode,
 });
 export type DeviceCodeRequest = z.infer<typeof DeviceCodeRequest>;
 export const DeviceCodeResponse = z.object({

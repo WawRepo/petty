@@ -35,7 +35,7 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
  * A token made the way the web app makes one: its own ECDH pair, the public half on the server, and the
  * owner's ECDH key sealed in (PETTY-397). `older: true` leaves that key out, as tokens made before did.
  */
-async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
+async function tokenAndId(role: "read" | "write", opts: { older?: boolean; scope?: string[] } = {}): Promise<{ token: string; id: string; pair: CryptoKeyPair; pub: string }> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
@@ -52,7 +52,7 @@ async function tokenAndId(role: "read" | "write", opts: { older?: boolean } = {}
     ...(opts.older ? {} : { owner_ecdh: owner.user.pub.ecdh }),
     ...(signing ? signing.bundle : {}),
   });
-  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
+  const res = await owner.call("POST", "/me/tokens", { token_id: id, ecdh_pub: pub, name: `agent-${role}`, role, scope: opts.scope ?? null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
   expect(res.statusCode).toBe(201);
   return { token: patToken(id, secret), id: res.json().id as string, pair, pub };
 }
@@ -278,6 +278,36 @@ describe("headless client (PETTY-165)", () => {
   it("a token cannot reach a drawer outside its bundle", async () => {
     const c = await client("write");
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);
+  });
+
+  // PETTY-452: the web app now makes tokens for chosen drawers. This client must work with one.
+  it("a token made for chosen drawers lists only those, and says so when asked for another", async () => {
+    const outLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Strongbox"), { type: "add_line", line: { id: outLine, kind: "money", name: "Gold", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const outside = await owner.createDrawer("Strongbox", doc);
+    expect(outside.res.statusCode).toBe(201);
+    const made = await tokenAndId("write", { scope: [drawerId] });
+    // the owner's app could not hand it the other drawer's key later either: the server keeps a wrap out of scope out
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === outside.id);
+    const forToken = await wrapDrawerKey(await owner.unwrap(wrap, owner.user.pub.ecdh, true), { ecdhPrivate: owner.user.keys.ecdh.privateKey, ecdhPublicB64: owner.user.pub.ecdh }, made.pub, outside.id, 1);
+    expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: outside.id, key_version: 1, wrap: forToken }] })).json().code).toBe("OutOfScope");
+
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    expect(c.identity.scope).toEqual([drawerId]);
+    const listed = await c.drawers();
+    expect(listed.map((d) => d.id)).toEqual([drawerId]);
+    expect(listed[0]!.lines.map((l) => l.id)).toContain(lineId);
+    // by id: the client knows it is not one of its drawers
+    await expect(c.history(outside.id, outLine)).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    await expect(c.add(outside.id, outLine, "1")).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    // by name: to this token the drawer does not exist
+    await expect(c.find("strongbox gold")).rejects.toMatchObject({ code: "NotFound" });
+    await expect(c.findDrawer("Strongbox")).rejects.toMatchObject({ code: "NotFound" });
+    // and the server refuses it whatever the client does
+    const bearer = { authorization: `Bearer ${made.token.split(".")[0]}` };
+    const direct = await app.inject({ method: "GET", url: `/drawers/${outside.id}`, headers: bearer });
+    expect(direct.statusCode).toBe(403);
+    expect(direct.json().code).toBe("TokenOutOfScope");
   });
 
   it("PETTY-193 (NR-13): the opened bundle is dropped once its keys are imported", async () => {

@@ -30,7 +30,7 @@ const inject: typeof fetch = async (input, init) => {
   return new Response(res.statusCode === 204 ? null : res.body, { status: res.statusCode, headers: { "content-type": "application/json" } });
 };
 
-async function tokenFor(role: "read" | "write"): Promise<string> {
+async function tokenFor(role: "read" | "write", scope: string[] | null = null): Promise<string> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
@@ -42,14 +42,14 @@ async function tokenFor(role: "read" | "write"): Promise<string> {
     drawers: [{ drawer_id: drawerId, key_version: 1, key: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", key))) }],
     ...(signing ? signing.bundle : {}),
   });
-  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) })).statusCode).toBe(201);
+  expect((await owner.call("POST", "/me/tokens", { token_id: id, name: `mcp-${role}`, role, scope, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) })).statusCode).toBe(201);
   return patToken(id, secret);
 }
 
 /** A client wired to the server through an in-memory transport pair, like a host would be. */
-async function host(role: "read" | "write"): Promise<McpClient> {
+async function host(role: "read" | "write", scope: string[] | null = null): Promise<McpClient> {
   const server = await buildServer({
-    token: await tokenFor(role),
+    token: await tokenFor(role, scope),
     apiUrl: "https://petty.test",
     connect: (o) => connect({ ...o, fetch: inject }),
   });
@@ -169,6 +169,26 @@ describe("petty mcp (PETTY-166)", () => {
     expect(text(down)).toContain("EHOSTUNREACH");
     reachable = true; // the network comes back: the next call connects and answers
     expect(text(await client.callTool({ name: "list_drawers", arguments: {} }))).toContain('drawer: "Kitchen"');
+  });
+
+  // PETTY-452: the web app now makes tokens for chosen drawers
+  it("with a token made for chosen drawers: tells the model so, lists only those, and names the reason for another", async () => {
+    const outLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Strongbox"), { type: "add_line", line: { id: outLine, kind: "money", name: "Gold", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const outside = await owner.createDrawer("Strongbox", doc);
+    const client = await host("write", [drawerId]);
+    expect(client.getInstructions()).toContain("This token opens only the 1 drawer the user chose for it.");
+    const listed = text(await client.callTool({ name: "list_drawers", arguments: {} }));
+    expect(listed).toContain('"Kitchen"');
+    expect(listed).not.toContain("Strongbox");
+    const byName = await client.callTool({ name: "find_item", arguments: { query: "strongbox gold" } });
+    expect(byName.isError).toBe(true);
+    expect(text(byName)).toContain("NotFound");
+    const byId = await client.callTool({ name: "history", arguments: { item: `${outside.id}/${outLine}` } });
+    expect(byId.isError).toBe(true);
+    expect(text(byId)).toMatch(/^(NotFound|OutOfScope)/);
+    // a token for all drawers is told nothing of the kind
+    expect((await host("read")).getInstructions()).not.toContain("This token opens only");
   });
 
   it("a read token cannot write, even if the host asks for the tool", async () => {

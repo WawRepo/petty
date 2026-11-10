@@ -23,19 +23,28 @@ export async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProo
 const pw = (loginPassword?: string) => (loginPassword ? { password: loginPassword } : {});
 
 /** Opens the passphrase copy EXTRACTABLE (proves the passphrase before any biometric prompt). Throws WrongPassphrase. */
-export async function openWithPassphrase(me: Me, passphrase: string): Promise<UnlockedKeys> {
+export async function openWithPassphrase(me: Me, passphrase: string, extractable = true): Promise<UnlockedKeys> {
   if (!me.vault) throw new Error("no passphrase vault");
-  return unlockVault(me.vault, passphrase, { extractable: true });
+  return unlockVault(me.vault, passphrase, { extractable });
 }
 
 /** Opens any of the account's passkey copies EXTRACTABLE: the authenticator prompt is the confirmation. */
-export async function openWithPasskey(me: Me): Promise<UnlockedKeys> {
+export async function openWithPasskey(me: Me, extractable = true): Promise<UnlockedKeys> {
   const { credential_id, prf } = await evaluatePrf(me.passkeys);
   try {
     const pk = me.passkeys.find((p) => p.credential_id === credential_id);
     if (!pk) throw new Error("unknown passkey");
-    return await unlockPasskeyVault(pk.vault, prf, { extractable: true });
+    return await unlockPasskeyVault(pk.vault, prf, { extractable });
   } finally { zero(prf); }
+}
+
+/**
+ * Opens the vault once more, to confirm one action while it is already unlocked (PETTY-452): with the
+ * passphrase when one is given, else with a passkey prompt. Nothing needs the key bytes here, so the keys
+ * are not extractable. Throws WrongPassphrase, or PasskeyError when the prompt fails or is cancelled.
+ */
+export function openVaultAgain(me: Me, passphrase: string | null): Promise<UnlockedKeys> {
+  return passphrase ? openWithPassphrase(me, passphrase, false) : openWithPasskey(me, false);
 }
 
 /** Opens the recovery-code copy EXTRACTABLE. Throws WrongPassphrase for a bad code. */

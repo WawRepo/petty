@@ -90,7 +90,10 @@ export async function buildServer(opts: ServerOptions): Promise<McpServer> {
     return client;
   };
   // PETTY-296 (review S11): the release this server comes from, not a number typed once (it said 1.2.0)
-  const server = new McpServer({ name: "petty", version: pkg.version }, { instructions: INSTRUCTIONS });
+  // PETTY-452: a token made for chosen drawers sees only those; the model is told, so it can explain a "NotFound" rightly
+  const scope = client?.identity.scope;
+  const scoped = scope ? `\n- This token opens only the ${scope.length} drawer${scope.length === 1 ? "" : "s"} the user chose for it. If something is not found, it may be in a drawer this token cannot open: say so, and that a token for more drawers is made in the Petty app's Settings.` : "";
+  const server = new McpServer({ name: "petty", version: pkg.version }, { instructions: INSTRUCTIONS + scoped });
   // Unknown role (not connected yet): offer the write tools; a read-only token is still refused by the server.
   const mayWrite = client ? client.identity.role === "write" : true;
 

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
+import { deviceKeyPair, deviceUserCode, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, ORIGIN, newUser } from "../lib.js";
@@ -11,8 +11,10 @@ import { API, ORIGIN, newUser } from "../lib.js";
 /**
  * PETTY-274: the command line as it ships. The image serves /downloads/petty.mjs; this test downloads
  * that file and runs it against the stack over HTTP. `petty auth login` asks, the person allows it (the
- * web page's steps, done here through the API: check the code against the tool's key, make a token,
- * seal it to the tool), and the downloaded program then reads and writes with it.
+ * web page's steps, done here through the API: check the code against the tool's key and this site's
+ * address, make a token, seal it to the tool), and the downloaded program then reads and writes with it.
+ * PETTY-451: the code has 20 letters; a request without one (an older command line) is told to update.
+ * PETTY-452: a token for chosen drawers reads those only.
  */
 const dir = mkdtempSync(join(tmpdir(), "petty-it-cli-"));
 const cli = join(dir, "petty.mjs");
@@ -51,14 +53,15 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 describe("petty, the shipped command line (PETTY-274)", () => {
   it("signs in through the device flow, reads and writes, and ends its token on logout", async () => {
     const login = petty(["auth", "login", "--host", ORIGIN, "--no-browser"]);
-    await expect.poll(login.err, { timeout: 30_000 }).toMatch(/code: [A-Z]{4}-[A-Z]{4}-[A-Z]{4}/);
-    const code = /code: ([A-Z]{4}-[A-Z]{4}-[A-Z]{4})/.exec(login.err())![1]!;
+    await expect.poll(login.err, { timeout: 30_000 }).toMatch(/code: [A-Z]{4}(-[A-Z]{4}){4}\n/);
+    const code = /code: ([A-Z]{4}(?:-[A-Z]{4}){4})\n/.exec(login.err())![1]!;
     // PETTY-322: the address follows the code in a write of its own; the v1.5.12 upgrade run read in between
     await expect.poll(login.err, { timeout: 5_000 }).toContain(`${ORIGIN}/device?code=${code}`);
 
-    // the page's part: find the request, check the code is the tool's key's, make a token, seal it to the tool
+    // the page's part: find the request, check the code is the tool's key's at this address, make a token, seal it to the tool
     const view = (await ann.call("GET", `/device/${code}`)).json();
-    expect(await deviceUserCode(view.cli_pub)).toBe(code);
+    expect(await deviceUserCode(view.cli_pub, ORIGIN)).toBe(code);
+    expect(await deviceUserCode(view.cli_pub, "https://petty.example")).not.toBe(code);
     const tok = await ann.makeAccessToken("write", [{ drawer_id: drawerId, key_version: 1, key: raw }]);
     const sealed = await sealDeviceToken(view.cli_pub, tok.token, { requestId: view.id, userCode: code, origin: ORIGIN });
     expect((await ann.call("POST", `/device/${code}/approve`, { sealed })).statusCode).toBe(204);
@@ -77,6 +80,37 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const logout = petty(["auth", "logout"]);
     expect(await logout.done).toBe(0);
     expect((await fetch(`${API}/me/token`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(401);
+  });
+
+  it("tells a command line that sends no code of its own to update, and starts no sign-in for it (PETTY-451)", async () => {
+    const key = await deviceKeyPair();
+    // what `petty auth login` sent before the 20-letter code
+    const res = await fetch(`${API}/device/code`, {
+      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `203.0.113.${10 + Math.floor(Math.random() * 200)}` },
+      body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-older", role: "read", expires_days: 30 }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code: string; user_code?: string };
+    expect(body.code).toBe("CommandLineTooOld");
+    expect(body.user_code).toBeUndefined();
+    // and a code of the earlier form opens no request on the page's side
+    expect((await ann.call("GET", "/device/BCDF-GHJK-LMNP")).statusCode).toBe(404);
+  });
+
+  it("with a token for one drawer, reads that drawer only and says why another is not found (PETTY-452)", async () => {
+    const other = await ann.createDrawer("Loft chest", applyOp(newDocument("Loft chest"), { type: "add_line", line: { id: crypto.randomUUID(), kind: "money", name: "Coins", currency: "EUR", exponent: 2 } }, { lineHasEntries: () => false }));
+    expect(other.res.statusCode).toBe(201);
+    const tok = await ann.makeAccessToken("read", [{ drawer_id: drawerId, key_version: 1, key: raw }], [drawerId]);
+    const login = petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`);
+    expect(await login.done).toBe(0);
+    expect(login.err()).toContain("It opens only the 1 drawer chosen for it.");
+    const list = petty(["drawers", "--json"]);
+    expect(await list.done).toBe(0);
+    expect((JSON.parse(list.out()) as { name: string }[]).map((d) => d.name)).toEqual(["Garage box"]);
+    const find = petty(["find", "loft", "coins"]);
+    expect(await find.done).toBe(4);
+    expect(find.err()).toContain("(this token opens only the 1 drawer chosen for it)");
+    expect((await fetch(`${API}/drawers/${other.id}`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(403);
   });
 
   it("signs in with a token on stdin, for scripts", async () => {

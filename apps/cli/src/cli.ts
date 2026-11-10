@@ -8,7 +8,7 @@ import pkg from "../package.json" with { type: "json" };
 import { COMMANDS, EXPIRES, SHELLS, commandOf, type CommandSpec } from "./commands.js";
 import { candidates, forShell, script, unquote, type Names, type Shell } from "./complete.js";
 import { CliError, type Io } from "./io.js";
-import { itemLabel, placePaths, resolveItem, splitPlace } from "./items.js";
+import { itemLabel, placePaths, resolveDrawer, resolveItem, splitPlace } from "./items.js";
 import { apiOf, checkToken, deviceLogin, originOf } from "./login.js";
 import { forgetLogin, openToOthers, readStore, saveLogin, storePath } from "./store.js";
 
@@ -135,7 +135,7 @@ async function main(argv: readonly string[], io: Io): Promise<void> {
       return asJson ? json(io, { drawer: hit.drawer.id, item: hit.line.id, tags: now }) : io.out(`${clean(itemLabel(hit.drawer, hit.line))}: ${now.length ? now.map((t) => `#${clean(t)}`).join(" ") : "no tags"}\n`);
     }
     case "move": {
-      const drawer = await client.findDrawer(arg(0));
+      const drawer = await resolveDrawer(client, arg(0));
       const now = await client.moveDrawer(drawer.id, splitPlace(arg(1)));
       return asJson ? json(io, { drawer: drawer.id, place: now }) : io.out(`${clean(drawer.name)}: ${now.length ? clean(now.join(" › ")) : "no place"}\n`);
     }
@@ -167,6 +167,8 @@ async function login(io: Io, host: string | undefined, readOnly: boolean, expire
   saveLogin(io.env, origin, { token, name: id.name, role: id.role, user_id: id.userId, added_at: new Date(io.now()).toISOString() });
   io.err(`Signed in to ${origin} with the token “${clean(id.name)}” (${id.role === "write" ? "may add entries" : "read only"}). Kept in ${storePath(io.env)}.\n`);
   if (client.notice) io.err(`petty: warning: ${client.notice}\n`);
+  // PETTY-452: a token made for chosen drawers says so once, here; the other drawers are "not found" to it
+  if (id.scope) io.err(`It opens only the ${id.scope.length} drawer${id.scope.length === 1 ? "" : "s"} chosen for it.\n`);
 }
 
 async function status(io: Io, host: string | undefined, asJson: boolean): Promise<void> {

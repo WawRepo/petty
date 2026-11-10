@@ -151,6 +151,37 @@ describe("access tokens (PETTY-164)", () => {
     expect((await tool(t.token)("GET", `/drawers/${outside.id}`)).statusCode).toBe(403);
   });
 
+  // PETTY-452: the web app now makes tokens for chosen drawers; this is every drawer route a token may use
+  it("a writing token for one drawer can neither read nor write another: document, entries, photo, wraps", async () => {
+    const inside = await drawer(A, "In scope");
+    const outside = await drawer(A, "Out of scope");
+    const t = tool((await makeToken(A, { role: "write", scope: [inside.id] })).token);
+    const got = (await A.call("GET", `/drawers/${outside.id}`)).json();
+    const document = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: got.document.nonce, ciphertext: got.document.ciphertext, verification: false };
+    const entry = { id: crypto.randomUUID(), line_id: outside.line, key_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", sig: "AAAA", hash: "AAAA", prev_hash: null };
+    const refused: [("GET" | "POST" | "PUT"), string, unknown?][] = [
+      ["GET", `/drawers/${outside.id}`],
+      ["GET", `/drawers/${outside.id}/lines/${outside.line}/entries`],
+      ["GET", `/drawers/${outside.id}/photo`],
+      ["PUT", `/drawers/${outside.id}/document`, document],
+      ["POST", `/drawers/${outside.id}/entries`, entry],
+    ];
+    for (const [method, url, body] of refused) {
+      const res = await t(method, url, body);
+      expect(res.statusCode, `${method} ${url}`).toBe(403);
+      expect(res.json().code, `${method} ${url}`).toBe("TokenOutOfScope");
+    }
+    // nothing of the other drawer changed, and its key never reaches the token
+    expect((await A.call("GET", `/drawers/${outside.id}`)).json().drawer.version).toBe(got.drawer.version);
+    expect((await A.call("GET", `/drawers/${outside.id}/lines/${outside.line}/entries`)).json().entries).toHaveLength(0);
+    expect((await t("GET", "/me/token/keys")).json().keys).toEqual([]);
+    expect((await t("GET", "/me/token/bootstrap")).json().drawers.map((d: { id: string }) => d.id)).toEqual([inside.id]);
+    // its own drawer is open to it: the same calls pass the scope check there
+    expect((await t("GET", `/drawers/${inside.id}`)).statusCode).toBe(200);
+    expect((await t("GET", `/drawers/${inside.id}/lines/${inside.line}/entries`)).statusCode).toBe(200);
+    expect((await t("POST", `/drawers/${inside.id}/entries`, { ...entry, line_id: inside.line })).statusCode).not.toBe(403);
+  });
+
   it("a token loads only its own start-up data, never the vault (PETTY-182)", async () => {
     const inside = await drawer(A, "Scoped in");
     await drawer(A, "Scoped out");

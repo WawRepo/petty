@@ -1,5 +1,5 @@
 import { AuthTagMismatch, InvalidPayload, UnknownSchemaVersion } from "./errors.js";
-import { concat, fromB64, fromUtf8, lengthPrefixed, randomBytes, sha256, toB64, utf8, zero, type Bytes } from "./encoding.js";
+import { fromB64, fromUtf8, lengthPrefixed, randomBytes, sha256, toB64, utf8, zero, type Bytes } from "./encoding.js";
 import { hkdfAesKey } from "./kdf.js";
 import { importEcdhPublic } from "./keys.js";
 
@@ -12,21 +12,30 @@ const subtle = crypto.subtle;
  * and hands it to the tool sealed to a one-time key only the tool has; the server relays the sealed
  * blob and can open nothing.
  *
- * The code the person sees is derived from the tool's public key. The page works it out again from
- * the key the server passed on and refuses a mismatch, so a server (or a database) that swapped in a
- * key of its own would need one with the same code: about 2^52 tries, inside the request's 15 minutes.
+ * The code the person sees is derived from the tool's public key and from the address of the Petty it
+ * signs in to (PETTY-451). The page works it out again from the key the server passed on and from its own
+ * address, and refuses a mismatch. A server (or a database) that put in a key of its own would need one
+ * with the same code for that address: about 2^86 tries, whenever they are made. The server only keeps
+ * and passes on the code; the tool and the page check it.
+ *
+ * Until PETTY-451 the code had 12 letters and came from the key alone. Nothing here makes or accepts that
+ * form any more, so neither side can be moved back to it.
  */
 /** RFC 8628 §6.1: no vowels (no words), no look-alikes. */
 export const DEVICE_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ";
-export const DEVICE_CODE_CHARS = 12;
-const CODE_DOMAIN = "petty/device-code/v1";
+export const DEVICE_CODE_CHARS = 20;
+const CODE_DOMAIN = "petty/device-code/v2";
 const SEAL_DOMAIN = "petty/device-token/v1";
 
-const grouped = (s: string) => `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`;
+const grouped = (s: string) => s.replace(/.{4}(?=.)/g, "$&-");
 
-/** `WDJB-MJHT-KQPL`: 12 of 20 consonants (about 52 bits) from SHA-256 of the key, in three groups of four. */
-export async function deviceUserCode(cliPubSpkiB64: string): Promise<string> {
-  const h = await sha256(concat(utf8(CODE_DOMAIN), fromB64(cliPubSpkiB64)));
+/**
+ * `WDJB-MJHT-KQPL-XRNV-BCDF`: 20 letters from 20 consonants (about 86 bits), in five groups of four,
+ * from SHA-256 of the site's address (`https://petty.example.com`, as `location.origin` gives it) and the key.
+ */
+export async function deviceUserCode(cliPubSpkiB64: string, origin: string): Promise<string> {
+  if (!origin) throw new InvalidPayload("device.origin");
+  const h = await sha256(lengthPrefixed([utf8(CODE_DOMAIN), utf8(origin), fromB64(cliPubSpkiB64)]));
   let n = 0n;
   for (const b of h.subarray(0, 16)) n = (n << 8n) | BigInt(b);
   let s = "";
