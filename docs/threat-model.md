@@ -293,8 +293,9 @@ with the drawer key, which the removed person still holds. What remains of the w
 - A read-only member cannot replace a key. A drawer that only read-only members open keeps its key
   until a write member opens it.
 - While the user document is missing or rolled back, no key is replaced. A list of trusted keys that
-  was started over, or one that an older copy of the web app saved (it drops what it does not know),
-  no longer remembers who left; then a new key waits for the server's word, as it did before.
+  was started over no longer remembers who left; then a new key waits for the server's word, as it
+  did before. A web app from before the counter cannot make the list forget: it does not open a list
+  with a counter (`v` 2, see "Key verification") and saves none.
 - A member who leaves by themselves, or deletes their account, is noticed from the member list,
   which the server gives.
 - A member's app compares the list with what it saw the last time. When the key was replaced in

@@ -74,8 +74,9 @@ number, also when it adds features, and a new minor or major is started by hand 
 - A web app from before this release (a tab left open during the update) cannot open a drawer that an
   updated app has saved. It says "This drawer could not be opened. Ask its owner to share it again";
   sharing again does not help. It also cannot read your list of trusted keys, so it shows your settings
-  at their defaults and saves nothing. Reload the page: the app updates itself, and does so on its own
-  as soon as the new version is ready.
+  at their defaults and saves nothing: what this release adds to the list (who left a drawer, the keys
+  you confirmed before a key change) stays in it. Reload the page: the app updates itself, and does so
+  on its own as soon as the new version is ready.
 - For operators: do not go back to an image from before this release once people have used it. The
   older web app cannot open the documents that this one saved; it shows those drawers as closed. No
   data is lost, and everything opens again when you return to this release, with one exception: an
