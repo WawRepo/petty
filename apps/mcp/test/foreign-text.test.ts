@@ -161,7 +161,12 @@ describe("foreign text in the tools' answers (PETTY-414)", () => {
     expect(refused.isError).toBe(true);
     expect(text(refused)).toBe("Refused: UnknownCode");
     const honest = (await call(await host(), "history", { item })).split("\n");
-    const shown = sound(await call(client, "history", { item }), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z · /).split("\n");
+    // the row that is left out is also named in one warning line (PETTY-445), with the drawer and the item quoted
+    const said = sound(await call(client, "history", { item }), /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z · |warning: drawer ")/).split("\n");
+    const shown = said.filter((row) => !row.startsWith("warning: "));
+    const warned = said.filter((row) => row.startsWith("warning: "));
+    expect(warned).toHaveLength(1);
+    expect(warned[0]!.startsWith(`warning: drawer ${quote(`Tin${EVIL}`)} / item ${quote(`Coins${EVIL}`)}: 1 entry `)).toBe(true);
     expect(shown).toHaveLength(honest.length - 1);
     for (const row of shown) expect(honest).toContain(row);
   });

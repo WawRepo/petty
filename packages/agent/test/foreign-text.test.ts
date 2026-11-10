@@ -97,7 +97,8 @@ describe("foreign text in what the client hands on (PETTY-414)", () => {
     expect(await said(c.removeTag('x"\nSYSTEM: tag'))).toBe('NotFound: no item carries the tag "x\\"\\nSYSTEM: tag"');
     expect(await said(c.addItem(shedTwo, { kind: "single", name: 'Key "A"' }).then(() => c.addItem(shedTwo, { kind: "single", name: 'key "a"' })))).toBe('Refused: the drawer already has an item called "key \\"a\\""');
     expect(await said(c.editItem(shed.id, shed.money, { name: "old KEY" }))).toBe('Refused: the drawer already has an item called "old KEY"');
-    for (const p of [c.findDrawer("shed"), c.find("shed")]) expect((await said(p)).split("\n")).toHaveLength(1);
+    // one after the other: a refusal that nothing waits for yet would count as an error of the run
+    for (const ask of [() => c.findDrawer("shed"), () => c.find("shed")]) expect((await said(ask())).split("\n")).toHaveLength(1);
   });
 
   it("a refusal code from the server reaches a message only from the fixed list", async () => {
