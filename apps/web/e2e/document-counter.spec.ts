@@ -166,6 +166,40 @@ test("PETTY-422: an older sealed document of a drawer under a newer version numb
   await s.ctxA.close(); await s.ctxB.close();
 });
 
+test("PETTY-422: a drawer refused for an older counter is no dead end: its owner puts back a version from the drawer's own screen, and every member opens it again", async ({ browser }) => {
+  const s = await twoMembers(browser);
+  await addItem(s.pageA, s.id, "Coins", "PLN", "7");
+  const withCoins = await drawerDocNow(s.id); // the copy that comes back later
+  await rename(s.pageA, "Renamed");
+  await expect(s.pageA.getByRole("heading", { name: "Renamed" })).toBeVisible();
+  await s.pageA.reload();
+  await expect(s.pageA.getByRole("heading", { name: "Renamed" })).toBeVisible();
+  await s.pageB.goto(`/drawers/${s.id}`);
+  await expect(s.pageB.getByRole("heading", { name: "Renamed" })).toBeVisible();
+  for (const who of [s.alice, s.bob]) await expect.poll(async () => (await readUserDoc(who))?.doc.drawer_revs?.[s.id]).toBe(4);
+
+  // the copy from before the rename, under a newer number: both apps refuse it
+  await serveDrawerDoc(s.id, withCoins, (await drawerDocNow(s.id)).version + 1);
+  await s.pageB.reload();
+  await expect(s.pageB.getByRole("alert")).toContainText(OLDER_DRAWER);
+  await s.pageA.reload();
+  await expect(s.pageA.getByTestId("drawer-damaged")).toContainText(OLDER_DRAWER);
+  // the owner's way out: Earlier versions, on the drawer's own screen
+  await s.pageA.getByTestId("drawer-history").click();
+  await s.pageA.getByTestId("history-row").filter({ hasText: "Shared" }).filter({ hasText: "2 items" }).getByRole("button", { name: /^Restore the version from/ }).click();
+  await expect(s.pageA.getByText("Earlier version restored.")).toBeVisible();
+  // a counter above every one either app remembers
+  await expect.poll(async () => (await readDrawerDoc(s.alice, s.id)).doc.rev).toBe(5);
+  expect((await readDrawerDoc(s.alice, s.id)).doc).toMatchObject({ name: "Shared" });
+  for (const page of [s.pageA, s.pageB]) {
+    await page.goto(`/drawers/${s.id}`);
+    await expect(rowNamed(page, "Coins")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Shared" })).toBeVisible();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  }
+  await s.ctxA.close(); await s.ctxB.close();
+});
+
 test("PETTY-422: two members who save at the same time, and a tool that edits the drawer: the counter goes up by one each time, and nobody is warned", async ({ browser }) => {
   const { connect } = await import("../../../packages/agent/src/index.js");
   const s = await twoMembers(browser);
