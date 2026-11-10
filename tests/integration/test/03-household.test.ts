@@ -117,6 +117,35 @@ describe("household", () => {
     expect((await stranger.call("GET", `/drawers/${drawerId}`)).statusCode).toBe(404);
   });
 
+  it("the owner sees a drawer's pending invitations, and they end when the drawer gets a new owner (PETTY-446)", async () => {
+    const shed = await ann.createDrawer("Shed");
+    expect(shed.res.statusCode).toBe(201);
+    const raw = await ann.unwrap((await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === shed.id), ann.user.pub.ecdh, true);
+    const invite = async (from: Client, to: Client) => from.call("POST", `/drawers/${shed.id}/invitations`, { invitee_id: to.id, role: "write", wrap: await from.wrapFor(raw, to.user.pub.ecdh, shed.id, 1) });
+    const first = await invite(ann, ben);
+    expect(first.statusCode).toBe(201);
+    expect((await ben.call("POST", `/invitations/${first.json().id}/accept`)).statusCode).toBe(204);
+    const cat = await newUser("cat");
+    const pending = await invite(ann, cat);
+    expect(pending.statusCode).toBe(201);
+    const listed = (await ann.call("GET", `/drawers/${shed.id}/invitations`)).json().invitations as { id: string; invitee: { id: string } }[];
+    expect(listed.map((i) => [i.id, i.invitee.id])).toEqual([[pending.json().id, cat.id]]);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).statusCode).toBe(403); // a member, not the owner
+    // ann hands the drawer to ben: what she left open is over
+    expect((await ann.call("POST", `/drawers/${shed.id}/transfer`, { to_user_id: ben.id })).statusCode).toBe(201);
+    expect((await ben.call("POST", `/drawers/${shed.id}/transfer/accept`)).statusCode).toBe(204);
+    expect((await cat.call("POST", `/invitations/${pending.json().id}/accept`)).statusCode).toBe(404);
+    expect((await cat.call("GET", `/drawers/${shed.id}`)).statusCode).toBe(404);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).json()).toEqual({ invitations: [] });
+    // the new owner invites again, and only he can take it back
+    const again = await invite(ben, cat);
+    expect(again.statusCode).toBe(201);
+    expect((await ann.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(404);
+    expect((await ben.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(204);
+    // ann leaves, so the later steps see her drawers as before
+    expect((await ann.call("POST", `/drawers/${shed.id}/leave`)).statusCode).toBe(204);
+  });
+
   it("an Adjust sets what was counted, and later entries fold on top of it", async () => {
     const head = (await ann.call("GET", "/bootstrap")).json().entries.filter((e: { line_id: string }) => e.line_id === lineId).reduce((m: number, e: { seq: number }) => Math.max(m, e.seq), 0);
     expect((await ann.postEntry(drawerId, key, lineId, "adjust", 3900, { expected_head_seq: head, delta_hint: -100 })).res.statusCode).toBe(201);
