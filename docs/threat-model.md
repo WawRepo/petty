@@ -171,8 +171,15 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   version: the app takes the key at that version once more as it did before, remembers its
   fingerprint, and re-seals nothing under it unless you or a confirmed member wrapped it.
 - The pins live in that sealed user document, so a server could try to drop it or serve an older
-  copy. Each browser remembers the newest version it saw, also across a sign-out or an expired
-  session (PETTY-402), and warns loudly when the server has none or an older one. An account with
+  copy. The server's version number of the document is a plain number that the server writes, so the
+  document also carries a counter inside the encryption (PETTY-439): every save stores the counter it
+  loaded plus one. Each browser remembers the newest version number and the highest counter it saw,
+  also across a sign-out or an expired session (PETTY-402), and warns loudly when the server has none,
+  a lower number, or a copy whose counter is lower or gone: an older sealed copy under a newer number
+  is caught too. A document from before the counter gets its first one the next time the web app loads
+  it; until that load only the number is compared. A document with a counter says so inside (`v` 2): a
+  web app from before the counter does not open it and saves nothing, so it cannot put a copy without
+  the counter, or without a field it does not know, in its place. An account with
   drawers always has this document (the app starts it before it makes a drawer, and accepting an
   invitation saves the inviter's pin), so "none" also warns on a browser that never used the account.
   Until you acknowledge the warning, and whenever the document cannot be loaded, the app opens only
@@ -205,10 +212,29 @@ The server hands out public keys, so it could substitute its own. Petty makes th
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
   the server returns a shorter log, also an empty one for a line the drawer still lists.
-- **Drawer versions.** Your sealed user document remembers the newest version of each drawer's document
-  you opened. The app refuses an older one, so a server cannot go back to a state where later lines are
-  missing, and never saves a change on top of one. The version number is not inside the encryption: a
-  server that labels an older document with a newer number is not caught.
+- **Drawer versions.** The server's version number of a drawer's document is not inside the encryption,
+  so each document also carries a counter that is (PETTY-422): every write stores the counter it loaded
+  plus one. Your sealed user document remembers, for each drawer, the newest version number and the
+  highest counter of the document you opened. The app refuses a document with a lower number, with a
+  lower counter, or with no counter after it saw one, and never saves a change on top of one. So a
+  server cannot go back to a state where later lines are missing, also not by labelling an older sealed
+  document with a newer number. The limits:
+  - What is remembered is what your app opened when it last started. A change made since then is
+    covered from the next start on.
+  - A document from before the counter has none until the web app next saves that drawer's document
+    (an item added, a rename, a count). Until then only the number is compared for that drawer.
+  - A document with a counter is a new format (`schema_version` 2, part of the additional authenticated
+    data). A web app, command line or add-on from before it cannot open such a drawer, and so cannot
+    save a document without the counter over it; the server also refuses a write in the older format.
+    Only the web app starts a counter. A tool keeps the format it finds, because a tool is updated apart
+    from the instance and must not write what the instance's own web app may not know yet.
+  - An earlier version is put back by the owner's app: it opens the kept copy and saves it as a normal
+    write with a counter above every one it knows. The server no longer copies an old sealed document
+    into place.
+  - A counter is not accepted further ahead of the version number than writes explain (each write
+    raises both by one). So nobody who holds the drawer key, a tool with a leaked token included, can
+    use the counter up, and an earlier version can always be put back.
+  - Tools remember no counters: a tool takes the document the server gives it.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
 - **What the pinned head is, and what it catches.** Each browser remembers, per line, the hash of the

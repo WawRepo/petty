@@ -17,7 +17,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "bench": "tsx scripts/bench.ts",
-    "corpus:generate": "tsx scripts/generate-corpus.ts"
+    "corpus:generate": "tsx scripts/generate-corpus.ts",
+    "corpus:generate-v2": "tsx scripts/generate-corpus-v2.ts"
   },
   "dependencies": {
     "hash-wasm": "^4.12.0"

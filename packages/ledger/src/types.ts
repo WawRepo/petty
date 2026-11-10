@@ -73,6 +73,11 @@ export interface Verification {
 /** The drawer document, format v1. Sealed as one blob (see @petty/crypto sealDocument). */
 export interface DrawerDocument {
   readonly v: 1;
+  /**
+   * A counter inside the encryption (PETTY-422): every write stores the counter it loaded plus one. Only in a
+   * row of format 2 (`schema_version`); a document from before the counter is format 1 and has none. See `readDocument`.
+   */
+  readonly rev?: number;
   readonly name: string;
   readonly has_photo: boolean;
   /** Icon slug from the app's set (PETTY-64). Absent: the default drawer icon. */

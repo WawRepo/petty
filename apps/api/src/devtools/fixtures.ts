@@ -127,8 +127,9 @@ export class Client {
     return { id, key, document, res };
   }
 
-  async sealDoc(drawerId: string, key: CryptoKey, doc: DrawerDocument, keyVersion = 1): Promise<Sealed> {
-    return sealDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: this.id, key_version: keyVersion, schema_version: 1 }, doc);
+  /** `schemaVersion` 1 is a document from before the counter (PETTY-422); 2 is one with `rev` inside. */
+  async sealDoc(drawerId: string, key: CryptoKey, doc: DrawerDocument, keyVersion = 1, schemaVersion = 1): Promise<Sealed> {
+    return sealDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: this.id, key_version: keyVersion, schema_version: schemaVersion }, doc);
   }
 
   /** Signs and seals an entry, then posts it. */
@@ -156,6 +157,6 @@ export class Client {
   }
 }
 
-export function sealedBody(s: Sealed, keyVersion: number) {
-  return { key_version: keyVersion, schema_version: 1, nonce: toB64(s.nonce), ciphertext: toB64(s.ciphertext) };
+export function sealedBody(s: Sealed, keyVersion: number, schemaVersion = 1) {
+  return { key_version: keyVersion, schema_version: schemaVersion, nonce: toB64(s.nonce), ciphertext: toB64(s.ciphertext) };
 }

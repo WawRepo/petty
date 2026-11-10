@@ -47,11 +47,43 @@ number, also when it adds features, and a new minor or major is started by hand 
   whatever the registry served under that version. If you build your own image with another pnpm
   version, set `PNPM_SHA512` with it (the Dockerfile says how).
 
+- Your list of trusted keys and each drawer's document now carry a counter inside the encryption.
+  Before, the app compared only a version number that the server writes. A server, or someone with
+  database access and an old backup, could put an older sealed copy back under a newer number, and the
+  app opened it with no warning: keys you confirmed since then, or items added since then, were gone.
+  Now the app shows the warning it shows for any older copy, and refuses the drawer. A browser that
+  never used the account still has nothing to compare with.
+- A list of trusted keys from before this release gets its counter the next time the web app loads it.
+  A drawer's document gets one the first time the web app saves it after the update: when you add an
+  item, rename, tag or count. Until then only the number is compared for that drawer.
+- An earlier version of a drawer (Drawer options, Earlier versions) is now put back by your own app,
+  as a normal change, so that other members' apps do not take it for an older copy. Versions from
+  before the drawer's key was last replaced can be put back too. `POST /drawers/:id/document/restore`
+  answers 410.
+
 ### Changed
 - Self-hosters: the image starts the API as `node` itself, with no pnpm and no shell in front of it,
   and the API now answers a stop. It stops taking requests, lets the open ones finish (for up to 8
   seconds) and ends with status 0. Before, a stop ended it at once, with status 1. A deployment that
   sets its own start command (`pnpm start`) works as before.
+- **Update the `petty` command line and the Claude Desktop add-on with this release.** A drawer's
+  document with a counter is a new format. From the first time the web app saves a drawer's document,
+  a command line or add-on from before this release no longer lists that drawer, and a command that
+  names it says it finds nothing. Nothing is lost: update the tool and the drawer is back. Tools from
+  this release work with both formats.
+- A web app from before this release (a tab left open during the update) cannot open a drawer that an
+  updated app has saved. It says "This drawer could not be opened. Ask its owner to share it again";
+  sharing again does not help. It also cannot read your list of trusted keys, so it shows your settings
+  at their defaults and saves nothing. Reload the page: the app updates itself, and does so on its own
+  as soon as the new version is ready.
+- For operators: do not go back to an image from before this release once people have used it. The
+  older web app cannot open the documents that this one saved; it shows those drawers as closed. No
+  data is lost, and everything opens again when you return to this release, with one exception: an
+  owner who puts back an earlier version of a drawer while the older image runs brings back a
+  document without a counter. After you return, every app that already saw a counter for that drawer
+  refuses it until the owner puts back a version again, from the drawer's own screen (Earlier
+  versions). The server now refuses a drawer document in an older format than the stored one (409
+  `DocumentFormatOlder`).
 
 ### Fixed
 - Self-hosters: the backup command in docs/deploy.md reported success when `pg_dump` failed, and

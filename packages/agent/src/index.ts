@@ -20,7 +20,7 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, reverseOf, seedExponent, tagsOf, verifyChain, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { applyOps, assertCurrencyCode, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, nextRev, normalizeTags, parseAmount, readDocument, reverseOf, seedExponent, tagsOf, verifyChain, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
 import { EntriesPage, EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
@@ -379,8 +379,7 @@ export class AgentClient {
       try {
         // the document's author is whoever wrote it last, which in a shared drawer may be another member
         const opened = await openDocument(held.key, this.identityFor(d.id, null, sealedDoc.key_version, sealedDoc.schema_version, "document", d.id, sealedDoc.author_id), sealed(sealedDoc));
-        assertDocumentShape(opened);
-        doc = opened;
+        doc = readDocument(opened, { schema_version: sealedDoc.schema_version, version: d.version });
       } catch {
         warnings.push({ code: "drawer_unreadable", drawerId: d.id, drawer: null, lineId: null, item: null, count: 1 });
         continue;
@@ -701,6 +700,10 @@ export class AgentClient {
    * Changes a drawer's document the way the app does (PETTY-175): read it, apply the operations with
    * the ledger's own rules, seal it with the drawer key, and send it with the version it was read at.
    * If someone changed the drawer meanwhile, read it again and repeat.
+   *
+   * PETTY-422: a document with a counter inside is saved with the counter it was read with, plus one. A document from
+   * before the counter is saved as it was, without one: the web app gives a document its first counter. A tool is
+   * updated apart from the instance, and must not write a format that the instance's own web app may not know yet.
    */
   async mutate(drawerId: string, ops: readonly DocumentOp[]): Promise<void> {
     if (this.identity.role !== "write") throw new TokenError("ReadOnly", "this token may only read");
@@ -709,14 +712,15 @@ export class AgentClient {
     for (let attempt = 0; attempt < 4; attempt++) {
       const got = (await this.call("GET", `/drawers/${drawerId}`)) as { drawer: { version: number; key_version: number }; document: { key_version: number; schema_version: number; nonce: string; ciphertext: string; author_id: string } };
       const opened = await openDocument(held.key, this.identityFor(drawerId, null, got.document.key_version, got.document.schema_version, "document", drawerId, got.document.author_id), sealed(got.document));
-      assertDocumentShape(opened);
-      const next = applyOps(opened, ops, { lineHasEntries: () => true });
-      const out = await sealDocument(held.key, this.identityFor(drawerId, null, got.drawer.key_version, 1, "document", drawerId), next);
+      const read = readDocument(opened, { schema_version: got.document.schema_version, version: got.drawer.version });
+      const changed = applyOps(read, ops, { lineHasEntries: () => true });
+      const next = read.rev === undefined ? changed : nextRev(changed);
+      const out = await sealDocument(held.key, this.identityFor(drawerId, null, got.drawer.key_version, got.document.schema_version, "document", drawerId), next);
       try {
         await this.call("PUT", `/drawers/${drawerId}/document`, {
           base_version: got.drawer.version,
           key_version: got.drawer.key_version,
-          schema_version: 1,
+          schema_version: got.document.schema_version,
           nonce: toB64(out.nonce),
           ciphertext: toB64(out.ciphertext),
           verification: false,
