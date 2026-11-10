@@ -30,6 +30,12 @@ number, also when it adds features, and a new minor or major is started by hand 
   whatever the registry served under that version. If you build your own image with another pnpm
   version, set `PNPM_SHA512` with it (the Dockerfile says how).
 
+### Changed
+- Self-hosters: the image starts the API as `node` itself, with no pnpm and no shell in front of it,
+  and the API now answers a stop. It stops taking requests, lets the open ones finish (for up to 8
+  seconds) and ends with status 0. Before, a stop ended it at once, with status 1. A deployment that
+  sets its own start command (`pnpm start`) works as before.
+
 ### Fixed
 - Self-hosters: the backup command in docs/deploy.md reported success when `pg_dump` failed, and
   replaced that day's dump with an empty file. The new script ends with an error, writes nothing

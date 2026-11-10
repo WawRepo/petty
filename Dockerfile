@@ -72,9 +72,9 @@ LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
       org.opencontainers.image.title="Petty" \
       org.opencontainers.image.description="End-to-end encrypted ledger for physical cash across places and currencies."
-# pnpm starts the app and runs the operator scripts (migrate, join-link, make-admin). npm only installs
-# it; npm, corepack and yarn then leave with their caches, because their bundled packages are what image
-# scanners flag (review S9, PETTY-291).
+# pnpm runs the operator scripts (migrate, join-link, make-admin); the app itself starts as node (CMD).
+# npm only installs pnpm; npm, corepack and yarn then leave with their caches, because their bundled
+# packages are what image scanners flag (review S9, PETTY-291).
 RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-* \
            /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg \
@@ -104,4 +104,6 @@ COPY --from=build /app/apps/web/dist ./apps/web/dist
 USER node
 EXPOSE 3000
 WORKDIR /app/apps/api
-CMD ["pnpm", "start"]
+# PETTY-418: node is the container's first process, with no package manager and no shell in front of it.
+# It is what `pnpm start` ran in the end (tsx's loader, then src/index.ts), which answers a stop itself.
+CMD ["node", "--import", "tsx", "src/index.ts"]

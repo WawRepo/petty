@@ -36,4 +36,12 @@ describe("Dockerfile", () => {
       assert.match(line, /^RUN --mount=type=bind,from=pnpm,source=\/pnpm\.tgz,target=\/mnt\/pnpm\.tgz npm install -g \/mnt\/pnpm\.tgz( \\)?$/, line);
     }
   });
+
+  it("starts the API as node itself, and the API answers a stop", () => {
+    assert.match(dockerfile, /\nWORKDIR \/app\/apps\/api\n(?:#[^\n]*\n)*CMD \["node", "--import", "tsx", "src\/index\.ts"\]\n$/);
+    // as the first process it gets no default action for a signal: index.ts must handle the stop
+    const index = readFileSync(join(root, "apps/api/src/index.ts"), "utf8");
+    assert.match(index, /for \(const signal of \["SIGTERM", "SIGINT"\] as const\)/);
+    assert.match(index, /app\.close\(\)[^\n]*process\.exit\(0\)/);
+  });
 });
