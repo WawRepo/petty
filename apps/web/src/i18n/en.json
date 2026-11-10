@@ -197,7 +197,9 @@
       "unwrap_failed": "This drawer could not be opened on this device. Ask its owner to share it again.",
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
-      "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty."
+      "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty.",
+      "bad_entries": "The entries of an item in this drawer are out of order, so Petty did not open it. The server may have been tampered with.",
+      "sum_too_large": "The amounts in this drawer add up to a number too large to show, so Petty shows none of them. Someone may have added an entry with a wrong amount."
     },
     "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}",
     "picture": {
@@ -345,6 +347,8 @@
     "deleteConfirm": "Delete “{name}” with all its items and their history? This cannot be undone.",
     "deleteBtn": "Delete",
     "deleteType": "Type the drawer's name to confirm",
+    "deleteDamagedConfirm": "Delete this drawer with all its items and their history? This cannot be undone.",
+    "deleteDamagedType": "Type this word to confirm",
     "photoAdd": "Add photo",
     "photoChange": "Change photo",
     "photoRemove": "Remove photo",

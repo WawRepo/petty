@@ -291,7 +291,22 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
     if (typeof v.id !== "string" || typeof v.author_id !== "string" || typeof v.logged_at !== "string" || typeof v.comment !== "string" || !Array.isArray(v.lines)) {
       throw new LedgerError("bad_document");
     }
+    for (const vl of v.lines as readonly unknown[]) assertVerificationLine(vl);
   }
+}
+
+const LINE_KINDS: readonly unknown[] = ["money", "countable", "single"];
+const absentOr = (x: unknown, ok: (x: unknown) => boolean): boolean => x === undefined || x === null || ok(x);
+/**
+ * One line of a verification. A field that is left out reads as null, so verifications written before a
+ * field existed still pass. A balance or a head that is not an exact integer is refused: the screens
+ * format what is stored here.
+ */
+function assertVerificationLine(x: unknown): void {
+  if (typeof x !== "object" || x === null) throw new LedgerError("bad_document");
+  const l = x as Record<string, unknown>;
+  if (typeof l["line_id"] !== "string" || !absentOr(l["kind"], (k) => LINE_KINDS.includes(k)) || !absentOr(l["balance"], Number.isSafeInteger)
+    || !absentOr(l["present"], (p) => typeof p === "boolean") || !absentOr(l["head_seq"], Number.isSafeInteger)) throw new LedgerError("bad_document");
 }
 
 export type StalenessStatus = "never" | "verified" | "stale";
@@ -338,7 +353,9 @@ export interface Totals {
 /**
  * Cross-drawer totals by currency code (upper-cased). Countables are excluded
  * by construction. Two lines with the same code but different exponents
- * (a relabelled line) are summed at the larger exponent, exactly.
+ * (a relabelled line) are summed at the larger exponent, exactly. A currency
+ * whose sum leaves the exact integers is left out and the result is marked
+ * incomplete: a total is exact or it is not shown.
  * Ordered largest first (compared at a common exponent, ties by code) and
  * without zero totals: the home screen is a glance for "the big pile", and a
  * currency nobody holds any more is noise there. Negatives stay; they are a
@@ -346,16 +363,17 @@ export interface Totals {
  */
 export function totals(drawers: readonly DrawerForTotals[]): Totals {
   const acc = new Map<string, { exponent: number; amount: number }>();
+  const tooLarge = new Set<string>();
   let incomplete = false;
   for (const d of drawers) {
     if (!d.ok) { incomplete = true; continue; }
     for (const { line, balance } of d.moneyLines) {
       const code = line.currency.trim().toUpperCase();
-      const cur = acc.get(code);
-      if (!cur) { acc.set(code, { exponent: line.exponent, amount: balance }); continue; }
+      if (tooLarge.has(code)) continue;
+      const cur = acc.get(code) ?? { exponent: line.exponent, amount: 0 };
       const exp = Math.max(cur.exponent, line.exponent);
       const scaled = cur.amount * 10 ** (exp - cur.exponent) + balance * 10 ** (exp - line.exponent);
-      if (!Number.isSafeInteger(scaled)) throw new LedgerError("too_large", { currency: code });
+      if (!Number.isSafeInteger(scaled)) { acc.delete(code); tooLarge.add(code); incomplete = true; continue; }
       acc.set(code, { exponent: exp, amount: scaled });
     }
   }
@@ -364,4 +382,22 @@ export function totals(drawers: readonly DrawerForTotals[]): Totals {
   const scaled = (c: { amount: number; exponent: number }) => c.amount * 10 ** (maxExp - c.exponent);
   byCurrency.sort((a, b) => scaled(b) - scaled(a) || a.code.localeCompare(b.code));
   return { byCurrency, incomplete };
+}
+
+/**
+ * Whether every sum a screen makes of these money lines is exact: of all of them or of any part, per
+ * currency code, at the larger exponent. Checked on the absolute values, so the order and the signs do
+ * not matter. False means the balances must not be added up or shown.
+ */
+export function sumsAreExact(moneyLines: readonly LineBalance[]): boolean {
+  const acc = new Map<string, { exponent: number; amount: number }>();
+  for (const { line, balance } of moneyLines) {
+    const code = line.currency.trim().toUpperCase();
+    const cur = acc.get(code) ?? { exponent: line.exponent, amount: 0 };
+    const exp = Math.max(cur.exponent, line.exponent);
+    const sum = cur.amount * 10 ** (exp - cur.exponent) + Math.abs(balance) * 10 ** (exp - line.exponent);
+    if (!Number.isSafeInteger(sum)) return false;
+    acc.set(code, { exponent: exp, amount: sum });
+  }
+  return true;
 }

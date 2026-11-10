@@ -197,7 +197,9 @@
       "unwrap_failed": "Diese Schublade konnte auf diesem Gerät nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "bad_document": "Die Daten dieser Schublade sind beschädigt. Der Eigentümer kann eine frühere Version wiederherstellen.",
-      "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty gespeichert. Lade die Seite neu, um Petty zu aktualisieren."
+      "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty gespeichert. Lade die Seite neu, um Petty zu aktualisieren.",
+      "bad_entries": "Die Buchungen eines Postens in dieser Schublade sind nicht in der richtigen Reihenfolge, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
+      "sum_too_large": "Die Beträge in dieser Schublade ergeben zusammen eine Zahl, die zu groß zum Anzeigen ist, deshalb zeigt Petty keinen davon. Vielleicht hat jemand eine Buchung mit einem falschen Betrag hinzugefügt."
     },
     "otherDrawers": "{count, plural, one {Weitere Schublade} other {Weitere Schubladen}}",
     "picture": {
@@ -345,6 +347,8 @@
     "deleteConfirm": "„{name}“ mit allen Posten und ihrem Verlauf löschen? Das lässt sich nicht rückgängig machen.",
     "deleteBtn": "Löschen",
     "deleteType": "Gib zur Bestätigung den Namen der Schublade ein",
+    "deleteDamagedConfirm": "Diese Schublade mit allen Posten und ihrem Verlauf löschen? Das lässt sich nicht rückgängig machen.",
+    "deleteDamagedType": "Gib zur Bestätigung dieses Wort ein",
     "photoAdd": "Foto hinzufügen",
     "photoChange": "Foto ändern",
     "photoRemove": "Foto entfernen",

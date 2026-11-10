@@ -20,6 +20,7 @@ import { SwitchRow } from "../components/SwitchRow.js";
 import { TagManager } from "../components/TagManager.js";
 import { useToast } from "../components/Toast.js";
 import { DocumentHistorySheet } from "../components/DocumentHistorySheet.js";
+import { DamagedDrawer } from "../components/DamagedDrawer.js";
 import { appendEntry, deleteDrawer, lineBalance, loadPhoto, memberName, mutateDocument, OpsNoLongerApply, removePhoto, setPhoto, useDrawers, type DrawerView, loadIfIdle } from "../lib/drawers.js";
 import { quantityLabel } from "../lib/format.js";
 import { ColorPicker, DEFAULT_DRAWER_ICON, IconPicker, KIND_CLASS, PIcon, colorClass, lineIcon } from "../lib/icons.js";
@@ -195,7 +196,8 @@ export function DrawerScreen() {
   // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
   if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} /><DrawerSkeleton /></>;
   if (!view) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
-  if (!view.doc) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="error" role="alert">{t(`home.degradedReason.${view.error ?? "decrypt_failed"}`)}</p>{view.error === "sender_key_changed" || view.error === "sender_unconfirmed" ? <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button> : null}</main></>;
+  // PETTY-443: the reason, and the ways out: an earlier version, leaving, deleting
+  if (!view.doc) return <DamagedDrawer id={id} />;
   const doc = view.doc;
   const canWrite = view.summary.role !== "read";
   const isOwner = view.summary.role === "owner";

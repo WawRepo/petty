@@ -11,7 +11,7 @@ import {
   delegationCovers, fromB64, importEcdsaPublic, openDocument, verifyDelegation, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
   createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
-import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
+import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, sumsAreExact, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type LineBalance, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
 import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
@@ -25,7 +25,7 @@ import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -37,6 +37,8 @@ export interface DrawerView {
   readonly members: readonly Member[];
   readonly key: CryptoKey | null;
   readonly doc: DrawerDocument | null;
+  /** the drawer's name when its document opened but its content cannot be shown (`error` set, `doc` null) */
+  readonly name?: string;
   /** line id → entries since the line's latest Adjust, seq order */
   readonly entries: ReadonlyMap<string, readonly LedgerEntry[]>;
   /** line id → pages before the window (display only, never folded) */
@@ -79,7 +81,14 @@ function patch(id: string, p: Partial<DrawerView>): void {
   const cur = state.drawers.get(id);
   if (!cur) return;
   const drawers = new Map(state.drawers);
-  drawers.set(id, { ...cur, ...p });
+  let next: DrawerView = { ...cur, ...p };
+  // PETTY-443: new content is checked here, before any screen draws it
+  if ((p.doc || p.entries) && next.doc) {
+    const damage = contentError(next.doc, next.entries);
+    if (damage) next = { ...next, doc: null, name: next.doc.name, error: damage };
+    else if (next.error === "bad_entries" || next.error === "sum_too_large") next = { ...next, error: null };
+  }
+  drawers.set(id, next);
   set({ ...state, drawers });
 }
 export function useDrawers(): DrawersState {
@@ -398,6 +407,9 @@ async function loadOnce(): Promise<void> {
       const chains = await checkChains(d.id, doc, byLine, new Set(rows.map((r) => r.line_id)));
       const merged = await mergePending(d, k.key, keyFor, doc, byLine, outbox.filter((o) => o.drawer_id === d.id));
       drawers.set(d.id, { ...base, key: k.key, doc: merged.doc, entries: merged.entries, chains, entryProblems: problems, pending: merged.pending, pendingOps: merged.pendingOps });
+      // PETTY-443: listed as damaged instead. Everything opened, so a key that must turn still turns below.
+      const damage = contentError(merged.doc, merged.entries);
+      if (damage) drawers.set(d.id, { ...base, key: k.key, name: merged.doc.name, error: damage });
       if (d.role !== "read" && !fromCache) {
         if (d.rotation_needed) toRotate.push(d.id);
         else if (row.key_version < d.key_version || rows.some((e) => e.key_version < d.key_version)) toResume.push(d.id);
@@ -491,6 +503,23 @@ export async function leaveDrawer(id: string): Promise<void> { await api("POST",
 export async function offerTransfer(id: string, userId: string): Promise<void> { await api("POST", `/drawers/${id}/transfer`, { to_user_id: userId }); await loadAll(); }
 export async function acceptTransfer(id: string): Promise<void> { await api("POST", `/drawers/${id}/transfer/accept`); await loadAll(); }
 export async function cancelTransfer(id: string): Promise<void> { await api("DELETE", `/drawers/${id}/transfer`); await loadAll(); }
+
+/**
+ * What makes an opened drawer unshowable (PETTY-443): a log the fold refuses, or sums that leave the exact
+ * integers, in one line or over the lines of one currency. Found when the content arrives, never while a
+ * screen draws: such a drawer is listed as damaged, with the reason, and shows no number at all.
+ */
+function contentError(doc: DrawerDocument, entries: ReadonlyMap<string, readonly LedgerEntry[]>): DrawerError | null {
+  const money: LineBalance[] = [];
+  for (const l of doc.lines) {
+    if (l.kind === "single") continue;
+    let f: FoldResult;
+    try { f = fold(entries.get(l.id) ?? []); } catch { return "bad_entries"; }
+    if (f.overflow) return "sum_too_large";
+    if (l.kind === "money") money.push({ line: l, balance: f.balance });
+  }
+  return sumsAreExact(money) ? null : "sum_too_large";
+}
 
 export function lineFold(view: DrawerView, lineId: string): FoldResult {
   return fold(view.entries.get(lineId) ?? []);

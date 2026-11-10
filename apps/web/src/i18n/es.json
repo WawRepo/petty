@@ -197,7 +197,9 @@
       "unwrap_failed": "No se pudo abrir este cajón en este dispositivo. Pide a su propietario que vuelva a compartirlo.",
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
       "bad_document": "Los datos de este cajón están dañados. Su propietario puede restaurar una versión anterior.",
-      "unknown_schema": "Este cajón lo guardó una versión más reciente de Petty. Recarga para actualizar Petty."
+      "unknown_schema": "Este cajón lo guardó una versión más reciente de Petty. Recarga para actualizar Petty.",
+      "bad_entries": "Los movimientos de un elemento de este cajón no están en orden, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "sum_too_large": "Las cantidades de este cajón suman un número demasiado grande para mostrarlo, así que Petty no muestra ninguna. Puede que alguien haya añadido un movimiento con una cantidad incorrecta."
     },
     "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}",
     "picture": {
@@ -345,6 +347,8 @@
     "deleteConfirm": "¿Eliminar «{name}» con todos sus elementos y su historial? Esto no se puede deshacer.",
     "deleteBtn": "Eliminar",
     "deleteType": "Escribe el nombre del cajón para confirmar",
+    "deleteDamagedConfirm": "¿Eliminar este cajón con todos sus elementos y su historial? Esto no se puede deshacer.",
+    "deleteDamagedType": "Escribe esta palabra para confirmar",
     "photoAdd": "Añadir foto",
     "photoChange": "Cambiar foto",
     "photoRemove": "Quitar foto",
