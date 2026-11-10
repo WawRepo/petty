@@ -23,7 +23,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `05-storage` | the per-person storage quota fills and refuses |
 | `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes |
 | `07-mail` | a password reset through the image, both emails read from the mail catcher, the contact address in them |
-| `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`) |
+| `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`); an IPv6 client counts by its /64, IPv4 written as IPv6 as that address |
 | `09-upgrade` | after an app restart (and the upgrade), the seeded data still logs in, opens and folds to the same balance |
 | `10-licences` | the served third-party notices and the licence header and notices of the downloadable files |
 

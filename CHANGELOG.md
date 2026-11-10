@@ -29,6 +29,10 @@ number, also when it adds features, and a new minor or major is started by hand 
   `#`. `GET /api/join-links/<token>` and `GET /api/users/lookup?email=` are removed and answer 404.
   A web app copy from before this release may say once that a join link is not valid; it reloads
   itself to the new version, and the link still works.
+- Every per-address limit (sign-in, sign-up, password reset, device codes and polls, the email
+  lookup, and `RATE_LIMIT_PER_MINUTE`) counts an IPv6 client by its /64 network, because one home or
+  phone connection holds a whole /64. IPv4 is counted per address as before, also when the address
+  arrives written as IPv6 (`::ffff:a.b.c.d`). Counts of IPv6 clients start anew with this upgrade.
 
 ## [1.5.32] — 2026-11-04
 

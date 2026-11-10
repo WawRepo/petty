@@ -12,7 +12,7 @@ import { withTx, type Queryable } from "../lib/tx.js";
 import { endAllTokens } from "../lib/tokens.js";
 import { mails } from "../lib/mail.js";
 import { authEvents } from "../lib/metrics.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientNet } from "../lib/client-ip.js";
 import { loadMe } from "./me.js";
 
 const JOIN_LINK_DAYS = 7;
@@ -72,7 +72,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-215: open signup (no join link) is allowed only when the operator turned it on; rate-limit it per IP.
     if (!body.join_token) {
       if (!config.openSignup) throw badRequest("JoinLinkRequired", "this instance is invite-only");
-      if (!(await checkRate(`signup:${clientIp(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
+      if (!(await checkRate(`signup:${clientNet(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     const me = await withTx(apiPool, async (db) => {
       const link = body.join_token ? (await db.query<{ id: string; email: string | null }>(
@@ -104,7 +104,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post("/auth/login", async (req, reply) => {
     const body = LoginBody.parse(req.body);
     const emailKey = `login:${body.email.toLowerCase()}`;
-    if (!(await checkRate(`login:${clientIp(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
+    if (!(await checkRate(`login:${clientNet(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
@@ -129,7 +129,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post("/auth/forgot", async (req, reply) => {
     const body = ForgotBody.parse(req.body);
-    if (!(await checkRate(`forgot:${clientIp(req)}`, LOGIN_LIMIT_PER_IP))) {
+    if (!(await checkRate(`forgot:${clientNet(req)}`, LOGIN_LIMIT_PER_IP))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }

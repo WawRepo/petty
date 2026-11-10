@@ -7,7 +7,7 @@ import { deleteClerkUser } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { badRequest, conflict, notFound, unauthorized, ApiError } from "../lib/errors.js";
 import { checkRate, verifyPassword } from "../lib/password.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientNet } from "../lib/client-ip.js";
 import { maintPool } from "../db.js";
 import { mails } from "../lib/mail.js";
 import { destroySession, hasLoginPassword } from "../lib/session.js";
@@ -61,7 +61,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const { email } = UserLookupBody.parse(input);
     const max = config.lookupLimitPerHour;
-    if (max > 0 && (!(await checkRate(`lookup:${me.id}`, max, HOUR_MS)) || !(await checkRate(`lookup-ip:${clientIp(req)}`, max * 3, HOUR_MS)))) {
+    if (max > 0 && (!(await checkRate(`lookup:${me.id}`, max, HOUR_MS)) || !(await checkRate(`lookup-ip:${clientNet(req)}`, max * 3, HOUR_MS)))) {
       reply.header("retry-after", "3600");
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }

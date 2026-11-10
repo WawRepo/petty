@@ -178,7 +178,8 @@ relays the sealed blob once and deletes the request; it never sees the token.
   attacker a token, as with any device login; revoking it in Settings stops it at once.
 - **Guessing codes.** 12 letters from 20 (about 2^52), one-time, 15 minutes. Lookups are limited per
   person, only a signed-in and unlocked person can allow one, and a token can never
-  allow a token. Asking for codes is limited per address.
+  allow a token. Asking for codes is limited per address (an IPv6 client counts by its /64 network,
+  as for every per-address limit).
 - **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
   token file. What a person types (names, amounts, notes) stays in their shell's history, outside
   Petty's control; [cli.md](cli.md) says how to keep notes out of it.

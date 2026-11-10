@@ -5,7 +5,7 @@ import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
 import { ApiError, badRequest, conflict, notFound, unauthorized } from "../lib/errors.js";
 import { authEvents } from "../lib/metrics.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientIp, clientNet } from "../lib/client-ip.js";
 import { checkRate } from "../lib/password.js";
 import { requireUser } from "../lib/session.js";
 
@@ -37,7 +37,7 @@ interface Row {
 export async function deviceRoutes(app: FastifyInstance) {
   /** The tool asks. No session: this is how a tool without one begins. Limited per address. */
   app.post("/device/code", async (req, reply) => {
-    if (!(await checkRate(`device-code:${clientIp(req)}`, 10, 60 * 60_000))) throw tooMany();
+    if (!(await checkRate(`device-code:${clientNet(req)}`, 10, 60 * 60_000))) throw tooMany();
     const body = DeviceCodeRequest.parse(req.body);
     try {
       await importEcdhPublic(body.cli_pub);
@@ -112,7 +112,7 @@ export async function deviceRoutes(app: FastifyInstance) {
    * same answer as an expired one.
    */
   app.post("/device/token", async (req, reply) => {
-    if (!(await checkRate(`device-poll:${clientIp(req)}`, 600, 15 * 60_000))) throw tooMany();
+    if (!(await checkRate(`device-poll:${clientNet(req)}`, 600, 15 * 60_000))) throw tooMany();
     const body = DeviceTokenPoll.parse(req.body);
     const { rows } = await apiPool.query<{ id: string; state: "pending" | "approved" | "denied"; sealed_token: unknown; expired: boolean; early: boolean }>(
       `with prev as (select id, last_poll_at from device_requests where device_hash = $1)
