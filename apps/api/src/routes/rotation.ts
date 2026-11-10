@@ -5,7 +5,7 @@ import { fromB64 } from "../lib/bytes.js";
 import { consumeCustodyProof, requireProofField } from "../lib/custody.js";
 import { badRequest, conflict, tooLarge } from "../lib/errors.js";
 import { rotationsStarted } from "../lib/metrics.js";
-import { requireRole } from "../lib/perm.js";
+import { requireRole, type DrawerRow } from "../lib/perm.js";
 import { assertQuota } from "../lib/quota.js";
 import { drawerSummary, entryRow, sealedRow } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
@@ -20,6 +20,36 @@ async function status(db: Queryable, drawerId: string) {
   const photo_pending = !!photo && photo.key_version < d.key_version;
   const completed = Number(pending.n) === 0 && !document_pending && !photo_pending;
   return RotationStatus.parse({ drawer_id: drawerId, key_version: d.key_version, pending_entries: Number(pending.n), document_pending, photo_pending, completed });
+}
+
+interface Resealed { nonce: Buffer; ciphertext: Buffer; schema_version?: number }
+
+/**
+ * PETTY-442: a re-sealed row is as long as the row it replaces. So an entry or a photo may not pass its
+ * size limit unless the stored row already does, and what the batch adds must fit the owner's quota.
+ * Only rows still under an older key are written, so only those are measured.
+ */
+async function assertBatchFits(drawer: DrawerRow, toVersion: number, entries: Map<string, Resealed>, document: Resealed | null, photo: Resealed | null): Promise<void> {
+  const size = async (sql: string) => (await apiPool.query<{ n: number }>(sql, [drawer.id, toVersion])).rows[0]?.n;
+  const old = (await apiPool.query<{ id: string; n: number }>(
+    "select id, octet_length(ciphertext) as n from entries where drawer_id = $1 and key_version < $2 and id = any($3::uuid[])", [drawer.id, toVersion, [...entries.keys()]],
+  )).rows;
+  let added = 0;
+  for (const o of old) {
+    const n = entries.get(o.id)!.ciphertext.length;
+    if (n > Math.max(ENTRY_MAX_CIPHERTEXT, o.n)) throw tooLarge("EntryTooLarge", "entry over the size limit", { drawer_id: drawer.id, entry_id: o.id, max_bytes: ENTRY_MAX_CIPHERTEXT });
+    added += n - o.n;
+  }
+  if (document) {
+    const n = await size("select octet_length(ciphertext) as n from drawer_documents where drawer_id = $1 and key_version < $2");
+    if (n !== undefined) added += document.ciphertext.length - n;
+  }
+  if (photo) {
+    const n = await size("select octet_length(ciphertext) as n from drawer_photos where drawer_id = $1 and key_version < $2");
+    if (n !== undefined && photo.ciphertext.length > Math.max(PHOTO_MAX_CIPHERTEXT, n)) throw tooLarge("PhotoTooLarge", "photo over the size limit", { drawer_id: drawer.id, max_bytes: PHOTO_MAX_CIPHERTEXT });
+    if (n !== undefined) added += photo.ciphertext.length - n;
+  }
+  await assertQuota(apiPool, drawer.owner_id, added);
 }
 
 export async function rotationRoutes(app: FastifyInstance): Promise<void> {
@@ -58,8 +88,7 @@ export async function rotationRoutes(app: FastifyInstance): Promise<void> {
    * Step 3: re-sealed rows. Runs as petty_maint; the trigger allows only ciphertext, nonce and a higher key_version to change.
    * PETTY-440: every batch needs its own custody proof, from whichever write member's app sends it (a
    * rotation that one member began may be finished by another), because a batch overwrites rows in place.
-   * PETTY-442: a re-sealed row is as long as the row it replaces. So an entry or a photo may not pass its
-   * size limit unless the stored row already does, and what the batch adds must fit the owner's quota.
+   * PETTY-442: the batch keeps the size limits and the quota (assertBatchFits).
    */
   app.put<{ Params: { id: string } }>("/drawers/:id/rotation/batch", async (req) => {
     const me = requireUser(req);
@@ -69,30 +98,11 @@ export async function rotationRoutes(app: FastifyInstance): Promise<void> {
     await consumeCustodyProof(req, me.id, body.proof);
     if (body.to_version !== drawer.key_version) throw conflict("RotationVersion", "batch is not for the current key version", { key_version: drawer.key_version });
     // Only rows still under an older key are written, and each id once: the first one given.
-    const entries = new Map<string, { nonce: Buffer; ciphertext: Buffer }>();
+    const entries = new Map<string, Resealed>();
     for (const e of body.entries) if (!entries.has(e.id)) entries.set(e.id, { nonce: fromB64(e.nonce), ciphertext: fromB64(e.ciphertext) });
     const document = body.document ? { nonce: fromB64(body.document.nonce), ciphertext: fromB64(body.document.ciphertext), schema_version: body.document.schema_version } : null;
     const photo = body.photo ? { nonce: fromB64(body.photo.nonce), ciphertext: fromB64(body.photo.ciphertext), schema_version: body.photo.schema_version } : null;
-    const size = async (sql: string) => (await apiPool.query<{ n: number }>(sql, [drawer.id, body.to_version])).rows[0]?.n;
-    const old = (await apiPool.query<{ id: string; n: number }>(
-      "select id, octet_length(ciphertext) as n from entries where drawer_id = $1 and key_version < $2 and id = any($3::uuid[])", [drawer.id, body.to_version, [...entries.keys()]],
-    )).rows;
-    let added = 0;
-    for (const o of old) {
-      const n = entries.get(o.id)!.ciphertext.length;
-      if (n > Math.max(ENTRY_MAX_CIPHERTEXT, o.n)) throw tooLarge("EntryTooLarge", "entry over the size limit", { drawer_id: drawer.id, entry_id: o.id, max_bytes: ENTRY_MAX_CIPHERTEXT });
-      added += n - o.n;
-    }
-    if (document) {
-      const n = await size("select octet_length(ciphertext) as n from drawer_documents where drawer_id = $1 and key_version < $2");
-      if (n !== undefined) added += document.ciphertext.length - n;
-    }
-    if (photo) {
-      const n = await size("select octet_length(ciphertext) as n from drawer_photos where drawer_id = $1 and key_version < $2");
-      if (n !== undefined && photo.ciphertext.length > Math.max(PHOTO_MAX_CIPHERTEXT, n)) throw tooLarge("PhotoTooLarge", "photo over the size limit", { drawer_id: drawer.id, max_bytes: PHOTO_MAX_CIPHERTEXT });
-      if (n !== undefined) added += photo.ciphertext.length - n;
-    }
-    await assertQuota(apiPool, drawer.owner_id, added);
+    await assertBatchFits(drawer, body.to_version, entries, document, photo);
     return withTx(maintPool, async (db) => {
       for (const [id, e] of entries) {
         await db.query("update entries set nonce = $3, ciphertext = $4, key_version = $5 where id = $1 and drawer_id = $2 and key_version < $5", [id, req.params.id, e.nonce, e.ciphertext, body.to_version]);
