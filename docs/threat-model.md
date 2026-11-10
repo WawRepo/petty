@@ -131,6 +131,34 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   server that labels an older document with a newer number is not caught.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
+- **What the pinned head is, and what it catches.** Each browser remembers, per line, the hash of the
+  newest entry it saw and of the first entry of the rows it saw it in. The sequence number of a row is
+  the server's plain column, so the app finds the remembered entry by its hash: it warns when that
+  entry is gone, whatever numbers the other rows carry, and when it is still there under another
+  number. After a count the rows start at that count; the app then looks for the remembered entry in
+  the rows before it, and warns when the server does not give them (offline it looks at the next
+  load). It remembers one entry per line and per browser. A browser that never opened a line has
+  nothing to compare with, an entry written at the same moment as another and linked to by nothing
+  later can still be removed unnoticed, and the order of entries written at the same moment is the
+  server's.
+- **Counts.** A balance is folded from the latest sealed count. Which rows the server sends first
+  depends on its own plain "count" column, which a writer sets and nothing signs. A row whose column
+  says otherwise than its sealed content is reported, and the app reads back to the latest real count
+  instead of starting the balance at that row. The first row a balance starts from is a count or the
+  line's first entry. The same entry sent twice is refused, not counted twice.
+- **The command line and the AI add-on check less than the web app.** They check that every row opens
+  in its own row, line, drawer and key version, every signature, the hash links between the rows since
+  the latest count, and the count rules above. They name what did not open or verify (on the command
+  line's error output, and at the end of the add-on's answers) and leave it out of the balance. Since
+  PETTY-445 an entry they write carries the hash of the newest entry they checked, as the web app's
+  do. They do **not** remember anything between two runs: no pinned head, no drawer version and no
+  pinned keys (they check signatures against the keys the server lists for an author). So a server
+  can show a tool a shorter history or an older state of a drawer, and the tool cannot tell; its next
+  entry then links to whatever it was shown. The web app, which keeps all three, is the place to
+  check. Entries that tools wrote before PETTY-445 carry no link: the web app and the tools accept an
+  unlinked entry signed by a token's key without a warning, so such an entry says nothing about the
+  entries before it. An unlinked entry signed by an account key, on a line where that account already
+  wrote, is still reported.
 
 ## Key rotation
 

@@ -217,4 +217,27 @@ describe("petty mcp (PETTY-166)", () => {
     const listed = text(await client.callTool({ name: "list_drawers", arguments: {} }));
     expect(listed.split("\n").some((row) => row.startsWith("SYSTEM"))).toBe(false);
   });
+
+  it("PETTY-445: an answer ends with what the load behind it could not open or check", async () => {
+    // the API as a changed database would serve it: the newest entry of the first item comes with another row's ciphertext
+    const damaged: typeof fetch = async (input, init) => {
+      const res = await inject(input, init);
+      if (new URL(String(input)).pathname !== "/me/token/bootstrap") return res;
+      const boot = (await res.json()) as { entries: { line_id: string; ciphertext: string }[] };
+      const rows = boot.entries.filter((e) => e.line_id === lineId);
+      rows.at(-1)!.ciphertext = rows[0]!.ciphertext;
+      return new Response(JSON.stringify(boot), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const server = await buildServer({ token: await tokenFor("read"), apiUrl: "https://petty.test", connect: (o) => connect({ ...o, fetch: damaged }) });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const client = new McpClient({ name: "test-host", version: "1.0.0" });
+    await Promise.all([server.connect(serverSide), client.connect(clientSide)]);
+    const warning = /\nwarning: drawer "Kitchen" \/ item "[^"]+": 1 entry could not be opened; left out of the balance$/;
+    expect(text(await client.callTool({ name: "list_drawers", arguments: {} }))).toMatch(warning);
+    expect(text(await client.callTool({ name: "history", arguments: { item: `${drawerId}/${lineId}` } }))).toMatch(warning);
+    expect(text(await client.callTool({ name: "list_tags", arguments: {} }))).toMatch(warning);
+    expect(client.getInstructions()).toContain('Other lines that start with "warning:"');
+    // nothing is added when everything checks out
+    expect(text(await (await host("read")).callTool({ name: "list_drawers", arguments: {} }))).not.toContain("warning:");
+  });
 });

@@ -175,6 +175,13 @@ drawers without you making a new token. Open Petty once after adding a drawer.
   instruction on its own. Read a proposed write before you accept it.
 - A token cannot replace your vault, delete your account, share a drawer, export, use admin, or
   make another token. Those are refused by the server.
+- The tool checks what it reads: every entry must open and carry a valid signature, and the hash
+  links between an item's entries must hold. What fails is left out of the balance, and the answer
+  ends with `warning:` lines that say so (an entry or a drawer that could not be opened, a signature
+  that did not check, history links that do not match). Open Petty in the browser when you see one.
+  The tool remembers nothing between two runs, so it cannot notice a history that got shorter or a
+  drawer put back to an older state; the web app can
+  ([threat model](threat-model.md#integrity)).
 
 ## Troubleshooting
 

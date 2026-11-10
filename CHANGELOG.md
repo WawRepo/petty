@@ -8,6 +8,27 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The web app finds the newest entry it remembers for an item by its hash, not by the row's number. A
+  history that lost entries is reported as shorter whatever numbers the server gives the rows that are
+  left, and rows that only changed their numbers are reported too. After a count the app looks for the
+  remembered entry in the rows before that count, which can take one more request per item when you
+  open the app.
+- The command line and the AI add-on link each entry they write to the entry before it, as the web app
+  does. Before, an entry from a tool made the web app say "The history links do not match" on that item
+  until the next count, and the app stopped moving its remembered entry on. Entries that tools already
+  wrote without a link no longer raise that warning.
+- The command line and the AI add-on check the hash links between an item's entries, and say when an
+  entry or a drawer could not be opened or checked: `petty` prints `petty: warning: …` on its error
+  output, and an answer of the add-on ends with `warning:` lines. In `--json`, an item carries
+  `unreadable`, `unverified` and `chain`. Download the command line (`petty.mjs`) and the add-on
+  (`petty.mcpb`) again to get this; the ones you have keep working.
+- A row that the server calls a count while its sealed content is not one no longer resets an item's
+  balance: the web app and the tools read back to the latest real count and report the item. The same
+  entry sent twice is refused instead of counted twice.
+- `docs/threat-model.md` says what the remembered entry catches, and what the command line and the AI
+  add-on check and do not check.
+
 ## [1.5.32] — 2026-11-04
 
 ### Changed

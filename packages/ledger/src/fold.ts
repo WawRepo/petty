@@ -30,13 +30,17 @@ export interface FoldResult {
   readonly headSeq: number | null;
 }
 
-/** Sorts by seq and rejects duplicate seqs or entries from more than one line. */
+/** Sorts by seq and rejects duplicate seqs, an entry that comes twice, or entries from more than one line. */
 export function orderEntries(entries: readonly LedgerEntry[]): LedgerEntry[] {
   const sorted = [...entries].sort((a, b) => a.seq - b.seq);
+  const ids = new Set<string>();
   for (let i = 0; i < sorted.length; i++) {
     const e = sorted[i]!;
     if (!Number.isInteger(e.seq) || e.seq < 1) throw new LedgerError("bad_seq", { entry_id: e.entry.id });
     if (i > 0 && sorted[i - 1]!.seq === e.seq) throw new LedgerError("duplicate_seq", { seq: e.seq });
+    // PETTY-448: one row served under two numbers would be counted twice
+    if (ids.has(e.entry.id)) throw new LedgerError("duplicate_entry", { entry_id: e.entry.id });
+    ids.add(e.entry.id);
     if (e.entry.line_id !== sorted[0]!.entry.line_id) throw new LedgerError("line_mismatch", { entry_id: e.entry.id });
   }
   return sorted;

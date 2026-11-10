@@ -1,6 +1,7 @@
 import {
   delegationCovers,
   fromB64,
+  hashEntry,
   importEcdsaPublic,
   openDocument,
   openEntryUnverified,
@@ -19,8 +20,8 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, reverseOf, seedExponent, tagsOf, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
-import { EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
+import { applyOps, assertCurrencyCode, assertDocumentShape, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, normalizeTags, parseAmount, reverseOf, seedExponent, tagsOf, verifyChain, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { EntriesPage, EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
  * A headless Petty client for an access token (PETTY-165). Everything a tool needs — MCP for
@@ -45,6 +46,8 @@ export interface ConnectOptions {
   readonly fetch?: typeof fetch;
   /** Tests only: allow a plain-http API address that is not this machine. */
   readonly allowInsecureHttp?: boolean;
+  /** Called after every load that could not open or check something (PETTY-445), with the same list as `warnings`. */
+  readonly onWarnings?: (warnings: readonly AgentWarning[]) => void;
 }
 
 /** PETTY-191 (NR-11): the token travels in every request, so only https, or http to this machine. */
@@ -74,6 +77,10 @@ export interface AgentLine {
   readonly countedInTotal: boolean;
   /** Entries left out of the balance because their signature did not check out (PETTY-191). */
   readonly unverified: number;
+  /** Rows of this item left out of the balance because they did not open (PETTY-445). */
+  readonly unreadable: number;
+  /** "broken" when the hash links between this item's entries do not hold: entries may have been removed or changed (PETTY-445). */
+  readonly chain: "ok" | "broken";
 }
 
 export interface AgentDrawer {
@@ -82,6 +89,36 @@ export interface AgentDrawer {
   readonly place: readonly string[];
   readonly role: "owner" | "write" | "read";
   readonly lines: readonly AgentLine[];
+  /** Rows of this drawer that did not open and belong to none of its items (PETTY-445). */
+  readonly unreadable: number;
+}
+
+/**
+ * Something a load could not open or check (PETTY-445). A tool must show these to the person: what is
+ * named here is left out of the balances, or may have been changed on the server.
+ */
+export interface AgentWarning {
+  readonly code: "drawer_unreadable" | "entries_unreadable" | "entries_unverified" | "history_broken";
+  readonly drawerId: string;
+  /** null when the drawer itself did not open */
+  readonly drawer: string | null;
+  readonly lineId: string | null;
+  readonly item: string | null;
+  /** How many rows; 1 for a drawer or a history. */
+  readonly count: number;
+}
+
+/** A name as one quoted value, with no control character left to reach a terminal or pose as output. */
+const quotedName = (s: string): string => JSON.stringify(s).replace(/[\u007f-\u009f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+
+/** One warning as a sentence. Names come from other people too, so each goes out as one quoted value. */
+export function warningText(w: AgentWarning, quote: (s: string) => string = quotedName): string {
+  if (w.code === "drawer_unreadable") return `a drawer could not be opened and is left out (id ${w.drawerId})`;
+  const where = `drawer ${quote(w.drawer ?? "")}${w.item === null ? "" : ` / item ${quote(w.item)}`}`;
+  const rows = `${w.count} entr${w.count === 1 ? "y" : "ies"}`;
+  if (w.code === "entries_unreadable") return `${where}: ${rows} could not be opened${w.item === null ? " and belong to no item" : ""}; left out of the balance`;
+  if (w.code === "entries_unverified") return `${where}: ${rows} left out of the balance, signature did not check`;
+  return `${where}: the history links do not match; entries may have been removed or changed`;
 }
 
 export interface AgentEntry {
@@ -144,6 +181,11 @@ export class AgentClient {
   private heads = new Map<string, number>();
   /** The checked entries since each drawer:line's latest count, from the last load: what an undo looks at. */
   private lineEntries = new Map<string, LedgerEntry[]>();
+  /** What the latest load could not open or check (PETTY-445). Empty when everything checked out. */
+  warnings: readonly AgentWarning[] = [];
+  private readonly onWarnings: ConnectOptions["onWarnings"];
+  /** Ids of the rows the latest load could not open, so `history` does not count them again. */
+  private unopened = new Set<string>();
 
   constructor(opts: ConnectOptions) {
     checkApiUrl(opts.apiUrl, opts.allowInsecureHttp);
@@ -153,6 +195,7 @@ export class AgentClient {
     this.api = opts.apiUrl.replace(/\/$/, "");
     this.bearer = `petty_pat_${split.tokenId}`;
     this.doFetch = opts.fetch ?? fetch;
+    this.onWarnings = opts.onWarnings;
   }
 
   /**
@@ -275,12 +318,32 @@ export class AgentClient {
     }
   }
 
+  /**
+   * Opens one row and checks its signature. A row that does not open, or does not verify, is counted, never
+   * guessed at and never left out without a word (PETTY-445).
+   */
+  private async openRow(key: CryptoKey, row: EntryRow): Promise<LedgerEntry | "unreadable" | "unverified"> {
+    let entry: SignedEntryV1;
+    try {
+      entry = await openEntryUnverified(key, this.identityFor(row.drawer_id, row.line_id, row.key_version, row.schema_version, "entry", row.id, row.author_id), sealed(row));
+    } catch {
+      this.unopened.add(row.id);
+      return "unreadable";
+    }
+    this.heads.set(`${row.drawer_id}:${row.line_id}`, Math.max(this.heads.get(`${row.drawer_id}:${row.line_id}`) ?? 0, row.seq));
+    // an entry whose signature does not check out must not move a balance silently
+    if (!(await this.signatureOk(entry, row.received_at))) return "unverified";
+    // it verified, and not against an account key of its author: a token's own key signed it
+    const byToken = !this.authors[entry.author_id]?.keys.some((k) => k.sig_key_id === entry.sig_key_id);
+    return { seq: row.seq, received_at: row.received_at, entry, is_checkpoint: row.is_checkpoint, by_token: byToken };
+  }
+
   /** Every drawer this token can open, with its lines and balances. */
   async drawers(): Promise<AgentDrawer[]> {
     const boot = TokenBootstrap.parse(await this.call("GET", "/me/token/bootstrap"));
     this.authors = boot.authors;
-    const entriesByLine = new Map<string, LedgerEntry[]>();
-    const unverified = new Map<string, number>();
+    this.unopened = new Set();
+    const warnings: AgentWarning[] = [];
     const out: AgentDrawer[] = [];
     for (const d of boot.drawers) {
       const held = this.keys.get(d.id);
@@ -293,34 +356,99 @@ export class AgentClient {
         assertDocumentShape(opened);
         doc = opened;
       } catch {
+        warnings.push({ code: "drawer_unreadable", drawerId: d.id, drawer: null, lineId: null, item: null, count: 1 });
         continue;
       }
+      const entriesByLine = new Map<string, LedgerEntry[]>();
+      const unverified = new Map<string, number>();
+      const unreadable = new Map<string, number>();
+      const firstSeq = new Map<string, number>(); // the lowest seq the server sent per line, opened or not
+      const count = (m: Map<string, number>, lineId: string) => m.set(lineId, (m.get(lineId) ?? 0) + 1);
       for (const row of boot.entries.filter((e) => e.drawer_id === d.id)) {
-        try {
-          const entry = await openEntryUnverified(held.key, this.identityFor(d.id, row.line_id, row.key_version, row.schema_version, "entry", row.id, row.author_id), sealed(row));
-          this.heads.set(`${d.id}:${row.line_id}`, Math.max(this.heads.get(`${d.id}:${row.line_id}`) ?? 0, row.seq));
-          // an entry whose signature does not check out must not move a balance silently
-          if (!(await this.signatureOk(entry, row.received_at))) { unverified.set(row.line_id, (unverified.get(row.line_id) ?? 0) + 1); continue; }
-          const list = entriesByLine.get(row.line_id) ?? [];
-          list.push({ seq: row.seq, received_at: row.received_at, entry });
-          entriesByLine.set(row.line_id, list);
-        } catch {
-          // an entry this token cannot open is skipped, never guessed at
-        }
+        firstSeq.set(row.line_id, Math.min(firstSeq.get(row.line_id) ?? row.seq, row.seq));
+        const opened = await this.openRow(held.key, row);
+        if (opened === "unreadable") { count(unreadable, row.line_id); continue; }
+        if (opened === "unverified") { count(unverified, row.line_id); continue; }
+        const list = entriesByLine.get(row.line_id) ?? [];
+        list.push(opened);
+        entriesByLine.set(row.line_id, list);
       }
-      for (const l of doc.lines) this.lineEntries.set(`${d.id}:${l.id}`, entriesByLine.get(l.id) ?? []);
+      const lines: AgentLine[] = [];
+      for (const l of doc.lines) {
+        const entries = entriesByLine.get(l.id) ?? [];
+        // PETTY-448: the balance is folded from a real count, or from the item's first entry (rule 6): one that
+        // links to nothing and that the server does not call a count either
+        const start = entries.reduce<LedgerEntry | null>((a, e) => (a && a.seq < e.seq ? a : e), null);
+        if (start && start.entry.op !== "adjust" && (start.entry.prev_hash !== null || start.is_checkpoint)) {
+          const back = await this.backToCount(held.key, d.id, l.id, firstSeq.get(l.id) ?? start.seq);
+          entries.unshift(...back.entries);
+          unverified.set(l.id, (unverified.get(l.id) ?? 0) + back.unverified);
+          unreadable.set(l.id, (unreadable.get(l.id) ?? 0) + back.unreadable);
+        }
+        this.lineEntries.set(`${d.id}:${l.id}`, entries);
+        let chain: AgentLine["chain"];
+        try {
+          chain = (await verifyChain(entries)).status === "ok" ? "ok" : "broken";
+          lines.push(this.line(l, entries, unverified.get(l.id) ?? 0, unreadable.get(l.id) ?? 0, chain));
+        } catch (e) {
+          // one entry under two numbers, or two under one: no balance can be told from that
+          if (e instanceof LedgerError) throw new TokenError("Refused", `the server sent a history that cannot be right for an item (${e.code}); open Petty in the browser`);
+          throw e;
+        }
+        const at = { drawerId: d.id, drawer: doc.name, lineId: l.id, item: l.name };
+        if (unreadable.get(l.id)) warnings.push({ code: "entries_unreadable", ...at, count: unreadable.get(l.id)! });
+        if (unverified.get(l.id)) warnings.push({ code: "entries_unverified", ...at, count: unverified.get(l.id)! });
+        if (chain !== "ok") warnings.push({ code: "history_broken", ...at, count: 1 });
+      }
+      const listed = new Set(doc.lines.map((l) => l.id));
+      const stray = [...unreadable].reduce((n, [lineId, c]) => (listed.has(lineId) ? n : n + c), 0);
+      if (stray) warnings.push({ code: "entries_unreadable", drawerId: d.id, drawer: doc.name, lineId: null, item: null, count: stray });
       out.push({
         id: d.id,
         name: doc.name,
         place: tagsOf(doc),
         role: d.role,
-        lines: doc.lines.map((l) => this.line(l, entriesByLine.get(l.id) ?? [], unverified.get(l.id) ?? 0)),
+        lines,
+        unreadable: stray,
       });
+    }
+    this.report(warnings);
+    return out;
+  }
+
+  private report(warnings: readonly AgentWarning[]): void {
+    this.warnings = warnings;
+    if (warnings.length) this.onWarnings?.(warnings);
+  }
+
+  /**
+   * The rows before `before`, back to the item's latest real count (PETTY-448). The server picks "the rows
+   * since the latest count" by a plain flag that the sealed entry may contradict, and the row at the start
+   * may not open: the balance is then still folded from a count, and `verifyChain` reports the cause.
+   */
+  private async backToCount(key: CryptoKey, drawerId: string, lineId: string, before: number): Promise<{ entries: LedgerEntry[]; unverified: number; unreadable: number }> {
+    const out = { entries: [] as LedgerEntry[], unverified: 0, unreadable: 0 };
+    for (let page = 0; before > 1 && page < 20; page++) {
+      let got: ReturnType<typeof EntriesPage.parse>;
+      // rows that cannot be fetched leave the window as the server sent it, which verifyChain reports
+      try { got = EntriesPage.parse(await this.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=200&before=${before}`)); } catch { break; }
+      for (const row of got.entries) { // newest first
+        if (row.drawer_id !== drawerId || row.line_id !== lineId || row.seq >= before) continue;
+        before = row.seq;
+        const opened = await this.openRow(key, row);
+        if (opened === "unreadable") out.unreadable += 1;
+        else if (opened === "unverified") out.unverified += 1;
+        else {
+          out.entries.unshift(opened);
+          if (opened.entry.op === "adjust") return out;
+        }
+      }
+      if (!got.has_more || !got.entries.length) break;
     }
     return out;
   }
 
-  private line(l: Line, entries: readonly LedgerEntry[], unverified = 0): AgentLine {
+  private line(l: Line, entries: readonly LedgerEntry[], unverified = 0, unreadable = 0, chain: AgentLine["chain"] = "ok"): AgentLine {
     const balance = l.kind === "single" ? 0 : fold(entries).balance;
     const exponent = l.kind === "money" ? l.exponent : 0;
     const currency = l.kind === "money" ? l.currency : null;
@@ -337,6 +465,8 @@ export class AgentClient {
       amount: l.kind === "single" ? "" : `${formatAmount(balance, exponent, LOCALE)}${currency ? ` ${currency}` : ""}`,
       countedInTotal: l.kind === "single" ? false : l.counted !== false,
       unverified,
+      unreadable,
+      chain,
     };
   }
 
@@ -366,6 +496,7 @@ export class AgentClient {
     const rows = (await this.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=${limit}`)) as { entries: unknown[] };
     const list = EntryRow.array().parse(rows.entries ?? []);
     const out: AgentEntry[] = [];
+    let unreadable = 0;
     for (const row of list) {
       try {
         const entry = await openEntryUnverified(held.key, this.identityFor(drawerId, lineId, row.key_version, row.schema_version, "entry", row.id, row.author_id), sealed(row));
@@ -380,9 +511,12 @@ export class AgentClient {
           verified: await this.signatureOk(entry, row.received_at),
         });
       } catch {
-        // unreadable rows are left out rather than half-reported
+        // an unreadable row is left out rather than half-reported, and counted (PETTY-445)
+        if (!this.unopened.has(row.id)) unreadable += 1;
+        this.unopened.add(row.id);
       }
     }
+    if (unreadable) this.report([...this.warnings, { code: "entries_unreadable", drawerId, drawer: drawer.name, lineId, item: line.name, count: unreadable }]);
     return out.sort((a, b) => b.seq - a.seq);
   }
 
@@ -440,6 +574,8 @@ export class AgentClient {
     const lineId = line.id;
     const held = this.keys.get(drawerId)!;
     const id = crypto.randomUUID();
+    // PETTY-445: the new entry links to the newest entry this client checked on the item, as the web app's do
+    const newest = (this.lineEntries.get(`${drawerId}:${lineId}`) ?? []).reduce<LedgerEntry | null>((a, e) => (a && a.seq > e.seq ? a : e), null);
     const payload: EntryPayloadV1 = {
       v: 1,
       id,
@@ -451,7 +587,7 @@ export class AgentClient {
       comment,
       logged_at: new Date().toISOString(),
       reverses,
-      prev_hash: null,
+      prev_hash: newest ? await hashEntry(newest.entry) : null,
       delta_hint: op === "adjust" ? minor - line.balance : null,
       author_id: this.identity.userId,
       sig_key_id: await this.sigKeyId(),
