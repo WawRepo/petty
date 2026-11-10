@@ -89,4 +89,33 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const write = petty(["take", "Garage box › Cash", "1"]);
     expect(await write.done).toBe(3); // read only
   });
+
+  it("shows text from a drawer with its control characters as ?, and escaped with --json (PETTY-453)", async () => {
+    // a drawer written past the app's checks, as a changed client could write it
+    const ESC = "\u001b";
+    const coins = crypto.randomUUID();
+    const odd = {
+      v: 1 as const, name: `Odd${ESC}[2J box`, has_photo: false, verifications: [],
+      lines: [{ id: coins, kind: "money" as const, name: "Coins", currency: `E${ESC}UR`, exponent: 2 }, { id: `old${ESC} id`, kind: "single" as const, name: "Key", text: "" }],
+    };
+    const made = await ann.createDrawer(odd.name, odd);
+    expect(made.res.statusCode).toBe(201);
+    expect((await ann.postEntry(made.id, made.key, coins, "add", 500)).res.statusCode).toBe(201);
+    const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === made.id);
+    const key = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
+    const tok = await ann.makeAccessToken("read", [{ drawer_id: made.id, key_version: 1, key }]);
+    expect(await petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`).done).toBe(0);
+
+    const list = petty(["drawers"]);
+    expect(await list.done).toBe(0);
+    expect(list.out()).toBe("Odd?[2J box\n  Coins     5.00 E?UR\n  Key       single item\n");
+    const find = petty(["find", "odd", "key"]);
+    expect(await find.done).toBe(0);
+    expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
+    const json = petty(["drawers", "--json"]);
+    expect(await json.done).toBe(0);
+    // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there
+    expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }] }]);
+  });
 });

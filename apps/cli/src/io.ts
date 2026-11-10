@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { hostname } from "node:os";
+import { win32 } from "node:path";
 
 /**
  * Everything `petty` does to the outside world, in one place, so tests can drive the whole program in
@@ -37,16 +38,28 @@ async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+/**
+ * The program and its arguments that open a page, or null when there is nothing to run (PETTY-453).
+ * Only an http: or https: address is opened, in the form the URL parser gives it. No shell reads the
+ * address on any system: on Windows it goes to rundll32 of the Windows folder, never through `cmd`.
+ */
+export function browserCommand(url: string, platform: NodeJS.Platform, env: Record<string, string | undefined>): { cmd: string; args: string[] } | null {
+  let page: URL;
+  try { page = new URL(url); } catch { return null; }
+  if (page.protocol !== "http:" && page.protocol !== "https:") return null;
+  if (platform === "darwin") return { cmd: "open", args: [page.href] };
+  if (platform === "win32") return { cmd: win32.join(env["SystemRoot"] || "C:\\Windows", "System32", "rundll32.exe"), args: ["url.dll,FileProtocolHandler", page.href] };
+  // no display on Linux (a server over SSH): printing the address is all we can do
+  if (platform === "linux" && !env["DISPLAY"] && !env["WAYLAND_DISPLAY"]) return null;
+  return { cmd: "xdg-open", args: [page.href] };
+}
+
 /** Opens a page without waiting for the browser and without its output. */
 function openInBrowser(url: string, env: Record<string, string | undefined>): boolean {
-  const [cmd, args] =
-    process.platform === "darwin" ? ["open", [url]] :
-    process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] :
-    ["xdg-open", [url]];
-  // no display on Linux (a server over SSH): printing the address is all we can do
-  if (process.platform === "linux" && !env["DISPLAY"] && !env["WAYLAND_DISPLAY"]) return false;
+  const run = browserCommand(url, process.platform, env);
+  if (!run) return false;
   try {
-    const child = spawn(cmd as string, args as string[], { stdio: "ignore", detached: true });
+    const child = spawn(run.cmd, run.args, { stdio: "ignore", detached: true });
     child.on("error", () => undefined);
     child.unref();
     return true;

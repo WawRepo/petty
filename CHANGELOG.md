@@ -17,6 +17,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 - A new item's id must be a UUID, and control characters are dropped from a currency code as it is
   saved. An older item id already in a drawer is still read; a code already there is cleaned the next
   time its item is changed.
+- The command line shows control characters as `?` in everything it prints from a drawer or from the
+  server: names, tags and comments, and also an item id, a currency code and an error. With `--json`
+  it escapes them.
+- On Windows, `petty auth login` opens the sign-in page without `cmd`, and on every system only an
+  `http:` or `https:` address is opened.
 
 ## [1.5.32] — 2026-11-04
 
