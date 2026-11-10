@@ -144,6 +144,7 @@ test("PETTY-445: entries from a tool raise no history warning, with a link or (a
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Tool");
   await page.getByTestId("token-write").check();
+  await page.getByTestId("token-scope-all").check(); // PETTY-452: no token without a choice of drawers
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
