@@ -23,6 +23,12 @@ number, also when it adds features, and a new minor or major is started by hand 
   an unverified one the vault setup answers 403 `EmailNotVerified`, stores nothing, and the app asks
   you to confirm the address first. This matters only if your Clerk instance lets people sign up
   without verifying their email.
+- A join link's token no longer travels in a web address. The sign-up page asks about the link with
+  the token in the request body (`POST /api/join-links/lookup`), and the operator's `join-link` script
+  prints the link as `/join#<token>`, like the emailed links: a browser never sends the part after
+  `#`. `GET /api/join-links/<token>` and `GET /api/users/lookup?email=` are removed and answer 404.
+  A web app copy from before this release may say once that a join link is not valid; it reloads
+  itself to the new version, and the link still works.
 
 ## [1.5.32] — 2026-11-04
 

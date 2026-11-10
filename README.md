@@ -228,8 +228,8 @@ gets 403 `CrossSiteRequest`; a client that sends no such header is not affected.
 | `POST /auth/signup` `POST /auth/login` `POST /auth/logout` | – | invite-only signup with vault blobs and public keys; login; logout |
 | `POST /auth/forgot` `POST /auth/reset` | – | local mode: a one-hour reset link by email; a new login password (the vault is untouched) |
 | `POST /auth/provision` | Clerk session | Clerk mode: the first sign-in creates the Petty account with its vault blobs |
-| `POST /join-links` `GET /join-links/:token` | user | create / inspect a join link (7 days) |
-| `GET /me` `PATCH /me` `GET /users/lookup?email=` `GET /users/:id/keys` | user | profile, locale, exact-email lookup for inviting, key history |
+| `POST /join-links` `POST /join-links/lookup` | user / – | create a join link (7 days); what a link is for, with the token in the body, never in the address |
+| `GET /me` `PATCH /me` `POST /users/lookup` `GET /users/:id/keys` | user | profile, locale, exact-email lookup for inviting (the address in the body), key history |
 | `GET /me/doc` `PUT /me/doc` | user | the user's own encrypted document (key pins), version-checked |
 | `GET /bootstrap` | user | all drawers, documents, my wraps, members, entries since each line's last Adjust, invitations, transfers |
 | `POST /drawers` `GET /drawers/:id` `DELETE /drawers/:id` | user / read / owner | create; read; permanent delete via `delete_drawer()` |

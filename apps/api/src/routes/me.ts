@@ -54,8 +54,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
    * Exact-email lookup for inviting. Returns the active public keys so the inviter can pin and show the safety number.
    * PETTY-408: the inviter must learn whether the address has an account (the sheet offers a join link when it has
    * none), so the answer cannot hide that. Instead each user gets config.lookupLimitPerHour lookups an hour, and each
-   * client address three times as many. The address travels in a POST body; GET ?email= stays for web app tabs opened
-   * before the change, and safeUrl keeps its query string out of logs and traces.
+   * client address three times as many. The address travels in a POST body, never in a URL (PETTY-457: the GET
+   * ?email= form, kept a while for web app tabs opened before PETTY-408, is gone).
    */
   const lookup = async (req: FastifyRequest, reply: FastifyReply, input: unknown) => {
     const me = requireUser(req);
@@ -76,7 +76,6 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     return UserLookup.parse({ id: r.id, display_name: r.display_name, keys: userKeys(r) });
   };
   app.post("/users/lookup", async (req, reply) => lookup(req, reply, req.body));
-  app.get("/users/lookup", async (req, reply) => lookup(req, reply, req.query));
 
   /** Every key a user ever published, so old entries can be verified against retired keys. */
   app.get<{ Params: { id: string } }>("/users/:id/keys", async (req) => {

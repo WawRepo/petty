@@ -104,3 +104,12 @@ describe("clerk mode: an account is made only for an address Clerk verified (PET
     expect((await owner.query<{ clerk_user_id: string }>("select clerk_user_id from users where id = $1", [taken.id])).rows[0]!.clerk_user_id).toBe(`user_${run}tkn`);
   }, 60_000);
 });
+
+describe("clerk mode: join links are Clerk's (PETTY-457)", () => {
+  it("the join link lookup is off like the other local sign-up routes, and no route takes a token from the address", async () => {
+    const res = await app.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: "abc" }) });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().code).toBe("NotAvailable");
+    expect((await app.inject({ method: "GET", url: "/join-links/abc" })).statusCode).toBe(404);
+  });
+});

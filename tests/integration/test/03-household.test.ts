@@ -11,6 +11,7 @@ import { API, compose, http, newUser } from "../lib.js";
  */
 let ann: Client, ben: Client;
 let drawerId: string, lineId: string, key: CryptoKey;
+let joinToken: string;
 
 async function balance(c: Client): Promise<{ balance: number; entries: number }> {
   const boot = (await c.call("GET", "/bootstrap")).json();
@@ -36,7 +37,10 @@ beforeAll(async () => {
   // the second person joins with a link the first one made
   const link = await ann.call("POST", "/join-links", {});
   expect(link.statusCode).toBe(201);
-  ben = await newUser("ben", link.json().token);
+  joinToken = link.json().token;
+  // PETTY-457: what the sign-up page asks first, with the token in the body
+  expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) })).json()).toEqual({ valid: true, inviter_name: ann.user.display_name, email: null });
+  ben = await newUser("ben", joinToken);
 });
 
 describe("household", () => {
@@ -79,12 +83,25 @@ describe("household", () => {
     expect(found.statusCode).toBe(200);
     expect(found.json()).toMatchObject({ id: ben.id, keys: { ecdh_pub: ben.user.pub.ecdh } });
     expect((await ann.call("POST", "/users/lookup", { email: `nobody-${ben.id}@petty.test` })).statusCode).toBe(404);
-    // a web app tab opened before the change still sends GET ?email=
-    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(ben.user.email)}`)).statusCode).toBe(200);
     const lines = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"') && l.includes("/users/lookup"));
-    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(2);
     expect(lines().join("\n")).not.toContain("email=");
     expect(lines().join("\n")).not.toContain(ben.user.email);
+  });
+
+  it("no address or join token travels in a URL; a program that still asks that way gets 404 and leaves neither in the log (PETTY-457)", async () => {
+    const used = await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) });
+    expect(used.json()).toEqual({ valid: false, inviter_name: null, email: null }); // ben signed up with it
+    const fresh = (await ann.call("POST", "/join-links", {})).json().token as string;
+    const probe = `probe-${ben.id}@petty.test`;
+    // what a web app from before the change sends
+    expect((await ann.call("GET", `/join-links/${fresh}`)).statusCode).toBe(404);
+    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(probe)}`)).statusCode).toBe(404);
+    expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: fresh }) })).json().valid).toBe(true);
+    const log = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"'));
+    await expect.poll(() => log().filter((l) => l.includes("/api/join-links/lookup")).length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    const all = log().join("\n");
+    for (const secret of [fresh, joinToken, probe, encodeURIComponent(probe), "email="]) expect(all).not.toContain(secret);
   });
 
   it("shares the drawer; the other person reads and writes; a stranger cannot", async () => {

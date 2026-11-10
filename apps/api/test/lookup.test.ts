@@ -49,10 +49,12 @@ describe("email lookup (PETTY-408)", () => {
     expect(miss.json().code).toBe("UserNotFound");
   });
 
-  it("GET ?email= still answers, for web app tabs opened before the change", async () => {
-    const res = await lookup(A, B.user.email, { ip: freshAddress(), get: true });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().id).toBe(B.id);
+  it("GET ?email= is gone (PETTY-457): no address in a URL, signed in or not, and nothing is looked up", async () => {
+    for (const who of [A, null]) {
+      const res = await lookup(who, B.user.email, { ip: freshAddress(), get: true });
+      expect(res.statusCode).toBe(404);
+      expect(res.body).not.toContain(B.id);
+    }
   });
 
   it("needs a signed-in user and a valid address", async () => {
@@ -71,8 +73,6 @@ describe("email lookup (PETTY-408)", () => {
     expect(over.statusCode).toBe(429);
     expect(over.json().code).toBe("TooManyAttempts");
     expect(over.headers["retry-after"]).toBe("3600");
-    // the old GET shares the count
-    expect((await lookup(C, B.user.email, { ip: freshAddress(), get: true })).statusCode).toBe(429);
     expect((await lookup(B, A.user.email, { ip: freshAddress() })).statusCode).toBe(200);
   }, 60_000);
 

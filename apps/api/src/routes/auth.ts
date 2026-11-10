@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ForgotBody, JoinLinkBody, JoinLinkInfo, JoinLinkResponse, LoginBody, Me, ProvisionBody, ResetBody, SignupBody, type PasskeyVault, type VaultBlob } from "@petty/protocol";
+import { ForgotBody, JoinLinkBody, JoinLinkInfo, JoinLinkLookupBody, JoinLinkResponse, LoginBody, Me, ProvisionBody, ResetBody, SignupBody, type PasskeyVault, type VaultBlob } from "@petty/protocol";
 import { config } from "../config.js";
 import { termsVersion } from "../lib/legal.js";
 import { clerkProfile } from "../lib/clerk.js";
@@ -60,10 +60,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       authEvents.inc({ event: "signup" });
       return reply.code(201).send(Me.parse(me));
     });
-    for (const path of ["/auth/signup", "/auth/login", "/auth/forgot", "/auth/reset", "/auth/logout", "/join-links"]) {
+    for (const path of ["/auth/signup", "/auth/login", "/auth/forgot", "/auth/reset", "/auth/logout", "/join-links", "/join-links/lookup"]) {
       app.post(path, async () => { throw new ApiError(404, "NotAvailable", "identity is managed by Clerk"); });
     }
-    app.get("/join-links/:token", async () => { throw new ApiError(404, "NotAvailable", "identity is managed by Clerk"); });
     return;
   }
 
@@ -181,11 +180,17 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(201).send(JoinLinkResponse.parse({ token, expires_at: iso(expires) }));
   });
 
-  app.get<{ Params: { token: string } }>("/join-links/:token", async (req) => {
+  /**
+   * What a join link is for, before the sign-up form shows: whether it still works, who invited, and the
+   * address it is for. PETTY-457: the token is a secret, so it comes in the body. A URL (the former
+   * GET /join-links/<token>) stays in the access log of every proxy in front of the API.
+   */
+  app.post("/join-links/lookup", async (req) => {
+    const { token } = JoinLinkLookupBody.parse(req.body);
     const { rows } = await apiPool.query<{ email: string | null; inviter: string | null }>(
       `select l.email, u.display_name as inviter from join_links l left join users u on u.id = l.created_by
         where l.token_hash = $1 and l.used_at is null and l.expires_at > now()`,
-      [sha256(req.params.token)],
+      [sha256(token)],
     );
     const r = rows[0];
     return JoinLinkInfo.parse({ valid: !!r, inviter_name: r?.inviter ?? null, email: r?.email ?? null });
