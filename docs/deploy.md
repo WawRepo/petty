@@ -30,6 +30,9 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
   address in a header of their own: Fly.io `Fly-Client-IP`, Cloudflare `CF-Connecting-IP`. Name it
   in `CLIENT_IP_HEADER`, and that header counts (PETTY-301). Set it only when the app can be reached
   through that platform alone: anyone who reaches the app directly could write the header.
+- Every per-address limit counts an IPv4 client by its address and an IPv6 client by its /64 network
+  (PETTY-458): one home or phone connection holds a whole /64 and can use any address in it. An IPv4
+  address written as IPv6 (`::ffff:203.0.113.7`) counts as that IPv4 address.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).

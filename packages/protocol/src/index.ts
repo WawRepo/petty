@@ -263,6 +263,8 @@ export const PatchMeBody = z.object({ locale: LocaleCode.optional(), display_nam
 export const JoinLinkBody = z.object({ email: z.string().email().max(254).optional() });
 export const JoinLinkResponse = z.object({ token: z.string(), expires_at: z.string() });
 export const JoinLinkInfo = z.object({ valid: z.boolean(), inviter_name: z.string().nullable(), email: z.string().nullable() });
+/** PETTY-457: the token goes in the body of POST /join-links/lookup, never in a URL that proxies and logs keep. */
+export const JoinLinkLookupBody = z.object({ token: z.string().min(1).max(128) });
 
 // ---------------------------------------------------------------- drawers
 export const DrawerSummary = z.object({

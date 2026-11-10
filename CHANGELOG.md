@@ -88,6 +88,30 @@ number, also when it adds features, and a new minor or major is started by hand 
   token for chosen drawers gets no drawer you add later. The command line says at sign-in how many
   drawers its token opens, and says so again when something is not found; the AI add-on tells the AI
   app the same. A new token still ends after 90 days unless you pick another time or "Never".
+- A pending drawer invitation ends when the drawer gets a new owner: when an ownership offer is
+  accepted, and when an owner who deletes the account hands the drawer over. The new owner decides who
+  joins and invites again. Pending invitations that a former owner made end with this upgrade. The
+  owner can list every pending invitation of a drawer (`GET /api/drawers/:id/invitations`) and revoke
+  any of them (`DELETE /api/invitations/:id`); the app has no screen for this list yet.
+- The API takes a request that changes something from a browser only when the browser marks it as
+  coming from Petty's own pages (`Sec-Fetch-Site: same-origin`). Any other mark gets 403
+  `CrossSiteRequest`, also for a request without a body and for a page on another host under the same
+  domain as your instance. The web app is not affected. Programs that send no such header (the command
+  line, the add-on, curl) work as before.
+- With Clerk sign-in, Petty makes an account only for an email address that Clerk has verified. For
+  an unverified one the vault setup answers 403 `EmailNotVerified`, stores nothing, and the app asks
+  you to confirm the address first. This matters only if your Clerk instance lets people sign up
+  without verifying their email.
+- A join link's token no longer travels in a web address. The sign-up page asks about the link with
+  the token in the request body (`POST /api/join-links/lookup`), and the operator's `join-link` script
+  prints the link as `/join#<token>`, like the emailed links: a browser never sends the part after
+  `#`. `GET /api/join-links/<token>` and `GET /api/users/lookup?email=` are removed and answer 404.
+  A web app copy from before this release may say once that a join link is not valid; it reloads
+  itself to the new version, and the link still works.
+- Every per-address limit (sign-in, sign-up, password reset, device codes and polls, the email
+  lookup, and `RATE_LIMIT_PER_MINUTE`) counts an IPv6 client by its /64 network, because one home or
+  phone connection holds a whole /64. IPv4 is counted per address as before, also when the address
+  arrives written as IPv6 (`::ffff:a.b.c.d`). Counts of IPv6 clients start anew with this upgrade.
 
 ## [1.5.32] — 2026-11-04
 

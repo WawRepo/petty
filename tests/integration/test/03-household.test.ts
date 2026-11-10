@@ -3,7 +3,7 @@ import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, o
 import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, compose, newUser } from "../lib.js";
+import { API, compose, http, newUser } from "../lib.js";
 
 /**
  * What a household does, end to end, over HTTP against the real image: two people, a shared
@@ -11,6 +11,7 @@ import { API, compose, newUser } from "../lib.js";
  */
 let ann: Client, ben: Client;
 let drawerId: string, lineId: string, key: CryptoKey;
+let joinToken: string;
 
 async function balance(c: Client): Promise<{ balance: number; entries: number }> {
   const boot = (await c.call("GET", "/bootstrap")).json();
@@ -36,7 +37,10 @@ beforeAll(async () => {
   // the second person joins with a link the first one made
   const link = await ann.call("POST", "/join-links", {});
   expect(link.statusCode).toBe(201);
-  ben = await newUser("ben", link.json().token);
+  joinToken = link.json().token;
+  // PETTY-457: what the sign-up page asks first, with the token in the body
+  expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) })).json()).toEqual({ valid: true, inviter_name: ann.user.display_name, email: null });
+  ben = await newUser("ben", joinToken);
 });
 
 describe("household", () => {
@@ -47,6 +51,19 @@ describe("household", () => {
     expect((await ann.login()).statusCode).toBe(200);
     const wrong = await fetch(`${API}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: ann.user.email, password: "not-the-password" }) });
     expect(wrong.status).toBe(401);
+  });
+
+  it("takes a changing request from a browser only when the browser marks it same-origin (PETTY-409)", async () => {
+    const send = (url: string, site: string | null) => http.inject({ method: "POST", url, cookies: { petty_session: ann.cookie! }, headers: site === null ? {} : { "sec-fetch-site": site } });
+    for (const site of ["same-site", "cross-site", "none"]) {
+      const res = await send("/auth/logout", site);
+      expect(res.statusCode, site).toBe(403);
+      expect(res.json().code, site).toBe("CrossSiteRequest");
+    }
+    expect((await ann.call("GET", "/me")).statusCode).toBe(200); // still signed in
+    // the web app's own requests, and a program that sends no such header
+    expect((await send("/me/custody-challenge", "same-origin")).statusCode).toBe(200);
+    expect((await send("/me/custody-challenge", null)).statusCode).toBe(200);
   });
 
   it("makes a drawer and adds entries; the balance folds from the log", async () => {
@@ -66,12 +83,25 @@ describe("household", () => {
     expect(found.statusCode).toBe(200);
     expect(found.json()).toMatchObject({ id: ben.id, keys: { ecdh_pub: ben.user.pub.ecdh } });
     expect((await ann.call("POST", "/users/lookup", { email: `nobody-${ben.id}@petty.test` })).statusCode).toBe(404);
-    // a web app tab opened before the change still sends GET ?email=
-    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(ben.user.email)}`)).statusCode).toBe(200);
     const lines = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"') && l.includes("/users/lookup"));
-    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(2);
     expect(lines().join("\n")).not.toContain("email=");
     expect(lines().join("\n")).not.toContain(ben.user.email);
+  });
+
+  it("no address or join token travels in a URL; a program that still asks that way gets 404 and leaves neither in the log (PETTY-457)", async () => {
+    const used = await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) });
+    expect(used.json()).toEqual({ valid: false, inviter_name: null, email: null }); // ben signed up with it
+    const fresh = (await ann.call("POST", "/join-links", {})).json().token as string;
+    const probe = `probe-${ben.id}@petty.test`;
+    // what a web app from before the change sends
+    expect((await ann.call("GET", `/join-links/${fresh}`)).statusCode).toBe(404);
+    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(probe)}`)).statusCode).toBe(404);
+    expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: fresh }) })).json().valid).toBe(true);
+    const log = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"'));
+    await expect.poll(() => log().filter((l) => l.includes("/api/join-links/lookup")).length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    const all = log().join("\n");
+    for (const secret of [fresh, joinToken, probe, encodeURIComponent(probe), "email="]) expect(all).not.toContain(secret);
   });
 
   it("shares the drawer; the other person reads and writes; a stranger cannot", async () => {
@@ -85,6 +115,35 @@ describe("household", () => {
     expect(await balance(ben)).toEqual({ balance: 4000, entries: 3 });
     const stranger = await newUser("stranger");
     expect((await stranger.call("GET", `/drawers/${drawerId}`)).statusCode).toBe(404);
+  });
+
+  it("the owner sees a drawer's pending invitations, and they end when the drawer gets a new owner (PETTY-446)", async () => {
+    const shed = await ann.createDrawer("Shed");
+    expect(shed.res.statusCode).toBe(201);
+    const raw = await ann.unwrap((await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === shed.id), ann.user.pub.ecdh, true);
+    const invite = async (from: Client, to: Client) => from.call("POST", `/drawers/${shed.id}/invitations`, { invitee_id: to.id, role: "write", wrap: await from.wrapFor(raw, to.user.pub.ecdh, shed.id, 1) });
+    const first = await invite(ann, ben);
+    expect(first.statusCode).toBe(201);
+    expect((await ben.call("POST", `/invitations/${first.json().id}/accept`)).statusCode).toBe(204);
+    const cat = await newUser("cat");
+    const pending = await invite(ann, cat);
+    expect(pending.statusCode).toBe(201);
+    const listed = (await ann.call("GET", `/drawers/${shed.id}/invitations`)).json().invitations as { id: string; invitee: { id: string } }[];
+    expect(listed.map((i) => [i.id, i.invitee.id])).toEqual([[pending.json().id, cat.id]]);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).statusCode).toBe(403); // a member, not the owner
+    // ann hands the drawer to ben: what she left open is over
+    expect((await ann.call("POST", `/drawers/${shed.id}/transfer`, { to_user_id: ben.id })).statusCode).toBe(201);
+    expect((await ben.call("POST", `/drawers/${shed.id}/transfer/accept`)).statusCode).toBe(204);
+    expect((await cat.call("POST", `/invitations/${pending.json().id}/accept`)).statusCode).toBe(404);
+    expect((await cat.call("GET", `/drawers/${shed.id}`)).statusCode).toBe(404);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).json()).toEqual({ invitations: [] });
+    // the new owner invites again, and only he can take it back
+    const again = await invite(ben, cat);
+    expect(again.statusCode).toBe(201);
+    expect((await ann.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(404);
+    expect((await ben.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(204);
+    // ann leaves, so the later steps see her drawers as before
+    expect((await ann.call("POST", `/drawers/${shed.id}/leave`)).statusCode).toBe(204);
   });
 
   it("an Adjust sets what was counted, and later entries fold on top of it", async () => {

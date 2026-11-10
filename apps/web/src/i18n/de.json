@@ -140,6 +140,7 @@
       "displayName": "Name (optional)",
       "displayNameHint": "So sehen dich die Menschen, mit denen du Schubladen teilst. Lässt du das Feld leer, wird der Name aus deiner Anmeldung verwendet.",
       "already": "Dieses Konto hat schon einen Tresor. Lade die App neu.",
+      "emailNotVerified": "Deine E-Mail-Adresse ist noch nicht bestätigt. Bestätige sie in deinem Anmeldekonto und versuche es dann noch einmal.",
       "explainer": {
         "identity": "Du bist angemeldet. Der Tresor ist ein zweites, eigenes Schloss: Er öffnet deine Schubladen auf diesem Gerät. Der Server bewahrt nur eine verschlossene Kopie davon auf."
       },

@@ -218,7 +218,9 @@ reasoning: [docs/decisions.md](docs/decisions.md) (rows *Places*, *Icons*, *Line
 All bodies are JSON; bytes travel as base64; the server never opens ciphertext.
 Session = httpOnly cookie `petty_session` (`__Host-petty_session` over HTTPS, as in the image).
 In the image every route sits under `/api` (`/api/me`). Access tokens and Clerk session tokens come
-as `Authorization: Bearer …`. Non-members get 404, never 403.
+as `Authorization: Bearer …`. Non-members get 404, never 403. A request that changes something and
+that a browser marks as not coming from the app's own pages (`Sec-Fetch-Site` other than `same-origin`)
+gets 403 `CrossSiteRequest`; a client that sends no such header is not affected.
 
 | Route | Who | Does |
 |---|---|---|
@@ -226,8 +228,8 @@ as `Authorization: Bearer …`. Non-members get 404, never 403.
 | `POST /auth/signup` `POST /auth/login` `POST /auth/logout` | – | invite-only signup with vault blobs and public keys; login; logout |
 | `POST /auth/forgot` `POST /auth/reset` | – | local mode: a one-hour reset link by email; a new login password (the vault is untouched) |
 | `POST /auth/provision` | Clerk session | Clerk mode: the first sign-in creates the Petty account with its vault blobs |
-| `POST /join-links` `GET /join-links/:token` | user | create / inspect a join link (7 days) |
-| `GET /me` `PATCH /me` `GET /users/lookup?email=` `GET /users/:id/keys` | user | profile, locale, exact-email lookup for inviting, key history |
+| `POST /join-links` `POST /join-links/lookup` | user / – | create a join link (7 days); what a link is for, with the token in the body, never in the address |
+| `GET /me` `PATCH /me` `POST /users/lookup` `GET /users/:id/keys` | user | profile, locale, exact-email lookup for inviting (the address in the body), key history |
 | `GET /me/doc` `PUT /me/doc` | user | the user's own encrypted document (key pins), version-checked |
 | `GET /bootstrap` | user | all drawers, documents, my wraps, members, entries since each line's last Adjust, invitations, transfers |
 | `POST /drawers` `GET /drawers/:id` `DELETE /drawers/:id` | user / read / owner | create; read; permanent delete via `delete_drawer()` |
@@ -236,9 +238,9 @@ as `Authorization: Bearer …`. Non-members get 404, never 403.
 | `POST /drawers/:id/lines/:lineId/delete` | write | new document + entries removed via `delete_line()` |
 | `POST /drawers/:id/entries` | write | append; idempotent on client id; Adjust needs `expected_head_seq` → 409 `RecountRequired`; Reverse rules → 409 `ReverseRefused` |
 | `GET /drawers/:id/lines/:lineId/entries?before=&limit=` | read | older pages |
-| `GET /drawers/:id/members` `POST /drawers/:id/invitations` `GET /invitations` `POST /invitations/:id/accept|decline` `DELETE /invitations/:id` | read / owner / invitee | wrap at invite time; accept = membership + wrap |
+| `GET /drawers/:id/members` `POST /drawers/:id/invitations` `GET /drawers/:id/invitations` `GET /invitations` `POST /invitations/:id/accept|decline` `DELETE /invitations/:id` | read / owner / invitee | wrap at invite time; accept = membership + wrap; the owner lists and revokes the drawer's pending invitations |
 | `DELETE /drawers/:id/members/:userId` `POST /drawers/:id/leave` | owner / member | removes wraps, sets `rotation_needed` |
-| `POST /drawers/:id/transfer` `POST /drawers/:id/transfer/accept` `DELETE /drawers/:id/transfer` | owner / target | ownership moves only on acceptance |
+| `POST /drawers/:id/transfer` `POST /drawers/:id/transfer/accept` `DELETE /drawers/:id/transfer` | owner / target | ownership moves only on acceptance; the drawer's pending invitations end with it |
 | `POST /drawers/:id/rotation` `PUT /drawers/:id/rotation/batch` `GET /drawers/:id/rotation` | write | publish new key + wraps first; re-seal in batches (petty_maint); status |
 | `GET /drawers/:id/export` | owner, write | everything for the drawer; read members get 403 |
 | `GET /me/delete` `POST /me/delete` | user | preview; delete with per-drawer decisions (hand over / delete), password re-entered |

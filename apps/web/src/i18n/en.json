@@ -140,6 +140,7 @@
       "displayName": "Name (optional)",
       "displayNameHint": "How the people you share drawers with see you. If you leave it empty, the name from your sign-in is used.",
       "already": "This account already has a vault. Reload the app.",
+      "emailNotVerified": "Your email address is not confirmed yet. Confirm it in your sign-in account, then try again.",
       "explainer": {
         "identity": "You are signed in. The vault is a second, separate lock: it opens your drawers on this device. The server keeps only a locked copy of it."
       },

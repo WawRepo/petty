@@ -71,7 +71,9 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` to an OTLP/HTTP receiver (for example
   (`POST /api/drawers/:id/entries`), with one child span per SQL query.
 - Spans carry the route, method, status, the user id and the SQL text with `$n` placeholders.
 - Spans never carry request bodies, cookies, header values, bound SQL values, or a URL that
-  holds a token (`/join-links/:token` is reported as the template).
+  holds a token: a route with a token in its path would be reported as the template, and an address no
+  route answers by its first part only (`/join/…`). No API route takes a token or an email address in
+  its address; they travel in request bodies.
 - Spans never carry who called: the client and peer address and the user agent, which the http
   instrumentation records by default, are dropped before export (an IP address is personal data).
 - Every log line of a traced request carries `traceId`, so a log line can link to its trace.

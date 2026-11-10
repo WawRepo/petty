@@ -140,6 +140,7 @@
       "displayName": "Nom (facultatif)",
       "displayNameHint": "Le nom que voient les personnes avec qui vous partagez des tiroirs. Si vous le laissez vide, le nom de votre compte de connexion est utilisé.",
       "already": "Ce compte a déjà un coffre. Rechargez l’application.",
+      "emailNotVerified": "Votre adresse e-mail n’est pas encore confirmée. Confirmez-la dans votre compte de connexion, puis réessayez.",
       "explainer": {
         "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil. Le serveur n’en garde qu’une copie verrouillée."
       },
