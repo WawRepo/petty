@@ -190,9 +190,11 @@
     "degradedReason": {
       "no_key": "Du hast noch keinen Schlüssel für diese Schublade. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "sender_unknown": "Den Schlüssel hat jemand geteilt, den du noch nicht kennst.",
-      "sender_unconfirmed": "Diese Schublade hat einen neuen Schlüssel von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
+      "sender_unconfirmed": "Der Schlüssel dieser Schublade kommt von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
+      "pins_blocked": "Den Schlüssel zu dieser Schublade hat dir eine andere Person gegeben, und Petty kann sie jetzt nicht prüfen: Deine Liste vertrauenswürdiger Schlüssel fehlt auf dem Server, ist älter als zuvor oder wurde nicht geladen. Sieh nach der Warnung auf dem Startbildschirm oder versuche es erneut, wenn du online bist.",
       "key_rolled_back": "Der Server hat einen älteren Schlüssel für diese Schublade geschickt als den, den du schon hattest, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
+      "key_replaced": "Der Server hat einen anderen Schlüssel für diese Schublade geschickt als den, den du schon benutzt hast, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
       "doc_rolled_back": "Der Server hat eine ältere Fassung dieser Schublade geschickt als die, die du schon geöffnet hattest, deshalb hat Petty sie nicht geöffnet. Seitdem hinzugefügte Posten würden fehlen. Jemand hat den Server vielleicht verändert.",
       "unwrap_failed": "Diese Schublade konnte auf diesem Gerät nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
@@ -728,6 +730,8 @@
   "pins": {
     "rolledBackTitle": "Der Server hat eine ältere Kopie deiner vertrauenswürdigen Schlüssel",
     "rolledBack": "Dieses Gerät hat zuletzt Version {seen} deiner Liste vertrauenswürdiger Schlüssel gesehen; der Server hat jetzt Version {server}. Das kann ein wiederhergestelltes Backup sein – oder jemand will dich dazu bringen, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
+    "missingTitle": "Der Server hat keine Liste deiner vertrauenswürdigen Schlüssel",
+    "missing": "Dein Konto hat Schubladen, also müsste der Server diese Liste haben. Sie kann fehlen, weil dein Konto älter ist als die Liste, weil ein Backup wiederhergestellt wurde – oder weil dich jemand dazu bringen will, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, öffnet Petty nur Schubladen, deren Schlüssel du selbst erstellt hast, und du kannst keine Schubladen teilen. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder.",
     "startOver": "Neue Schlüsselliste beginnen"
   },
   "privacy": {

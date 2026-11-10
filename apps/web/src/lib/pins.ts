@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from "react";
 import { fromB64, hkdfAesKey, importEcdhPublic, open, seal, safetyNumber, toB64, utf8, fromUtf8, canonicalJson, type RecordIdentity } from "@petty/crypto";
 import { UserDocRow, z, type Member } from "@petty/protocol";
-import { api, ApiError } from "./api.js";
+import { api, ApiError, NetworkError } from "./api.js";
 import { idb } from "./idb.js";
 import { getAuth } from "./session.js";
 
@@ -29,8 +29,11 @@ export type TrustedToken = z.infer<typeof TrustedToken>;
 // removed member may still hold. Sealed here, so the server can neither raise nor lower it.
 // `drawer_docs` (PETTY-403): per drawer, the newest document version this person opened. An older one means
 // the server went back to an earlier state of the drawer: lines added since gone, with their balances.
+// `drawer_key_fps` (PETTY-438): per drawer and key version, a fingerprint of the key this person accepted. Another
+// key at the same version is refused. A document without it (written before, or saved by an older Petty, which drops
+// the field) keeps the drawer open at the version in `drawer_keys`, and the fingerprint is remembered at the next load.
 const PlaceNode: z.ZodType<PlaceNodeT> = z.lazy(() => z.object({ name: z.string(), children: z.array(PlaceNode).readonly() }));
-const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional() });
+const UserDoc = z.object({ v: z.literal(1), pins: z.record(z.string(), Pin), excluded_from_total: z.array(z.string()).optional(), hide_places: z.boolean().optional(), hide_verification: z.boolean().optional(), hide_totals: z.boolean().optional(), hide_picture: z.boolean().optional(), places: z.array(PlaceNode).optional(), line_tags: z.array(z.string()).optional(), tokens: z.array(TrustedToken).optional(), drawer_keys: z.record(z.string(), z.number().int().positive()).optional(), drawer_docs: z.record(z.string(), z.number().int().positive()).optional(), drawer_key_fps: z.record(z.string(), z.record(z.string(), z.string())).optional() });
 export type Pin = z.infer<typeof Pin>;
 type UserDocT = z.infer<typeof UserDoc>;
 
@@ -39,10 +42,15 @@ type UserDocT = z.infer<typeof UserDoc>;
  * saw. Pins stay as they were in memory, nothing new is pinned and no key is wrapped for
  * anyone until the user acknowledges it; otherwise a server that drops the document
  * would turn every confirmed pin back into first sight.
+ * PETTY-438: no document at all counts the same when the account has drawers (`drawersNeedUserDoc`).
+ * While rolled back, and while "idle" (not loaded), only drawer keys this person wrapped are opened.
  */
 interface PinsState { readonly status: "idle" | "ready" | "rolled_back"; readonly doc: UserDocT; readonly version: number; readonly lastSeenVersion: number }
 let state: PinsState = { status: "idle", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 };
 const seenKey = (userId: string) => `userdoc.${userId}`;
+/** PETTY-438: the sealed document as last loaded or saved here, for a start with no connection. Ciphertext only; wiped at sign-out with the rest of the cache. */
+const K_DOC = "cache.userdoc";
+interface CachedDoc { readonly userId: string; readonly version: number; readonly nonce: string; readonly ciphertext: string }
 const listeners = new Set<() => void>();
 function set(next: PinsState): void { state = next; for (const l of listeners) l(); }
 export function usePins(): PinsState {
@@ -50,13 +58,31 @@ export function usePins(): PinsState {
 }
 export function resetPins(): void { set({ status: "idle", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 }); }
 export function pinsBlocked(): boolean { return state.status === "rolled_back"; }
+/**
+ * PETTY-438: the user document is loaded and not rolled back. Only then does the app open a drawer key that someone
+ * else wrapped, or re-seal a drawer. Missing, rolled back or not loaded all mean: keys this person wrapped, nothing more.
+ */
+export function pinsReady(): boolean { return state.status === "ready"; }
+/**
+ * PETTY-438: the account has drawers, so it has a user document: the app starts one before it makes a drawer, and
+ * accepting an invitation saves the inviter's pin. When the server has none, that counts as rolled back, also on a
+ * browser that never saw one.
+ */
+export function drawersNeedUserDoc(): void { if (state.status === "ready" && state.version === 0) set({ ...state, status: "rolled_back" }); }
+/** PETTY-438: saves a first, empty user document when the server has none, so that an account with drawers always has one. */
+export async function startUserDoc(): Promise<void> {
+  if (state.status === "idle") await loadPins();
+  if (state.status === "ready" && state.version === 0) await save((doc) => doc);
+}
 /** The user read the warning and chose to start over: forget the remembered version and load whatever the server has. */
 export async function acknowledgeRollback(): Promise<void> {
   const a = getAuth();
   if (a.status !== "unlocked") return;
   await idb.del(seenKey(a.me.id));
+  await idb.del(K_DOC);
   set({ ...state, status: "idle", lastSeenVersion: 0 });
   await loadPins();
+  await startUserDoc(); // PETTY-438: the new list exists on the server from now on, so the next load does not miss it again
 }
 /** The account was deleted: its remembered version goes with it. A sign-out keeps it (PETTY-402). */
 export async function forgetUserDocVersion(userId: string): Promise<void> { await idb.del(seenKey(userId)); }
@@ -82,6 +108,7 @@ export async function loadPins(): Promise<void> {
     const raw = await api<unknown>("GET", "/me/doc");
     if (raw === undefined) { // 204: no document yet (PETTY-133)
       if (seen > 0) { set({ status: "rolled_back", doc: state.doc, version: 0, lastSeenVersion: seen }); return; }
+      if (state.status === "ready" && state.version > 0) return; // PETTY-438: this page saved the document while this answer was on its way
       set({ status: "ready", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 });
       return;
     }
@@ -89,12 +116,22 @@ export async function loadPins(): Promise<void> {
     const doc = UserDoc.parse(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))));
     if (row.version < seen) { set({ status: "rolled_back", doc, version: row.version, lastSeenVersion: seen }); return; }
     await idb.set(seenKey(userId), { version: row.version });
+    await idb.set(K_DOC, { userId, version: row.version, nonce: row.nonce, ciphertext: row.ciphertext } satisfies CachedDoc);
     set({ status: "ready", doc, version: row.version, lastSeenVersion: row.version });
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
       if (seen > 0) { set({ status: "rolled_back", doc: state.doc, version: 0, lastSeenVersion: seen }); return; }
       set({ status: "ready", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 });
       return;
+    }
+    // PETTY-438: no connection and nothing loaded yet: the copy this device kept, if it is the newest it saw, still says
+    // whom this person confirmed and which keys they accepted. A browser without one opens only keys its user wrapped.
+    if (e instanceof NetworkError && state.status === "idle") {
+      const c = await idb.get<CachedDoc>(K_DOC);
+      if (c && c.userId === userId && c.version >= seen) {
+        const doc = UserDoc.parse(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(c.nonce), ciphertext: fromB64(c.ciphertext) }))));
+        set({ status: "ready", doc, version: c.version, lastSeenVersion: seen });
+      }
     }
     throw e;
   }
@@ -110,6 +147,7 @@ async function save(mutate: (doc: UserDocT) => UserDocT): Promise<void> {
     try {
       const r = await api<{ version: number }>("PUT", "/me/doc", { base_version: state.version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
       await idb.set(seenKey(identity.record_id), { version: r.version });
+      await idb.set(K_DOC, { userId: identity.record_id, version: r.version, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) } satisfies CachedDoc);
       set({ status: "ready", doc: next, version: r.version, lastSeenVersion: r.version });
       return;
     } catch (e) {
@@ -205,14 +243,19 @@ export async function updateTrustedTokens(change: (tokens: readonly TrustedToken
 export function acceptedKeyVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_keys?.[drawerId] ?? null; }
 /** The newest document version of this drawer that this person opened (PETTY-403), or null before the first. */
 export function acceptedDocVersion(drawerId: string, doc: UserDocT = state.doc): number | null { return doc.drawer_docs?.[drawerId] ?? null; }
+/** The fingerprint of the key this person accepted for this drawer at this key version (PETTY-438), or null when none is remembered. */
+export function acceptedKeyFingerprint(drawerId: string, keyVersion: number, doc: UserDocT = state.doc): string | null { return doc.drawer_key_fps?.[drawerId]?.[String(keyVersion)] ?? null; }
 function raised(seen: Readonly<Record<string, number>> | undefined, next: ReadonlyMap<string, number>): Record<string, number> | undefined {
   const out = { ...seen };
   for (const [id, v] of next) if (v > (out[id] ?? 0)) out[id] = v;
   return Object.keys(out).length ? out : undefined;
 }
-/** Remembers newly accepted key versions and opened document versions, saved once. Never lowers one. Skipped while the document is rolled back. */
-export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, docs: ReadonlyMap<string, number>): Promise<void> {
-  const higher = [...keys].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0)) || [...docs].some(([id, v]) => v > (acceptedDocVersion(id) ?? 0));
+/**
+ * Remembers newly accepted key versions and opened document versions, saved once. Never lowers one. Skipped while the document is rolled back.
+ * PETTY-438: `fps` holds the fingerprint of each accepted key that has none yet; one already remembered is never replaced.
+ */
+export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, docs: ReadonlyMap<string, number>, fps: ReadonlyMap<string, { readonly version: number; readonly fp: string }> = new Map()): Promise<void> {
+  const higher = [...keys].some(([id, v]) => v > (acceptedKeyVersion(id) ?? 0)) || [...docs].some(([id, v]) => v > (acceptedDocVersion(id) ?? 0)) || [...fps].some(([id, k]) => acceptedKeyFingerprint(id, k.version) === null);
   if (pinsBlocked() || !higher) return;
   await save((doc) => {
     const next = { ...doc };
@@ -220,6 +263,9 @@ export async function recordDrawerVersions(keys: ReadonlyMap<string, number>, do
     if (k) next.drawer_keys = k;
     const d = raised(doc.drawer_docs, docs);
     if (d) next.drawer_docs = d;
+    const f = { ...doc.drawer_key_fps };
+    for (const [id, key] of fps) if (acceptedKeyFingerprint(id, key.version, doc) === null) f[id] = { ...f[id], [String(key.version)]: key.fp };
+    if (Object.keys(f).length) next.drawer_key_fps = f;
     return next;
   });
 }

@@ -6,8 +6,8 @@
 import { createDrawerKey, fromB64, reseal, toB64, unwrapDrawerKey, wrapDrawerKey, type DrawerKeyWrapV1, type RecordIdentity } from "@petty/crypto";
 import type { DrawerKeyWrap, Member } from "@petty/protocol";
 import { api } from "./api.js";
-import { expectedSender, getDrawers, loadAll, patchRotation, type DrawerView } from "./drawers.js";
-import { getPin, pinStatus } from "./pins.js";
+import { getDrawers, loadAll, openWrap, patchRotation, type DrawerView } from "./drawers.js";
+import { getPin, pinStatus, pinsReady } from "./pins.js";
 import { getAuth } from "./session.js";
 
 const BATCH = 200;
@@ -30,11 +30,18 @@ function pinnedEcdh(m: Member): string {
   return p.ecdh;
 }
 
+/** PETTY-438: a drawer is re-sealed only under a key that I wrapped, or that a member I confirmed wrapped, and only while my user document is in place. */
+function wrappedByConfirmed(wrap: DrawerKeyWrap, meId: string): boolean {
+  if (!pinsReady()) return false;
+  return wrap.sender_id === meId || (!!wrap.sender_id && !!getPin(wrap.sender_id)?.confirmed_at);
+}
+
 /** Step 1 + 2: new key generation, wraps for everyone still in, publish. Then the batches. */
 export async function rotateDrawer(id: string): Promise<void> {
   const a = me();
   const view = getDrawers().drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
+  if (!pinsReady()) throw new Error("PinsRolledBack"); // PETTY-438: no rotation while the user document is missing, rolled back or not loaded
   const toVersion = view.summary.key_version + 1;
   const sender = { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh };
   const { selfWrap } = await createDrawerKey(sender, id, toVersion);
@@ -53,21 +60,26 @@ export async function continueRotation(id: string): Promise<void> {
   const a = me();
   const view = getDrawers().drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
+  // PETTY-438: nothing is re-sealed, and nothing is asked for, unless the new key came from me or from a member I confirmed
+  const current = view.wraps.find((w) => w.key_version === view.summary.key_version);
+  if (!current || !wrappedByConfirmed(current, a.me.id)) throw new KeyNotConfirmed(current?.sender_id ?? "");
   const status = await api<{ key_version: number; pending_entries: number; document_pending: boolean; photo_pending: boolean; completed: boolean }>("GET", `/drawers/${id}/rotation`);
   if (status.completed) { patchRotation(id, null); return; }
   const toVersion = status.key_version;
-  const newKey = view.key; // loadAll unwrapped the current (new) version
+  if (toVersion !== current.key_version) throw new Error("rotation moved on"); // only to the key version just checked; the next load takes a newer one
+  const opened = await openWrap(id, toVersion, current, view.members); // the key of that very wrap, not one opened earlier
+  if ("error" in opened) throw new KeyNotConfirmed(current.sender_id ?? "");
+  const newKey = opened.key;
   const oldKeys = new Map<number, CryptoKey>();
   const oldKeyFor = async (version: number): Promise<CryptoKey> => {
     const cached = oldKeys.get(version);
     if (cached) return cached;
     const wrap = view.wraps.find((w) => w.key_version === version);
     if (!wrap) throw new Error(`no wrap for key version ${version}`);
-    const sender = await expectedSender(wrap, view.members);
-    if ("error" in sender) throw new KeyNotConfirmed(wrap.sender_id ?? "");
-    const k = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: version, senderEcdhPublicB64: sender.pub });
-    oldKeys.set(version, k);
-    return k;
+    const old = await openWrap(id, version, wrap, view.members);
+    if ("error" in old) throw new KeyNotConfirmed(wrap.sender_id ?? "");
+    oldKeys.set(version, old.key);
+    return old.key;
   };
   const exp = await api<{ document: { author_id: string; key_version: number; nonce: string; ciphertext: string; schema_version: number }; photo: { author_id: string; key_version: number; nonce: string; ciphertext: string } | null; entries: Array<{ id: string; line_id: string; author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }> }>("GET", `/drawers/${id}/export`);
   const pending = exp.entries.filter((e) => e.key_version < toVersion);

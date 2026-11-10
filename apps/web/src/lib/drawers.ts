@@ -16,16 +16,16 @@ import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, 
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
-import { acceptedDocVersion, acceptedKeyVersion, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, recordDrawerVersions, usePins } from "./pins.js";
+import { acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, drawersNeedUserDoc, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, pinsReady, recordDrawerVersions, startUserDoc, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
 import { custodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
-import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/crypto";
+import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, toHex, zero } from "@petty/crypto";
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -133,18 +133,21 @@ const entryIdentity = (r: EntryRow): RecordIdentity =>
  * so a member it added could be the server itself, and this device would then write, and re-seal the
  * whole drawer, under a key the server knows. Nothing is pinned here: pins come from the member list
  * and from the invite and accept steps.
+ *
+ * PETTY-438: the same holds at every key version, the first one included. A key that another person wrapped is
+ * taken only when I confirmed their safety number, or when it is the key I already accepted for this drawer: the
+ * version my user document lists, with the fingerprint it keeps (`openWrap` compares it). While that document is
+ * missing, rolled back or not loaded, only a key I wrapped myself is taken.
  */
 export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Member[]): Promise<{ pub: string } | { error: DrawerError }> {
   const a = me();
   if (wrap.sender_id === a.me.id) return { pub: a.keys.pub.ecdh };
+  if (!pinsReady()) return { error: "pins_blocked" };
   if (!wrap.sender_id) return { error: "sender_unknown" };
   const pin = getPin(wrap.sender_id);
-  const accepted = acceptedKeyVersion(wrap.drawer_id);
-  if (accepted !== null && wrap.key_version > accepted) {
-    if (!pin) return { error: "sender_unknown" };
-    if (!pin.confirmed_at) return { error: "sender_unconfirmed" };
-    return { pub: pin.ecdh };
-  }
+  if (pin?.confirmed_at) return { pub: pin.ecdh };
+  const accepted = acceptedKeyFingerprint(wrap.drawer_id, wrap.key_version) !== null || acceptedKeyVersion(wrap.drawer_id) === wrap.key_version;
+  if (!accepted) return { error: pin ? "sender_unconfirmed" : "sender_unknown" };
   if (pin) return { pub: pin.ecdh };
   const m = members.find((x) => x.user_id === wrap.sender_id);
   if (m?.keys) return { pub: m.keys.ecdh_pub };
@@ -157,16 +160,39 @@ export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Memb
   return { error: "sender_unknown" };
 }
 
-async function unwrapVersion(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], members: readonly Member[], version: number): Promise<{ key: CryptoKey } | { error: DrawerError }> {
-  const wrap = wraps.find((w) => w.drawer_id === d.id && w.key_version === version);
-  if (!wrap) return { error: "no_key" };
+/**
+ * PETTY-438: a fingerprint of a drawer key, for the sealed user document: HKDF over the key, bound to the drawer and
+ * the key version. The key bytes are in memory for this call only; nothing of them is stored.
+ */
+async function keyFingerprint(extractable: CryptoKey, drawerId: string, version: number): Promise<string> {
+  const raw = new Uint8Array(await crypto.subtle.exportKey("raw", extractable));
+  try { return toHex(await hkdfDerive(raw, utf8(drawerId), utf8(`petty/drawer-key-fingerprint/v1/${version}`), 32)); } finally { zero(raw); }
+}
+
+/**
+ * Opens one of my wraps as the key of this drawer at this version, under the rules of `expectedSender`. PETTY-438:
+ * and refuses a key other than the one my user document remembers for that version. `fp` is the key's fingerprint.
+ * Every place that takes a drawer key goes through here.
+ */
+export async function openWrap(drawerId: string, version: number, wrap: DrawerKeyWrap, members: readonly Member[], opts: { extractable?: boolean } = {}): Promise<{ key: CryptoKey; fp: string } | { error: DrawerError }> {
   const sender = await expectedSender(wrap, members);
   if ("error" in sender) return sender;
+  const expected = { drawer_id: drawerId, key_version: version, senderEcdhPublicB64: sender.pub };
   try {
-    return { key: await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, { drawer_id: d.id, key_version: version, senderEcdhPublicB64: sender.pub }) };
+    const extractable = await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, expected, { extractable: true });
+    const fp = await keyFingerprint(extractable, drawerId, version);
+    const known = acceptedKeyFingerprint(drawerId, version);
+    if (known !== null && known !== fp) return { error: "key_replaced" };
+    return { key: opts.extractable ? extractable : await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, expected), fp };
   } catch (e) {
     return { error: e instanceof PettyCryptoError && e.code === "SenderKeyMismatch" ? "sender_key_changed" : "unwrap_failed" };
   }
+}
+
+async function unwrapVersion(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], members: readonly Member[], version: number): Promise<{ key: CryptoKey; fp: string } | { error: DrawerError }> {
+  const wrap = wraps.find((w) => w.drawer_id === d.id && w.key_version === version);
+  if (!wrap) return { error: "no_key" };
+  return openWrap(d.id, version, wrap, members);
 }
 
 /** Keys by version for one drawer: the current one plus, during a rotation, older ones on demand. */
@@ -184,6 +210,8 @@ async function keyResolver(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], me
 
 function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
+  // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
+  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
   if (e instanceof LedgerError) return "bad_document";
   return "decrypt_failed";
 }
@@ -360,6 +388,7 @@ async function loadOnce(): Promise<void> {
     boot = cached.boot;
     fromCache = true;
   }
+  if (boot.drawers.length) drawersNeedUserDoc(); // PETTY-438: before anything is pinned on first sight
   const outbox = await outboxList(meId);
   const everyone = new Map<string, Member>();
   for (const list of Object.values(boot.members)) for (const m of list) everyone.set(m.user_id, m);
@@ -369,6 +398,7 @@ async function loadOnce(): Promise<void> {
   const toRotate: string[] = [];
   const toResume: string[] = [];
   const opened = new Map<string, number>(); // PETTY-398: key versions to remember as accepted
+  const fps = new Map<string, { version: number; fp: string }>(); // PETTY-438: their fingerprints, where none is remembered yet
   const docVersions = new Map<string, number>(); // PETTY-403: document versions to remember as opened
   for (const d of boot.drawers) {
     const members = boot.members[d.id] ?? [];
@@ -387,6 +417,7 @@ async function loadOnce(): Promise<void> {
     const k = await unwrapVersion(d, wraps, members, d.key_version);
     if ("error" in k) { drawers.set(d.id, { ...base, error: k.error }); continue; }
     if (accepted === null || d.key_version > accepted) opened.set(d.id, d.key_version);
+    if (acceptedKeyFingerprint(d.id, d.key_version) === null) fps.set(d.id, { version: d.key_version, fp: k.fp });
     try {
       const row = boot.documents[d.id];
       if (!row) throw new Error("no document");
@@ -398,7 +429,8 @@ async function loadOnce(): Promise<void> {
       const chains = await checkChains(d.id, doc, byLine, new Set(rows.map((r) => r.line_id)));
       const merged = await mergePending(d, k.key, keyFor, doc, byLine, outbox.filter((o) => o.drawer_id === d.id));
       drawers.set(d.id, { ...base, key: k.key, doc: merged.doc, entries: merged.entries, chains, entryProblems: problems, pending: merged.pending, pendingOps: merged.pendingOps });
-      if (d.role !== "read" && !fromCache) {
+      // PETTY-438: no rotation starts or goes on while the user document is missing, rolled back or not loaded
+      if (d.role !== "read" && !fromCache && pinsReady()) {
         if (d.rotation_needed) toRotate.push(d.id);
         else if (row.key_version < d.key_version || rows.some((e) => e.key_version < d.key_version)) toResume.push(d.id);
       }
@@ -406,7 +438,7 @@ async function loadOnce(): Promise<void> {
       drawers.set(d.id, { ...base, key: k.key, error: errorCode(e) });
     }
   }
-  if (opened.size || docVersions.size) await recordDrawerVersions(opened, docVersions).catch(() => undefined); // offline: remembered at the next load
+  if (opened.size || docVersions.size || fps.size) await recordDrawerVersions(opened, docVersions, fps).catch(() => undefined); // offline: remembered at the next load
   const oldest = outbox.length ? Math.max(...outbox.map((o) => Date.now() - Date.parse(o.created_at))) : null;
   // PETTY-245: what was created or deleted here while this ran stays as it is now
   const order = boot.drawers.map((d) => d.id);
@@ -476,11 +508,10 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
   if (!pin || pin.ecdh !== invitee.keys.ecdh_pub) throw new Error("KeyNotConfirmed");
   const wrap = view.wraps.find((w) => w.key_version === view.summary.key_version);
   if (!wrap) throw new Error("no wrap");
-  const sender = await expectedSender(wrap, view.members);
-  if ("error" in sender) throw new Error(sender.error);
-  const extractable = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: view.summary.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
+  const opened = await openWrap(id, view.summary.key_version, wrap, view.members, { extractable: true });
+  if ("error" in opened) throw new Error(opened.error);
   const { wrapDrawerKey } = await import("@petty/crypto");
-  const forInvitee = await wrapDrawerKey(extractable, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
+  const forInvitee = await wrapDrawerKey(opened.key, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
   const answer = InviteAnswer.parse(await api<unknown>("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee }));
   return { mailed: answer.mailed !== false };
 }
@@ -522,6 +553,7 @@ export async function createDrawer(name: string, tags: readonly string[] = []): 
   const doc = applyOps(newDocument(name), [{ type: "set_tags", tags }], { lineHasEntries: () => false });
   const summary: DrawerSummary = { id, owner_id: a.me.id, role: "owner", version: 1, key_version: 1, last_write_at: new Date().toISOString(), last_verified_at: null, rotation_needed: false, has_photo: false };
   const sealed = await sealDocument(key, docIdentity(summary, a.me.id), doc);
+  await startUserDoc(); // PETTY-438: an account with a drawer has a user document
   const made = await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
   const drawers = new Map(state.drawers);
   drawers.set(id, { summary: made, members: [{ user_id: a.me.id, display_name: a.me.display_name, role: "owner", keys: a.me.keys }], key, doc, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: null, docAuthor: a.me.id, wraps: [{ ...selfWrap, sender_id: a.me.id }], keyChanged: [], rotation: null, pending: new Set(), pendingOps: 0 });

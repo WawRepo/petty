@@ -10,6 +10,7 @@ import { assertDocumentShape, type DrawerDocument, type Line } from "@petty/ledg
 import { ExportPayload, z, type DrawerSummary, type ExportDrawer, type ExportPayload as ExportPayloadT } from "@petty/protocol";
 import { api } from "./api.js";
 import { appendEntry, getDrawers, loadAll, setPhoto } from "./drawers.js";
+import { startUserDoc } from "./pins.js";
 import { getAuth } from "./session.js";
 
 function me() { const a = getAuth(); if (a.status !== "unlocked") throw new Error("vault locked"); return a; }
@@ -31,15 +32,13 @@ export async function buildExport(): Promise<{ payload: ExportPayloadT; skipped:
     const keyFor = async (v: number): Promise<CryptoKey> => {
       const k = keys.get(v);
       if (k) return k;
-      const { unwrapDrawerKey } = await import("@petty/crypto");
-      const { expectedSender } = await import("./drawers.js");
+      const { openWrap } = await import("./drawers.js");
       const wrap = view.wraps.find((w) => w.key_version === v);
       if (!wrap) throw new Error("no key for version");
-      const sender = await expectedSender(wrap, view.members);
-      if ("error" in sender) throw new Error(sender.error);
-      const uk = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: v, senderEcdhPublicB64: sender.pub });
-      keys.set(v, uk);
-      return uk;
+      const opened = await openWrap(id, v, wrap, view.members);
+      if ("error" in opened) throw new Error(opened.error);
+      keys.set(v, opened.key);
+      return opened.key;
     };
     const d = row.document;
     const doc = await openDocument(await keyFor(d.key_version), { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: d.author_id, key_version: d.key_version, schema_version: d.schema_version }, { nonce: fromB64(d.nonce), ciphertext: fromB64(d.ciphertext) });
@@ -114,6 +113,7 @@ export async function importPayload(payload: ExportPayloadT, onProgress: (p: Imp
     const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
     const importedDoc: DrawerDocument = { ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: `${v.comment ? v.comment + " · " : ""}[imported: ${ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?"}]` })) };
     const sealed = await sealDocument(key, { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: 1 }, importedDoc);
+    await startUserDoc(); // PETTY-438: an account with a drawer has a user document
     await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
     await loadAll();
     const byLine = new Map<string, typeof ad.entries>();

@@ -190,9 +190,11 @@
     "degradedReason": {
       "no_key": "Aún no tienes la clave de este cajón. Pide a su propietario que vuelva a compartirlo.",
       "sender_unknown": "La clave la compartió alguien a quien no habías visto antes.",
-      "sender_unconfirmed": "Este cajón tiene una clave nueva de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
+      "sender_unconfirmed": "La clave de este cajón viene de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
+      "pins_blocked": "La clave de este cajón te la dio otra persona, y Petty no puede comprobar ahora quién es: tu lista de claves de confianza falta en el servidor, es más antigua que antes o no se cargó. Busca el aviso en la pantalla de inicio o inténtalo de nuevo cuando tengas conexión.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "key_replaced": "El servidor envió una clave de este cajón distinta de la que ya usabas, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
       "doc_rolled_back": "El servidor envió una versión de este cajón más antigua que la que ya abriste, así que Petty no lo abrió. Faltarían los elementos añadidos desde entonces. Puede que alguien haya alterado el servidor.",
       "unwrap_failed": "No se pudo abrir este cajón en este dispositivo. Pide a su propietario que vuelva a compartirlo.",
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
@@ -728,6 +730,8 @@
   "pins": {
     "rolledBackTitle": "El servidor tiene una copia más antigua de tus claves de confianza",
     "rolledBack": "Este dispositivo vio por última vez la versión {seen} de tu lista de claves de confianza; ahora el servidor tiene la versión {server}. Puede ser una copia de seguridad restaurada, o alguien que intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
+    "missingTitle": "El servidor no tiene tu lista de claves de confianza",
+    "missing": "Tu cuenta tiene cajones, así que el servidor debería tener esta lista. Puede faltar porque tu cuenta es más antigua que la lista, porque se restauró una copia de seguridad o porque alguien intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, Petty solo abre los cajones cuya clave creaste tú y no podrás compartir cajones. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse.",
     "startOver": "Empezar una lista nueva de claves de confianza"
   },
   "privacy": {

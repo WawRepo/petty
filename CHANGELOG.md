@@ -8,6 +8,25 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The web app takes a drawer key that someone else made only when you confirmed that person's safety
+  number. This now holds for the first key of a drawer too, not only for a key replaced after a member
+  left. Accepting an invitation confirms the inviter, so sharing works as before, and a drawer you
+  already opened stays open. If a drawer says its key comes from a member you have not confirmed,
+  compare their safety number in Members and choose "Numbers match".
+- Your list of trusted keys now keeps a fingerprint of each drawer key you accepted. The app refuses
+  another key at the same key version. After a member leaves, it re-seals a drawer only under a key
+  that you or a member you confirmed made.
+- While your list of trusted keys is missing on the server, older than this browser remembers, or
+  cannot be loaded, the app opens only drawers whose key you made yourself and replaces no drawer key.
+  The other drawers say why they stay closed.
+- An account that has drawers always has this list, so the app now also warns when the server has
+  none on a browser that never used the account. An account that last opened the web app before
+  1.5.27 may see this warning once: choose "Start a new list of trusted keys", then confirm the safety
+  number of each person who shared a drawer with you. Drawers you made yourself open at once.
+- With no connection, the app uses the copy of that list which this browser kept, so drawers that
+  others shared still open after a reload.
+
 ## [1.5.32] — 2026-11-04
 
 ### Changed
