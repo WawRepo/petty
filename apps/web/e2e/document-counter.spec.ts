@@ -207,6 +207,22 @@ test("PETTY-422: two members who save at the same time, and a tool that edits th
     await expect(page.getByTestId("drawer-attention")).toHaveCount(0);
   }
   await expect.poll(async () => (await readUserDoc(s.bob))?.doc.drawer_revs?.[s.id]).toBe(6);
+
+  // deleting an item writes the document too: the next counter, and nobody is warned
+  await s.pageA.goto(`/drawers/${s.id}`);
+  await rowNamed(s.pageA, "Coins").click();
+  await s.pageA.getByRole("button", { name: "Options for Coins" }).click();
+  await s.pageA.getByRole("button", { name: "Delete item", exact: true }).click();
+  await s.pageA.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(rowNamed(s.pageA, "Coins")).toBeHidden();
+  const afterDelete = await readDrawerDoc(s.alice, s.id);
+  expect(afterDelete).toMatchObject({ schemaVersion: 2, doc: { rev: 7, name: "Renamed" } });
+  expect(afterDelete.doc.lines.map((l) => l.name)).toEqual(["Cash"]);
+  await s.pageB.goto(`/drawers/${s.id}`);
+  await expect(rowNamed(s.pageB, "Cash")).toBeVisible();
+  await expect(rowNamed(s.pageB, "Coins")).toBeHidden();
+  await expect(s.pageB.getByRole("alert")).toHaveCount(0);
+  await expect.poll(async () => (await readUserDoc(s.bob))?.doc.drawer_revs?.[s.id]).toBe(7);
   await s.ctxA.close(); await s.ctxB.close();
 });
 
@@ -282,10 +298,11 @@ test("PETTY-422: a drawer from before the counter opens as before, gets its coun
 
   // the first save: format 2, the counter at 1, the content kept
   await rename(page, "Tin");
-  await expect(page.getByRole("heading", { name: "Tin" })).toBeVisible();
+  // exact: "Old tin" holds "Tin" too, and would match before the save is through
+  await expect(page.getByRole("heading", { name: "Tin", exact: true })).toBeVisible();
   expect(await readDrawerDoc(user, id)).toEqual({ version: 2, keyVersion: 1, schemaVersion: 2, doc: { ...plain, name: "Tin", rev: 1 } });
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Tin" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tin", exact: true })).toBeVisible();
   await expect.poll(async () => (await readUserDoc(user))?.doc.drawer_revs?.[id]).toBe(1);
 
   // the copy from before the counter comes back under a newer number
