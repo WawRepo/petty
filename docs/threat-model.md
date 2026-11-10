@@ -101,18 +101,33 @@ The server hands out public keys, so it could substitute its own. Petty makes th
 - Your **own** public keys come from your vault (its additional authenticated data binds them), never
   from the server's copy. If the two differ, the vault does not open.
 - Keys are **pinned on first use**; if a contact's key changes, the app warns and refuses further
-  wraps to them until the new number is confirmed.
+  wraps to them until the new number is confirmed. A pin that you did not confirm shows a later
+  change of key; it opens no drawer.
 - The server also lists a drawer's **members**, so a member it adds could be the server itself. A
-  **new drawer key** (after someone leaves) is therefore given only to members whose safety number you
-  confirmed, and taken only from yourself or from such a member. Your sealed user document remembers
-  the newest key of each drawer you opened, so the server can neither push a key of its own nor go back
-  to an older key that a removed member may still hold. The first key of a drawer is still trusted on
-  first sight.
+  **drawer key that someone else wrapped** is therefore taken only when you confirmed that person's
+  safety number (PETTY-438). That holds for the first key of a drawer, where accepting the invitation
+  confirms the inviter, and for every later one. A **new drawer key** (after someone leaves) is given
+  only to members whose safety number you confirmed, and a drawer is re-sealed only under a key that
+  you or such a member wrapped.
+- Your sealed user document remembers, for each drawer, the newest key version you accepted and a
+  fingerprint of every key you accepted. So the server can neither push a key of its own, nor put
+  another key in the place of one you accepted, nor go back to an older key that a removed member may
+  still hold. A key you accepted stays open without a new confirmation. A user document from before
+  the fingerprints (or one that an older copy of the web app saved, which drops them) lists only the
+  version: the app takes the key at that version once more as it did before, remembers its
+  fingerprint, and re-seals nothing under it unless you or a confirmed member wrapped it.
 - The pins live in that sealed user document, so a server could try to drop it or serve an older
   copy. Each browser remembers the newest version it saw, also across a sign-out or an expired
-  session (PETTY-402), and warns loudly when the server has none or an older one; until you
-  acknowledge it, nothing is pinned on first sight and no key is wrapped. A browser that never used
-  the account has nothing to compare with.
+  session (PETTY-402), and warns loudly when the server has none or an older one. An account with
+  drawers always has this document (the app starts it before it makes a drawer, and accepting an
+  invitation saves the inviter's pin), so "none" also warns on a browser that never used the account.
+  Until you acknowledge the warning, and whenever the document cannot be loaded, the app opens only
+  drawer keys that you wrapped yourself, pins nothing on first sight, wraps no key and starts or
+  continues no key rotation. When you start a new list, the drawers that others shared open again
+  after you confirm their safety number. A new list remembers no key versions yet, so for a drawer
+  whose keys you made yourself it cannot tell an older key from the newest. With no connection, the
+  app uses the sealed copy that this device kept from its last load. A browser that never used the
+  account has no older version to compare with: it takes the copy the server gives it.
 
 ## Integrity
 

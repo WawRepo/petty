@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { AccessToken, type AccessToken as AccessTokenT } from "@petty/protocol";
-import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
+import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
 import { custodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
-import { expectedSender, getDrawers, type DrawerView, loadIfIdle } from "./drawers.js";
+import { getDrawers, openWrap, type DrawerView, loadIfIdle } from "./drawers.js";
 import { getAuth } from "./session.js";
 
 /**
@@ -38,14 +38,9 @@ async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId
     if (scope && !scope.includes(v.summary.id)) continue;
     const wrap = [...v.wraps].sort((a, b) => b.key_version - a.key_version)[0];
     if (!wrap) continue;
-    const sender = await expectedSender(wrap, v.members);
-    if (!("pub" in sender)) continue;
-    try {
-      const key = await unwrapDrawerKey(wrap, me.keys.ecdhPrivate, { drawer_id: v.summary.id, key_version: wrap.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
-      out.push({ drawerId: v.summary.id, keyVersion: wrap.key_version, key });
-    } catch {
-      // a drawer whose wrap this device cannot open simply stays out of the bundle
-    }
+    // a drawer whose wrap this device cannot open, or does not take (PETTY-438), simply stays out of the bundle
+    const opened = await openWrap(v.summary.id, wrap.key_version, wrap, v.members, { extractable: true });
+    if ("key" in opened) out.push({ drawerId: v.summary.id, keyVersion: wrap.key_version, key: opened.key });
   }
   return out;
 }

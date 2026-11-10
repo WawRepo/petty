@@ -190,9 +190,11 @@
     "degradedReason": {
       "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
-      "sender_unconfirmed": "Ce tiroir a une nouvelle clé d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
+      "sender_unconfirmed": "La clé de ce tiroir vient d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
+      "pins_blocked": "La clé de ce tiroir vous a été donnée par une autre personne, et Petty ne peut pas vérifier cette personne pour l’instant : votre liste de clés de confiance manque sur le serveur, est plus ancienne qu’avant ou ne s’est pas chargée. Cherchez l’avertissement sur l’écran d’accueil, ou réessayez une fois en ligne.",
       "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "key_replaced": "Le serveur a envoyé pour ce tiroir une autre clé que celle que vous utilisiez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
       "doc_rolled_back": "Le serveur a envoyé une version de ce tiroir plus ancienne que celle que vous aviez déjà ouverte, donc Petty ne l’a pas ouvert. Les éléments ajoutés depuis manqueraient. Quelqu’un a peut-être modifié le serveur.",
       "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
@@ -728,6 +730,8 @@
   "pins": {
     "rolledBackTitle": "Le serveur a une copie plus ancienne de vos clés de confiance",
     "rolledBack": "Sur cet appareil, votre liste de clés de confiance était en version {seen} ; le serveur a maintenant la version {server}. Il peut s’agir d’une sauvegarde restaurée, ou de quelqu’un qui tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "missingTitle": "Le serveur n’a pas votre liste de clés de confiance",
+    "missing": "Votre compte a des tiroirs, le serveur devrait donc avoir cette liste. Elle peut manquer parce que votre compte est plus ancien que la liste, parce qu’une sauvegarde a été restaurée, ou parce que quelqu’un tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, Petty n’ouvre que les tiroirs dont vous avez créé la clé, et vous ne pouvez pas partager de tiroirs. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau.",
     "startOver": "Commencer une nouvelle liste"
   },
   "privacy": {

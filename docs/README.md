@@ -58,8 +58,10 @@ decrypt, verify every signature and the hash links, fold the balance.
 **4. Sharing.** You compare the member's safety number out of band, pin their
 public keys, unwrap the drawer key and re-wrap it with their public key. On
 accept the server stores their wrap; their device unwraps it with their private
-key and reads and writes exactly as you do. Removing a member: a writer makes a
-new drawer key, wraps it for everyone left and re-encrypts the old rows.
+key and reads and writes exactly as you do. It takes a key only from someone
+whose safety number they confirmed; accepting the invitation does that for you.
+Removing a member: a writer makes a new drawer key, wraps it for everyone left
+whom they confirmed and re-encrypts the old rows.
 
 **5. New device.** Login → the vault arrives → passphrase → the same private keys.
 Keys are never regenerated. Lost passphrase → the recovery code opens the
