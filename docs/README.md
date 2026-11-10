@@ -99,7 +99,8 @@ the tool sees it next time it starts — no new token needed.
 
 **4. Trust, revoke, delete.** Others verify a token-signed entry through the
 account-signed delegation, accepted only for entries received before the token
-expired or was revoked. Revoke stops the id at once; account delete erases the
-bundle and the wraps but keeps the public delegation so past entries still verify.
+expired or was revoked. Revoke stops the id at once and erases the bundle and the
+wraps; account delete does the same for every token, and an expired token loses
+them when you next make one. The public delegation stays, so past entries still verify.
 A token can never open the vault, the account, sharing, admin or export, or make
 another token — the server refuses every route off its allow-list.

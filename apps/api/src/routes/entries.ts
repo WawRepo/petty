@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ENTRY_MAX_CIPHERTEXT, EntriesPage, PostEntryBody, PostEntryResponse } from "@petty/protocol";
+import { ENTRY_MAX_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, EntriesPage, PostEntryBody, PostEntryResponse } from "@petty/protocol";
 import { z } from "zod";
 import { apiPool } from "../db.js";
 import { fromB64 } from "../lib/bytes.js";
@@ -38,6 +38,9 @@ export async function entryRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-243: after the replay check, so an entry already stored always answers as a replay.
     const ciphertext = fromB64(body.ciphertext);
     if (ciphertext.length > ENTRY_MAX_CIPHERTEXT) throw tooLarge("EntryTooLarge", "entry over the size limit", { drawer_id: drawerId, max_bytes: ENTRY_MAX_CIPHERTEXT });
+    // PETTY-442: a sealed entry is padded to 256 bytes, so no client writes a smaller one. The quota counts
+    // ciphertext bytes; with this floor every entry costs storage, and entries cannot be deleted one by one.
+    if (ciphertext.length < ENTRY_MIN_CIPHERTEXT) throw badRequest("EntryTooSmall", "entry under the size every client writes", { drawer_id: drawerId, min_bytes: ENTRY_MIN_CIPHERTEXT });
     await assertQuota(apiPool, drawer.owner_id, ciphertext.length);
 
     const row = await withTx(apiPool, async (db) => {

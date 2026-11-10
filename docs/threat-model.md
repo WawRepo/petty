@@ -138,6 +138,11 @@ When a member is removed or leaves, a remaining member's **client** makes a new 
 for everyone left and re-encrypts the drawer in resumable, idempotent batches; the server only tracks
 progress through the plaintext `key_version`. Rotation protects **future** content only.
 
+A batch replaces rows in place, and the server cannot tell a re-encrypted row from random bytes. So
+publishing the new key and every batch need a custody proof from the member whose client sends them
+(see "Custody proofs"): a session without the vault key can neither start a rotation nor continue one.
+A rotation that one member began can be finished by another, each with a proof of their own key.
+
 ## Access tokens
 
 A token lets a tool on the owner's machine (for example the Claude Desktop add-on) read, and
@@ -148,9 +153,10 @@ sent later only if the owner wrapped it. A token has its own signing key, vouche
 key. With the write role it may add entries and replace a drawer's document; the server cannot see
 what changed inside the sealed document, so such a token can rename, retag, move or drop items, and
 the owner can restore an earlier version from the drawer's 30-day history. It **can never** touch the
-vault, the account, sharing, admin or export, or create another token — the server refuses every
-route not on its allow-list. Creating one requires the custody proof. Details
-and diagram: [README.md](README.md).
+vault, the account, sharing, admin or export, delete a line, rotate a drawer key, or create another
+token — the server refuses every route not on its allow-list. Creating one requires the custody proof.
+An account holds at most 50 live tokens; the sealed bundle and the wrapped drawer keys of a token
+that was revoked or has expired are erased on the server. Details and diagram: [README.md](README.md).
 
 ## Device login
 
@@ -179,10 +185,17 @@ relays the sealed blob once and deletes the request; it never sees the token.
 ## Custody proofs
 
 Calls that could destroy keys or data — replacing the vault, deleting the account, deleting a drawer,
-adding or removing a passkey, creating a token — require a server-issued challenge **signed with the
-account key**, in addition to the session (and the login password in local mode). The login password
+deleting a line (its entries go with it), publishing a new drawer key and every batch of the
+re-encryption that follows, adding or removing a passkey, creating a token — require a server-issued
+challenge **signed with the account key**, in addition to the session. Replacing the vault, changing
+passkeys and deleting the account also ask for the login password in local mode. There is one
+challenge per person; it is valid five minutes and works once. The login password
 can be reset from an email link; the vault key cannot be reset by anyone. Replaced vault blobs are kept
 30 days (an admin can put one back), and the owner is emailed on a password reset and a vault change.
+
+A proof shows that the caller holds the account key, not that what they send is good. A member with
+the write role and an open vault can delete a line, as before, and the server cannot check a
+re-encryption: it is as good as the app that runs it.
 
 ## What the server still learns
 

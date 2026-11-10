@@ -6,6 +6,7 @@
 import { createDrawerKey, fromB64, reseal, toB64, unwrapDrawerKey, wrapDrawerKey, type DrawerKeyWrapV1, type RecordIdentity } from "@petty/crypto";
 import type { DrawerKeyWrap, Member } from "@petty/protocol";
 import { api } from "./api.js";
+import { withCustodyProof } from "./custody.js";
 import { expectedSender, getDrawers, loadAll, patchRotation, type DrawerView } from "./drawers.js";
 import { getPin, pinStatus } from "./pins.js";
 import { getAuth } from "./session.js";
@@ -43,7 +44,7 @@ export async function rotateDrawer(id: string): Promise<void> {
   for (const m of view.members) {
     wraps.push({ user_id: m.user_id, wrap: await wrapDrawerKey(newKeyExtractable, sender, pinnedEcdh(m), id, toVersion) });
   }
-  await api("POST", `/drawers/${id}/rotation`, { to_version: toVersion, wraps });
+  await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("POST", `/drawers/${id}/rotation`, { to_version: toVersion, wraps, proof }));
   await loadAll(); // picks up the new key version and my new wrap
   await continueRotation(id);
 }
@@ -92,7 +93,7 @@ export async function continueRotation(id: string): Promise<void> {
       const r = await reseal(await oldKeyFor(p.key_version), newKey, { record_type: "photo", record_id: id, drawer_id: id, line_id: null, author_id: p.author_id, key_version: p.key_version, schema_version: 1 }, { nonce: fromB64(p.nonce), ciphertext: fromB64(p.ciphertext) }, toVersion);
       body["photo"] = { key_version: toVersion, schema_version: 1, nonce: toB64(r.sealed.nonce), ciphertext: toB64(r.sealed.ciphertext) };
     }
-    const s = await api<{ completed: boolean; pending_entries: number }>("PUT", `/drawers/${id}/rotation/batch`, body);
+    const s = await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api<{ completed: boolean; pending_entries: number }>("PUT", `/drawers/${id}/rotation/batch`, { ...body, proof }));
     patchRotation(id, s.completed ? null : { total, done: Math.min(total, i + BATCH) });
     if (s.completed) break;
   }
@@ -109,7 +110,7 @@ export async function continueRotation(id: string): Promise<void> {
       const r = await reseal(await oldKeyFor(p.key_version), newKey, { record_type: "photo", record_id: id, drawer_id: id, line_id: null, author_id: p.author_id, key_version: p.key_version, schema_version: 1 }, { nonce: fromB64(p.nonce), ciphertext: fromB64(p.ciphertext) }, toVersion);
       body["photo"] = { key_version: toVersion, schema_version: 1, nonce: toB64(r.sealed.nonce), ciphertext: toB64(r.sealed.ciphertext) };
     }
-    await api("PUT", `/drawers/${id}/rotation/batch`, body);
+    await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("PUT", `/drawers/${id}/rotation/batch`, { ...body, proof }));
     patchRotation(id, null);
   }
 }

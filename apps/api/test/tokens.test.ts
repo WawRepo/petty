@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fromB64, openDocument, openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
+import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
 import { buildApp } from "../src/app.js";
 import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
@@ -117,7 +118,7 @@ describe("access tokens (PETTY-164)", () => {
     const before = await open();
     expect((before.doc as { name: string }).name).toBe("Undo me");
 
-    const junk = { base_version: before.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(40))) };
+    const junk = { base_version: before.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))) };
     expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: true })).statusCode).toBe(403);
     expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: false })).statusCode).toBe(200);
     const broken = await open();

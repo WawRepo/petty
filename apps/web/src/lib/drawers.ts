@@ -18,7 +18,7 @@ import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
 import { acceptedDocVersion, acceptedKeyVersion, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, recordDrawerVersions, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
-import { custodyProof } from "./custody.js";
+import { custodyProof, withCustodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
 import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/crypto";
@@ -615,9 +615,9 @@ export async function deleteLine(id: string, lineId: string): Promise<void> {
     const next = applyOps(view.doc!, [{ type: "remove_line", line_id: lineId }], ctxFor(view));
     const sealed = await sealDocument(key, docIdentity(view.summary, a.me.id), next);
     try {
-      const r = await api<{ version: number; last_write_at: string; last_verified_at: string | null }>("POST", `/drawers/${id}/lines/${lineId}/delete`, {
-        document: { base_version: view.summary.version, key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false },
-      });
+      const document = { base_version: view.summary.version, key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false };
+      // PETTY-441: the line's entries go for good, so the server wants a custody proof, as for deleting a drawer
+      const r = await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api<{ version: number; last_write_at: string; last_verified_at: string | null }>("POST", `/drawers/${id}/lines/${lineId}/delete`, { document, proof }));
       const entries = new Map(view.entries); entries.delete(lineId);
       const chains = new Map(view.chains); chains.delete(lineId);
       await idb.del(headKey(id, lineId));

@@ -12,7 +12,69 @@ z.config({ jitless: true });
 export { z };
 
 export const uuid = z.string().uuid();
-export const b64 = z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/).max(4_000_000);
+const B64_CHARS = /^[A-Za-z0-9+/]*={0,2}$/;
+/**
+ * Base64 with no size of its own. For what the server ANSWERS with (the `Stored…` shapes and the rows):
+ * a value stored before the request sizes below existed keeps its length, and an answer must never fail
+ * on one. In a request it is only the `ciphertext` of an entry, a document or a photo, whose limit the
+ * route checks, because each has its own and answers 413 with it.
+ */
+export const b64 = z.string().regex(B64_CHARS).max(4_000_000);
+/** How many bytes a base64 string decodes to, the way `Buffer` and `atob` read it. A loop, not a pattern: its time must not depend on what was sent. */
+export function b64ByteLength(s: string): number {
+  let n = s.length;
+  while (n > 0 && s.charCodeAt(n - 1) === 61) n--; // "="
+  return Math.floor((n * 3) / 4);
+}
+/** Base64 of `min` to `max` bytes; one number means exactly that many. */
+export const b64Sized = (min: number, max: number = min) =>
+  z.string().max(4 * Math.ceil(max / 3)).regex(B64_CHARS).refine((s) => { const n = b64ByteLength(s); return n >= min && n <= max; }, { message: "base64 of the wrong size" });
+
+/**
+ * PETTY-442: the size, in bytes, of every base64 field a request may carry. Each one comes from the
+ * code that makes the value; the compatibility corpus and the fixtures are checked against them
+ * (test/limits.test.ts). Exact where Petty's own code or the algorithm fixes the length; a range where
+ * a browser's DER writer or an older client decides it.
+ */
+export const FIELD_BYTES = {
+  /** The AES-GCM nonce of every seal: @petty/crypto seal.ts (NONCE_BYTES), vault.ts (wrapPrivate), pat.ts (sealPatBundle). */
+  nonce: [12, 12],
+  /** Made as 16 bytes (vault KDF) or 32 (drawer-key wrap, passkey PRF input); @petty/crypto kdf.ts (assertSalt) opens 16 to 64. */
+  salt: [16, 64],
+  /** SPKI of a P-256 key: 91 bytes from Chromium, Firefox, WebKit and Node (keys.ts). The room is for another DER spelling of the same key. */
+  publicKey: [48, 128],
+  /** A 32-byte drawer key under AES-KW, which adds 8 (RFC 3394): drawerKey.ts (wrapDrawerKey). */
+  wrappedDrawerKey: [40, 40],
+  /** PKCS#8 of a P-256 private key under AES-GCM: 138 + 16 = 154 bytes from the same four engines (vault.ts, wrapPrivate). */
+  wrappedPrivateKey: [64, 256],
+  /** ECDSA P-256 as WebCrypto writes it, r then s: custody.ts, delegation.ts. */
+  signature: [64, 64],
+  /** The custody challenge: 32 random bytes from the server (POST /me/custody-challenge). */
+  challenge: [32, 32],
+} as const;
+type Fields = Record<keyof typeof FIELD_BYTES, z.ZodString>;
+/** What a request may carry. */
+const sized: Fields = {
+  nonce: b64Sized(...FIELD_BYTES.nonce), salt: b64Sized(...FIELD_BYTES.salt), publicKey: b64Sized(...FIELD_BYTES.publicKey), wrappedDrawerKey: b64Sized(...FIELD_BYTES.wrappedDrawerKey),
+  wrappedPrivateKey: b64Sized(...FIELD_BYTES.wrappedPrivateKey), signature: b64Sized(...FIELD_BYTES.signature), challenge: b64Sized(...FIELD_BYTES.challenge),
+};
+/** What an answer may carry: whatever is stored. */
+const stored: Fields = { nonce: b64, salt: b64, publicKey: b64, wrappedDrawerKey: b64, wrappedPrivateKey: b64, signature: b64, challenge: b64 };
+
+/**
+ * PETTY-442: sealed records the padding makes at least one bucket long (@petty/crypto padding.ts and
+ * identity.ts: 256 bytes for an entry, 16 KiB for a document, plus the 16-byte GCM tag). The quota counts
+ * ciphertext bytes, so a row may not be smaller than any client writes it: every stored row then costs storage.
+ */
+export const ENTRY_MIN_CIPHERTEXT = 256 + 16;
+export const DOCUMENT_MIN_CIPHERTEXT = 16 * 1024 + 16;
+/** The person's own sealed document (key pins, places, tags): one row per account, at most 16 buckets of 16 KiB. One bucket holds about 30 pinned people. */
+export const USER_DOC_MAX_CIPHERTEXT = 16 * 16 * 1024 + 16;
+/** A token's sealed key bundle: about 700 bytes plus 125 for each drawer key in it, so 256 KiB holds about 2000 drawers. */
+export const TOKEN_BUNDLE_MAX_CIPHERTEXT = 256 * 1024;
+/** Per account: live access tokens (not revoked, not expired), and passkeys. */
+export const MAX_ACCESS_TOKENS = 50;
+export const MAX_PASSKEYS = 20;
 export const Role = z.enum(["write", "read"]);
 export type Role = z.infer<typeof Role>;
 export const AnyRole = z.enum(["owner", "write", "read"]);
@@ -25,56 +87,74 @@ export type LocaleCode = z.infer<typeof LocaleCode>;
 export const HealthResponse = z.object({ ok: z.boolean(), db: z.enum(["up", "down"]) });
 export type HealthResponse = z.infer<typeof HealthResponse>;
 
-/** A sealed record as it travels: nonce + ciphertext in base64, plus the plaintext versions. */
+/** A sealed record as a request carries it: a 12-byte nonce and the ciphertext in base64, plus the plaintext versions. */
 export const SealedBody = z.object({
   key_version: z.number().int().min(1),
   schema_version: z.number().int().min(1),
-  nonce: b64,
+  nonce: sized.nonce,
   ciphertext: b64,
 });
 export type SealedBody = z.infer<typeof SealedBody>;
 
+/** Public keys as the server answers them. */
 export const PublicKeys = z.object({ ecdh: b64, ecdsa: b64 });
-export const VaultBlob = z.object({
+const vaultBlob = (f: Fields) => z.object({
   v: z.literal(1),
   kind: z.enum(["passphrase", "recovery", "passkey"]),
   kdf: z.union([
-    z.object({ name: z.literal("argon2id"), m: z.number().int(), t: z.number().int(), p: z.number().int(), salt: b64 }),
-    z.object({ name: z.literal("hkdf-sha256"), salt: b64 }),
-    z.object({ name: z.literal("prf-hkdf-sha256"), salt: b64 }),
+    z.object({ name: z.literal("argon2id"), m: z.number().int(), t: z.number().int(), p: z.number().int(), salt: f.salt }),
+    z.object({ name: z.literal("hkdf-sha256"), salt: f.salt }),
+    z.object({ name: z.literal("prf-hkdf-sha256"), salt: f.salt }),
   ]),
-  pub: PublicKeys,
-  ecdh: z.object({ iv: b64, ct: b64 }),
-  ecdsa: z.object({ iv: b64, ct: b64 }),
+  pub: z.object({ ecdh: f.publicKey, ecdsa: f.publicKey }),
+  ecdh: z.object({ iv: f.nonce, ct: f.wrappedPrivateKey }),
+  ecdsa: z.object({ iv: f.nonce, ct: f.wrappedPrivateKey }),
 });
+/** A vault copy as a request carries it, every field at its size. */
+export const VaultBlob = vaultBlob(sized);
 export type VaultBlob = z.infer<typeof VaultBlob>;
+/** A vault copy as the server answers it: exactly what is stored. */
+export const StoredVaultBlob = vaultBlob(stored);
 /**
  * Passkey unlock (Phase 14, several per account since PETTY-102): the WebAuthn credential id, the PRF
  * input salt, the keys wrapped under the PRF-derived key, a label ("iPhone") and the transports the
  * browser reported (so the unlock prompt can offer the phone / QR path). All public/ciphertext.
  */
-export const PasskeyVault = z.object({
+const passkeyVault = (f: Fields, vault: typeof VaultBlob) => z.object({
   credential_id: b64.pipe(z.string().min(4).max(2048)),
-  prf_salt: b64,
-  vault: VaultBlob,
+  prf_salt: f.salt,
+  vault,
   label: z.string().trim().max(60).default(""),
   transports: z.array(z.string().max(32)).max(8).default([]),
 });
+export const PasskeyVault = passkeyVault(sized, VaultBlob);
 export type PasskeyVault = z.infer<typeof PasskeyVault>;
-export const PasskeyEntry = PasskeyVault.extend({ id: uuid, created_at: z.string() });
+/** A passkey as the server answers it. */
+export const PasskeyEntry = passkeyVault(stored, StoredVaultBlob).extend({ id: uuid, created_at: z.string() });
 export type PasskeyEntry = z.infer<typeof PasskeyEntry>;
 
-export const DrawerKeyWrap = z.object({
+const drawerKeyWrap = (f: Fields) => z.object({
   v: z.literal(1),
   drawer_id: uuid,
   key_version: z.number().int().min(1),
-  sender_ecdh_pub: b64,
-  salt: b64,
-  wrapped: b64,
+  sender_ecdh_pub: f.publicKey,
+  salt: f.salt,
+  wrapped: f.wrappedDrawerKey,
   /** Stamped by the server from the session of whoever stored the wrap. The recipient checks sender_ecdh_pub against its PINNED key for this user. */
   sender_id: uuid.optional(),
 });
+/** A wrapped drawer key as a request carries it. */
+export const DrawerKeyWrap = drawerKeyWrap(sized);
 export type DrawerKeyWrap = z.infer<typeof DrawerKeyWrap>;
+/** A wrapped drawer key as the server answers it. */
+export const StoredDrawerKeyWrap = drawerKeyWrap(stored);
+
+/**
+ * Proof of key possession (security review SR-2): the challenge from POST /me/custody-challenge,
+ * signed with the account's ECDSA key. Only an unlocked vault can produce it.
+ */
+export const CustodyProof = z.object({ challenge: sized.challenge, signature: sized.signature });
+export type CustodyProof = z.infer<typeof CustodyProof>;
 
 // ---------------------------------------------------------------- display names
 /**
@@ -104,7 +184,7 @@ export const SignupBody = z.object({
   password: z.string().min(8).max(1024),
   display_name: DisplayName,
   locale: LocaleCode.default("en"),
-  keys: z.object({ ecdh_pub: b64, ecdsa_pub: b64, sig_key_id: z.string().regex(/^[0-9a-f]{32}$/) }),
+  keys: z.object({ ecdh_pub: sized.publicKey, ecdsa_pub: sized.publicKey, sig_key_id: z.string().regex(/^[0-9a-f]{32}$/) }),
   /** Passphrase copy of the keys. Optional since PETTY-102: a passkey may be the only everyday door. */
   vault: VaultBlob.optional(),
   /** First passkey, created during setup. At least one of `vault` / `passkey` is required. */
@@ -127,9 +207,11 @@ export type AuthConfig = z.infer<typeof AuthConfig>;
  * It sends the id (the server stores only its hash) and the sealed bundle; the secret stays
  * with the tool, and the server can never open the bundle.
  */
-export const SealedBundle = z.object({ nonce: b64, ciphertext: b64 });
-/** PETTY-184 (review NR-4): the account key vouches for a writing token's own signing key. */
-export const SignedDelegation = z.object({
+export const SealedBundle = z.object({ nonce: sized.nonce, ciphertext: b64Sized(16, TOKEN_BUNDLE_MAX_CIPHERTEXT) });
+/** A bundle as the server answers it. */
+export const StoredSealedBundle = z.object({ nonce: b64, ciphertext: b64 });
+/** PETTY-184 (review NR-4): the account key vouches for a writing token's own signing key. As the server answers it. */
+export const StoredSignedDelegation = z.object({
   v: z.literal(1),
   user_id: uuid,
   account_sig_key_id: z.string(),
@@ -139,14 +221,22 @@ export const SignedDelegation = z.object({
   expires_at: z.string().datetime().nullable(),
   sig: b64,
 }).strict();
+/** A delegation as a request carries it: the same statement, every field at its size (a time is 24 characters as the clients write it). */
+export const SignedDelegation = StoredSignedDelegation.extend({
+  account_sig_key_id: z.string().regex(/^[0-9a-f]{32}$/),
+  token_ecdsa_pub: sized.publicKey,
+  created_at: z.string().max(40).datetime(),
+  expires_at: z.string().max(40).datetime().nullable(),
+  sig: sized.signature,
+}).strict();
 export type SignedDelegation = z.infer<typeof SignedDelegation>;
 /** Every delegation a user ever made, so entries signed by a token key can be checked (and revoked ones flagged). */
-export const UserDelegations = z.object({ delegations: z.array(z.object({ delegation: SignedDelegation, revoked_at: z.string().nullable() })) });
+export const UserDelegations = z.object({ delegations: z.array(z.object({ delegation: StoredSignedDelegation, revoked_at: z.string().nullable() })) });
 export type UserDelegations = z.infer<typeof UserDelegations>;
 export const AccessTokenCreate = z.object({
   token_id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
   /** The token's own ECDH public key (PETTY-169), so later drawers can be wrapped for it. */
-  ecdh_pub: b64.optional(),
+  ecdh_pub: sized.publicKey.optional(),
   name: z.string().trim().min(1).max(80),
   role: z.enum(["read", "write"]),
   /** null = every drawer this user is a member of */
@@ -154,9 +244,9 @@ export const AccessTokenCreate = z.object({
   expires_at: z.string().datetime().nullable(),
   bundle: SealedBundle,
   /** PETTY-181: making a token needs the account's signing key, not only a session. */
-  proof: z.object({ challenge: b64, signature: b64 }),
+  proof: CustodyProof,
   /** PETTY-184: a writing token's own signing key and the account's delegation for it. Required for role "write". */
-  signing: z.object({ ecdsa_pub: b64, delegation: SignedDelegation }).optional(),
+  signing: z.object({ ecdsa_pub: sized.publicKey, delegation: SignedDelegation }).optional(),
 });
 export const AccessToken = z.object({
   id: uuid,
@@ -178,11 +268,11 @@ export const AccessTokenSelf = z.object({
   name: z.string(),
   role: z.enum(["read", "write"]),
   scope: z.array(uuid).nullable(),
-  bundle: SealedBundle,
+  bundle: StoredSealedBundle,
 });
 export type AccessTokenSelf = z.infer<typeof AccessTokenSelf>;
 /** Wrapped drawer keys for one token: what the tool unwraps with the token's private key. */
-export const AccessTokenKey = z.object({ drawer_id: uuid, key_version: z.number().int(), wrap: DrawerKeyWrap });
+export const AccessTokenKey = z.object({ drawer_id: uuid, key_version: z.number().int().min(1), wrap: DrawerKeyWrap });
 export const AccessTokenKeysBody = z.object({ keys: z.array(AccessTokenKey).max(500) });
 export type AccessTokenKey = z.infer<typeof AccessTokenKey>;
 
@@ -239,7 +329,7 @@ export const Me = z.object({
   keys: UserKeys,
   /** The active public keys, also present in every vault blob; here so a passkey-only account has them in one place. */
   pub: PublicKeys,
-  vault: VaultBlob.nullable(),
+  vault: StoredVaultBlob.nullable(),
   passkeys: z.array(PasskeyEntry),
   is_admin: z.boolean(),
 });
@@ -272,7 +362,7 @@ export const DrawerSummary = z.object({
 });
 export type DrawerSummary = z.infer<typeof DrawerSummary>;
 
-export const SealedRow = SealedBody.extend({ author_id: uuid, updated_at: z.string() });
+export const SealedRow = SealedBody.extend({ nonce: b64, author_id: uuid, updated_at: z.string() });
 export type SealedRow = z.infer<typeof SealedRow>;
 
 export const EntryRow = z.object({
@@ -301,7 +391,7 @@ export const Invitation = z.object({
   invitee_id: uuid,
   role: Role,
   key_version: z.number().int(),
-  wrap: DrawerKeyWrap,
+  wrap: StoredDrawerKeyWrap,
   state: z.enum(["pending", "accepted", "declined", "revoked"]),
   created_at: z.string(),
 });
@@ -311,7 +401,7 @@ export const Bootstrap = z.object({
   me: Me,
   drawers: z.array(DrawerSummary),
   documents: z.record(uuid, SealedRow),
-  wraps: z.array(DrawerKeyWrap),
+  wraps: z.array(StoredDrawerKeyWrap),
   members: z.record(uuid, z.array(Member)),
   /** entries since each line's latest Adjust (inclusive), all drawers */
   entries: z.array(EntryRow),
@@ -349,7 +439,8 @@ export const PutDocumentBody = SealedBody.extend({
 });
 export type PutDocumentBody = z.infer<typeof PutDocumentBody>;
 export const PutDocumentResponse = z.object({ version: z.number().int(), last_write_at: z.string(), last_verified_at: z.string().nullable() });
-export const DeleteLineBody = z.object({ document: PutDocumentBody });
+/** PETTY-441: deleting a line removes its entries for good, so it needs a custody proof like deleting a drawer. */
+export const DeleteLineBody = z.object({ document: PutDocumentBody, proof: CustodyProof });
 export const PutPhotoBody = SealedBody;
 
 /**
@@ -389,7 +480,7 @@ export const PostEntryBody = z.object({
   expected_head_seq: z.number().int().min(0).optional(),
   key_version: z.number().int().min(1),
   schema_version: z.number().int().min(1),
-  nonce: b64,
+  nonce: sized.nonce,
   ciphertext: b64,
 });
 export const PostEntryResponse = z.object({ entry: EntryRow, created: z.boolean() });
@@ -401,15 +492,21 @@ export const UserLookup = z.object({ id: uuid, display_name: z.string(), keys: U
 export const UserLookupBody = z.object({ email: z.string().email().max(254) });
 export const InviteBody = z.object({ invitee_id: uuid, role: Role, wrap: DrawerKeyWrap });
 export const TransferBody = z.object({ to_user_id: uuid });
+/**
+ * PETTY-440: a rotation re-seals every row of a drawer in place, so starting one and every batch need a
+ * custody proof. Any write member's app may continue a rotation; each proves its own vault key.
+ */
 export const StartRotationBody = z.object({
   to_version: z.number().int().min(2),
   wraps: z.array(z.object({ user_id: uuid, wrap: DrawerKeyWrap })).min(1),
+  proof: CustodyProof,
 });
 export const RotationBatchBody = z.object({
   to_version: z.number().int().min(2),
-  entries: z.array(z.object({ id: uuid, nonce: b64, ciphertext: b64 })).max(500),
+  entries: z.array(z.object({ id: uuid, nonce: sized.nonce, ciphertext: b64 })).max(500),
   document: SealedBody.optional(),
   photo: SealedBody.optional(),
+  proof: CustodyProof,
 });
 export const RotationStatus = z.object({
   drawer_id: uuid,
@@ -424,20 +521,14 @@ export const ExportResponse = z.object({
   document: SealedRow,
   photo: SealedRow.nullable(),
   entries: z.array(EntryRow),
-  wraps: z.array(DrawerKeyWrap),
+  wraps: z.array(StoredDrawerKeyWrap),
 });
 
 /** Per-user encrypted document (key pins, preferences), sealed under a key only the user can derive. */
 export const UserDocRow = z.object({ version: z.number().int(), schema_version: z.number().int(), nonce: b64, ciphertext: b64, updated_at: z.string() });
-export const PutUserDocBody = z.object({ base_version: z.number().int().min(0), schema_version: z.number().int().min(1), nonce: b64, ciphertext: b64 });
+export const PutUserDocBody = z.object({ base_version: z.number().int().min(0), schema_version: z.number().int().min(1), nonce: sized.nonce, ciphertext: b64Sized(0, USER_DOC_MAX_CIPHERTEXT) });
 
 // ---------------------------------------------------------------- vault custody changes
-/**
- * Proof of key possession (security review SR-2): the challenge from POST /me/custody-challenge,
- * signed with the account's ECDSA key. Only an unlocked vault can produce it.
- */
-export const CustodyProof = z.object({ challenge: b64, signature: b64 });
-export type CustodyProof = z.infer<typeof CustodyProof>;
 export const CustodyChallenge = z.object({ challenge: b64, expires_at: z.string() });
 /** New passphrase (or recovery-code) wrap of the SAME keys. The server checks the public keys did not change, and the proof. */
 /** PETTY-200: a new recovery-code copy of the same keys (the passkey or passphrase copies stay). */
