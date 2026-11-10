@@ -14,6 +14,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   joins and invites again. Pending invitations that a former owner made end with this upgrade. The
   owner can list every pending invitation of a drawer (`GET /api/drawers/:id/invitations`) and revoke
   any of them (`DELETE /api/invitations/:id`); the app has no screen for this list yet.
+- The API takes a request that changes something from a browser only when the browser marks it as
+  coming from Petty's own pages (`Sec-Fetch-Site: same-origin`). Any other mark gets 403
+  `CrossSiteRequest`, also for a request without a body and for a page on another host under the same
+  domain as your instance. The web app is not affected. Programs that send no such header (the command
+  line, the add-on, curl) work as before.
 
 ## [1.5.32] — 2026-11-04
 

@@ -218,7 +218,9 @@ reasoning: [docs/decisions.md](docs/decisions.md) (rows *Places*, *Icons*, *Line
 All bodies are JSON; bytes travel as base64; the server never opens ciphertext.
 Session = httpOnly cookie `petty_session` (`__Host-petty_session` over HTTPS, as in the image).
 In the image every route sits under `/api` (`/api/me`). Access tokens and Clerk session tokens come
-as `Authorization: Bearer …`. Non-members get 404, never 403.
+as `Authorization: Bearer …`. Non-members get 404, never 403. A request that changes something and
+that a browser marks as not coming from the app's own pages (`Sec-Fetch-Site` other than `same-origin`)
+gets 403 `CrossSiteRequest`; a client that sends no such header is not affected.
 
 | Route | Who | Does |
 |---|---|---|

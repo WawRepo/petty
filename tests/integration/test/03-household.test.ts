@@ -3,7 +3,7 @@ import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, o
 import { applyOp, fold, newDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, compose, newUser } from "../lib.js";
+import { API, compose, http, newUser } from "../lib.js";
 
 /**
  * What a household does, end to end, over HTTP against the real image: two people, a shared
@@ -47,6 +47,19 @@ describe("household", () => {
     expect((await ann.login()).statusCode).toBe(200);
     const wrong = await fetch(`${API}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: ann.user.email, password: "not-the-password" }) });
     expect(wrong.status).toBe(401);
+  });
+
+  it("takes a changing request from a browser only when the browser marks it same-origin (PETTY-409)", async () => {
+    const send = (url: string, site: string | null) => http.inject({ method: "POST", url, cookies: { petty_session: ann.cookie! }, headers: site === null ? {} : { "sec-fetch-site": site } });
+    for (const site of ["same-site", "cross-site", "none"]) {
+      const res = await send("/auth/logout", site);
+      expect(res.statusCode, site).toBe(403);
+      expect(res.json().code, site).toBe("CrossSiteRequest");
+    }
+    expect((await ann.call("GET", "/me")).statusCode).toBe(200); // still signed in
+    // the web app's own requests, and a program that sends no such header
+    expect((await send("/me/custody-challenge", "same-origin")).statusCode).toBe(200);
+    expect((await send("/me/custody-challenge", null)).statusCode).toBe(200);
   });
 
   it("makes a drawer and adds entries; the balance folds from the log", async () => {
