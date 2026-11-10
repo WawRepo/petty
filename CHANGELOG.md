@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.33] — 2026-11-10
+
 ### Security
 - The web app takes a drawer key that someone else made only when you confirmed that person's safety
   number. This now holds for the first key of a drawer too, not only for a key replaced after a member
@@ -762,7 +764,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.32...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.33...HEAD
+[1.5.33]: https://github.com/WawRepo/petty/releases/tag/v1.5.33
 [1.5.32]: https://github.com/WawRepo/petty/releases/tag/v1.5.32
 [1.5.31]: https://github.com/WawRepo/petty/releases/tag/v1.5.31
 [1.5.30]: https://github.com/WawRepo/petty/releases/tag/v1.5.30
