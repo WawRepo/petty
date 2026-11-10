@@ -22,9 +22,13 @@ let owner: Client;
 let drawerId: string, lineId: string;
 const dirs: string[] = [];
 
+/** What `petty auth login` last sent to start a sign-in. */
+let asked: { cli_pub: string; user_code: string } | null = null;
+
 /** The API behind https://petty.test/api, in memory. */
 const inject: typeof fetch = async (input, init) => {
   const url = new URL(String(input));
+  if (url.pathname === "/api/device/code") asked = JSON.parse(String(init?.body)) as { cli_pub: string; user_code: string };
   const res = await app.inject({
     method: (init?.method ?? "GET") as "GET" | "POST" | "DELETE",
     url: url.pathname.replace(/^\/api/, "") + url.search,
@@ -58,7 +62,7 @@ function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void
 }
 
 /** A token the way the web app makes one: the drawer's key copied into a bundle sealed by the token's secret. */
-async function webToken(role: "read" | "write"): Promise<string> {
+async function webToken(role: "read" | "write", scope: string[] | null = null): Promise<string> {
   const secret = patSecret();
   const id = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
   const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
@@ -69,7 +73,7 @@ async function webToken(role: "read" | "write"): Promise<string> {
     drawers: [{ drawer_id: drawerId, key_version: 1, key: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", key))) }],
     ...(signing ? signing.bundle : {}),
   });
-  const res = await owner.call("POST", "/me/tokens", { token_id: id, name: "petty on laptop", role, scope: null, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
+  const res = await owner.call("POST", "/me/tokens", { token_id: id, name: "petty on laptop", role, scope, expires_at: null, bundle, proof: await owner.proof(), ...(signing ? { signing: signing.body } : {}) });
   expect(res.statusCode).toBe(201);
   return patToken(id, secret);
 }
@@ -78,7 +82,7 @@ async function webToken(role: "read" | "write"): Promise<string> {
 const allow = (role: "read" | "write") => async (url: string) => {
   const code = new URL(url).searchParams.get("code")!;
   const view = (await owner.call("GET", `/device/${code}`)).json();
-  expect(await deviceUserCode(view.cli_pub)).toBe(code);
+  expect(await deviceUserCode(view.cli_pub, ORIGIN)).toBe(code);
   const sealed = await sealDeviceToken(view.cli_pub, await webToken(role), { requestId: view.id, userCode: code, origin: ORIGIN });
   expect((await owner.call("POST", `/device/${code}/approve`, { sealed })).statusCode).toBe(204);
 };
@@ -103,8 +107,12 @@ describe("petty auth login through the page (PETTY-274)", () => {
   it("prints a code, opens the page, and once it is allowed there, reads and writes the drawers", async () => {
     const { t, petty } = terminal({ onPage: allow("write") });
     expect(await petty("auth", "login", "--host", "petty.test")).toBe(0);
-    const code = /Your one-time code: ([A-Z]{4}-[A-Z]{4}-[A-Z]{4})/.exec(t.err)?.[1];
+    const code = /Your one-time code: ([A-Z]{4}(?:-[A-Z]{4}){4})\n/.exec(t.err)?.[1];
     expect(code).toBeTruthy();
+    // PETTY-451: the code is the tool's own, from its key and the address it signs in to; another address gives another
+    expect(asked!.user_code).toBe(code);
+    expect(code).toBe(await deviceUserCode(asked!.cli_pub, ORIGIN));
+    expect(code).not.toBe(await deviceUserCode(asked!.cli_pub, "https://petty.example"));
     expect(t.pages).toEqual([`${ORIGIN}/device?code=${code}`]);
     expect(t.err).toContain("Signed in to https://petty.test with the token “petty on laptop” (may add entries)");
     // kept for this user only, never with drawer content
@@ -153,16 +161,33 @@ describe("petty auth login through the page (PETTY-274)", () => {
     expect(t.err).toContain("denied on the page");
   });
 
-  it("refuses a code that is not derived from its own key (a server that swapped the key)", async () => {
+  /** A server that answers the sign-in request in its own way. The real one is not asked: it counts requests per address. */
+  const answering = (status: number, body: Record<string, unknown>): typeof fetch => async (input, init) =>
+    String(input).endsWith("/device/code") ? new Response(JSON.stringify(body), { status }) : inject(input, init);
+  const started = (userCode: string) => ({ request_id: crypto.randomUUID(), device_code: "d".repeat(43), user_code: userCode, expires_in: 900, interval: 5 });
+
+  it("refuses a code that is not its own (a server that swapped the key)", async () => {
     const { t, io } = terminal();
-    const swapped: typeof fetch = async (input, init) => {
-      const res = await inject(input, init);
-      if (!String(input).endsWith("/device/code")) return res;
-      const body = await res.json();
-      return new Response(JSON.stringify({ ...body, user_code: "BCDF-GHJK-LMNP" }), { status: res.status });
-    };
-    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: swapped })).toBe(1);
+    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: answering(201, started("BCDF-GHJK-LMNP-QRST-VWXZ")) })).toBe(1);
     expect(t.err).toContain("not this request's");
+    expect(t.pages).toEqual([]);
+  });
+
+  // PETTY-451: the earlier 12-letter form is never used, whatever the server answers
+  it("stops at a Petty that still answers with the earlier 12-letter code, and says that it is older", async () => {
+    const { t, io } = terminal();
+    // what a Petty from before PETTY-451 does: it ignores the tool's code and answers with its own, shorter one
+    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: answering(201, started("BCDF-GHJK-LMNP")) })).toBe(1);
+    expect(t.err).toContain("https://petty.test runs an older Petty than this command line");
+    expect(t.err).toContain("the commands are at https://petty.test/ai");
+    expect(t.err).not.toContain("Your one-time code");
+    expect(t.pages).toEqual([]);
+  });
+
+  it("says so when the Petty finds this command line too old", async () => {
+    const { t, io } = terminal();
+    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: answering(400, { code: "CommandLineTooOld", message: "this command line is older than this Petty" }) })).toBe(1);
+    expect(t.err).toContain("this petty is older than the Petty at https://petty.test");
     expect(t.pages).toEqual([]);
   });
 
@@ -188,6 +213,30 @@ describe("petty auth login through the page (PETTY-274)", () => {
     expect(await petty("drawers", "--nope")).toBe(2);
     expect(await petty("find", "bicycle")).toBe(4);
     expect(t.err).toContain("NotFound");
+    expect(t.err).not.toContain("this token opens only");
+  });
+
+  // PETTY-452: the page now makes tokens for chosen drawers
+  it("with a token made for chosen drawers: says so at sign-in, lists only those, and says why another is not found", async () => {
+    const outLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Strongbox"), { type: "add_line", line: { id: outLine, kind: "money", name: "Gold", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const outside = await owner.createDrawer("Strongbox", doc);
+    const { t, petty } = terminal({ stdin: `${await webToken("write", [drawerId])}\n` });
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(t.err).toContain("It opens only the 1 drawer chosen for it.");
+    expect(await petty("drawers", "--json")).toBe(0);
+    expect(JSON.parse(t.out).map((d: { name: string }) => d.name)).toEqual(["Kitchen"]);
+    const why = "(this token opens only the 1 drawer chosen for it)";
+    for (const argv of [["find", "strongbox", "gold"], ["add", "Strongbox › Gold", "1"], ["history", `${outside.id}/${outLine}`], ["move", "Strongbox", "Home"]]) {
+      t.err = "";
+      expect(await petty(...argv), argv.join(" ")).toBe(4);
+      expect(t.err, argv.join(" ")).toContain("NotFound");
+      expect(t.err, argv.join(" ")).toContain(why);
+    }
+    // what it does open still works
+    t.out = "";
+    expect(await petty("find", "kitchen", "cash")).toBe(0);
+    expect(t.out).toContain("Kitchen › Cash");
   });
 });
 

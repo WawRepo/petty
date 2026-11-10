@@ -281,6 +281,35 @@ describe("headless client (PETTY-165)", () => {
     await expect(c.history(crypto.randomUUID(), lineId)).rejects.toBeInstanceOf(TokenError);
   });
 
+  // PETTY-452: the web app now makes tokens for chosen drawers. This client must work with one.
+  it("a token made for chosen drawers lists only those, and says so when asked for another", async () => {
+    const outLine = crypto.randomUUID();
+    const doc = applyOp(newDocument("Strongbox"), { type: "add_line", line: { id: outLine, kind: "money", name: "Gold", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const outside = await owner.createDrawer("Strongbox", doc);
+    expect(outside.res.statusCode).toBe(201);
+    // made as the web app makes it: the one drawer's key in the bundle, the one drawer as its scope
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId);
+    const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await owner.unwrap(wrap, owner.user.pub.ecdh, true))));
+    const made = await owner.makeAccessToken("write", [{ drawer_id: drawerId, key_version: 1, key: raw }], [drawerId]);
+    expect(made.res.statusCode).toBe(201);
+
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    expect(c.identity.scope).toEqual([drawerId]);
+    const listed = await c.drawers();
+    expect(listed.map((d) => d.id)).toEqual([drawerId]);
+    expect(listed[0]!.lines.map((l) => l.id)).toContain(lineId);
+    // by id: the client knows it is not one of its drawers
+    await expect(c.history(outside.id, outLine)).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    await expect(c.add(outside.id, outLine, "1")).rejects.toMatchObject({ code: "OutOfScope", message: "this token cannot open that drawer" });
+    // by name: to this token the drawer does not exist
+    await expect(c.find("strongbox gold")).rejects.toMatchObject({ code: "NotFound" });
+    await expect(c.findDrawer("Strongbox")).rejects.toMatchObject({ code: "NotFound" });
+    // and the server refuses it whatever the client does
+    const direct = await app.inject({ method: "GET", url: `/drawers/${outside.id}`, headers: { authorization: `Bearer ${made.bearer}` } });
+    expect(direct.statusCode).toBe(403);
+    expect(direct.json().code).toBe("TokenOutOfScope");
+  });
+
   it("PETTY-193 (NR-13): the opened bundle is dropped once its keys are imported", async () => {
     const c = await client("write");
     expect((c as unknown as { bundle: unknown }).bundle).toBeNull();

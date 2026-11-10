@@ -6,7 +6,8 @@
  */
 const KEY = "petty.after-unlock";
 const TTL_MS = 15 * 60_000;
-const ALLOWED = /^\/device(\?code=[A-Za-z0-9-]{1,20})?$/;
+// the code: 20 letters in five groups (PETTY-451), so 24 characters with its dashes
+const ALLOWED = /^\/device(\?code=[A-Za-z0-9-]{1,24})?$/;
 
 export function rememberAfterUnlock(path: string): void {
   if (!ALLOWED.test(path)) return;

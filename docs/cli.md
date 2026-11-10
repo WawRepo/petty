@@ -44,21 +44,32 @@ petty auth login --host https://petty.example.com
 It shows a one-time code and opens a page of your Petty in the browser, the way `gh auth login` does:
 
 ```
-Your one-time code: WDJB-MJHT-KQPL
-Opened https://petty.example.com/device?code=WDJB-MJHT-KQPL
+Your one-time code: WDJB-MJHT-KQPL-XRNV-BCDF
+Opened https://petty.example.com/device?code=WDJB-MJHT-KQPL-XRNV-BCDF
 Check that the page shows the same code, then allow it there.
 Waiting… (Ctrl-C stops)
 ```
 
-On the page (signed in and unlocked) check that the code is the same, choose whether it can make
-changes and when it ends, and press **Allow**. Letting it make changes asks for your vault passphrase
-or passkey, as a token made in Settings does. The terminal then says `Signed in`.
+On the page (signed in and unlocked) check that the code is the same. Choose which drawers it can
+use (all of them, or only the ones you tick), whether it can make changes and when it ends, type your
+vault passphrase or leave it empty to use your passkey, and press **Allow**. Every token asks for the
+passphrase or passkey, also one that only reads, as a token made in Settings does. The terminal then
+says `Signed in`.
 
 - **No browser on this machine** (a server over SSH): `--no-browser` prints the address. Open it on
   any device where you use Petty, or type the code at `https://<your petty>/device`.
 - `--read-only` asks only to read. `--expires 30|90|365|never` sets when it ends (90 days by default).
 - The login is an ordinary **access token** named "petty on *computer*". Settings → Access tokens
   lists it; revoking it there stops `petty` at once.
+- **A login for chosen drawers** sees only those: `petty` says so when it signs in ("It opens only the
+  2 drawers chosen for it"), and `petty drawers` lists them. Anything in another drawer is not found
+  (exit code 4), and the message ends with "(this token opens only the 2 drawers chosen for it)". A
+  drawer you add later is not included; sign in again and tick it.
+- **`petty` and your Petty must match.** The sign-in code once had 12 letters and has 20 now. An older
+  `petty` at a newer Petty stops with `did not start a sign-in (CommandLineTooOld)`; a newer `petty`
+  at an older Petty stops with `runs an older Petty than this command line`. Install the `petty` that
+  goes with your Petty (the page *Use Petty with AI* has the commands). A login you already have
+  keeps working.
 - `petty auth status` checks the token still works. `petty auth logout` ends it on the server and
   forgets it here.
 - A token you made by hand: `petty auth login --host … --with-token < token.txt`.
@@ -152,10 +163,12 @@ The server cannot make you a token: it has no keys. The page makes it, the way S
 tokens does, and hands it to `petty` sealed:
 
 1. `petty auth login` makes a one-time key pair and sends the public half. The code you see is
-   derived from that key, and `petty` checks the server's answer against it.
+   derived from that key and from your Petty's address (SHA-256, 20 letters), and `petty` refuses any
+   other code in the server's answer.
 2. The page gets the request from the server and works the code out again from the key it was
-   given. If the server, or anyone who changed its database, swapped in a key of its own, the codes
-   differ and the page refuses to go on.
+   given and from its own address. If the server, or anyone who changed its database, swapped in a
+   key of its own, the codes differ and the page refuses to go on. The page also refuses when it is
+   on another address than the one you gave `petty`: use the same address in both.
 3. On **Allow**, the page makes the token and seals it to `petty`'s key (ECDH P-256 → HKDF →
    AES-256-GCM, bound to the request, the code and the site). The server keeps only that sealed blob
    until `petty` picks it up, once, and then deletes the request. A request nobody allows ends after

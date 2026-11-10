@@ -7,7 +7,7 @@
  * an unlock through a passkey this device does not know — is simulated by forgetting the
  * device's memory of its own passkey.
  */
-import { expect, makeJoinLink, openSettings, test, type TestUser } from "./fixtures.js";
+import { dbQuery, expect, makeJoinLink, openSettings, test, type TestUser } from "./fixtures.js";
 import type { CDPSession, Page } from "@playwright/test";
 
 async function virtualAuthenticator(page: Page): Promise<{ cdp: CDPSession; id: string }> {
@@ -198,4 +198,30 @@ test("adding a passkey where the vault's passkey already is says it may have syn
   await add.getByRole("button", { name: "Add passkey" }).click();
   await expect(add.getByRole("alert")).toHaveText("This passkey is already on this device. It may have synced from another device, for example through iCloud Keychain or Google Password Manager. Use “Unlock with passkey”.");
   await expect(page.getByTestId("passkey-row")).toHaveCount(1);
+});
+
+test("PETTY-452: with a passkey only, every new access token is confirmed by the passkey, a reading one too", async ({ page }) => {
+  const { cdp, id } = await virtualAuthenticator(page);
+  const user = await joinWithPasskey(page, "pktok");
+  const tokens = () => dbQuery("select t.role from access_tokens t join users u on u.id = t.user_id where u.email = $1", [user.email]);
+  await openSettings(page);
+  await page.getByTestId("token-new").click();
+  const sheet = page.getByRole("dialog");
+  // no passphrase on this account: no field, and the sheet says the passkey will be asked
+  await expect(page.getByTestId("token-passphrase")).toHaveCount(0);
+  await expect(page.getByTestId("token-confirm-hint")).toBeVisible();
+  await page.getByTestId("token-scope-all").check();
+  // the passkey confirms: the token is made, and it only reads
+  await page.getByTestId("token-create").click();
+  await expect(page.getByTestId("token-value")).toBeVisible();
+  await page.getByTestId("token-done").click();
+  await expect(page.getByTestId("token-row")).toContainText("Read only · all drawers");
+  expect(await tokens()).toEqual([{ role: "read" }]);
+  // the passkey does not confirm (the person is not verified): no second token, though the vault is open
+  await cdp.send("WebAuthn.setUserVerified", { authenticatorId: id, isUserVerified: false });
+  await page.getByTestId("token-new").click();
+  await page.getByTestId("token-scope-all").check();
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("The passkey prompt was cancelled.");
+  expect(await tokens()).toHaveLength(1);
 });

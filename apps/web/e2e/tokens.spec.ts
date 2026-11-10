@@ -49,6 +49,9 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   // PETTY-281: a new token only reads until you switch changes on
   await expect(page.getByTestId("token-write")).not.toBeChecked();
   await page.getByTestId("token-write").check();
+  // PETTY-452: "all drawers" is a choice the person makes; this token is to reach drawers made later too
+  await expect(page.getByTestId("token-scope-all")).not.toBeChecked();
+  await page.getByTestId("token-scope-all").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
@@ -58,7 +61,7 @@ test("access tokens (PETTY-164): a token made in Settings opens its bundle outsi
   await expect(page.getByTestId("token-addon")).toHaveAttribute("href", "/downloads/petty.mcpb");
   await page.getByTestId("token-done").click();
   await expect(page.getByTestId("token-row")).toHaveCount(1);
-  await expect(page.getByTestId("token-row")).toContainText("Can make changes");
+  await expect(page.getByTestId("token-row")).toContainText("Can make changes · all drawers");
 
   // the tool: only the id half travels
   const split = splitPatToken(token);
@@ -113,6 +116,7 @@ test("NR-1 (PETTY-181): a token the owner did not make, or one whose key was swa
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Real one");
   await page.getByTestId("token-write").check();
+  await page.getByTestId("token-scope-all").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   await expect(page.getByTestId("token-value")).toBeVisible();
@@ -156,6 +160,7 @@ test("NR-4 (PETTY-184): an entry a token signs with its own key shows clean in t
   await page.getByTestId("token-new").click();
   await page.getByTestId("token-name").fill("Writer");
   await page.getByTestId("token-write").check();
+  await page.getByTestId("token-scope-all").check();
   await page.getByTestId("token-passphrase").fill(user.passphrase);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
@@ -189,4 +194,98 @@ test("NR-4 (PETTY-184): an entry a token signs with its own key shows clean in t
   await expect(page.getByTestId("token-row")).toHaveCount(0);
   await page.reload();
   await check();
+});
+
+test("PETTY-452: a token is made for the drawers the person picks, after the vault passphrase, a reading one too", async ({ page, request }) => {
+  const { connect } = await import("../../../packages/agent/src/index.js");
+  const user = await signupViaApi("patscope");
+  await loginAndUnlock(page, user);
+  await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
+  const kitchenId = await addDrawerWithLine(page, "Kitchen");
+  await page.goto("/");
+  const atticId = await addDrawerWithLine(page, "Attic");
+  const userId = (await sql<{ id: string }>("select id from users where email = $1", [user.email]))[0]!.id;
+  const tokens = () => sql<{ id: string; role: string; scope: string[] | null; expires_at: Date | null }>("select id, role, scope, expires_at from access_tokens where user_id = $1", [userId]);
+
+  await page.goto("/");
+  await openSettings(page);
+  await page.getByTestId("token-new").click();
+  const sheet = page.getByRole("dialog");
+  await page.getByTestId("token-name").fill("Kitchen reader");
+  // a token that only reads (the default) is confirmed by the vault as well
+  await expect(page.getByTestId("token-write")).not.toBeChecked();
+  await expect(page.getByTestId("token-passphrase")).toBeVisible();
+  await expect(page.getByTestId("token-confirm-hint")).toContainText("asks for your vault passphrase or passkey again");
+  // nothing is chosen for the person: no drawers yet, and no token without a choice
+  await expect(page.getByTestId("token-scope-all")).not.toBeChecked();
+  await expect(page.getByTestId("token-scope-some")).not.toBeChecked();
+  await page.getByTestId("token-passphrase").fill(user.passphrase);
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("Choose which drawers this token can use.");
+  await page.getByTestId("token-scope-some").check();
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("Choose which drawers this token can use."); // "only these", and none ticked
+  const pick = sheet.getByRole("group", { name: "Drawers for this token" });
+  await expect(pick.getByRole("checkbox")).toHaveCount(2);
+  await pick.getByRole("checkbox", { name: "Kitchen" }).check();
+  // the passphrase is really checked: none, or a wrong one, makes no token while the vault is open
+  await page.getByTestId("token-passphrase").fill("");
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("Enter your vault passphrase.");
+  await page.getByTestId("token-passphrase").fill("not the passphrase at all");
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("That passphrase did not open the vault.");
+  expect(await tokens()).toHaveLength(0);
+  await page.getByTestId("token-passphrase").fill(user.passphrase);
+  await page.getByTestId("token-create").click();
+  const token = (await page.getByTestId("token-value").innerText()).trim();
+  await page.getByTestId("token-done").click();
+  await expect(page.getByTestId("token-row")).toContainText("Read only · 1 drawer");
+
+  // what the server keeps: the one drawer, and an end date 90 days on, which nobody had to ask for
+  const [row] = await tokens();
+  expect(row).toMatchObject({ role: "read", scope: [kitchenId] });
+  expect(Math.round((row!.expires_at!.getTime() - Date.now()) / 86_400_000)).toBe(90);
+
+  // the tool: only the chosen drawer's key is in the bundle, and the server refuses the other drawer
+  const split = splitPatToken(token);
+  const bearer = { authorization: `Bearer petty_pat_${split.tokenId}` };
+  const self = (await (await request.get(`${API}/me/token`, { headers: bearer })).json()) as { user_id: string; scope: string[] | null; bundle: { nonce: string; ciphertext: string } };
+  expect(self.scope).toEqual([kitchenId]);
+  const bundle = await openPatBundle(split.secret, split.tokenId, self.user_id, self.bundle);
+  expect(bundle.drawers.map((d) => d.drawer_id)).toEqual([kitchenId]);
+  expect((await request.get(`${API}/drawers/${kitchenId}`, { headers: bearer })).status()).toBe(200);
+  const other = await request.get(`${API}/drawers/${atticId}`, { headers: bearer });
+  expect(other.status()).toBe(403);
+  expect(((await other.json()) as { code: string }).code).toBe("TokenOutOfScope");
+  const agent = await connect({ token, apiUrl: API });
+  expect((await agent.drawers()).map((d) => d.name)).toEqual(["Kitchen"]);
+  await expect(agent.history(atticId, crypto.randomUUID())).rejects.toMatchObject({ code: "OutOfScope" });
+
+  // a drawer made later stays out of it: the app wraps new drawer keys only for the drawers a token was made for
+  await page.goto("/");
+  const laterId = await addDrawerWithLine(page, "Cellar");
+  await page.goto("/");
+  await page.reload(); // the wrap sync runs once per session
+  await expect(page.getByTestId("drawer-row").filter({ hasText: "Cellar" })).toBeVisible();
+  await page.waitForTimeout(1500); // give the background sync time to (wrongly) post
+  const keys = ((await (await request.get(`${API}/me/token/keys`, { headers: bearer })).json()) as { keys: { drawer_id: string }[] }).keys.map((k) => k.drawer_id);
+  expect(keys).not.toContain(laterId);
+  expect(keys).not.toContain(atticId);
+  expect((await request.get(`${API}/drawers/${laterId}`, { headers: bearer })).status()).toBe(403);
+
+  // "no end date" stays a choice the person can make
+  await openSettings(page);
+  await page.getByTestId("token-new").click();
+  await page.getByTestId("token-name").fill("No end");
+  await page.getByTestId("token-scope-all").check();
+  await expect(page.getByTestId("token-expiry")).toHaveValue("90");
+  await page.getByTestId("token-expiry").selectOption("0");
+  await page.getByTestId("token-passphrase").fill(user.passphrase);
+  await page.getByTestId("token-create").click();
+  await expect(page.getByTestId("token-value")).toBeVisible();
+  await page.getByTestId("token-done").click();
+  const all = await tokens();
+  expect(all).toHaveLength(2);
+  expect(all.find((t) => t.id !== row!.id)).toMatchObject({ scope: null, expires_at: null });
 });

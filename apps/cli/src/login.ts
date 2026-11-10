@@ -5,10 +5,11 @@ import { CliError, type Io } from "./io.js";
 
 /**
  * `petty auth login` (PETTY-274): sign in through a page of the web app, the way `gh auth login` does
- * (RFC 8628). This process makes a one-time key pair and asks the server for a code. The code is derived
- * from the key, so it is checked here too. The person opens the page, signed in, and allows it; the page
- * seals an ordinary access token to this key, and only this process can open it. The private key never
- * leaves memory.
+ * (RFC 8628). This process makes a one-time key pair and a code derived from the key and the address
+ * (20 letters since PETTY-451), and registers both. The person opens the page, signed in, and allows it;
+ * the page works the code out again, seals an ordinary access token to this key, and only this process can
+ * open it. The private key never leaves memory. A Petty that still answers with the earlier 12-letter code
+ * is older than this program: the sign-in stops and says so.
  */
 
 /** "petty.example.com", "https://petty.example.com/" or ".../api" → "https://petty.example.com". */
@@ -45,18 +46,23 @@ export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
   const api = apiOf(ask.origin);
   try { checkApiUrl(api); } catch (e) { throw new CliError(2, (e as Error).message); }
   const key = await deviceKeyPair();
+  const userCode = await deviceUserCode(key.publicB64, ask.origin);
   const clientName = `petty on ${io.hostname || "this computer"}`.slice(0, 80);
   let started: { status: number; json: Record<string, unknown> };
   try {
-    started = await post(io, `${api}/device/code`, { cli_pub: key.publicB64, client_name: clientName, role: ask.role, expires_days: ask.expiresDays });
+    started = await post(io, `${api}/device/code`, { cli_pub: key.publicB64, user_code: userCode, client_name: clientName, role: ask.role, expires_days: ask.expiresDays });
   } catch {
     throw new CliError(1, `cannot reach ${ask.origin}`);
   }
+  // PETTY-451: the two ends must be of one age. A newer Petty says so by name. An older one ignores the code
+  // sent and answers with its own, of the earlier 12-letter form, which this program never uses.
+  if (started.json["code"] === "CommandLineTooOld") throw new CliError(1, `this petty is older than the Petty at ${ask.origin}: install the petty that goes with it (the commands are at ${ask.origin}/ai) and sign in again`);
+  if (started.status === 201 && /^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}$/.test(String(started.json["user_code"]))) throw new CliError(1, `${ask.origin} runs an older Petty than this command line: its sign-in code has the earlier, shorter form, which this petty does not use. Update that Petty, or install the petty that goes with it (the commands are at ${ask.origin}/ai), or make a token in Settings → Access tokens and use petty auth login --with-token`);
   if (started.status === 429) throw new CliError(1, "too many sign-ins from this address: wait a while and try again");
   if (started.status !== 201) throw new CliError(1, `${ask.origin} did not start a sign-in (${said(started)}). An older Petty has no browser sign-in: make a token in Settings → Access tokens and use petty auth login --with-token`);
   const code = DeviceCodeResponse.parse(started.json);
   // the code is derived from our key; one that is not was made for another key
-  if (code.user_code !== (await deviceUserCode(key.publicB64))) throw new CliError(1, "the server answered with a code that is not this request's: stopped");
+  if (code.user_code !== userCode) throw new CliError(1, "the server answered with a code that is not this request's: stopped");
 
   const page = `${ask.origin}/device?code=${code.user_code}`;
   io.err(`\nYour one-time code: ${code.user_code}\n`);

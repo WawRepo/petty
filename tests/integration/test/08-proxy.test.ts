@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deviceKeyPair } from "@petty/crypto";
-import { API } from "../lib.js";
+import { deviceKeyPair, deviceUserCode } from "@petty/crypto";
+import { API, ORIGIN } from "../lib.js";
 
 /**
  * PETTY-290 (review S10): the image believes only proxies on private networks. The test reaches the app
@@ -18,7 +18,7 @@ describe("per-IP limits behind a proxy", () => {
       const r = await fetch(`${API}/device/code`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-forwarded-for": `198.51.100.${i + 1}, ${proxySaw}` },
-        body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
+        body: JSON.stringify({ cli_pub: key.publicB64, user_code: await deviceUserCode(key.publicB64, ORIGIN), client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
       });
       statuses.push(r.status);
     }
@@ -35,7 +35,7 @@ describe("per-IP limits behind a proxy", () => {
       return (await fetch(`${API}/device/code`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-test-client-ip": who, "x-forwarded-for": `198.51.100.${i + 1}` },
-        body: JSON.stringify({ cli_pub: key.publicB64, client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
+        body: JSON.stringify({ cli_pub: key.publicB64, user_code: await deviceUserCode(key.publicB64, ORIGIN), client_name: "petty on it-proxy", role: "read", expires_days: 30 }),
       })).status;
     };
     const statuses: number[] = [];

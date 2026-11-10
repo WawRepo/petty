@@ -18,8 +18,10 @@ runs this same server with that login.
 ## 1. Make a token
 
 In Petty: **Settings → Access tokens → New token**. Give it a name, switch on **Can make changes**
-if it should add entries and change names, items, tags and places (a new token only reads), pick an
-expiry, and confirm with your passkey or passphrase. The token is shown once:
+if it should add entries and change names, items, tags and places (a new token only reads). Choose
+which drawers it can use: **All drawers**, which includes drawers you add later, or **Only the drawers
+I pick**. Pick an expiry (90 days unless you change it), and confirm with your passkey or passphrase;
+every token asks for it, also one that only reads. The token is shown once:
 
 ```
 petty_pat_<id>.<secret>
@@ -165,6 +167,10 @@ A token has its own key pair. When you make a drawer, or someone shares one with
 app wraps that drawer's key for every live token the next time it starts. So the tool sees new
 drawers without you making a new token. Open Petty once after adding a drawer.
 
+That holds for a token made for **All drawers**. A token made for chosen drawers keeps to them: it
+does not see a drawer you add later, the server refuses it every other drawer, and the tool tells the
+AI app that it opens only those drawers. Make a new token to change the choice.
+
 ## What this does and does not protect
 
 - The token and your keys stay on your machine. The Petty server never sees the secret half.
@@ -208,6 +214,9 @@ Restart Claude Desktop after either change.
 certificate authority, point `NODE_EXTRA_CA_CERTS` at its certificate in the same `env` block.
 
 **"TokenRevoked"**: the token was revoked or expired; make a new one in Settings.
+
+**"NotFound" for something you know is there**: the token may have been made for other drawers.
+Settings → Access tokens shows how many drawers each token opens.
 
 ## On a phone
 

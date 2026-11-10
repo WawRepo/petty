@@ -74,6 +74,20 @@ number, also when it adds features, and a new minor or major is started by hand 
 - PowerShell Tab completion puts every name onto the command line as one single-quoted word. Update
   `petty` and open a new PowerShell; if you saved the completion script to a file, make it again. In
   every shell, Tab no longer offers a name that holds a control character.
+- The code that `petty auth login` shows has 20 letters in five groups, and it depends on your Petty's
+  address as well as on the command line's one-time key. The page works the code out again and does
+  not allow a request whose key does not fit its code. Before, the code had 12 letters and came from
+  the key alone. **`petty` and your Petty must now match:** an older `petty` is told to update
+  (`CommandLineTooOld`), and a newer `petty` stops at an older Petty and says so. Install `petty`
+  again after this update; a login you already have keeps working.
+- Making an access token asks for your vault passphrase or passkey every time: also for a token that
+  only reads, and also while the vault is open. Before, only a token that can make changes asked.
+- You choose which drawers a new access token can use, in Settings and on the page that allows `petty
+  auth login`: all drawers, later ones included, or only the ones you tick. Nothing is chosen for
+  you. Before, every token was for all drawers. Settings shows how many drawers each token opens. A
+  token for chosen drawers gets no drawer you add later. The command line says at sign-in how many
+  drawers its token opens, and says so again when something is not found; the AI add-on tells the AI
+  app the same. A new token still ends after 90 days unless you pick another time or "Never".
 
 ## [1.5.32] — 2026-11-04
 
