@@ -1,9 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
-import { applyOp, fold, newDocument, nextRev, readDocument, type LedgerEntry } from "@petty/ledger";
+import { createDrawerKey, createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, reseal, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
+import { applyOp, fold, newDocument, nextRev, readDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
+import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
 import { sealedBody, type Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, compose, newUser } from "../lib.js";
+import { API, compose, http, newUser } from "../lib.js";
 
 /**
  * What a household does, end to end, over HTTP against the real image: two people, a shared
@@ -11,6 +12,7 @@ import { API, compose, newUser } from "../lib.js";
  */
 let ann: Client, ben: Client;
 let drawerId: string, lineId: string, key: CryptoKey;
+let joinToken: string;
 
 async function balance(c: Client): Promise<{ balance: number; entries: number }> {
   const boot = (await c.call("GET", "/bootstrap")).json();
@@ -36,7 +38,10 @@ beforeAll(async () => {
   // the second person joins with a link the first one made
   const link = await ann.call("POST", "/join-links", {});
   expect(link.statusCode).toBe(201);
-  ben = await newUser("ben", link.json().token);
+  joinToken = link.json().token;
+  // PETTY-457: what the sign-up page asks first, with the token in the body
+  expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) })).json()).toEqual({ valid: true, inviter_name: ann.user.display_name, email: null });
+  ben = await newUser("ben", joinToken);
 });
 
 describe("household", () => {
@@ -47,6 +52,19 @@ describe("household", () => {
     expect((await ann.login()).statusCode).toBe(200);
     const wrong = await fetch(`${API}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: ann.user.email, password: "not-the-password" }) });
     expect(wrong.status).toBe(401);
+  });
+
+  it("takes a changing request from a browser only when the browser marks it same-origin (PETTY-409)", async () => {
+    const send = (url: string, site: string | null) => http.inject({ method: "POST", url, cookies: { petty_session: ann.cookie! }, headers: site === null ? {} : { "sec-fetch-site": site } });
+    for (const site of ["same-site", "cross-site", "none"]) {
+      const res = await send("/auth/logout", site);
+      expect(res.statusCode, site).toBe(403);
+      expect(res.json().code, site).toBe("CrossSiteRequest");
+    }
+    expect((await ann.call("GET", "/me")).statusCode).toBe(200); // still signed in
+    // the web app's own requests, and a program that sends no such header
+    expect((await send("/me/custody-challenge", "same-origin")).statusCode).toBe(200);
+    expect((await send("/me/custody-challenge", null)).statusCode).toBe(200);
   });
 
   it("makes a drawer and adds entries; the balance folds from the log", async () => {
@@ -66,12 +84,25 @@ describe("household", () => {
     expect(found.statusCode).toBe(200);
     expect(found.json()).toMatchObject({ id: ben.id, keys: { ecdh_pub: ben.user.pub.ecdh } });
     expect((await ann.call("POST", "/users/lookup", { email: `nobody-${ben.id}@petty.test` })).statusCode).toBe(404);
-    // a web app tab opened before the change still sends GET ?email=
-    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(ben.user.email)}`)).statusCode).toBe(200);
     const lines = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"') && l.includes("/users/lookup"));
-    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    await expect.poll(() => lines().length, { timeout: 10_000 }).toBeGreaterThanOrEqual(2);
     expect(lines().join("\n")).not.toContain("email=");
     expect(lines().join("\n")).not.toContain(ben.user.email);
+  });
+
+  it("no address or join token travels in a URL; a program that still asks that way gets 404 and leaves neither in the log (PETTY-457)", async () => {
+    const used = await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: joinToken }) });
+    expect(used.json()).toEqual({ valid: false, inviter_name: null, email: null }); // ben signed up with it
+    const fresh = (await ann.call("POST", "/join-links", {})).json().token as string;
+    const probe = `probe-${ben.id}@petty.test`;
+    // what a web app from before the change sends
+    expect((await ann.call("GET", `/join-links/${fresh}`)).statusCode).toBe(404);
+    expect((await ann.call("GET", `/users/lookup?email=${encodeURIComponent(probe)}`)).statusCode).toBe(404);
+    expect((await http.inject({ method: "POST", url: "/join-links/lookup", headers: { "content-type": "application/json" }, payload: JSON.stringify({ token: fresh }) })).json().valid).toBe(true);
+    const log = () => compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"request"'));
+    await expect.poll(() => log().filter((l) => l.includes("/api/join-links/lookup")).length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3);
+    const all = log().join("\n");
+    for (const secret of [fresh, joinToken, probe, encodeURIComponent(probe), "email="]) expect(all).not.toContain(secret);
   });
 
   it("shares the drawer; the other person reads and writes; a stranger cannot", async () => {
@@ -87,6 +118,35 @@ describe("household", () => {
     expect((await stranger.call("GET", `/drawers/${drawerId}`)).statusCode).toBe(404);
   });
 
+  it("the owner sees a drawer's pending invitations, and they end when the drawer gets a new owner (PETTY-446)", async () => {
+    const shed = await ann.createDrawer("Shed");
+    expect(shed.res.statusCode).toBe(201);
+    const raw = await ann.unwrap((await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === shed.id), ann.user.pub.ecdh, true);
+    const invite = async (from: Client, to: Client) => from.call("POST", `/drawers/${shed.id}/invitations`, { invitee_id: to.id, role: "write", wrap: await from.wrapFor(raw, to.user.pub.ecdh, shed.id, 1) });
+    const first = await invite(ann, ben);
+    expect(first.statusCode).toBe(201);
+    expect((await ben.call("POST", `/invitations/${first.json().id}/accept`)).statusCode).toBe(204);
+    const cat = await newUser("cat");
+    const pending = await invite(ann, cat);
+    expect(pending.statusCode).toBe(201);
+    const listed = (await ann.call("GET", `/drawers/${shed.id}/invitations`)).json().invitations as { id: string; invitee: { id: string } }[];
+    expect(listed.map((i) => [i.id, i.invitee.id])).toEqual([[pending.json().id, cat.id]]);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).statusCode).toBe(403); // a member, not the owner
+    // ann hands the drawer to ben: what she left open is over
+    expect((await ann.call("POST", `/drawers/${shed.id}/transfer`, { to_user_id: ben.id })).statusCode).toBe(201);
+    expect((await ben.call("POST", `/drawers/${shed.id}/transfer/accept`)).statusCode).toBe(204);
+    expect((await cat.call("POST", `/invitations/${pending.json().id}/accept`)).statusCode).toBe(404);
+    expect((await cat.call("GET", `/drawers/${shed.id}`)).statusCode).toBe(404);
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).json()).toEqual({ invitations: [] });
+    // the new owner invites again, and only he can take it back
+    const again = await invite(ben, cat);
+    expect(again.statusCode).toBe(201);
+    expect((await ann.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(404);
+    expect((await ben.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(204);
+    // ann leaves, so the later steps see her drawers as before
+    expect((await ann.call("POST", `/drawers/${shed.id}/leave`)).statusCode).toBe(204);
+  });
+
   it("an Adjust sets what was counted, and later entries fold on top of it", async () => {
     const head = (await ann.call("GET", "/bootstrap")).json().entries.filter((e: { line_id: string }) => e.line_id === lineId).reduce((m: number, e: { seq: number }) => Math.max(m, e.seq), 0);
     expect((await ann.postEntry(drawerId, key, lineId, "adjust", 3900, { expected_head_seq: head, delta_hint: -100 })).res.statusCode).toBe(201);
@@ -96,7 +156,7 @@ describe("household", () => {
 
   it("a broken document can be put back by the owner: the client saves the kept copy with a counter inside (PETTY-183, PETTY-422)", async () => {
     const got = (await ann.call("GET", `/drawers/${drawerId}`)).json();
-    const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(40))), verification: false };
+    const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))), verification: false };
     expect((await ben.call("PUT", `/drawers/${drawerId}/document`, junk)).statusCode).toBe(200);
     expect(await documentName(ann)).toBeNull();
     const [last] = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history;
@@ -133,6 +193,69 @@ describe("household", () => {
     expect((await ann.call("DELETE", `/drawers/${doomed.id}`)).statusCode).toBe(400);
     expect((await ann.call("DELETE", `/drawers/${doomed.id}`, { proof: await ann.proof() })).statusCode).toBe(204);
     expect((await ann.call("GET", `/drawers/${doomed.id}`)).statusCode).toBe(404);
+  });
+
+  it("a new drawer key and deleting a line need a custody proof; a request without one changes nothing (PETTY-440, PETTY-441)", async () => {
+    const line = crypto.randomUUID();
+    const doc = applyOp(newDocument("Spare tin"), { type: "add_line", line: { id: line, kind: "money", name: "Cash", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const d = await ann.createDrawer("Spare tin", doc);
+    expect(d.res.statusCode).toBe(201);
+    expect((await ann.postEntry(d.id, d.key, line, "add", 700)).res.statusCode).toBe(201);
+    expect((await ann.postEntry(d.id, d.key, line, "add", 300)).res.statusCode).toBe(201);
+    const exported = async () => (await ann.call("GET", `/drawers/${d.id}/export`)).json() as { drawer: { key_version: number; version: number }; document: { author_id: string; nonce: string; ciphertext: string; key_version: number }; entries: { id: string; line_id: string; author_id: string; nonce: string; ciphertext: string; key_version: number }[] };
+    const start = await exported();
+
+    // the next key, made and wrapped the way the web app does it
+    const { key: key2, selfWrap } = await createDrawerKey(ann.sender, d.id, 2);
+    const wraps = [{ user_id: ann.id, wrap: selfWrap }];
+    // as a web app from before this change sends it: refused, and the drawer keeps its key
+    const oldStart = await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps });
+    expect(oldStart.statusCode).toBe(403);
+    expect(oldStart.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(start);
+    // a proof signed with a key that is not the account's
+    const foreign = await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps, proof: await ann.proof(ben.user.keys.ecdsa.privateKey) });
+    expect(foreign.statusCode).toBe(403);
+    expect(foreign.json().code).toBe("CustodyProofInvalid");
+    expect((await ann.call("POST", `/drawers/${d.id}/rotation`, { to_version: 2, wraps, proof: await ann.proof() })).statusCode).toBe(201);
+
+    const pending = await exported();
+    expect(pending.drawer.key_version).toBe(2);
+    const entries = [];
+    for (const r of pending.entries) {
+      const sealed = (await reseal(d.key, key2, { record_type: "entry", record_id: r.id, drawer_id: d.id, line_id: r.line_id, author_id: r.author_id, key_version: r.key_version, schema_version: 1 }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) }, 2)).sealed;
+      entries.push({ id: r.id, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+    }
+    const opened = await openDocument(d.key, { record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: pending.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(pending.document.nonce), ciphertext: fromB64(pending.document.ciphertext) });
+    const sealedDoc = await ann.sealDoc(d.id, key2, opened as DrawerDocument, 2);
+    const batch = { to_version: 2, entries, document: { key_version: 2, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext) } };
+    // a batch without a proof: refused, every row stays as it was, and the rotation waits
+    const oldBatch = await ann.call("PUT", `/drawers/${d.id}/rotation/batch`, batch);
+    expect(oldBatch.statusCode).toBe(403);
+    expect(oldBatch.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(pending);
+    expect((await ann.call("GET", `/drawers/${d.id}/rotation`)).json()).toMatchObject({ pending_entries: 2, document_pending: true, completed: false });
+    const done = await ann.call("PUT", `/drawers/${d.id}/rotation/batch`, { ...batch, proof: await ann.proof() });
+    expect(done.statusCode).toBe(200);
+    expect(done.json()).toMatchObject({ pending_entries: 0, document_pending: false, completed: true });
+    // the re-sealed rows open under the new key and hold what was written
+    const after = await exported();
+    const amounts = [];
+    for (const r of after.entries) amounts.push((await openEntryUnverified(key2, { record_type: "entry", record_id: r.id, drawer_id: d.id, line_id: r.line_id, author_id: r.author_id, key_version: 2, schema_version: 1 }, { nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) })).amount);
+    expect(amounts).toEqual([700, 300]);
+
+    // deleting the line: the same rule
+    const without = applyOp(opened as DrawerDocument, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
+    const sealedWithout = await ann.sealDoc(d.id, key2, without, 2);
+    const body = { document: { key_version: 2, schema_version: 1, nonce: toB64(sealedWithout.nonce), ciphertext: toB64(sealedWithout.ciphertext), base_version: after.drawer.version } };
+    const oldDelete = await ann.call("POST", `/drawers/${d.id}/lines/${line}/delete`, body);
+    expect(oldDelete.statusCode).toBe(403);
+    expect(oldDelete.json().code).toBe("CustodyProofRequired");
+    expect(await exported()).toEqual(after);
+    const deleted = await ann.call("POST", `/drawers/${d.id}/lines/${line}/delete`, { ...body, proof: await ann.proof() });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json().deleted_entries).toBe(2);
+    expect((await exported()).entries).toEqual([]);
   });
 
   it("a new recovery code replaces only the recovery copy, and only with proof of the keys (PETTY-200)", async () => {

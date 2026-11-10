@@ -62,14 +62,14 @@ describe("drawer document format", () => {
     expect((await write(owner, d.id, d.key, before.doc, 1, 1)).json().code).toBe("VersionConflict");
     expect(await read(owner, d.id, d.key)).toMatchObject({ version: 3, doc: { rev: 1, name: "Tin 2" } });
 
-    // deleting a line carries a document too: the same rule
+    // deleting a line carries a document too (and a custody proof, PETTY-441): the same rule
     const without = applyOps(third.doc, [{ type: "remove_line", line_id: lineId }], { lineHasEntries: () => false });
     const { rev: _rev, ...noCounter } = without;
     void _rev;
-    const oldDelete = await owner.call("POST", `/drawers/${d.id}/lines/${lineId}/delete`, { document: { ...sealedBody(await owner.sealDoc(d.id, d.key, noCounter, 1, 1), 1, 1), base_version: third.version, verification: false } });
+    const oldDelete = await owner.call("POST", `/drawers/${d.id}/lines/${lineId}/delete`, { document: { ...sealedBody(await owner.sealDoc(d.id, d.key, noCounter, 1, 1), 1, 1), base_version: third.version, verification: false }, proof: await owner.proof() });
     expect(oldDelete.statusCode).toBe(409);
     expect(oldDelete.json().code).toBe("DocumentFormatOlder");
-    const newDelete = await owner.call("POST", `/drawers/${d.id}/lines/${lineId}/delete`, { document: { ...sealedBody(await owner.sealDoc(d.id, d.key, nextRev(without), 1, 2), 1, 2), base_version: third.version, verification: false } });
+    const newDelete = await owner.call("POST", `/drawers/${d.id}/lines/${lineId}/delete`, { document: { ...sealedBody(await owner.sealDoc(d.id, d.key, nextRev(without), 1, 2), 1, 2), base_version: third.version, verification: false }, proof: await owner.proof() });
     expect(newDelete.statusCode).toBe(200);
     expect(await read(owner, d.id, d.key)).toMatchObject({ version: 4, schema: 2, doc: { rev: 2, lines: [] } });
   });

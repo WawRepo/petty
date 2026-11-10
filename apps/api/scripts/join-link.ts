@@ -14,4 +14,5 @@ await client.connect();
 const token = randomToken(24);
 await client.query("insert into join_links (token_hash, email, expires_at) values ($1, $2, now() + interval '7 days')", [sha256(token), email]);
 await client.end();
-process.stdout.write(`${config.appUrl}/join/${token}\n`);
+// The token goes after "#", the part of an address a browser never sends to a server, as in the emailed links.
+process.stdout.write(`${config.appUrl}/join#${token}\n`);

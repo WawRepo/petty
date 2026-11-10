@@ -103,12 +103,12 @@ export class Client {
    * Makes an access token (PETTY-164) and returns its row id, the bearer a tool would send, and the
    * whole token string. `drawers` are copied into the bundle, as the web app does at creation.
    */
-  async makeAccessToken(role: "read" | "write" = "read", drawers: { drawer_id: string; key_version: number; key: string }[] = []) {
+  async makeAccessToken(role: "read" | "write" = "read", drawers: { drawer_id: string; key_version: number; key: string }[] = [], scope: string[] | null = null) {
     const tokenId = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
     const secret = patSecret();
     const signing = role === "write" ? await this.tokenSigning() : null;
     const bundle = await sealPatBundle(secret, tokenId, { v: 1, user_id: this.id, drawers, ...(signing ? signing.bundle : {}) });
-    const res = await this.call("POST", "/me/tokens", { token_id: tokenId, name: "Assistant", role, scope: null, expires_at: null, bundle, proof: await this.proof(), ...(signing ? { signing: signing.body } : {}) });
+    const res = await this.call("POST", "/me/tokens", { token_id: tokenId, name: "Assistant", role, scope, expires_at: null, bundle, proof: await this.proof(), ...(signing ? { signing: signing.body } : {}) });
     return { res, rowId: res.json().id as string, bearer: `petty_pat_${tokenId}`, token: patToken(tokenId, secret) };
   }
 

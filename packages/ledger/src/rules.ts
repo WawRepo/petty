@@ -50,8 +50,16 @@ export function normalizeCurrencyCode(code: string): string {
 }
 
 export const MAX_CURRENCY_CODE_LENGTH = 12;
+// eslint-disable-next-line no-control-regex -- control characters are exactly what this drops
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
+/**
+ * White space inside a code is refused. Other control characters are dropped (PETTY-414): the code is
+ * a label that the command line and the AI add-on print next to every amount.
+ */
 export function assertCurrencyCode(code: string): string {
   const c = normalizeCurrencyCode(code);
-  if (c.length === 0 || c.length > MAX_CURRENCY_CODE_LENGTH || /\s/.test(c)) throw new LedgerError("bad_currency_code");
-  return c;
+  if (/\s/.test(c)) throw new LedgerError("bad_currency_code");
+  const plain = c.replace(CONTROL, "");
+  if (plain.length === 0 || plain.length > MAX_CURRENCY_CODE_LENGTH) throw new LedgerError("bad_currency_code");
+  return plain;
 }

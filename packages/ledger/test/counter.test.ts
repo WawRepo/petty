@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { LedgerError, REV_AHEAD_MAX, applyOps, assertDocumentShape, newDocument, nextRev, readDocument, revRolledBack, type DrawerDocument, type Line } from "../src/index.js";
 
 /** PETTY-422: the counter inside a drawer document. */
-const line: Line = { id: "a", kind: "money", name: "Cash", currency: "PLN", exponent: 2 };
+const line: Line = { id: "6f1d2a3b-4c5d-4e6f-8a7b-9c0d1e2f3a4b", kind: "money", name: "Cash", currency: "PLN", exponent: 2 };
 const ctx = { lineHasEntries: () => false };
 const plain = (): DrawerDocument => applyOps(newDocument("Tin"), [{ type: "add_line", line }], ctx);
 /** What a ciphertext gives back: the document through JSON. */
@@ -53,7 +53,7 @@ describe("the counter of a drawer document", () => {
   it("every write stores the counter it loaded plus one; a change to the content keeps the loaded counter until then", () => {
     const first = nextRev(plain());
     expect(first.rev).toBe(1);
-    const edited = applyOps(first, [{ type: "rename_drawer", name: "Kitchen" }, { type: "set_tags", tags: ["shed"] }, { type: "remove_line", line_id: "a" }], ctx);
+    const edited = applyOps(first, [{ type: "rename_drawer", name: "Kitchen" }, { type: "set_tags", tags: ["shed"] }, { type: "remove_line", line_id: line.id }], ctx);
     expect(edited.rev).toBe(1);
     expect(nextRev(edited).rev).toBe(2);
     expect(first.rev).toBe(1); // the input is not changed

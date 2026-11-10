@@ -6,6 +6,7 @@ import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
 import { getDrawers, openWrap, type DrawerView, loadIfIdle } from "./drawers.js";
 import { getAuth } from "./session.js";
+import { openVaultAgain } from "./custody.js";
 
 /**
  * Access tokens (PETTY-164): the owner hands one of their own tools a copy of the keys it needs.
@@ -18,8 +19,11 @@ export interface NewTokenOptions {
   /** null = every drawer I can open */
   readonly scope: readonly string[] | null;
   readonly expiresAt: string | null;
-  /** Needed for a writing token: its bundle carries the signing key, so entries are mine. */
-  readonly unlocked?: UnlockedKeys;
+  /**
+   * PETTY-452: what the person gave just now to open the vault again: the passphrase, or null for a
+   * passkey prompt. Every token needs it, a reading one too: an unlocked session alone makes none.
+   */
+  readonly passphrase: string | null;
 }
 
 /** A short, stable fingerprint of a token's public key, kept in the sealed user document (PETTY-181). */
@@ -49,7 +53,11 @@ async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId
 export async function createAccessToken(opts: NewTokenOptions): Promise<{ token: string; row: AccessTokenT }> {
   const me = getAuth();
   if (me.status !== "unlocked") throw new Error("vault locked");
-  if (opts.role === "write" && !opts.unlocked) throw new Error("writing token needs the vault");
+  // PETTY-452: the vault is opened again here, with what the person gave for this token. A wrong passphrase
+  // or a cancelled passkey prompt ends it before anything is made. The keys it gives must be this
+  // session's own, and they sign what the server checks below (the delegation and the custody proof).
+  const again: UnlockedKeys = await openVaultAgain(me.me, opts.passphrase);
+  if (again.pub.ecdh !== me.keys.pub.ecdh || again.pub.ecdsa !== me.keys.pub.ecdsa) throw new Error("vault keys differ");
   const id = tokenId();
   const secret = patSecret();
   const openable = await openableKeys(opts.scope);
@@ -61,7 +69,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
   if (opts.role === "write") {
     const sig = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
     const ecdsaPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", sig.publicKey)));
-    const delegation = await signDelegation(me.keys.ecdsaPrivate, {
+    const delegation = await signDelegation(again.ecdsaPrivate, {
       user_id: me.me.id,
       account_sig_key_id: me.me.keys.sig_key_id,
       token_ecdsa_pub: ecdsaPub,
@@ -86,7 +94,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
       scope: opts.scope ? [...opts.scope] : null,
       expires_at: opts.expiresAt,
       bundle,
-      proof: await custodyProof(me.keys.ecdsaPrivate),
+      proof: await custodyProof(again.ecdsaPrivate),
       ...(signing ? { signing: signing.body } : {}),
     }),
   );

@@ -190,6 +190,7 @@ test("PETTY-422: two members who save at the same time, and a tool that edits th
   await s.pageA.getByTestId("token-new").click();
   await s.pageA.getByTestId("token-name").fill("Writer");
   await s.pageA.getByTestId("token-write").check();
+  await s.pageA.getByTestId("token-scope-all").check();
   await s.pageA.getByTestId("token-passphrase").fill(s.alice.passphrase);
   await s.pageA.getByTestId("token-create").click();
   const token = (await s.pageA.getByTestId("token-value").innerText()).trim();

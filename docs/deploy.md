@@ -30,6 +30,9 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
   address in a header of their own: Fly.io `Fly-Client-IP`, Cloudflare `CF-Connecting-IP`. Name it
   in `CLIENT_IP_HEADER`, and that header counts (PETTY-301). Set it only when the app can be reached
   through that platform alone: anyone who reaches the app directly could write the header.
+- Every per-address limit counts an IPv4 client by its address and an IPv6 client by its /64 network
+  (PETTY-458): one home or phone connection holds a whole /64 and can use any address in it. An IPv4
+  address written as IPv6 (`::ffff:203.0.113.7`) counts as that IPv4 address.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
@@ -95,6 +98,38 @@ HTTPS).
 Metrics, logs and traces are described in `monitoring.md`.
 
 An agent setup (Claude Desktop) is described in `agent.md`.
+
+### Limits
+
+The server cannot read what it stores, so it limits it by size. These are fixed in the code
+(`packages/protocol/src/index.ts`); only the quota is a setting. A request outside them is refused and
+stores nothing.
+
+| What | Limit |
+|---|---|
+| An entry | 272 bytes to 16 KiB + 16, sealed (a client pads to 256-byte blocks; a 2000-byte note is about 3 KiB) |
+| A drawer's document | at least 16 KiB + 16, sealed (a client pads to 16 KiB blocks); no upper limit of its own: the request size (2 MiB) and the quota bound it |
+| A photo | about 300 KB before sealing |
+| A person's own document (trusted keys, places, tags) | 256 KiB + 16, sealed; one per account |
+| A token's sealed key bundle | 256 KiB (about 2000 drawer keys) |
+| Access tokens per account | 50 live ones (not revoked, not expired). A revoked token's bundle and wrapped drawer keys are erased at once, an expired one's when its owner next makes a token |
+| Passkeys per account | 20 |
+| A nonce | exactly 12 bytes |
+| A salt | 16 to 64 bytes |
+| A wrapped drawer key | exactly 40 bytes |
+| A public key | 48 to 128 bytes (the apps write 91) |
+| A wrapped private key in a vault copy | 64 to 256 bytes (the apps write 154) |
+| A signature; a custody challenge | exactly 64 bytes; exactly 32 bytes |
+
+The quota (`STORAGE_QUOTA_MB`) counts ciphertext bytes. Everything else in a stored row has a fixed
+size, and an entry or a document cannot be smaller than a client writes it, so every row costs
+storage. A key rotation re-encrypts rows in place: a row may not grow past its limit, and what a
+batch adds counts against the quota like any other write.
+
+Rows written before these limits existed keep the size they have, and the app still reads them; the
+limits apply to what is sent from then on. To see whether a database holds rows from before that are
+not the size a client writes: `select count(*) from entries where octet_length(nonce) <> 12;` (the
+same for `drawer_documents`, `drawer_document_history` and `drawer_photos`).
 
 ## Privacy notice and terms
 

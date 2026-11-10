@@ -10,13 +10,26 @@ import { foldText } from "@petty/ledger";
 export const itemLabel = (d: AgentDrawer, l: AgentLine): string => `${d.name} › ${l.name}`;
 const SPLIT = /\s+(?:›|>)\s+/;
 
+/**
+ * PETTY-452: a token made for chosen drawers does not see the others, so "not found" may mean "in a
+ * drawer this token does not open". The answer then says how many drawers the token opens.
+ */
+function notFound(client: AgentClient, message: string): TokenError {
+  const n = client.identity.scope?.length;
+  return new TokenError("NotFound", n === undefined ? message : `${message} (this token opens only the ${n} drawer${n === 1 ? "" : "s"} chosen for it)`);
+}
+const orNotFound = (client: AgentClient) => (e: unknown): never => { throw e instanceof TokenError && e.code === "NotFound" ? notFound(client, e.message) : e; };
+
+/** A drawer by its name or id, for `petty move`. */
+export const resolveDrawer = (client: AgentClient, target: string): Promise<AgentDrawer> => client.findDrawer(target).catch(orNotFound(client));
+
 export async function resolveItem(client: AgentClient, target: string): Promise<{ drawer: AgentDrawer; line: AgentLine }> {
   const ids = /^([0-9a-f-]{36})\/([0-9a-f-]{36})$/i.exec(target.trim());
   if (ids) {
     const drawer = (await client.drawers()).find((d) => d.id === ids[1]);
     const line = drawer?.lines.find((l) => l.id === ids[2]);
     if (drawer && line) return { drawer, line };
-    throw new TokenError("NotFound", `no item ${target}`);
+    throw notFound(client, `no item ${target}`);
   }
   const parts = target.split(SPLIT);
   if (parts.length === 2) {
@@ -24,9 +37,9 @@ export async function resolveItem(client: AgentClient, target: string): Promise<
     const hits = (await client.drawers()).flatMap((drawer) => drawer.lines.filter((l) => foldText(drawer.name) === dn && foldText(l.name) === ln).map((line) => ({ drawer, line })));
     if (hits.length === 1) return hits[0]!;
     if (hits.length > 1) throw new TokenError("Ambiguous", `${JSON.stringify(target)} names ${hits.length} items: use the id from --json`);
-    throw new TokenError("NotFound", `no item ${JSON.stringify(target)}`);
+    throw notFound(client, `no item ${JSON.stringify(target)}`);
   }
-  return client.find(target);
+  return client.find(target).catch(orNotFound(client));
 }
 
 /** "House › Kitchen", "House > Kitchen" or "House/Kitchen" → ["House", "Kitchen"]. */

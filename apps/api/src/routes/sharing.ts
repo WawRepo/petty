@@ -59,14 +59,29 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     return { invitations: rows.map((r) => ({ id: r.id, drawer_id: r.drawer_id, invitee_id: r.invitee_id, role: r.role, key_version: r.key_version, wrap: r.wrap, state: r.state, created_at: iso(r.created_at), inviter: { id: r.inviter_id, display_name: r.inviter_name, keys: userKeys({ ...r, created_at: r.k_created_at }) } })) };
   });
 
+  /** PETTY-446: the owner sees every pending invitation of the drawer, whoever made it. */
+  app.get<{ Params: { id: string } }>("/drawers/:id/invitations", async (req) => {
+    const me = requireUser(req);
+    await requireRole(apiPool, req.params.id, me.id, "owner");
+    const { rows } = await apiPool.query(
+      `select i.id, i.drawer_id, i.inviter_id, i.invitee_id, i.role, i.key_version, i.created_at, u.display_name as invitee_name
+         from invitations i join users u on u.id = i.invitee_id
+        where i.drawer_id = $1 and i.state = 'pending' order by i.created_at`,
+      [req.params.id],
+    );
+    return { invitations: rows.map((r) => ({ id: r.id, drawer_id: r.drawer_id, role: r.role, key_version: r.key_version, created_at: iso(r.created_at), inviter_id: r.inviter_id, invitee: { id: r.invitee_id, display_name: r.invitee_name } })) };
+  });
+
   /** Invitee accepts: membership + wrap in one transaction, no cryptography needed. */
   app.post<{ Params: { id: string } }>("/invitations/:id/accept", async (req, reply) => {
     const me = requireUser(req);
     await withTx(apiPool, async (db) => {
       const inv = (await db.query("select * from invitations where id = $1 and invitee_id = $2 and state = 'pending' for update", [req.params.id, me.id])).rows[0];
       if (!inv) throw notFound("InvitationNotFound");
-      const d = (await db.query<{ key_version: number }>("select key_version from drawers where id = $1", [inv.drawer_id])).rows[0];
+      const d = (await db.query<{ key_version: number; owner_id: string }>("select key_version, owner_id from drawers where id = $1", [inv.drawer_id])).rows[0];
       if (!d) throw notFound("DrawerNotFound");
+      // PETTY-446: only the owner invites, so an invitation is good only while its inviter owns the drawer.
+      if (d.owner_id !== inv.inviter_id) throw notFound("InvitationNotFound");
       if (d.key_version !== inv.key_version) {
         await db.query("update invitations set state = 'revoked', resolved_at = now() where id = $1", [inv.id]);
         throw conflict("InvitationStale", "the drawer key rotated since the invitation; ask the owner to invite again");
@@ -85,9 +100,13 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(204).send();
   });
 
+  /** The drawer's owner revokes a pending invitation: any of that drawer, also one a former owner made (PETTY-446). */
   app.delete<{ Params: { id: string } }>("/invitations/:id", async (req, reply) => {
     const me = requireUser(req);
-    const r = await apiPool.query("update invitations set state = 'revoked', resolved_at = now() where id = $1 and inviter_id = $2 and state = 'pending'", [req.params.id, me.id]);
+    const r = await apiPool.query(
+      "update invitations i set state = 'revoked', resolved_at = now() from drawers d where i.id = $1 and i.state = 'pending' and d.id = i.drawer_id and d.owner_id = $2",
+      [req.params.id, me.id],
+    );
     if (!r.rowCount) throw notFound("InvitationNotFound");
     return reply.code(204).send();
   });
@@ -147,6 +166,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [req.params.id, me.id]);
       await db.query("insert into drawer_members (drawer_id, user_id, role) values ($1, $2, 'write') on conflict do nothing", [req.params.id, t.from_user_id]);
       await db.query("delete from ownership_transfers where drawer_id = $1", [req.params.id]);
+      // PETTY-446: who joins is the owner's decision; what the former owner left open ends here, and the new owner invites anew.
+      await db.query("update invitations set state = 'revoked', resolved_at = now() where drawer_id = $1 and state = 'pending'", [req.params.id]);
       const u = (await db.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [t.from_user_id])).rows[0];
       if (u) mails.transferDone(u.email, me.display_name, u.locale);
     });

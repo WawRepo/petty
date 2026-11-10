@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sealPhoto, toB64 } from "@petty/crypto";
-import { newDocument } from "@petty/ledger";
-import { PHOTO_MAX_BYTES, PHOTO_MAX_CIPHERTEXT } from "@petty/protocol";
+import { applyOp, newDocument } from "@petty/ledger";
+import { ENTRY_MIN_CIPHERTEXT, PHOTO_MAX_BYTES, PHOTO_MAX_CIPHERTEXT } from "@petty/protocol";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { newUser } from "../lib.js";
 
@@ -44,5 +44,41 @@ describe("storage limits", () => {
     // removing a photo frees the space
     expect((await dee.call("DELETE", `/drawers/${a.id}/photo`)).statusCode).toBe(204);
     expect((await photoFor(dee, d.id, d.key, full)).statusCode).toBe(204);
+  }, 60_000);
+
+  it("a stored field of the wrong size is refused and takes no space (PETTY-442)", async () => {
+    const eve = await newUser("eve");
+    const line = crypto.randomUUID();
+    const doc = applyOp(newDocument("Sizes"), { type: "add_line", line: { id: line, kind: "money", name: "Cash", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false });
+    const d = await eve.createDrawer("Sizes", doc);
+    expect(d.res.statusCode).toBe(201);
+    expect((await eve.postEntry(d.id, d.key, line, "add", 100)).res.statusCode).toBe(201);
+    const used = async () => ((await eve.call("GET", "/me/storage")).json() as { used_bytes: number }).used_bytes;
+    const before = await used();
+    const entry = (over: Record<string, string>) => ({ id: crypto.randomUUID(), line_id: line, is_checkpoint: false, reverses_entry_id: null, key_version: 1, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(528)), ...over });
+
+    // a nonce is 12 bytes: a megabyte in its place, or four bytes more, is not stored
+    for (const nonce of [toB64(new Uint8Array(1_400_000)), toB64(new Uint8Array(16))]) {
+      const res = await eve.call("POST", `/drawers/${d.id}/entries`, entry({ nonce }));
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ code: "ValidationError", context: { path: "nonce" } });
+    }
+    // an entry is at least one padded block, so every stored entry counts against the quota
+    const small = await eve.call("POST", `/drawers/${d.id}/entries`, entry({ ciphertext: toB64(new Uint8Array(ENTRY_MIN_CIPHERTEXT - 1)) }));
+    expect(small.statusCode).toBe(400);
+    expect(small.json().code).toBe("EntryTooSmall");
+    // a wrapped drawer key is 40 bytes, with a salt of 16 to 64
+    const mine = (await eve.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === d.id) as Record<string, unknown>;
+    const other = crypto.randomUUID();
+    for (const bad of [{ salt: toB64(new Uint8Array(100_000)) }, { wrapped: toB64(new Uint8Array(41)) }]) {
+      const res = await eve.call("POST", "/drawers", { id: other, document: { key_version: 1, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(16400)) }, self_wrap: { ...mine, drawer_id: other, ...bad } });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().code).toBe("ValidationError");
+    }
+    expect((await eve.call("GET", `/drawers/${other}`)).statusCode).toBe(404);
+    expect(await used()).toBe(before);
+    // what a client really writes still goes in
+    expect((await eve.postEntry(d.id, d.key, line, "add", 1)).res.statusCode).toBe(201);
+    expect(await used()).toBeGreaterThan(before);
   }, 60_000);
 });
