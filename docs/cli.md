@@ -13,15 +13,15 @@ Petty API (ciphertext only)
 
 ## Install
 
-It is one file, `petty.mjs`, and needs Node 20 or newer. Every Petty serves it at
-`https://<your petty>/downloads/petty.mjs`; each GitHub release carries it too, with `SHA256SUMS`.
-The page *Use Petty with AI* in the app shows these commands with your Petty's address filled in.
+It is one file, `petty.mjs`, and needs Node 20 or newer. Take it from the GitHub release of the version
+your Petty runs: Settings → About and the landing page's footer show it (`v1.2.3` below). The page
+*Use Petty with AI* in the app shows these commands with your Petty's version and address filled in.
 
 macOS or Linux (`~/.local/bin` must be on your `PATH`):
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSL https://petty.example.com/downloads/petty.mjs -o ~/.local/bin/petty
+curl -fsSL https://github.com/WawRepo/petty/releases/download/v1.2.3/petty.mjs -o ~/.local/bin/petty
 chmod +x ~/.local/bin/petty
 ```
 
@@ -29,11 +29,64 @@ Windows (PowerShell):
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.petty" | Out-Null
-Invoke-WebRequest https://petty.example.com/downloads/petty.mjs -OutFile "$HOME\.petty\petty.mjs"
+Invoke-WebRequest https://github.com/WawRepo/petty/releases/download/v1.2.3/petty.mjs -OutFile "$HOME\.petty\petty.mjs"
 # run it as: node "$HOME\.petty\petty.mjs" <command>
 # or make `petty` a command: save this as petty.cmd in a folder on your PATH
 #   @node "%USERPROFILE%\.petty\petty.mjs" %*
 ```
+
+### Check what you download
+
+`petty` (and `petty-mcp.mjs` and the add-on `petty.mcpb`, see [agent.md](agent.md)) runs on your
+computer and holds an access token. Check the file after you download it and before you first run it.
+
+**With GitHub's command line**, [`gh`](https://cli.github.com), signed in (`gh auth login`):
+
+```sh
+gh attestation verify ~/.local/bin/petty --repo WawRepo/petty \
+  --signer-workflow WawRepo/petty/.github/workflows/release.yml --source-ref refs/heads/main
+```
+
+Each release signs a statement of what it built (a build attestation, through Sigstore), and GitHub
+keeps it with the repository. The command passes only if this repository's release workflow, run from
+`main`, built exactly the bytes of your file. The file's name does not matter. For a file that anyone
+changed afterwards, wherever it was changed, the command finds no attestation and fails. It fails the
+same way for a release made before attestations were added: for such a release, use the checksum.
+
+**Without `gh`**, compare checksums:
+
+```sh
+curl -fsSL https://github.com/WawRepo/petty/releases/download/v1.2.3/SHA256SUMS | grep ' petty.mjs$'
+shasum -a 256 ~/.local/bin/petty        # Linux also: sha256sum; PowerShell: Get-FileHash <file>
+```
+
+The two long numbers must be the same. This shows that your file is the one on the release page, and
+nothing more: someone who could change the release's files could change `SHA256SUMS` with them.
+
+**What these checks do not cover:**
+
+- Nobody runs them for you, and `petty` neither checks nor updates itself. To update, download and
+  check again.
+- They say who built a file, not that its code is good.
+- An older release passes too. Take the version your Petty shows.
+- The page *Use Petty with AI* is part of the web app, so the server you use controls what it shows
+  ([threat-model.md](threat-model.md), "A malicious frontend build"). Read the addresses in its
+  commands: they should begin with `https://github.com/WawRepo/petty/`. This file, read on GitHub, is
+  the copy that does not depend on that server.
+
+**The copy your Petty serves.** Every Petty also serves these files itself, at
+`https://<your petty>/downloads/petty.mjs` (and `petty-mcp.mjs`, `petty.mcpb`, `petty-skill.zip`).
+Nothing checks that copy, and whoever controls the server controls it. It is built again inside the
+image, so it may differ from the release's file byte for byte, and then neither check above passes.
+Use it only when you trust that server the way you trust your own computer, for example your own
+Petty on a network with no way out to GitHub.
+
+**A Petty that runs its own build or a fork.** Its version is then no release of this repository, or
+its source is somewhere else, and no release holds its files. *Use Petty with AI* says so and offers
+that Petty's own copies. You then trust its operator, who must offer you the source of what runs
+([deploy.md](deploy.md), "Running a changed version"). An operator who makes releases with a copy of
+this repository's workflow gets attestations in their own repository: check with `--repo` and
+`--signer-workflow` set to theirs.
 
 ## Sign in
 

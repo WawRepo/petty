@@ -865,7 +865,9 @@
         "code": "En un terminal (Node 20 o posterior): instala la línea de comandos petty, inicia sesión en este Petty (se abre una página suya para permitirlo) y añádelo a Claude Code para todos los proyectos:",
         "editor": "En un terminal (Node 20 o posterior): guarda petty-mcp.mjs y pega en {app} el bloque de configuración que imprime la segunda línea, con tu token de acceso donde dice petty_pat_…:",
         "any": "Cualquier aplicación que ejecute servidores MCP locales puede usar Petty. En el registro oficial de MCP aparece como:",
-        "windows": "En Windows, Usar Petty con IA, más abajo, tiene los mismos pasos para PowerShell."
+        "windows": "En Windows, Usar Petty con IA, más abajo, tiene los mismos pasos para PowerShell.",
+        "fromRelease": "Los archivos vienen de la versión publicada en GitHub ({version}). Usar Petty con IA, más abajo, explica cómo comprobarlos.",
+        "fromHere": "Los archivos vienen de este mismo Petty y nadie los comprueba. Usar Petty con IA, más abajo, lo explica."
       },
       "badgesLabel": "En resumen",
       "badges": {
@@ -1372,6 +1374,15 @@
       "Confirma con tu llave de acceso o tu frase de contraseña de la bóveda.",
       "Copia el token. Solo se muestra una vez."
     ],
+    "filesTitle": "De dónde vienen los programas",
+    "filesRelease": "El complemento, `petty-mcp.mjs` y `petty` se ejecutan en tu equipo y guardan tu token. Los botones y los comandos de esta página los toman de la versión publicada en GitHub que ejecuta este Petty ({version}), no de este Petty.",
+    "filesCheck": "Puedes comprobar un archivo después de descargarlo y antes de ejecutarlo. Con la línea de comandos de GitHub, `gh`, y la sesión iniciada, ejecuta la línea de tu archivo:",
+    "filesCheckMeans": "La comprobación solo pasa si el flujo de publicación de ese repositorio generó exactamente este archivo. Sin `gh`, compara el SHA-256 del archivo con su línea en el `SHA256SUMS` de la versión. Eso solo demuestra que tu archivo es el que está en la página de la versión.",
+    "filesLimits": "Nadie hace estas comprobaciones por ti. Esta página viene de este Petty, así que lee las direcciones de los comandos: deben empezar por `{url}`. Este Petty también sirve sus propias copias en `/downloads/`. Esas no las comprueba nadie.",
+    "filesSums": "SHA256SUMS de {version}",
+    "filesDocs": "Las comprobaciones, paso a paso",
+    "filesOwn": "El complemento, `petty-mcp.mjs` y `petty` se ejecutan en tu equipo y guardan tu token. Este Petty ejecuta una compilación que no es una versión publicada ({version}), así que los botones y los comandos de esta página los toman de este mismo Petty.",
+    "filesOwnTrust": "Nadie comprueba estos archivos. Úsalos solo si confías en quien administra este Petty tanto como en un programa que te entregara en mano.",
     "desktopTitle": "2a. Claude Desktop",
     "desktopSteps": [
       "Instala Claude Desktop desde claude.ai/download e inicia sesión, si aún no lo has hecho.",
@@ -1380,7 +1391,7 @@
       "Claude Desktop te pedirá dos cosas: pega esta dirección de Petty y tu token, y guarda. Puedes cambiarlos más tarde en Claude Desktop → Configuración → Extensiones → Petty.",
       "Abre un chat nuevo y pregunta: «¿Qué hay en mis cajones?». En un Mac, permite el acceso a la red si te lo pide y luego reinicia Claude Desktop."
     ],
-    "otherTitle": "2b. Otras aplicaciones de IA (Cursor, VS Code, Windsurf, Claude Code)",
+    "otherTitle": "2c. Otras aplicaciones de IA, a mano (Cursor, VS Code, Windsurf)",
     "otherSteps": [
       "Instala Node 20 o posterior.",
       "Ejecuta los dos comandos de abajo que correspondan a tu equipo. El primero guarda `petty-mcp.mjs` en una carpeta `.petty` dentro de tu carpeta personal; el segundo muestra el bloque de configuración con la ruta real de ese archivo.",
@@ -1391,8 +1402,8 @@
     "windows": "Windows (PowerShell)",
     "manual": "O descarga el archivo y muévelo tú a esa carpeta:",
     "example": "El bloque que se muestra se parece a este, con tus propias rutas:",
-    "claudeCode": "Para Claude Code, lo mismo en un solo comando:",
-    "cliTitle": "2c. La línea de comandos: petty",
+    "claudeCode": "Para Claude Code, usa la línea de comandos (2b). No pongas un token en un comando `claude mcp add`: el historial de tu shell guarda la línea, y otros programas pueden leerla en la lista de procesos mientras se ejecuta.",
+    "cliTitle": "2b. La línea de comandos: petty",
     "cliIntro": "Un programa para tu terminal, tus scripts y los agentes de IA que ejecutan comandos (Claude Code, Codex). El programa inicia sesión a través de una página de este Petty en tu navegador, como `gh auth login`: no hay que copiar ningún token.",
     "cliSteps": [
       "Instala Node 20 o posterior.",
@@ -1403,6 +1414,7 @@
     "cliDownload": "Descargar petty.mjs",
     "cliPath": "Si el terminal dice «command not found: petty», `~/.local/bin` no está en tu PATH. Añade `export PATH=\"$HOME/.local/bin:$PATH\"` a `~/.zshrc` (Mac) o `~/.bashrc` (Linux) y abre un terminal nuevo.",
     "cliClaude": "Después, para Claude Code, añádelo para todos los proyectos:",
+    "cliOther": "Para Cursor, VS Code, Windsurf y otras aplicaciones MCP, `petty mcp --print-config` muestra el bloque de configuración para pegar. No contiene ningún token.",
     "askTitle": "3. Pregunta",
     "ask": [
       "¿Qué hay en el cajón de la cocina?",

@@ -43,8 +43,27 @@ Users should be told these plainly.
   Clerk's sign-in pages (Clerk's code is bundled at a pinned version, not fetched at run time; see the
   bot check below), subresource integrity, no analytics, pinned
   dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
-  built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
+  built by hand while CI could not run; their provenance names no source revision). Each release also
+  signs a build attestation for its image, so an operator can check that the release workflow built
+  the digest they run ([deploy.md](deploy.md), "Check the image"). That check is the operator's: a
+  person who uses the instance cannot see which image it runs. Self-hosting from a verified image removes
   the third party, not the risk class.
+- **A program you download and run.** The command line (`petty.mjs`), the MCP program
+  (`petty-mcp.mjs`) and the Claude Desktop add-on (`petty.mcpb`) run on your computer, outside the
+  browser, and hold an access token. A changed copy can do there whatever you can, which is more than a
+  changed web app can reach. Every instance serves copies of these files under `/downloads/`; nothing
+  checks them, and whoever controls the instance controls them. So the docs, and the app's page
+  *Use Petty with AI* when the instance runs a release, take the files from the GitHub release of that
+  version instead. Each release signs a build attestation for these files, and `gh attestation verify`
+  passes only for a file that the release workflow of the repository built from `main`
+  ([cli.md](cli.md), "Check what you download"); `SHA256SUMS` on the release page lets a person without
+  `gh` see that a file is the one on that page, and no more. The limits: nobody is made to run a
+  check, and the programs neither check nor update themselves. The page that shows the commands is
+  part of the web app, so the instance controls it too (the item above). A check says who built a
+  file, not that its code is good, and an older release passes as well as the current one. An
+  instance that runs its own build or a fork has no release to compare with: its page says so and
+  offers its own copies, and you trust its operator. Releases made before attestations were added have
+  none.
 - **A malicious collaborator.** Anyone you share a drawer with can read and copy everything in it.
   Removal stops future access, never past access.
 - **Script injection (XSS) in the app itself.** Injected code in the page can reach keys held in
