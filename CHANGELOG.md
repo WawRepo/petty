@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.34] — 2026-11-11
+
 ### Security
 - The web app now checks who wrote an entry against a key you hold for that person: your own key,
   the key in your list of trusted keys, or an earlier key of theirs that you had confirmed. A key that
@@ -849,7 +851,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.33...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.34...HEAD
+[1.5.34]: https://github.com/WawRepo/petty/releases/tag/v1.5.34
 [1.5.33]: https://github.com/WawRepo/petty/releases/tag/v1.5.33
 [1.5.32]: https://github.com/WawRepo/petty/releases/tag/v1.5.32
 [1.5.31]: https://github.com/WawRepo/petty/releases/tag/v1.5.31
