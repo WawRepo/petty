@@ -11,7 +11,7 @@ import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { PromptSheet } from "../components/PromptSheet.js";
 import { Sheet } from "../components/Sheet.js";
-import { excludedFromTotal, pinStatus, placesShown, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
+import { excludedFromTotal, memberStatus, placesShown, setCountedInTotal, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { useAuth } from "../lib/session.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
@@ -196,13 +196,14 @@ export function DrawerScreen() {
   // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
   if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} /><DrawerSkeleton /></>;
   if (!view) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
-  // PETTY-443: the reason, and the ways out: an earlier version, leaving, deleting
+  // PETTY-443: the reason, and the ways out: an earlier version, leaving, deleting. Its Members button also serves
+  // the reasons that ask to compare a safety number (PETTY-449: `sender_left`).
   if (!view.doc) return <DamagedDrawer id={id} />;
   const doc = view.doc;
   const canWrite = view.summary.role !== "read";
   const isOwner = view.summary.role === "owner";
   const meId = auth.status === "unlocked" ? auth.me.id : null;
-  const toConfirm = view.summary.rotation_needed ? view.members.filter((m) => m.user_id !== meId && pinStatus(m) !== "confirmed") : [];
+  const toConfirm = view.summary.rotation_needed ? view.members.filter((m) => m.user_id !== meId && memberStatus(id, m) !== "confirmed") : [];
   const lines = doc.lines;
   // Totals (PETTY-64): "included" folds only the lines that count; "all" folds every money line.
   const okForTotals = view.error === null && view.entryProblems.length === 0;

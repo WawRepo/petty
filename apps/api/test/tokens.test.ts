@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fromB64, openDocument, openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
-import { applyOp, newDocument } from "@petty/ledger";
+import { applyOp, newDocument, nextRev, readDocument } from "@petty/ledger";
 import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
 import { buildApp } from "../src/app.js";
 import { apiPool, maintPool } from "../src/db.js";
-import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
+import { Client, makeJoinLink, sealedBody, userMaterial } from "../src/devtools/fixtures.js";
 
 /**
  * Access tokens (PETTY-164): the owner's own tools. The server holds the id half and a bundle
@@ -128,16 +128,20 @@ describe("access tokens (PETTY-164)", () => {
     expect((await write("GET", `/drawers/${d.id}/document/history`)).statusCode).toBe(403);
     const hist = await A.call("GET", `/drawers/${d.id}/document/history`);
     expect(hist.statusCode).toBe(200);
-    const [last] = hist.json().history as { id: string; version: number; by_token: boolean }[];
+    const [last] = hist.json().history as { id: string; version: number; by_token: boolean; document: { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string } }[];
     expect(last!.by_token).toBe(true);
     expect(last!.version).toBe(before.version);
     expect([403, 404]).toContain((await B.call("GET", `/drawers/${d.id}/document/history`)).statusCode);
     expect((await write("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(403);
 
-    const restored = await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version });
+    // PETTY-422: the owner's app opens the kept copy and saves it as a normal write, with a counter inside; the server copies nothing back
+    expect((await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(410);
+    const h = last!.document;
+    const kept = readDocument(await openDocument(d.key, { record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: h.author_id, key_version: h.key_version, schema_version: h.schema_version }, { nonce: fromB64(h.nonce), ciphertext: fromB64(h.ciphertext) }), { schema_version: h.schema_version, version: last!.version });
+    const restored = await A.call("PUT", `/drawers/${d.id}/document`, { ...sealedBody(await A.sealDoc(d.id, d.key, nextRev(kept), 1, 2), 1, 2), base_version: broken.version, verification: false });
     expect(restored.statusCode).toBe(200);
     const after = await open();
-    expect(after.doc).toEqual(before.doc);
+    expect(after.doc).toEqual({ ...(before.doc as object), rev: 1 });
     // the junk is itself kept, so a wrong restore can be undone too
     expect((await A.call("GET", `/drawers/${d.id}/document/history`)).json().history).toHaveLength(2);
   });

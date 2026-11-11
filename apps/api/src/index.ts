@@ -18,6 +18,19 @@ const { startMetricsServer } = await import("./lib/metrics.js");
 const { startMaintenance } = await import("./lib/maintenance.js");
 
 const app = buildApp();
+// PETTY-418: the image starts this file as node itself, the container's first process, and Linux gives
+// that process no default action for a signal. Without this, a stop would be ignored until the grace
+// period is over and the container is killed. Stop taking requests, let the open ones finish, leave.
+let stopping = false;
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    if (stopping) return;
+    stopping = true;
+    app.log.info({ signal }, "stopping");
+    setTimeout(() => process.exit(0), 8_000).unref(); // a request that never ends must not hold the stop
+    void app.close().catch(() => undefined).then(() => process.exit(0));
+  });
+}
 app.listen({ port: config.port, host: config.host }).then(async () => {
   app.log.info({ tracing, endpoint: tracing ? config.otlpEndpoint : null, otlpPush: push, env: config.deploymentEnv || null }, "tracing");
   if (config.metricsPort > 0) {

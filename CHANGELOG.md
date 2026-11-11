@@ -8,6 +8,91 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The web app now checks who wrote an entry against a key you hold for that person: your own key,
+  the key in your list of trusted keys, or an earlier key of theirs that you had confirmed. A key that
+  only the server lists is no longer enough. An entry under a known person's name that is signed with
+  another key is reported and left out of the balance. Entries of someone who is not in your list,
+  such as a person who left before you joined, still count and are marked "author not confirmed".
+- When you accept a changed key in Members, the key you had confirmed before stays in your list, so
+  the entries it signed still verify.
+- An invitation from someone whose keys are not the ones in your list of trusted keys now says
+  "Their key changed". You can accept it only after you chose "Accept the new key".
+- After you remove a member, your app replaces the drawer key at once and no longer waits for the
+  server to ask for it. Your list of trusted keys remembers the removal, so another device of yours
+  replaces the key if the first one could not, and every writer's app does so when it sees that
+  someone is gone. If the key must wait because a member's safety number is not confirmed, the drawer
+  and its Members screen say whom to confirm.
+- A drawer key from someone who left a drawer or was removed from it is refused when it is newer than
+  the last one they held as a member. If the owner invited them again, compare their safety number in
+  Members and choose "Numbers match".
+- The command line (`petty.mjs`), the MCP program (`petty-mcp.mjs`) and the Claude Desktop add-on
+  (`petty.mcpb`) can now be checked before you run them. Each release signs a build attestation for
+  these files, and `gh attestation verify` passes only for a file that the release workflow built.
+  The page *Use Petty with AI*, the setup lines on the landing page and in Settings, and the add-on
+  buttons now take the files from the GitHub release of the version your Petty runs, not from your
+  Petty. The page says how to check a file, and what stays unchecked. Before, nothing checked the
+  copies that an instance serves under `/downloads/`. They are still served. A Petty that runs its own
+  build has no release to point at: it offers its own copies and says that nothing checks them.
+  See docs/cli.md, "Check what you download".
+- Self-hosters: each release also signs a build attestation for its image. docs/deploy.md, "Check
+  the image", has the command. The image's version tag is now set only after the release commit and
+  its tag are on main. Before, a release run that failed late left an image under the version, and
+  the next run put another image under the same tag.
+- *Use Petty with AI* and docs/agent.md no longer show a command with the access token in it. A
+  shell keeps such a line in its history, and other programs can read it in the process list while
+  it runs. Both now start with the command line (`petty auth login`, then `petty mcp`), which needs
+  no token to copy. The by-hand way keeps the token in `~/.petty/token`.
+- The image build checks pnpm's file against a pinned SHA-512 before it installs it. Before, it took
+  whatever the registry served under that version. If you build your own image with another pnpm
+  version, set `PNPM_SHA512` with it (the Dockerfile says how).
+
+- Your list of trusted keys and each drawer's document now carry a counter inside the encryption.
+  Before, the app compared only a version number that the server writes. A server, or someone with
+  database access and an old backup, could put an older sealed copy back under a newer number, and the
+  app opened it with no warning: keys you confirmed since then, or items added since then, were gone.
+  Now the app shows the warning it shows for any older copy, and refuses the drawer. A browser that
+  never used the account still has nothing to compare with.
+- A list of trusted keys from before this release gets its counter the next time the web app loads it.
+  A drawer's document gets one the first time the web app saves it after the update: when you add an
+  item, rename, tag or count. Until then only the number is compared for that drawer.
+- An earlier version of a drawer (Drawer options, Earlier versions) is now put back by your own app,
+  as a normal change, so that other members' apps do not take it for an older copy. Versions from
+  before the drawer's key was last replaced can be put back too. `POST /drawers/:id/document/restore`
+  answers 410.
+
+### Changed
+- Self-hosters: the image starts the API as `node` itself, with no pnpm and no shell in front of it,
+  and the API now answers a stop. It stops taking requests, lets the open ones finish (for up to 8
+  seconds) and ends with status 0. Before, a stop ended it at once, with status 1. A deployment that
+  sets its own start command (`pnpm start`) works as before.
+- **Update the `petty` command line and the Claude Desktop add-on with this release.** A drawer's
+  document with a counter is a new format. From the first time the web app saves a drawer's document,
+  a command line or add-on from before this release no longer lists that drawer, and a command that
+  names it says it finds nothing. Nothing is lost: update the tool and the drawer is back. Tools from
+  this release work with both formats.
+- A web app from before this release (a tab left open during the update) cannot open a drawer that an
+  updated app has saved. It says "This drawer could not be opened. Ask its owner to share it again";
+  sharing again does not help. It also cannot read your list of trusted keys, so it shows your settings
+  at their defaults and saves nothing: what this release adds to the list (who left a drawer, the keys
+  you confirmed before a key change) stays in it. Reload the page: the app updates itself, and does so
+  on its own as soon as the new version is ready.
+- For operators: do not go back to an image from before this release once people have used it. The
+  older web app cannot open the documents that this one saved; it shows those drawers as closed. No
+  data is lost, and everything opens again when you return to this release, with one exception: an
+  owner who puts back an earlier version of a drawer while the older image runs brings back a
+  document without a counter. After you return, every app that already saw a counter for that drawer
+  refuses it until the owner puts back a version again, from the drawer's own screen (Earlier
+  versions). The server now refuses a drawer document in an older format than the stored one (409
+  `DocumentFormatOlder`).
+
+### Fixed
+- Self-hosters: the backup command in docs/deploy.md reported success when `pg_dump` failed, and
+  replaced that day's dump with an empty file. The new script ends with an error, writes nothing
+  under the day's name, and keeps an earlier dump of the same day. If you copied the old line into a
+  backup job of your own, change it the same way: `set -o pipefail`, write to a `.partial` name,
+  rename at the end.
+
 ## [1.5.33] — 2026-11-10
 
 ### Security

@@ -26,8 +26,10 @@ provider, if you use a hosted one. The same code runs in both cases.
   copy of that profile, inside those 24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
-- **A removed collaborator, going forward.** After removal the drawer key is rotated; they cannot
-  read anything written afterwards.
+- **A removed collaborator, going forward.** After removal the drawer key is replaced; they cannot
+  read anything written under the new key. The app of the person who removes a member replaces the
+  key at once and does not wait for the server to ask for it. What is written before the new key is
+  there is still under the old one; "Key rotation" says when that takes longer.
 - **Another site open in your browser.** A page of another site cannot make your browser change
   anything with your sign-in, also not a page on another host under the same domain as the instance.
   A browser marks where a request comes from (`Sec-Fetch-Site`), and the API takes a request that
@@ -51,8 +53,27 @@ Users should be told these plainly.
   Clerk's sign-in pages (Clerk's code is bundled at a pinned version, not fetched at run time; see the
   bot check below), subresource integrity, no analytics, pinned
   dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
-  built by hand while CI could not run; their provenance names no source revision). Self-hosting from a verified image removes
+  built by hand while CI could not run; their provenance names no source revision). Each release also
+  signs a build attestation for its image, so an operator can check that the release workflow built
+  the digest they run ([deploy.md](deploy.md), "Check the image"). That check is the operator's: a
+  person who uses the instance cannot see which image it runs. Self-hosting from a verified image removes
   the third party, not the risk class.
+- **A program you download and run.** The command line (`petty.mjs`), the MCP program
+  (`petty-mcp.mjs`) and the Claude Desktop add-on (`petty.mcpb`) run on your computer, outside the
+  browser, and hold an access token. A changed copy can do there whatever you can, which is more than a
+  changed web app can reach. Every instance serves copies of these files under `/downloads/`; nothing
+  checks them, and whoever controls the instance controls them. So the docs, and the app's page
+  *Use Petty with AI* when the instance runs a release, take the files from the GitHub release of that
+  version instead. Each release signs a build attestation for these files, and `gh attestation verify`
+  passes only for a file that the release workflow of the repository built from `main`
+  ([cli.md](cli.md), "Check what you download"); `SHA256SUMS` on the release page lets a person without
+  `gh` see that a file is the one on that page, and no more. The limits: nobody is made to run a
+  check, and the programs neither check nor update themselves. The page that shows the commands is
+  part of the web app, so the instance controls it too (the item above). A check says who built a
+  file, not that its code is good, and an older release passes as well as the current one. An
+  instance that runs its own build or a fork has no release to compare with: its page says so and
+  offers its own copies, and you trust its operator. Releases made before attestations were added have
+  none.
 - **A malicious collaborator.** Anyone you share a drawer with can read and copy everything in it.
   Removal stops future access, never past access. A member who may write can also store content the
   app cannot show, such as amounts that no longer add up to an exact number. The web app then lists
@@ -131,6 +152,17 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   confirms the inviter, and for every later one. A **new drawer key** (after someone leaves) is given
   only to members whose safety number you confirmed, and a drawer is re-sealed only under a key that
   you or such a member wrapped.
+- A confirmed safety number outlives a membership. So your sealed user document also remembers who
+  was in each drawer, and who left it or was removed (PETTY-449). A drawer key that such a person
+  wrapped, newer than the last one they held as a member, stays closed, and your device gives them
+  no new key, also when the server lists them as a member again. That ends when you compare their
+  safety number again in Members or, as the owner, invite them again. Keys they wrapped while they
+  were a member still open what was sealed under them. Only the owner knows of a removal first-hand.
+  Every other member learns it from the member list, which the server gives: a server that never
+  shows a member's app that someone is gone is not caught by that app.
+- An **invitation** shows the inviter's safety number, and accepting it confirms the inviter. When
+  the inviter's keys are not the ones you already pinned for that person, the invitation shows the
+  key change and cannot be accepted until you accepted the new key as a changed key (PETTY-447).
 - Your sealed user document remembers, for each drawer, the newest key version you accepted and a
   fingerprint of every key you accepted. So the server can neither push a key of its own, nor put
   another key in the place of one you accepted, nor go back to an older key that a removed member may
@@ -139,8 +171,15 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   version: the app takes the key at that version once more as it did before, remembers its
   fingerprint, and re-seals nothing under it unless you or a confirmed member wrapped it.
 - The pins live in that sealed user document, so a server could try to drop it or serve an older
-  copy. Each browser remembers the newest version it saw, also across a sign-out or an expired
-  session (PETTY-402), and warns loudly when the server has none or an older one. An account with
+  copy. The server's version number of the document is a plain number that the server writes, so the
+  document also carries a counter inside the encryption (PETTY-439): every save stores the counter it
+  loaded plus one. Each browser remembers the newest version number and the highest counter it saw,
+  also across a sign-out or an expired session (PETTY-402), and warns loudly when the server has none,
+  a lower number, or a copy whose counter is lower or gone: an older sealed copy under a newer number
+  is caught too. A document from before the counter gets its first one the next time the web app loads
+  it; until that load only the number is compared. A document with a counter says so inside (`v` 2): a
+  web app from before the counter does not open it and saves nothing, so it cannot put a copy without
+  the counter, or without a field it does not know, in its place. An account with
   drawers always has this document (the app starts it before it makes a drawer, and accepting an
   invitation saves the inviter's pin), so "none" also warns on a browser that never used the account.
   Until you acknowledge the warning, and whenever the document cannot be loaded, the app opens only
@@ -157,15 +196,45 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   `record_type || record_id || drawer_id || line_id || author_id || key_version || schema_version`,
   so it cannot be decrypted in any other row, line, drawer, author or key generation.
 - **Signed entries.** Each entry is signed (ECDSA) by its author's key, or by an access token's own
-  delegated key; public keys are never deleted, so old entries still verify after revocation or
-  account deletion.
+  delegated key. The web app checks the signature against a key that **you hold** for the author
+  (PETTY-413): your own key from your vault, the key you pinned for them, or an earlier key of theirs
+  that you had confirmed before you accepted a new one. A key that only the server lists for an
+  author you pinned is not used, and a token's key counts only when a key you hold for the author
+  vouches for it. An entry under the name of someone you pinned that is signed with any other key is
+  reported and left out of the balance. The server never deletes a public key or a delegation, and
+  your pins stay when a person leaves a drawer or deletes the account, so old entries still verify
+  after a token is revoked or an account is deleted. Someone you never pinned, such as a person who
+  left before you joined, cannot be checked this way: the app checks their entries against the key
+  the server lists, counts them, and marks them "author not confirmed". A person who holds the
+  drawer key and can write the database can therefore still add an entry under a name you never
+  pinned; it carries that mark. A signature says who wrote an entry, not that they were allowed to:
+  roles are enforced by the server alone.
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
   the server returns a shorter log, also an empty one for a line the drawer still lists.
-- **Drawer versions.** Your sealed user document remembers the newest version of each drawer's document
-  you opened. The app refuses an older one, so a server cannot go back to a state where later lines are
-  missing, and never saves a change on top of one. The version number is not inside the encryption: a
-  server that labels an older document with a newer number is not caught.
+- **Drawer versions.** The server's version number of a drawer's document is not inside the encryption,
+  so each document also carries a counter that is (PETTY-422): every write stores the counter it loaded
+  plus one. Your sealed user document remembers, for each drawer, the newest version number and the
+  highest counter of the document you opened. The app refuses a document with a lower number, with a
+  lower counter, or with no counter after it saw one, and never saves a change on top of one. So a
+  server cannot go back to a state where later lines are missing, also not by labelling an older sealed
+  document with a newer number. The limits:
+  - What is remembered is what your app opened when it last started. A change made since then is
+    covered from the next start on.
+  - A document from before the counter has none until the web app next saves that drawer's document
+    (an item added, a rename, a count). Until then only the number is compared for that drawer.
+  - A document with a counter is a new format (`schema_version` 2, part of the additional authenticated
+    data). A web app, command line or add-on from before it cannot open such a drawer, and so cannot
+    save a document without the counter over it; the server also refuses a write in the older format.
+    Only the web app starts a counter. A tool keeps the format it finds, because a tool is updated apart
+    from the instance and must not write what the instance's own web app may not know yet.
+  - An earlier version is put back by the owner's app: it opens the kept copy and saves it as a normal
+    write with a counter above every one it knows. The server no longer copies an old sealed document
+    into place.
+  - A counter is not accepted further ahead of the version number than writes explain (each write
+    raises both by one). So nobody who holds the drawer key, a tool with a leaked token included, can
+    use the counter up, and an earlier version can always be put back.
+  - Tools remember no counters: a tool takes the document the server gives it.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
 - **What the pinned head is, and what it catches.** Each browser remembers, per line, the hash of the
@@ -207,6 +276,35 @@ A batch replaces rows in place, and the server cannot tell a re-encrypted row fr
 publishing the new key and every batch need a custody proof from the member whose client sends them
 (see "Custody proofs"): a session without the vault key can neither start a rotation nor continue one.
 A rotation that one member began can be finished by another, each with a proof of their own key.
+
+The app does not wait for the server to say that a new key is needed (PETTY-449). The app of the owner
+who removes a member replaces the key right after the removal. It also notes the removal in the
+owner's sealed user document, so another device or a later session of the owner replaces the key when
+the first one could not. Every other member's app keeps, in that member's user document, who it saw
+in the drawer; when someone is no longer listed, a write member's app replaces the key as well. The
+note lives in the user document because only its owner can write it; the drawer document is sealed
+with the drawer key, which the removed person still holds. What remains of the wait:
+
+- Entries written after the removal and before the new key are under the old key, which the removed
+  person holds.
+- A device gives a new key only to members whose safety number its user confirmed. While one is not
+  confirmed, that device waits, and the drawer and its Members screen say whom to confirm. Another
+  write member who confirmed everyone can replace the key in the meantime.
+- A read-only member cannot replace a key. A drawer that only read-only members open keeps its key
+  until a write member opens it.
+- While the user document is missing or rolled back, no key is replaced. A list of trusted keys that
+  was started over no longer remembers who left; then a new key waits for the server's word, as it
+  did before. A web app from before the counter cannot make the list forget: it does not open a list
+  with a counter (`v` 2, see "Key verification") and saves none.
+- A member who leaves by themselves, or deletes their account, is noticed from the member list,
+  which the server gives.
+- A member's app compares the list with what it saw the last time. When the key was replaced in
+  between, it takes that key to be the one that followed the removal. Had the person left only after
+  it, this app would not replace the key once more. The owner's app, which removes at a moment it
+  knows, does.
+- A key that the leaver wrapped, and that your app first sees together with their leaving, counts as
+  one they held as a member: the app opens it, so that nothing they re-encrypted is lost, and
+  replaces it like any key they hold. A key from them that comes later stays closed.
 
 ## Access tokens
 

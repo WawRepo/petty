@@ -235,7 +235,7 @@ gets 403 `CrossSiteRequest`; a client that sends no such header is not affected.
 | `GET /me/doc` `PUT /me/doc` | user | the user's own encrypted document (key pins), version-checked |
 | `GET /bootstrap` | user | all drawers, documents, my wraps, members, entries since each line's last Adjust, invitations, transfers |
 | `POST /drawers` `GET /drawers/:id` `DELETE /drawers/:id` | user / read / owner | create; read; permanent delete via `delete_drawer()` |
-| `PUT /drawers/:id/document` | write | optimistic lock on `base_version` → 409 `VersionConflict`; `verification: true` stamps `last_verified_at` |
+| `PUT /drawers/:id/document` | write | optimistic lock on `base_version` → 409 `VersionConflict`; `verification: true` stamps `last_verified_at`; a document in an older format (`schema_version`) than the stored one → 409 `DocumentFormatOlder` |
 | `GET/PUT/DELETE /drawers/:id/photo` | read / write | own encrypted row |
 | `POST /drawers/:id/lines/:lineId/delete` | write | new document + entries removed via `delete_line()`; needs a custody proof |
 | `POST /drawers/:id/entries` | write | append; idempotent on client id; Adjust needs `expected_head_seq` → 409 `RecountRequired`; Reverse rules → 409 `ReverseRefused` |
@@ -250,7 +250,7 @@ gets 403 `CrossSiteRequest`; a client that sends no such header is not affected.
 | `POST /me/custody-challenge` | user | a fresh challenge for a custody proof (docs/threat-model.md) |
 | `POST /me/passkeys` `DELETE /me/passkeys/:id` | user | add / remove a passkey that opens the vault; at most 20 → 409 `PasskeyLimit` |
 | `GET /me/storage` | user | storage used, against `STORAGE_QUOTA_MB` |
-| `GET /drawers/:id/document/history` `POST /drawers/:id/document/restore` | owner | the drawer document's 30-day history; restore an earlier version |
+| `GET /drawers/:id/document/history` | owner | the drawer document's 30-day history, still sealed. The owner's app puts an earlier version back with a normal `PUT /drawers/:id/document`; `POST /drawers/:id/document/restore` now answers 410 |
 | `GET /me/tokens` `POST /me/tokens` `DELETE /me/tokens/:id` `GET/POST /me/tokens/:id/keys` | user | access tokens: list, make (with a custody proof; at most 50 live → 409 `TokenLimit`), revoke (erases the bundle and the wraps), their wrapped drawer keys (only for key versions the person holds) |
 | `GET /me/token` `GET /me/token/bootstrap` `GET /me/token/keys` `DELETE /me/token` | token | a token about itself, its drawers and its key bundle; a token ends itself |
 | `GET /users/:id/delegations` | user | the tokens a person's key vouched for, to check their signatures |

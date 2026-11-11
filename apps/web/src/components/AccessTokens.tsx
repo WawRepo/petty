@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import type { Me } from "@petty/protocol";
 import { WrongPassphrase } from "@petty/crypto";
 import { createAccessToken, revokeAccessToken, useAccessTokens } from "../lib/accessTokens.js";
+import { appVersion } from "../lib/authConfig.js";
+import { downloadUrl, releaseFor } from "../lib/downloads.js";
 import { PasskeyError } from "../lib/passkey.js";
 import { relativeTime } from "../lib/time.js";
 import { Button } from "./Button.js";
@@ -132,7 +134,7 @@ export function AccessTokens({ me }: { me: Me }) {
           <label htmlFor="petty-address">{t("tokens.address")}</label>
           <input id="petty-address" readOnly value={apiAddress} data-testid="token-address" onFocus={(e) => e.currentTarget.select()} />
         </div>
-        <p className="m0 mb12"><a className="btn btn-secondary" href="/downloads/petty.mcpb" download="petty.mcpb" data-testid="token-addon">{t("tokens.addonDownload")}</a></p>
+        <p className="m0 mb12"><a className="btn btn-secondary" href={downloadUrl("petty.mcpb", releaseFor(appVersion()))} download="petty.mcpb" data-testid="token-addon">{t("tokens.addonDownload")}</a></p>
         <div className="actions">
           <Button variant="secondary" onClick={() => { void navigator.clipboard?.writeText(made ?? "").then(() => toast(t("app.copied"))); }}>{t("app.copy")}</Button>
           <Button onClick={() => setMade(null)} data-testid="token-done">{t("app.done")}</Button>

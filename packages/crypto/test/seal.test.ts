@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AuthTagMismatch, InvalidPayload, UnknownSchemaVersion, BUCKET_BYTES, generateDrawerKey, open, reseal, seal, utf8, fromUtf8, toHex, pad, unpad, canonicalJson, type RecordIdentity } from "../src/index.js";
 import { sealWithNonce } from "../src/testing.js";
-import { AUTHOR, DRAWER, LINE, entryIdentity } from "./helpers.js";
+import { AUTHOR, DRAWER, LINE, docIdentity, entryIdentity } from "./helpers.js";
 
 const NONCE = new Uint8Array(12).fill(7);
 
@@ -83,6 +83,32 @@ describe("seal / open", () => {
   it("refuses to seal under a schema version other than the current one", async () => {
     const key = await generateDrawerKey();
     await expect(seal(key, entryIdentity("e1", { schema_version: 2 }), utf8("x"))).rejects.toBeInstanceOf(InvalidPayload);
+  });
+
+  it("a document is sealed and opened as format 1 or 2, and each only as itself; an entry and a photo only as format 1 (PETTY-422)", async () => {
+    const key = await generateDrawerKey();
+    for (const schema_version of [1, 2]) {
+      const sealed = await seal(key, docIdentity({ schema_version }), utf8("{}"));
+      expect(fromUtf8(await open(key, docIdentity({ schema_version }), sealed))).toBe("{}");
+      await expect(open(key, docIdentity({ schema_version: 3 - schema_version }), sealed)).rejects.toBeInstanceOf(AuthTagMismatch);
+    }
+    const sealed = await seal(key, docIdentity({ schema_version: 2 }), utf8("{}"));
+    await expect(open(key, docIdentity({ schema_version: 3 }), sealed)).rejects.toBeInstanceOf(UnknownSchemaVersion);
+    await expect(seal(key, docIdentity({ schema_version: 3 }), utf8("{}"))).rejects.toBeInstanceOf(InvalidPayload);
+    const photo: RecordIdentity = { ...docIdentity(), record_type: "photo" };
+    await expect(seal(key, { ...photo, schema_version: 2 }, utf8("x"))).rejects.toBeInstanceOf(InvalidPayload);
+    await expect(open(key, { ...photo, schema_version: 2 }, await seal(key, photo, utf8("x")))).rejects.toBeInstanceOf(UnknownSchemaVersion);
+    await expect(open(key, entryIdentity("e1", { schema_version: 2 }), await seal(key, entryIdentity("e1"), utf8("x")))).rejects.toBeInstanceOf(UnknownSchemaVersion);
+  });
+
+  it("a key rotation keeps the format of a document: format 2 stays format 2 (PETTY-422)", async () => {
+    const [oldKey, newKey] = [await generateDrawerKey(), await generateDrawerKey()];
+    for (const schema_version of [1, 2]) {
+      const id = docIdentity({ schema_version });
+      const r = await reseal(oldKey, newKey, id, await seal(oldKey, id, utf8('{"rev":7}')), 2);
+      expect(r.identity).toEqual({ ...id, key_version: 2 });
+      expect(fromUtf8(await open(newKey, r.identity, r.sealed))).toBe('{"rev":7}');
+    }
   });
 
   it("fails on a flipped ciphertext byte, a flipped nonce byte, and a wrong key", async () => {

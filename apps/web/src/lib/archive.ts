@@ -5,8 +5,8 @@
  * a warning. Import: new drawers with new keys; entries are re-signed by the
  * importer, keep the original author and date as a text label, and are flagged.
  */
-import { fromB64, openDocument, openEntryUnverified, openPhoto, sealArchive, openArchive, sealDocument, toB64, createDrawerKey, type ExportArchiveV1, type RecordIdentity } from "@petty/crypto";
-import { assertDocumentShape, type DrawerDocument, type Line } from "@petty/ledger";
+import { fromB64, openDocument, openEntryUnverified, openPhoto, sealArchive, openArchive, sealDocument, toB64, createDrawerKey, DOCUMENT_SCHEMA_VERSION, type ExportArchiveV1, type RecordIdentity } from "@petty/crypto";
+import { assertDocumentShape, nextRev, readDocument, revRolledBack, type DrawerDocument, type Line } from "@petty/ledger";
 import { ExportPayload, z, type DrawerSummary, type ExportDrawer, type ExportPayload as ExportPayloadT } from "@petty/protocol";
 import { api } from "./api.js";
 import { appendEntry, getDrawers, loadAll, setPhoto } from "./drawers.js";
@@ -15,7 +15,7 @@ import { getAuth } from "./session.js";
 
 function me() { const a = getAuth(); if (a.status !== "unlocked") throw new Error("vault locked"); return a; }
 
-interface ExportRow { document: { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }; photo: { author_id: string; key_version: number; nonce: string; ciphertext: string } | null; entries: Array<{ id: string; line_id: string; seq: number; received_at: string; author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }>; wraps: unknown[] }
+interface ExportRow { drawer: { version: number }; document: { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }; photo: { author_id: string; key_version: number; nonce: string; ciphertext: string } | null; entries: Array<{ id: string; line_id: string; seq: number; received_at: string; author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }>; wraps: unknown[] }
 
 /** Decrypts everything exportable into the archive shape. Returns how many drawers were skipped (read-only role or unreadable). */
 export async function buildExport(): Promise<{ payload: ExportPayloadT; skipped: number }> {
@@ -41,8 +41,9 @@ export async function buildExport(): Promise<{ payload: ExportPayloadT; skipped:
       return opened.key;
     };
     const d = row.document;
-    const doc = await openDocument(await keyFor(d.key_version), { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: d.author_id, key_version: d.key_version, schema_version: d.schema_version }, { nonce: fromB64(d.nonce), ciphertext: fromB64(d.ciphertext) });
-    assertDocumentShape(doc);
+    const doc = readDocument(await openDocument(await keyFor(d.key_version), { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: d.author_id, key_version: d.key_version, schema_version: d.schema_version }, { nonce: fromB64(d.nonce), ciphertext: fromB64(d.ciphertext) }), { schema_version: d.schema_version, version: row.drawer.version });
+    // PETTY-422: an archive never holds an older state of a drawer than the one on screen
+    if (revRolledBack(doc, view.doc.rev ?? null)) { skipped += 1; continue; }
     let photo_b64: string | null = null;
     if (row.photo) {
       const p = row.photo;
@@ -54,7 +55,10 @@ export async function buildExport(): Promise<{ payload: ExportPayloadT; skipped:
       entries.push({ seq: e.seq, received_at: e.received_at, entry: await openEntryUnverified(await keyFor(e.key_version), identity, { nonce: fromB64(e.nonce), ciphertext: fromB64(e.ciphertext) }) });
     }
     entries.sort((x, y) => x.seq - y.seq);
-    drawers.push({ id, document: doc, photo_b64, members: view.members.map((m) => ({ id: m.user_id, display_name: m.display_name, role: m.role })), entries });
+    // PETTY-422: the counter belongs to the document in this drawer, not to its content: an archive has none
+    const { rev: _rev, ...content } = doc;
+    void _rev;
+    drawers.push({ id, document: content, photo_b64, members: view.members.map((m) => ({ id: m.user_id, display_name: m.display_name, role: m.role })), entries });
   }
   const payload = ExportPayload.parse({ format: "petty-export", v: 1, exported_at: new Date().toISOString(), exported_by: { id: a.me.id, display_name: a.me.display_name }, drawers });
   return { payload, skipped };
@@ -107,14 +111,16 @@ export async function importPayload(payload: ExportPayloadT, onProgress: (p: Imp
   const total = payload.drawers.reduce((n, d) => n + d.entries.length, 0);
   let done = 0;
   for (const ad of payload.drawers) {
-    const doc = ad.document as DrawerDocument;
-    assertDocumentShape(doc);
+    assertDocumentShape(ad.document);
+    // PETTY-422: a new drawer, so a counter of its own from 1, whatever the archive holds
+    const { rev: _rev, ...doc } = ad.document;
+    void _rev;
     const id = crypto.randomUUID();
     const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
-    const importedDoc: DrawerDocument = { ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: `${v.comment ? v.comment + " · " : ""}[imported: ${ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?"}]` })) };
-    const sealed = await sealDocument(key, { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: 1 }, importedDoc);
+    const importedDoc: DrawerDocument = nextRev({ ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: `${v.comment ? v.comment + " · " : ""}[imported: ${ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?"}]` })) });
+    const sealed = await sealDocument(key, { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: DOCUMENT_SCHEMA_VERSION }, importedDoc);
     await startUserDoc(); // PETTY-438: an account with a drawer has a user document
-    await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
+    await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
     await loadAll();
     const byLine = new Map<string, typeof ad.entries>();
     for (const e of ad.entries) { const l = byLine.get(e.entry.line_id) ?? []; l.push(e); byLine.set(e.entry.line_id, l); }

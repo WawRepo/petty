@@ -12,7 +12,7 @@ import { useToast } from "../components/Toast.js";
 import { api, ApiError } from "../lib/api.js";
 import { cancelTransfer, inviteMember, leaveDrawer, loadAll, offerTransfer, removeMember, useDrawers, useSharingState, loadIfIdle } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
-import { confirmPin, memberSafetyNumber, pinStatus, usePins } from "../lib/pins.js";
+import { confirmPin, leftDrawerAt, memberSafetyNumber, memberStatus, pinStatus, usePins } from "../lib/pins.js";
 import { useAuth } from "../lib/session.js";
 
 const Lookup = z.object({ id: z.string(), display_name: z.string(), keys: z.object({ ecdh_pub: z.string(), ecdsa_pub: z.string(), sig_key_id: z.string() }).nullable() });
@@ -61,7 +61,7 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
     if (!found?.keys || !asMember) return;
     setBusy(true);
     try {
-      await confirmPin(found.id, found.keys);
+      await confirmPin(found.id, found.keys, drawerId); // PETTY-449: someone who left this drawer before is invited, and so confirmed, again
       const { mailed } = await inviteMember(drawerId, { id: found.id, keys: found.keys }, role);
       toast(t(mailed ? "invite.sent" : "invite.sentNoMail"));
       await loadAll();
@@ -130,13 +130,18 @@ export function MembersScreen() {
   const meId = auth.me.id;
   const isOwner = view.summary.role === "owner";
   const pending = transfers.find((x) => x.drawer_id === id);
+  // PETTY-449: the key is due for replacement and this device waits, because it gives a new key only to confirmed members
+  const toConfirm = view.summary.rotation_needed && !view.rotation && view.summary.role !== "read" ? view.members.filter((m) => m.user_id !== meId && memberStatus(id, m) !== "confirmed") : [];
 
   return (
     <>
       <TopBar title={t("members.title")} onBack={back} />
       <main className="stack">
+        {toConfirm.length ? <p className="warn-box" role="status" data-testid="rotation-confirm">{t("rotation.confirmFirst", { names: toConfirm.map((m) => m.display_name).join(", ") })}</p> : null}
         {view.members.map((m) => {
-          const st = m.user_id === meId ? "confirmed" : pinStatus(m);
+          const st = m.user_id === meId ? "confirmed" : memberStatus(id, m);
+          // PETTY-449: someone this person knows left the drawer, listed again: said as such, so that "Numbers match" is a choice made knowingly
+          const back = st === "unconfirmed" && leftDrawerAt(id, m.user_id) !== null;
           return (
             <section className={`card${st === "changed" ? " problem" : ""}`} key={m.user_id} data-testid="member-card" data-status={st}>
               <p className="mb4 fw700"><span className="avatar">{initial(m.display_name)}</span>{m.display_name}{m.user_id === meId ? ` (${t("members.you")})` : ""} · <span className="hint m0">{t(`members.role.${m.role}`)}</span></p>
@@ -144,9 +149,9 @@ export function MembersScreen() {
               <SafetyNumber m={m} />
               {m.user_id !== meId ? (
                 <>
-                  <p className={st === "changed" ? "error my6" : "hint my6"} role={st === "changed" ? "alert" : undefined} data-testid="pin-status">{t(`members.status.${st}`)}</p>
+                  <p className={st === "changed" ? "error my6" : "hint my6"} role={st === "changed" ? "alert" : undefined} data-testid="pin-status">{t(back ? "members.status.back" : `members.status.${st}`)}</p>
                   <div className="actions mt8">
-                    {st !== "confirmed" && m.keys ? <Button variant="secondary" onClick={() => void confirmPin(m.user_id, m.keys!).then(() => { toast(t("members.status.confirmed")); void loadAll(); })}>{st === "changed" ? t("members.acceptNew") : t("members.confirm")}</Button> : null}
+                    {st !== "confirmed" && m.keys ? <Button variant="secondary" onClick={() => void confirmPin(m.user_id, m.keys!, id).then(() => { toast(t("members.status.confirmed")); void loadAll(); })}>{st === "changed" ? t("members.acceptNew") : t("members.confirm")}</Button> : null}
                     {isOwner && m.role === "write" && !pending ? <Button variant="secondary" onClick={() => void offerTransfer(id, m.user_id)}>{t("members.makeOwner")}</Button> : null}
                     {isOwner && pending?.to_user_id === m.user_id ? <Button variant="secondary" onClick={() => void cancelTransfer(id)}>{t("pending.cancel")}</Button> : null}
                     {/* the one that takes something away comes last (PETTY-279) */}

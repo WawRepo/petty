@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, RestoreDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
-import { badRequest, conflict, forbidden, notFound, tooLarge } from "../lib/errors.js";
+import { badRequest, conflict, forbidden, gone, notFound, tooLarge } from "../lib/errors.js";
 import { assertQuota } from "../lib/quota.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
 import { consumeCustodyProof, requireProofField } from "../lib/custody.js";
@@ -66,6 +66,10 @@ async function writeDocument(db: Queryable, drawerId: string, userId: string, bo
   const d = await lockDrawer(db, drawerId);
   if (d.version !== body.base_version) throw conflict("VersionConflict", "document changed since you loaded it", { drawer_id: drawerId, current_version: d.version });
   if (d.key_version !== body.key_version) throw conflict("KeyVersionMismatch", "drawer key rotated; re-seal with the current key", { drawer_id: drawerId, key_version: d.key_version });
+  // PETTY-422: a document never goes back to an older format. Format 2 has a counter inside, and a client from
+  // before it must not put a document without one in its place.
+  const stored = (await db.query<{ schema_version: number }>("select schema_version from drawer_documents where drawer_id = $1", [drawerId])).rows[0];
+  if (stored && body.schema_version < stored.schema_version) throw conflict("DocumentFormatOlder", "this drawer was saved by a newer version of Petty; update Petty", { drawer_id: drawerId, schema_version: stored.schema_version });
   const ciphertext = documentBytes(drawerId, body.ciphertext);
   if (checkQuota) await assertQuota(db, d.owner_id, ciphertext.length);
   await keepHistory(db, drawerId, d.version, userId, tokenId);
@@ -191,28 +195,15 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
-   * Owner only: puts an earlier document back, exactly as it was sealed (author and key version
-   * included, so it opens under the same AAD). The current document goes into history first.
+   * PETTY-422: the owner's app puts an earlier version back itself: it opens the kept copy and saves it as a
+   * normal document write (PUT document), with the next counter inside. This route copied the old sealed
+   * document back as it was, old counter included, and every member's app would refuse that as an older
+   * state of the drawer. A web app from before the change still calls it, and is told to update.
    */
   app.post<{ Params: { id: string } }>("/drawers/:id/document/restore", async (req) => {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "owner");
-    const body = RestoreDocumentBody.parse(req.body);
-    return withTx(apiPool, async (db) => {
-      const d = await lockDrawer(db, req.params.id);
-      if (d.version !== body.base_version) throw conflict("VersionConflict", "document changed since you loaded it", { drawer_id: d.id, current_version: d.version });
-      const h = (await db.query("select * from drawer_document_history where id = $1 and drawer_id = $2", [body.history_id, d.id])).rows[0];
-      if (!h) throw notFound("HistoryNotFound", { drawer_id: d.id });
-      if (h.key_version !== d.key_version) throw conflict("KeyVersionMismatch", "this document was sealed with an older drawer key", { drawer_id: d.id, key_version: d.key_version });
-      await assertQuota(db, d.owner_id, (h.ciphertext as Buffer).length);
-      await keepHistory(db, d.id, d.version, me.id, null);
-      await db.query(
-        "update drawer_documents set author_id = $2, key_version = $3, schema_version = $4, nonce = $5, ciphertext = $6, updated_at = now() where drawer_id = $1",
-        [d.id, h.author_id, h.key_version, h.schema_version, h.nonce, h.ciphertext],
-      );
-      const nd = (await db.query<DrawerRow>("update drawers set version = version + 1, last_write_at = now() where id = $1 returning *", [d.id])).rows[0]!;
-      return PutDocumentResponse.parse({ version: nd.version, last_write_at: iso(nd.last_write_at), last_verified_at: iso(nd.last_verified_at) });
-    });
+    throw gone("RestoreByApp", "the app puts an earlier version back itself now; reload to update Petty", { drawer_id: req.params.id });
   });
 
   app.get<{ Params: { id: string } }>("/drawers/:id/photo", async (req) => {

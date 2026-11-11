@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDrawerKey, createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, reseal, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
-import { applyOp, fold, newDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
+import { applyOp, fold, newDocument, nextRev, readDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
-import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
+import { sealedBody, type Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, compose, http, newUser } from "../lib.js";
 
 /**
@@ -154,15 +154,30 @@ describe("household", () => {
     expect((await balance(ann)).balance).toBe(4000);
   });
 
-  it("a broken document can be put back by the owner (PETTY-183)", async () => {
+  it("a broken document can be put back by the owner: the client saves the kept copy with a counter inside (PETTY-183, PETTY-422)", async () => {
     const got = (await ann.call("GET", `/drawers/${drawerId}`)).json();
     const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))), verification: false };
     expect((await ben.call("PUT", `/drawers/${drawerId}/document`, junk)).statusCode).toBe(200);
     expect(await documentName(ann)).toBeNull();
     const [last] = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history;
     const now = (await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version;
-    expect((await ann.call("POST", `/drawers/${drawerId}/document/restore`, { history_id: last.id, base_version: now })).statusCode).toBe(200);
+    // PETTY-422: the server copies nothing back any more; a web app from before the change is told to update
+    const byServer = await ann.call("POST", `/drawers/${drawerId}/document/restore`, { history_id: last.id, base_version: now });
+    expect(byServer.statusCode).toBe(410);
+    expect(byServer.json().code).toBe("RestoreByApp");
+    expect(await documentName(ann)).toBeNull();
+    // what the owner's app does: open the kept copy (from before the counter: format 1, none inside) and save it as format 2 with its first counter
+    const h = last.document;
+    expect(h.schema_version).toBe(1);
+    const kept = readDocument(await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: h.author_id, key_version: h.key_version, schema_version: h.schema_version }, { nonce: fromB64(h.nonce), ciphertext: fromB64(h.ciphertext) }), { schema_version: h.schema_version, version: last.version });
+    expect(kept.rev).toBeUndefined();
+    expect((await ann.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ann.sealDoc(drawerId, key, nextRev(kept), 1, 2), 1, 2), base_version: now, verification: false })).statusCode).toBe(200);
     expect(await documentName(ann)).toBe("Kitchen tin");
+    expect((await ann.call("GET", `/drawers/${drawerId}`)).json().document.schema_version).toBe(2);
+    // a client from before the counter cannot put a document without one over it
+    const older = await ben.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ben.sealDoc(drawerId, key, kept, 1, 1), 1, 1), base_version: now + 1, verification: false });
+    expect(older.statusCode).toBe(409);
+    expect(older.json().code).toBe("DocumentFormatOlder");
     // PETTY-403: a restore is a new version, not the old number again: the web app refuses a drawer older than one it opened
     expect((await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version).toBe(now + 1);
     // PETTY-194: the list the app shows — newest first, the undone version kept too, members cannot read it
@@ -294,8 +309,12 @@ describe("household", () => {
     // PETTY-339: and changes it; the other member's app opens the change
     await agent.editItem(drawerId, made.line.id, { name: "Postage stamps", unit: "sheets" });
     const got2 = (await ben.call("GET", `/drawers/${drawerId}`)).json();
-    const doc2 = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got2.document.author_id, key_version: got2.document.key_version, schema_version: got2.document.schema_version }, { nonce: fromB64(got2.document.nonce), ciphertext: fromB64(got2.document.ciphertext) }) as { lines: { id: string }[] };
+    const doc2 = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got2.document.author_id, key_version: got2.document.key_version, schema_version: got2.document.schema_version }, { nonce: fromB64(got2.document.nonce), ciphertext: fromB64(got2.document.ciphertext) }) as { rev: number; lines: { id: string }[] };
     expect(doc2.lines.find((l) => l.id === made.line.id)).toMatchObject({ name: "Postage stamps", unit: "sheets" });
+    // PETTY-422: the document has had a counter since the owner put it back; each of the tool's two saves added one and kept the format
+    expect(got2.document.schema_version).toBe(2);
+    expect(doc2.rev).toBe((doc as unknown as { rev: number }).rev + 1);
+    expect(readDocument(doc2, { schema_version: 2, version: got2.drawer.version }).rev).toBe(3);
     expect((await ben.call("GET", "/bootstrap")).json().entries.filter((e: { line_id: string }) => e.line_id === made.line.id)).toHaveLength(1);
 
     expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);

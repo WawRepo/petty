@@ -12,7 +12,7 @@ import {
 } from "@petty/crypto";
 import { apiClient, expect, loginAndUnlock, makeDrawer, rowNamed, shareViaApi, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
 
-interface Row { author_id: string; key_version: number; nonce: string; ciphertext: string }
+interface Row { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string }
 interface EntryRow extends Row { id: string; line_id: string; seq: number; schema_version: number }
 interface Boot { drawers: { id: string; version: number; key_version: number }[]; documents: Record<string, Row>; wraps: (DrawerKeyWrapV1 & { drawer_id: string })[]; entries: (EntryRow & { drawer_id: string })[] }
 interface Doc { lines: { id: string; name: string }[]; verifications: unknown[]; [k: string]: unknown }
@@ -24,16 +24,19 @@ async function member(bob: TestUserWithKeys, owner: TestUserWithKeys, drawerId: 
   const first = await load();
   const wrap = first.wraps.find((w) => w.drawer_id === drawerId)!;
   const key = await unwrapDrawerKey(wrap, bob.keys.ecdh.privateKey, { drawer_id: drawerId, key_version: wrap.key_version, senderEcdhPublicB64: owner.ecdhPub });
-  const docId = (author: string): RecordIdentity => ({ record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: author, key_version: wrap.key_version, schema_version: 1 });
+  const docId = (author: string, schemaVersion: number): RecordIdentity => ({ record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: author, key_version: wrap.key_version, schema_version: schemaVersion });
   const document = async (): Promise<Doc> => {
     const row = (await load()).documents[drawerId]!;
-    return (await openDocument(key, docId(row.author_id), { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) })) as Doc;
+    return (await openDocument(key, docId(row.author_id, row.schema_version), { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) })) as Doc;
   };
-  /** Replaces the drawer's document, as any writer may. */
+  /** Replaces the drawer's document, as any writer may: in the stored format, with the counter it read plus one (PETTY-422). */
   const putDocument = async (doc: Doc): Promise<void> => {
-    const base = (await load()).drawers.find((d) => d.id === drawerId)!.version;
-    const sealed = await sealDocument(key, docId(api.id), doc);
-    const r = await api.call("PUT", `/drawers/${drawerId}/document`, { base_version: base, key_version: wrap.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false });
+    const boot = await load();
+    const base = boot.drawers.find((d) => d.id === drawerId)!.version;
+    const format = boot.documents[drawerId]!.schema_version;
+    const next = format >= 2 ? { ...doc, rev: ((doc["rev"] as number | undefined) ?? 0) + 1 } : doc;
+    const sealed = await sealDocument(key, docId(api.id, format), next);
+    const r = await api.call("PUT", `/drawers/${drawerId}/document`, { base_version: base, key_version: wrap.key_version, schema_version: format, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false });
     if (r.status !== 200) throw new Error(`document refused: ${r.status} ${JSON.stringify(r.json)}`);
   };
   /** Appends one signed entry to a line, linked to the line's newest entry. */

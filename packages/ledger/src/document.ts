@@ -1,3 +1,4 @@
+import { DOCUMENT_SCHEMA_VERSION } from "@petty/crypto";
 import { LedgerError } from "./errors.js";
 import { assertCurrencyCode, canChangeKind } from "./rules.js";
 import { MAX_EXPONENT } from "./money.js";
@@ -42,6 +43,50 @@ function name(s: string): string {
 
 export function newDocument(drawerName: string): DrawerDocument {
   return { v: 1, name: name(drawerName), has_photo: false, lines: [], verifications: [] };
+}
+
+/**
+ * The counter of a drawer document (PETTY-422). The server's version number of a document is a plain column
+ * that the server writes, so a server could give an older sealed copy a newer number. `rev` is sealed with
+ * the content: every write stores the counter it loaded plus one, and a reader that remembers a counter
+ * refuses a document with a lower one, or with none (`revRolledBack`). A document with a counter is a row of
+ * format DOCUMENT_SCHEMA_VERSION, which is part of the AAD: a build from before the counter cannot open it,
+ * and so can never save a document without the counter over it.
+ *
+ * How far a counter may be ahead of the drawer's version number: each write raises both by one, so a counter
+ * is never ahead of it. The room is for a document that was written between the server's two reads of one
+ * answer. A counter further ahead is refused and never remembered: nobody who holds the drawer key, a tool
+ * with a leaked token included, can then use the counter up, and an earlier version can always be put back.
+ */
+export const REV_AHEAD_MAX = 64;
+
+/**
+ * A document that came out of a ciphertext, checked against the row it came from: its shape, and its counter.
+ * `version` is the drawer's version number that this document had. Format 1 has no counter; a `rev` found in
+ * one is left out. Format 2 must have one. Throws LedgerError("bad_document").
+ */
+export function readDocument(x: unknown, row: { readonly schema_version: number; readonly version: number }): DrawerDocument {
+  assertDocumentShape(x);
+  if (row.schema_version < DOCUMENT_SCHEMA_VERSION) {
+    if (x.rev === undefined) return x;
+    const { rev: _none, ...rest } = x;
+    void _none;
+    return rest;
+  }
+  if (x.rev === undefined || x.rev > row.version + REV_AHEAD_MAX) throw new LedgerError("bad_document");
+  return x;
+}
+
+/** The document as its next write stores it: the counter it was loaded with, plus one. 1 for a document that had none. */
+export function nextRev(doc: DrawerDocument): DrawerDocument {
+  const rev = (doc.rev ?? 0) + 1;
+  if (!Number.isSafeInteger(rev)) throw new LedgerError("bad_document");
+  return { ...doc, rev };
+}
+
+/** True when a reader that remembers the counter `known` must refuse this document: its counter is lower, or it has none. */
+export function revRolledBack(doc: DrawerDocument, known: number | null): boolean {
+  return known !== null && (doc.rev ?? 0) < known;
 }
 
 /** An icon slug: the app maps it to a drawing; the ledger only keeps it short and plain. */
@@ -285,6 +330,7 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
   }
   if (d["icon"] !== undefined && (typeof d["icon"] !== "string" || !ICON_SLUG.test(d["icon"]))) throw new LedgerError("bad_document");
   if (d["color"] !== undefined && (typeof d["color"] !== "string" || !ICON_SLUG.test(d["color"]))) throw new LedgerError("bad_document");
+  if (d["rev"] !== undefined && (!Number.isSafeInteger(d["rev"]) || (d["rev"] as number) < 1)) throw new LedgerError("bad_document");
   const ids = new Set<string>();
   for (const l of d["lines"] as Line[]) {
     assertLine(l);
