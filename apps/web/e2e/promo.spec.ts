@@ -13,8 +13,11 @@ import { randomBytes } from "node:crypto";
 import { createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys, signingKeyId } from "@petty/crypto";
 import { API, expect, loginAndUnlock, makeJoinLink, rowNamed, shareViaApi, test, type TestUserWithKeys } from "./fixtures.js";
 
-const OUT = process.env["PROMO_OUT"] ?? "/tmp/petty-promo";
+// No default folder: a fixed name in the shared temp folder is one another user could plant first
+// (CodeQL js/insecure-temporary-file). PROMO_OUT names where the footage goes.
+const OUT = process.env["PROMO_OUT"] ?? "";
 test.skip(!process.env["PROMO"], "promo footage; set PROMO=1");
+if (process.env["PROMO"] && !OUT) throw new Error("set PROMO_OUT to the folder for the footage");
 
 const LOC = "en";
 type Dict = Record<string, unknown>;
