@@ -18,14 +18,14 @@
 ARG PNPM_VERSION=11.28.8
 ARG PNPM_SHA512=f6988a32046b9a3f78d7d7ee0747926bbe905ff9dff73bf19abb87bd7d1906a2ac90d93f73be32b5f9e14c2899569bcb0c9c5ec8a19e083f5d71bbab6dd9e0b8
 # Fetched and checked once, on the builder's CPU. The stages below install pnpm from this file only.
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS pnpm
+FROM --platform=$BUILDPLATFORM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS pnpm
 ARG PNPM_VERSION
 ARG PNPM_SHA512
 RUN npm pack "pnpm@${PNPM_VERSION}" --pack-destination / \
  && echo "${PNPM_SHA512}  /pnpm-${PNPM_VERSION}.tgz" | sha512sum -c - \
  && mv "/pnpm-${PNPM_VERSION}.tgz" /pnpm.tgz
 
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS build
+FROM --platform=$BUILDPLATFORM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS build
 RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
@@ -51,7 +51,7 @@ RUN pnpm --filter @petty/mcp run pack
 RUN pnpm --filter @petty/cli run pack
 RUN pnpm --filter @petty/web build
 
-FROM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS deps
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS deps
 RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
@@ -66,7 +66,7 @@ COPY apps/cli/package.json apps/cli/
 COPY tests/integration/package.json tests/integration/
 RUN pnpm install --frozen-lockfile --prod --filter @petty/api...
 
-FROM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
 # OCI labels (PETTY-211): GHCR reads image.source to link the package to the repo and inherit its visibility.
 LABEL org.opencontainers.image.source="https://github.com/WawRepo/petty" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
