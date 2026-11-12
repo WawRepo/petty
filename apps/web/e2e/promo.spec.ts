@@ -815,19 +815,19 @@ const TOUR: readonly { key: string; tint: string; chapter: string; title: string
 ];
 /**
  * The Shorts' frame (PETTY-467): upright like the tall one, but YouTube draws its buttons over the bottom
- * fifth and down the right edge. So the words sit at the top, and the phone ends above y 1536 (80 %),
- * left of the buttons.
+ * fifth and down the right edge. So the words sit at the top, the phone ends above y 1536 (80 %), and
+ * everything is centred on x 540 with at least 150 px clear on each side.
  */
 const SHORT: Frame = {
-  dir: "layers-short", width: 1080, height: 1920, screen: { x: 214, y: 500, w: 552, h: 1020 }, rings: [430, 600],
+  dir: "layers-short", width: 1080, height: 1920, screen: { x: 264, y: 500, w: 552, h: 1020 }, rings: [430, 600],
   ringMask: "linear-gradient(to bottom, transparent 440px, #000 560px)",
-  css: `.cap { position: absolute; left: 70px; top: 160px; width: 840px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  css: `.cap { position: absolute; left: 150px; top: 160px; width: 780px; display: flex; flex-direction: column; align-items: center; text-align: center; }
   .cap .eyebrow { font-size: 28px; } .cap .title { font-size: 66px; line-height: 1.06; margin-top: 18px; }
   .cap .sub { font-size: 38px; line-height: 1.28; font-weight: 600; color: ${MUTED}; margin-top: 16px; text-wrap: balance; }
   .scrim { position: absolute; inset: 0; background: color-mix(in srgb, ${BG} 95%, transparent); } .scrim.low { top: 470px; background: color-mix(in srgb, ${BG} 90%, transparent); }
-  .end { position: absolute; left: 70px; top: 470px; width: 840px; height: 900px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .end { position: absolute; left: 150px; top: 470px; width: 780px; height: 900px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   .end .brand { justify-content: center; } .end .title { font-size: 62px; margin-top: 40px; } .end .body { font-size: 36px; margin-top: 22px; text-wrap: balance; } .end .url { align-self: center; }
-  .card.short { position: absolute; left: 80px; top: 600px; width: 820px; margin-top: 0; } .card.short header { font-size: 28px; } .card.short .msgs { font-size: 38px; }`,
+  .card.short { position: absolute; left: 150px; top: 600px; width: 780px; margin-top: 0; } .card.short header { font-size: 28px; } .card.short .msgs { font-size: 38px; }`,
 };
 /**
  * The Shorts' words (PETTY-467), English like the tour: [title, line under it] a beat; the first beat
