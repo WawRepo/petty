@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The image runs Node.js 24.22.3, the security release of 2026-11-11 (was 24.22.1), on Alpine
+  3.24.4. Self-hosters who build their own image: pull the new `node:24-alpine`.
+
 ## [1.5.35] — 2026-11-11
 
 ### Changed
