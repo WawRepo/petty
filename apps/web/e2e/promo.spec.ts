@@ -198,10 +198,21 @@ class Camera {
     });
     this.cdp = cdp;
     this.t0 = Date.now() / 1000;
-    await cdp.send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: VP.width * DSF, maxHeight: VP.height * DSF, everyNthFrame: 1 });
+    const vp = this.page.viewportSize() ?? VP;
+    await cdp.send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: vp.width * DSF, maxHeight: vp.height * DSF, everyNthFrame: 1 });
   }
   /** A named moment in the clip, in seconds from its start: the cutter takes its pieces from these. */
   mark(name: string): void { this.marks[name] = Date.now() / 1000 - this.t0; }
+  /**
+   * Stay still until the clip is `secs` past a mark (PETTY-467): a Short's beat then has all the
+   * footage its scene needs. The action must be over `still` seconds before that, so the scene ends
+   * on a still screen and the cross-fade into the next beat does not show the same moment twice.
+   */
+  async holdFrom(name: string, secs: number, still = 0.6): Promise<void> {
+    const since = Date.now() / 1000 - this.t0 - this.marks[name]!;
+    if (since > secs - still) throw new Error(`beat ${name}: its action took ${since.toFixed(1)} s, too long for a ${secs} s scene`);
+    await this.page.waitForTimeout((secs + 0.3 - since) * 1000);
+  }
   async stop(): Promise<void> {
     const end = Date.now() / 1000;
     await this.cdp!.send("Page.stopScreencast");
@@ -252,10 +263,10 @@ async function home(page: Page): Promise<void> {
   await page.waitForTimeout(1200);
 }
 
-test("seed the six examples and film the app", async ({ browser }) => {
-  test.setTimeout(600_000);
-  mkdirSync(OUT, { recursive: true });
-  const [ben, anna, cara, tom] = await Promise.all(["Ben", "Anna", "Cara", "Tom"].map((n) => signupDemo(n)));
+/** Ben, Anna, Cara and Tom, with the six examples as real data, shared the way the examples say. */
+async function seedExamples(browser: Browser): Promise<{ users: TestUserWithKeys[]; ids: Record<string, string> }> {
+  const users = await Promise.all(["Ben", "Anna", "Cara", "Tom"].map((n) => signupDemo(n)));
+  const [ben, anna, cara, tom] = users;
   const plan = seedPlan();
   const setup = await browser.newContext();
   const sp = await setup.newPage();
@@ -274,6 +285,13 @@ test("seed the six examples and film the app", async ({ browser }) => {
   await seedEntryAs(browser, anna!, ids["kitty"]!, kitty.lines.find((l) => l.by === "anna")!);
   await seedEntryAs(browser, cara!, ids["kitty"]!, kitty.lines.find((l) => l.by === "cara")!);
   expect(Object.keys(ids)).toHaveLength(13);
+  return { users, ids };
+}
+
+test("seed the six examples and film the app", async ({ browser }) => {
+  test.setTimeout(600_000);
+  mkdirSync(OUT, { recursive: true });
+  const { users: [ben, , cara], ids } = await seedExamples(browser);
 
   // the films are of a phone, light theme, motion on
   const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: DSF, isMobile: true, hasTouch: true, colorScheme: "light" });
@@ -655,6 +673,100 @@ test("seed the six examples and film the app", async ({ browser }) => {
 });
 
 /**
+ * The YouTube Shorts (PETTY-467): one use each, on a phone held upright, with the app already moving in
+ * the first second. Each Short is one take. A mark starts each beat (b1, b2, …); the take then stays
+ * still until the beat's scene has its footage. SHORTS in scripts/promo-video.ts cuts the beats with the
+ * same lengths as here, and the cutter stops if a beat would run into the next.
+ * A shorter screen than the other films (390×720): the phone fills more of the Short's frame.
+ */
+const SHORT_VP = { width: 390, height: 720 };
+test("film the Shorts", async ({ browser }) => {
+  test.setTimeout(600_000);
+  mkdirSync(OUT, { recursive: true });
+  const { users: [ben] } = await seedExamples(browser);
+  const ctx = await browser.newContext({ viewport: SHORT_VP, deviceScaleFactor: DSF, isMobile: true, hasTouch: true, colorScheme: "light" });
+  await ctx.addInitScript(TOUCH_DOTS);
+  const page = await ctx.newPage();
+  await loginAndUnlock(page, ben!);
+  await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
+  const cam = new Camera(page);
+  const chip = (name: string) => page.getByTestId("tag-bar").getByRole("button", { name: new RegExp(`^${name}\\b`) });
+  const row = (name: string) => rowNamed(page, name);
+  const D = (key: string) => uc(`${CASES.find((c) => c.drawers.some((d) => d.key === key))!.key}.drawers.${key}.name`);
+  const heading = (name: string) => expect(page.getByRole("heading", { name })).toBeVisible();
+  const back = () => tap(page, page.getByRole("button", { name: "Back", exact: true }), 350);
+  /** One beat: its mark, its action, then still until its scene of `secs` has the footage. */
+  const beat = async (n: number, secs: number, act: () => Promise<void> = async () => undefined) => {
+    cam.mark(`b${n}`);
+    await act();
+    await cam.holdFrom(`b${n}`, secs);
+  };
+  /** An entry on the item that is open: the keypad, a comment, then Review (and Save in the next beat). */
+  const entry = async (op: "Add" | "Withdraw", digits: string, comment: string) => {
+    await tap(page, page.getByRole("button", { name: op, exact: true }), 450);
+    for (const d of digits) await tap(page, page.getByRole("group").getByRole("button", { name: d, exact: true }), 200);
+    await page.getByLabel("Comment (optional)").pressSequentially(comment, { delay: 70 });
+    await tap(page, page.getByRole("button", { name: "Review" }), 300);
+  };
+  const save = async () => {
+    await tap(page, page.getByRole("button", { name: "Save", exact: true }), 500);
+    await expect(page.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
+  };
+
+  // the trip kitty: the trips, the shared drawer, Ben adds the taxi, Anna's own entry, who may read it
+  await home(page);
+  await cam.start("s-trip");
+  // each take's first tap comes quickly: YouTube wants the app moving in the first second
+  await beat(1, 4.0, () => tap(page, chip(PLACE["trips"]!), 120));
+  await beat(2, 4.4, async () => { await tap(page, row(D("kitty")), 350); await heading(D("kitty")); });
+  await beat(3, 7.2, async () => {
+    await tap(page, row(uc("trip.items.ben.name")), 350);
+    await entry("Add", "35", "taxi");
+    await save();
+  });
+  await beat(4, 5.0, async () => { await back(); await heading(D("kitty")); await tap(page, row(uc("trip.items.anna.name")), 450); });
+  await beat(5, 4.8, async () => {
+    await back();
+    await heading(D("kitty"));
+    await tap(page, page.getByRole("button", { name: "Drawer options" }), 400);
+    await tap(page, page.getByRole("dialog").getByRole("button", { name: "Members" }), 450);
+  });
+  await beat(6, 4.2);
+  await cam.stop();
+
+  // cash at home: the kitchen, the tin, twenty out for bread, saved; then the envelope in the bedroom
+  await home(page);
+  await cam.start("s-cash");
+  await beat(1, 4.2, async () => { await tap(page, chip(PLACE["home"]!), 120); await page.waitForTimeout(700); await tap(page, chip(PLACE["kitchen"]!), 300); });
+  await beat(2, 4.2, async () => { await tap(page, row(D("tin")), 350); await heading(D("tin")); });
+  await beat(3, 6.4, async () => { await tap(page, row(uc("cash.items.groceries.name")), 350); await entry("Withdraw", "20", "bread"); });
+  await beat(4, 4.8, save);
+  await beat(5, 5.6, async () => {
+    await back();
+    await heading(D("tin"));
+    await tap(page, page.getByTestId("place-trail").getByRole("button", { name: PLACE["home"]!, exact: true }), 350);
+    await tap(page, chip(PLACE["bedroom"]!), 450);
+    await tap(page, row(D("envelope")), 450);
+    await heading(D("envelope"));
+  });
+  await beat(6, 4.2);
+  await cam.stop();
+
+  // the spare car key: search, the drawer it is in, its note; then the AI scene and the end over a still phone
+  await home(page);
+  await cam.start("s-key");
+  await beat(1, 4.8, async () => {
+    await tap(page, page.getByTestId("home-search-toggle"), 120);
+    await page.getByTestId("home-search").locator("input").pressSequentially("car key", { delay: 100 });
+  });
+  await beat(2, 4.4, async () => { await tap(page, page.getByTestId("drawer-row").first(), 500); await heading(D("valuables")); });
+  await beat(3, 4.4, () => tap(page, row(uc("family.items.carkey.name")), 450));
+  for (const [n, secs] of [[4, 7.4], [5, 5.0], [6, 4.2]] as const) await beat(n, secs);
+  await cam.stop();
+  await ctx.close();
+});
+
+/**
  * The film's frame and words, each a full 1920×1080 picture the cutter lays over the clips: a
  * background per example (its drawers' colour), the phone, and the captions — the landing page's own
  * words. The phone's screen is at SCREEN; the cutter reads it from layout.json.
@@ -700,6 +812,49 @@ const TOUR: readonly { key: string; tint: string; chapter: string; title: string
   { key: "private", tint: "#4f5a68", chapter: "Privacy", title: "Locked on your device", body: () => "Names, amounts and notes are encrypted on your device. Your passkey or passphrase opens them; the server cannot." },
   { key: "settings", tint: "#4f5a68", chapter: "Settings", title: "Your language, your look", body: () => "English, polski, Deutsch, español, français. Light or dark. Hide what you do not use." },
   { key: "backup", tint: "#4f5a68", chapter: "Settings", title: "Yours to keep", body: () => "Export your drawers to a file, install Petty like an app, and keep working offline." },
+];
+/**
+ * The Shorts' frame (PETTY-467): upright like the tall one, but YouTube draws its buttons over the bottom
+ * fifth and down the right edge. So the words sit at the top, and the phone ends above y 1536 (80 %),
+ * left of the buttons.
+ */
+const SHORT: Frame = {
+  dir: "layers-short", width: 1080, height: 1920, screen: { x: 214, y: 500, w: 552, h: 1020 }, rings: [430, 600],
+  ringMask: "linear-gradient(to bottom, transparent 440px, #000 560px)",
+  css: `.cap { position: absolute; left: 70px; top: 160px; width: 840px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .cap .eyebrow { font-size: 28px; } .cap .title { font-size: 66px; line-height: 1.06; margin-top: 18px; }
+  .cap .sub { font-size: 38px; line-height: 1.28; font-weight: 600; color: ${MUTED}; margin-top: 16px; text-wrap: balance; }
+  .scrim { position: absolute; inset: 0; background: color-mix(in srgb, ${BG} 95%, transparent); } .scrim.low { top: 470px; background: color-mix(in srgb, ${BG} 90%, transparent); }
+  .end { position: absolute; left: 70px; top: 470px; width: 840px; height: 900px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .end .brand { justify-content: center; } .end .title { font-size: 62px; margin-top: 40px; } .end .body { font-size: 36px; margin-top: 22px; text-wrap: balance; } .end .url { align-self: center; }
+  .card.short { position: absolute; left: 80px; top: 600px; width: 820px; margin-top: 0; } .card.short header { font-size: 28px; } .card.short .msgs { font-size: 38px; }`,
+};
+/**
+ * The Shorts' words (PETTY-467), English like the tour: [title, line under it] a beat; the first beat
+ * also names the use. null is the AI scene (ai-s-*), which draws its own.
+ */
+const SHORTS: readonly { key: string; tint: string; eyebrow: () => string; beats: readonly (readonly [string, string?] | null)[] }[] = [
+  { key: "trip", tint: "#1b7174", eyebrow: () => uc("trip.chip"), beats: [
+    ["Who paid what on the trip?"],
+    ["One shared drawer for the trip", "One item per person."],
+    ["Everyone adds what they paid", "Ben: 35 for the taxi."],
+    ["Each entry shows who added it", "Nobody can quietly change it."],
+    ["Only the three of you can read it", "Encrypted end to end."],
+  ] },
+  { key: "cash", tint: GREEN, eyebrow: () => uc("cash.chip"), beats: [
+    ["How much cash is in the house?"],
+    ["Each tin and envelope, in its room"],
+    ["Took 20 for bread?", "A few taps on the keypad."],
+    ["Check it, then save it", "Every entry stays in the history."],
+    ["And the envelope in the bedroom", "Euros, dollars, any currency."],
+  ] },
+  { key: "key", tint: "#a3406a", eyebrow: () => "Find anything", beats: [
+    ["Where is the spare car key?"],
+    ["In the safe, in the bedroom", "Home › Bedroom › Wardrobe › Safe"],
+    ["The note says: red tag"],
+    null,
+    ["The add-on runs on your computer", "The server stores locked boxes it cannot open."],
+  ] },
 ];
 const PIN = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`;
 const DRAWER = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>`;
@@ -821,5 +976,41 @@ test("draw the frame and the words", async ({ browser }) => {
       <div class="msgs"><div class="q${show === "q" ? "" : " hide"}">${esc(w("landing.ai.chat.q1"))}</div><div class="tool${show === "tool" ? "" : " hide"}">${LOCK}${esc(w("landing.ai.chat.tool1"))}</div><div class="${show === "a" ? "" : "hide"}">${esc(w("landing.ai.chat.a1"))}</div></div></div>`;
   for (const part of ["head", "q", "tool", "a"]) await tall(`ai-${part}`, TINT["ai"]!, tallChat(part));
   writeFileSync(`${tdir}/layout.json`, JSON.stringify({ width: TALL.width, height: TALL.height, screen: TALL.screen }));
+  await ctx.close();
+});
+
+test("draw the Shorts' frame and words", async ({ browser }) => {
+  const dir = `${OUT}/${SHORT.dir}`;
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const icon = `data:image/svg+xml;base64,${readFileSync(new URL("../public/app-icon.svg", import.meta.url)).toString("base64")}`;
+  const ctx = await browser.newContext({ viewport: { width: SHORT.width, height: SHORT.height }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const shot = async (name: string, tint: string, body: string, opaque = false) => {
+    await page.setContent(sheet(tint, body, opaque, SHORT));
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: `${dir}/${name}.png`, omitBackground: !opaque });
+  };
+  // the eyebrow's line is always there, so a title stays put from beat to beat
+  const cap = (eyebrow: string | null, title: string, sub?: string, hidden = false) =>
+    `<div class="cap"${hidden ? ' style="visibility:hidden"' : ""}><div class="eyebrow${eyebrow ? "" : " hide"}"><i></i>${esc(eyebrow ?? "·")}</div><div class="title">${esc(title)}</div>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>`;
+
+  await shot("phone", GREEN, `<div class="phone"></div>`);
+  for (const s of SHORTS) {
+    await shot(`bg-s-${s.key}`, s.tint, "", true);
+    for (const [n, b] of s.beats.entries()) if (b) await shot(`cap-s-${s.key}-${n + 1}`, s.tint, cap(n === 0 ? s.eyebrow() : null, b[0], b[1]));
+  }
+  // the AI scene: the phone fades back, the chat comes up over it, then the question, the tool call and the answer
+  const tint = SHORTS.find((s) => s.key === "key")!.tint;
+  const chat = (show: string) => `${show === "head" ? '<div class="scrim low"></div>' : ""}${cap(w("landing.ai.eyebrow"), "Or just ask your AI app", undefined, show !== "head")}
+    <div class="card short"${show === "head" ? "" : ` style="background:transparent;border-color:transparent;box-shadow:none"`}><header${show === "head" ? "" : ` style="visibility:hidden"`}><b>${CHAT}${esc(w("landing.ai.chat.app"))}</b><span>${LOCK}${esc(w("landing.ai.chat.local"))}</span></header>
+      <div class="msgs"><div class="q${show === "q" ? "" : " hide"}">${esc(w("landing.ai.chat.q1"))}</div><div class="tool${show === "tool" ? "" : " hide"}">${LOCK}${esc(w("landing.ai.chat.tool1"))}</div><div class="${show === "a" ? "" : "hide"}">${esc(w("landing.ai.chat.a1"))}</div></div></div>`;
+  for (const part of ["head", "q", "tool", "a"]) await shot(`ai-s-${part}`, tint, chat(part));
+  // the end: the name and the address over the faded phone, clear of YouTube's buttons
+  const brand = `<div class="brand"><img src="${icon}" alt="">${esc(w("app.name"))}</div>`;
+  const [keep, rest] = w("landing.tagline").split(" — ");
+  const url = process.env["PROMO_URL"] ?? "petty.kropka.studio";
+  await shot("cap-s-end", GREEN, `<div class="scrim"></div><div class="end">${brand}<div class="title">${esc(keep!)}.</div><div class="body">${esc((rest ?? "").replace(/^./, (c) => c.toLocaleUpperCase(LOC)))}</div><div class="url">${esc(url)}</div></div>`);
+  writeFileSync(`${dir}/layout.json`, JSON.stringify({ width: SHORT.width, height: SHORT.height, screen: SHORT.screen }));
   await ctx.close();
 });
