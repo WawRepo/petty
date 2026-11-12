@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.36] — 2026-11-12
+
 ### Security
 - The image runs Node.js 24.22.3, the security release of 2026-11-11 (was 24.22.1), on Alpine
   3.24.4. Self-hosters who build their own image: pull the new `node:24-alpine`.
@@ -860,7 +862,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.35...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.36...HEAD
+[1.5.36]: https://github.com/WawRepo/petty/releases/tag/v1.5.36
 [1.5.35]: https://github.com/WawRepo/petty/releases/tag/v1.5.35
 [1.5.34]: https://github.com/WawRepo/petty/releases/tag/v1.5.34
 [1.5.33]: https://github.com/WawRepo/petty/releases/tag/v1.5.33
