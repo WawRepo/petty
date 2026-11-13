@@ -17,6 +17,18 @@ describe("the scrape port", () => {
     expect(text).toMatch(/^petty_process_resident_memory_bytes [1-9]\d+$/m);
   });
 
+  it("PETTY-471: each labelled counter has a series for every value, also one that never happened", async () => {
+    const lines = (await (await fetch(METRICS)).text()).split("\n");
+    // a whole line "<series> <count>", compared as text: the series holds { } and quotes
+    const has = (series: string) => expect(lines.some((l) => l.startsWith(`${series} `) && /^\d+$/.test(l.slice(series.length + 1))), series).toBe(true);
+    for (const code of ["CustodyProofInvalid", "WrapMismatch", "DeviceKeyInvalid", "ReadTokenCannotSign"]) has(`petty_security_refusals_total{code="${code}"}`);
+    for (const result of ["ok", "failed"]) has(`petty_mail_total{result="${result}"}`);
+    for (const kind of ["invitation", "transfer"]) has(`petty_mail_limited_total{kind="${kind}"}`);
+    for (const result of ["created", "duplicate"]) has(`petty_entries_total{result="${result}"}`);
+    // the stack signs in locally, so the local-only events are there too
+    for (const event of ["login_fail", "rate_limited", "signup", "device_denied"]) has(`petty_auth_events_total{event="${event}"}`);
+  });
+
   it("PETTY-355: background work has a pool of its own, and housekeeping ran at start", async () => {
     expect(await (await fetch(METRICS)).text()).toMatch(/^petty_pg_pool_clients\{pool="bg",state="total"\} \d+$/m);
     const runs = compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"maintenance"'));

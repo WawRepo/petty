@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- For operators: the labelled counters (`petty_auth_events_total`, `petty_security_refusals_total`,
+  `petty_mail_total`, `petty_mail_limited_total`, `petty_entries_total`) now start at 0 for each value
+  they can count, on the metrics port and on the OTLP push. An alert on one of them has data from the
+  start, and `increase()` no longer misses the first event after a restart. See `docs/monitoring.md`.
+
 ## [1.5.37] — 2026-11-12
 
 ### Changed

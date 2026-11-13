@@ -2,7 +2,9 @@ import http from "node:http";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import client from "prom-client";
 import { metrics as otelApi } from "@opentelemetry/api";
+import { config } from "../config.js";
 import { apiPool, bgPool, lastRequestUse, maintPool } from "../db.js";
+import { SECURITY_REFUSALS } from "./errors.js";
 import { lastMaintenance } from "./maintenance.js";
 import { isHealthProbe, safeUrl } from "./tracing.js";
 
@@ -24,14 +26,22 @@ client.collectDefaultMetrics({ register: registry });
 const meter = otelApi.getMeter("petty");
 const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 
-function dualCounter(name: string, help: string, labelNames: string[] = []) {
-  const prom = new client.Counter({ name, help, labelNames, registers: [registry] });
+/**
+ * A counter on both paths that shows a 0 series from the start. prom-client does that by itself only for a
+ * label-free counter; the OTel SDK emits nothing until the first record. A series that appears only at its
+ * first event cannot be told from a broken pipe (an alert that reads it is No-data until then), and
+ * increase() misses that first event after every restart, because the series begins at 1 (PETTY-471).
+ * So a labelled counter names every value it can count, each one starts at 0 on both paths, and `inc`
+ * accepts only those values: a new one cannot be counted without starting at 0 too. `start` narrows the
+ * 0s to the values this instance can count at all (petty_auth_events_total: the sign-in mode's events).
+ */
+function dualCounter(name: string, help: string): { inc(): void };
+function dualCounter<K extends string, V extends string>(name: string, help: string, label: K, values: readonly V[], start?: readonly V[]): { inc(labels: Record<K, V>): void };
+function dualCounter(name: string, help: string, label?: string, values: readonly string[] = [], start: readonly string[] = values) {
+  const prom = new client.Counter({ name, help, labelNames: label ? [label] : [], registers: [registry] });
   const otel = meter.createCounter(name, { description: help });
-  // prom-client pre-initialises a label-free counter to 0, so the scrape shows a 0 series from the start.
-  // The OTel SDK emits only on first record, so the same counter is No-data on the OTLP path until it
-  // first fires — a panel or alert that reads the 0 then breaks after the scrape is retired. Emit 0 once
-  // to match. Labeled counters create a series per label value on both paths, so only these need it.
-  if (labelNames.length === 0) otel.add(0);
+  if (!label) otel.add(0);
+  for (const value of label ? start : []) { prom.inc({ [label!]: value }, 0); otel.add(0, { [label!]: value }); }
   return {
     inc(labels?: Record<string, string>): void {
       if (labels) { prom.inc(labels); otel.add(1, labels); } else { prom.inc(); otel.add(1); }
@@ -53,25 +63,32 @@ export const httpDuration = dualHistogram(
   ["method", "route", "status"], BUCKETS,
 );
 
+/** The sign-in events each mode can count. Under Clerk, Clerk signs people in; Petty sees only the sign-up and the device flow. */
+const AUTH_EVENTS = {
+  clerk: ["signup", "device_code", "device_approved", "device_denied"],
+  local: ["login_ok", "login_fail", "rate_limited", "signup", "forgot", "reset", "logout", "device_code", "device_approved", "device_denied"],
+} as const;
 export const authEvents = dualCounter(
   "petty_auth_events_total",
-  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied", ["event"],
+  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied",
+  "event", AUTH_EVENTS.local, AUTH_EVENTS[config.authProvider],
 );
 
 export const entriesAppended = dualCounter(
   "petty_entries_total",
-  "Entry appends by result: created (new row) or duplicate (idempotent replay)", ["result"],
+  "Entry appends by result: created (new row) or duplicate (idempotent replay)", "result", ["created", "duplicate"],
 );
 
 export const rotationsStarted = dualCounter("petty_rotations_started_total", "Drawer key rotations started");
 
-export const mailsSent = dualCounter("petty_mail_total", "Notification emails handed to SMTP, by result", ["result"]);
+export const mailsSent = dualCounter("petty_mail_total", "Notification emails handed to SMTP, by result", "result", ["ok", "failed"]);
 /** PETTY-407: invitation and ownership-offer emails NOT sent because a sharing mail limit was reached, by kind. */
-export const mailsLimited = dualCounter("petty_mail_limited_total", "Invitation and ownership-offer emails skipped by the sharing mail limits, by kind", ["kind"]);
+export const SHARING_MAIL_KINDS = ["invitation", "transfer"] as const;
+export const mailsLimited = dualCounter("petty_mail_limited_total", "Invitation and ownership-offer emails skipped by the sharing mail limits, by kind", "kind", SHARING_MAIL_KINDS);
 
 export const securityRefusals = dualCounter(
   "petty_security_refusals_total",
-  "Refusals that normal use never triggers (errors.ts SECURITY_REFUSALS), by error code", ["code"],
+  "Refusals that normal use never triggers (errors.ts SECURITY_REFUSALS), by error code", "code", [...SECURITY_REFUSALS],
 );
 
 // pg pool occupancy: prom collects on scrape; OTel observes on its export interval. Same numbers, two readers.

@@ -54,6 +54,23 @@ describe("metrics (Phase 15b)", () => {
     expect(await registry.metrics()).not.toContain(`sec-${run}`); // no email or id in a label
   });
 
+  it("starts every labelled counter at 0 for each value it can count, so an alert has a series before the first event (PETTY-471)", async () => {
+    const text = await registry.metrics();
+    const { SECURITY_REFUSALS } = await import("../src/lib/errors.js");
+    const series = {
+      // the tests sign in locally (AUTH_PROVIDER unset), so every sign-in event can happen
+      petty_auth_events_total: ["event", ["login_ok", "login_fail", "rate_limited", "signup", "forgot", "reset", "logout", "device_code", "device_approved", "device_denied"]],
+      petty_security_refusals_total: ["code", [...SECURITY_REFUSALS]],
+      petty_mail_total: ["result", ["ok", "failed"]],
+      petty_mail_limited_total: ["kind", ["invitation", "transfer"]],
+      petty_entries_total: ["result", ["created", "duplicate"]],
+    } as const;
+    for (const [name, [label, values]] of Object.entries(series)) {
+      for (const value of values) expect(text, `${name}{${label}="${value}"}`).toMatch(new RegExp(`^${name}\\{${label}="${value}"\\} \\d+$`, "m"));
+    }
+    expect(text).toMatch(/^petty_rotations_started_total \d+$/m);
+  });
+
   it("reports the process's resident memory under its own name (PETTY-267)", async () => {
     expect(await registry.metrics()).toMatch(/petty_process_resident_memory_bytes [1-9]\d+/);
   });
