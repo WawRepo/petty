@@ -18,8 +18,9 @@ describe("the scrape port", () => {
   });
 
   it("PETTY-471: each labelled counter has a series for every value, also one that never happened", async () => {
-    const text = await (await fetch(METRICS)).text();
-    const has = (series: string) => expect(text, series).toMatch(new RegExp(`^${series.replace(/[{}]/g, "\\$&")} \\d+$`, "m"));
+    const lines = (await (await fetch(METRICS)).text()).split("\n");
+    // a whole line "<series> <count>", compared as text: the series holds { } and quotes
+    const has = (series: string) => expect(lines.some((l) => l.startsWith(`${series} `) && /^\d+$/.test(l.slice(series.length + 1))), series).toBe(true);
     for (const code of ["CustodyProofInvalid", "WrapMismatch", "DeviceKeyInvalid", "ReadTokenCannotSign"]) has(`petty_security_refusals_total{code="${code}"}`);
     for (const result of ["ok", "failed"]) has(`petty_mail_total{result="${result}"}`);
     for (const kind of ["invitation", "transfer"]) has(`petty_mail_limited_total{kind="${kind}"}`);
