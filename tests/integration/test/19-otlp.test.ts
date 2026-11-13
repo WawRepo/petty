@@ -59,7 +59,7 @@ describe("OTLP push (PETTY-401)", () => {
     const duration = metrics.find(configDuration)!;
     expect(attr(duration.resource, "service.name")).toBe("petty");
     expect(attr(duration.resource, "deployment.environment")).toBe("it");
-    // HOME-1146: a labelled counter pushes a 0 point per value from the start, so an alert that reads one
+    // PETTY-471: a labelled counter pushes a 0 point per value from the start, so an alert that reads one
     // has data before the first event. Nothing makes app2 refuse a forged proof or fail an email.
     const points = (name: string, label: string) => new Set(metrics.filter(({ item }) => item["name"] === name)
       .flatMap(({ item }) => (item["sum"] as { dataPoints: Array<{ attributes: KeyValue[] }> }).dataPoints.map((p) => attr(p.attributes, label))));

@@ -30,7 +30,7 @@ const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
  * A counter on both paths that shows a 0 series from the start. prom-client does that by itself only for a
  * label-free counter; the OTel SDK emits nothing until the first record. A series that appears only at its
  * first event cannot be told from a broken pipe (an alert that reads it is No-data until then), and
- * increase() misses that first event after every restart, because the series begins at 1 (HOME-1146).
+ * increase() misses that first event after every restart, because the series begins at 1 (PETTY-471).
  * So a labelled counter names every value it can count, each one starts at 0 on both paths, and `inc`
  * accepts only those values: a new one cannot be counted without starting at 0 too. `start` narrows the
  * 0s to the values this instance can count at all (petty_auth_events_total: the sign-in mode's events).

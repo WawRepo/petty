@@ -17,7 +17,7 @@ describe("the scrape port", () => {
     expect(text).toMatch(/^petty_process_resident_memory_bytes [1-9]\d+$/m);
   });
 
-  it("HOME-1146: each labelled counter has a series for every value, also one that never happened", async () => {
+  it("PETTY-471: each labelled counter has a series for every value, also one that never happened", async () => {
     const text = await (await fetch(METRICS)).text();
     const has = (series: string) => expect(text, series).toMatch(new RegExp(`^${series.replace(/[{}]/g, "\\$&")} \\d+$`, "m"));
     for (const code of ["CustodyProofInvalid", "WrapMismatch", "DeviceKeyInvalid", "ReadTokenCannotSign"]) has(`petty_security_refusals_total{code="${code}"}`);

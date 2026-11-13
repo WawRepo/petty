@@ -54,7 +54,7 @@ describe("metrics (Phase 15b)", () => {
     expect(await registry.metrics()).not.toContain(`sec-${run}`); // no email or id in a label
   });
 
-  it("starts every labelled counter at 0 for each value it can count, so an alert has a series before the first event (HOME-1146)", async () => {
+  it("starts every labelled counter at 0 for each value it can count, so an alert has a series before the first event (PETTY-471)", async () => {
     const text = await registry.metrics();
     const { SECURITY_REFUSALS } = await import("../src/lib/errors.js");
     const series = {
