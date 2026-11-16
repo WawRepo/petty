@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AccessToken, type AccessToken as AccessTokenT } from "@petty/protocol";
 import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type SignedDelegationV1, toB64, toHex, utf8, wrapDrawerKey, type DrawerKeyWrapV1, type PatDrawerKey, type UnlockedKeys } from "@petty/crypto";
-import { custodyProof } from "./custody.js";
+import { withCustodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
 import { getDrawers, openWrap, type DrawerError, type DrawerView, loadIfIdle } from "./drawers.js";
@@ -95,7 +95,7 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
   // PETTY-397: the owner's key from the vault goes into the bundle; the token opens wraps from that key only.
   const bundle = await sealPatBundle(secret, id, { v: 1, user_id: me.me.id, drawers, ecdh, owner_ecdh: me.keys.pub.ecdh, ...(signing ? { ecdsa: signing.ecdsa, sig_key_id: signing.sig_key_id } : {}) });
   const row = AccessToken.parse(
-    await api<unknown>("POST", "/me/tokens", {
+    await withCustodyProof(again.ecdsaPrivate, (proof) => api<unknown>("POST", "/me/tokens", {
       token_id: id,
       ecdh_pub: ecdhPub,
       name: opts.name,
@@ -103,9 +103,9 @@ export async function createAccessToken(opts: NewTokenOptions): Promise<{ token:
       scope: opts.scope ? [...opts.scope] : null,
       expires_at: opts.expiresAt,
       bundle,
-      proof: await custodyProof(again.ecdsaPrivate),
+      proof,
       ...(signing ? { signing: signing.body } : {}),
-    }),
+    })),
   );
   // PETTY-181: record the token in the sealed user document BEFORE any key is wrapped to it. Only
   // tokens recorded there ever receive wraps; the server cannot add one or swap its key.

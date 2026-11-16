@@ -25,6 +25,8 @@ name: release
 #   repository nor to the registry.
 # - publish (contents: write, packages: write): pushes the commit and its tag, tags the image, publishes
 #   the GitHub Release and moves `latest`. It runs no dependency code.
+# - verify (contents: read, attestations: read): checks the attestations of what was published, the way a
+#   user checks them (PETTY-499). It runs no dependency code.
 #
 # PETTY-456: nothing a person can find by a version exists before the release commit and its tag are on
 # main. Until then the image has a digest only, so a run that fails leaves no `vX.Y.Z` image for the next
@@ -315,6 +317,53 @@ jobs:
         env:
           DIGEST: ${{ needs.image.outputs.digest }}
         run: docker buildx imagetools create --tag ghcr.io/wawrepo/petty:latest "ghcr.io/wawrepo/petty@$DIGEST"
+
+  # PETTY-499: check what was published the way a user checks it (docs/deploy.md "Check the image",
+  # docs/cli.md "Check what you download"): the four files as the GitHub Release serves them, the image by
+  # the digest that was built, and the version's tag and `latest` as the registry answers them now. Each
+  # must carry an attestation that release.yml signed in this run: on main, on a GitHub-hosted runner,
+  # from this run's commit. The release is out by now, so a failure cannot stop it: it turns the run red,
+  # and the run's result is what an operator checks before deploying the version. Read-only: no
+  # checkout, no dependency code, and the image is public, so no registry login.
+  verify:
+    needs: [prepare, image, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read       # the release's files
+      attestations: read   # the attestations kept with the repository
+    steps:
+      - name: Check the attestations of the published files and image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+        run: |
+          fail() { echo "::error::$*"; exit 1; }
+          # Prints the sha256 of every subject the attestations name; fails unless one passes every rule.
+          verified() {
+            gh attestation verify "$1" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref refs/heads/main --source-digest "$GITHUB_SHA" --deny-self-hosted-runners \
+              --format json | jq -r '[.[].verificationResult.statement.subject[].digest.sha256] | unique | .[]'
+          }
+          dir="$RUNNER_TEMP/published"
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --dir "$dir" \
+            --pattern petty.mcpb --pattern petty-mcp.mjs --pattern petty-skill.zip --pattern petty.mjs --pattern SHA256SUMS
+          cd "$dir"
+          sha256sum --check --strict SHA256SUMS || fail "the release's files do not match its SHA256SUMS"
+          for f in petty.mcpb petty-mcp.mjs petty-skill.zip petty.mjs; do
+            sum=$(sha256sum "$f" | cut -d' ' -f1)
+            got=$(verified "$f") || fail "$f in the GitHub Release has no attestation from this run"
+            grep -qx "$sum" <<< "$got" || fail "$f: the attestation names other bytes"
+            echo "$f sha256:$sum: attested by this run"
+          done
+          for ref in "@$DIGEST" ":v$VERSION" ":latest"; do
+            got=$(verified "oci://ghcr.io/wawrepo/petty$ref") || fail "ghcr.io/wawrepo/petty$ref has no attestation from this run"
+            grep -qx "${DIGEST#sha256:}" <<< "$got" || fail "ghcr.io/wawrepo/petty$ref is not the image this run built ($DIGEST)"
+            echo "ghcr.io/wawrepo/petty$ref: $DIGEST, attested by this run"
+          done
+          echo "Checked the attestations of the four files and of the image ($DIGEST, v$VERSION and latest)." >> "$GITHUB_STEP_SUMMARY"
 
   # PETTY-311: a job of its own, with only the rights the registry login needs. The release is out by
   # now: if this job fails, run mcp-registry.yml by hand with the tag.
