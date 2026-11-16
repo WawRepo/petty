@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- For operators: the API no longer prints Fastify's deprecation warning FSTDEP023 when it starts. The
+  request log is unchanged: one "request" line per request, and none for health probes.
+
 ### Security
 - The Docker Compose file now runs the `app` and `migrate` containers with a read-only file system
   (only `/tmp` is writable, in memory), with no Linux capabilities, with `no-new-privileges`, and with
