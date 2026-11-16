@@ -33,6 +33,13 @@ test("a new recovery code is shown, must be typed back, and then replaces the ol
   await form.getByRole("button", { name: "I saved it" }).click();
   await expect(form.getByText("does not match", { exact: false })).toBeVisible();
   await form.getByLabel("Type the code to confirm you saved it").fill(code);
+  // PETTY-501: a wrong login password says so and keeps the person signed in, with the form still open
+  await form.getByLabel("Login password").fill("not the login password");
+  await form.getByRole("button", { name: "I saved it" }).click();
+  await expect(form.getByText("Wrong email or password.")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/login/);
+  expect((await recoveryCopy(page))).toEqual(before);
+  await form.getByLabel("Login password").fill(user.password);
   await form.getByRole("button", { name: "I saved it" }).click();
   await expect(page.getByText("New recovery code saved.")).toBeVisible();
 

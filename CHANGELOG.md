@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Saving a new recovery code with a wrong login password now says "Wrong email or password." and keeps
+  you signed in. Before, the app took the refusal for an ended session and signed you out.
+
 ## [1.5.46] — 2026-11-16
 
 ### Fixed
