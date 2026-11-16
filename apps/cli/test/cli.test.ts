@@ -142,7 +142,7 @@ describe("petty auth login through the page (PETTY-274)", () => {
 
     t.out = "";
     expect(await petty("auth", "status", "--json")).toBe(0);
-    expect(JSON.parse(t.out)).toMatchObject([{ host: ORIGIN, token: "petty on laptop", role: "write", works: true }]);
+    expect(JSON.parse(t.out)).toMatchObject([{ host: ORIGIN, token: "petty on laptop", role: "write", works: true, scope: "all", drawers: ["Kitchen"] }]);
 
     // logout ends the token on the server too
     const token = JSON.parse(stored).hosts[ORIGIN].token as string;
@@ -203,6 +203,10 @@ describe("petty auth login through the page (PETTY-274)", () => {
     const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api` } });
     expect(await petty("find", "kitchen", "cash")).toBe(0);
     expect(t.out).toContain("Kitchen › Cash  60.00 PLN");
+    // PETTY-461: status says which drawers the token opens
+    t.out = "";
+    expect(await petty("auth", "status")).toBe(0);
+    expect(t.out).toContain("read only\n  opens every drawer, also new ones: “Kitchen”\n");
   });
 
   it("answers usage mistakes with exit code 2 and an unknown item with 4", async () => {
@@ -226,6 +230,10 @@ describe("petty auth login through the page (PETTY-274)", () => {
     expect(t.err).toContain("It opens only the 1 drawer chosen for it.");
     expect(await petty("drawers", "--json")).toBe(0);
     expect(JSON.parse(t.out).map((d: { name: string }) => d.name)).toEqual(["Kitchen"]);
+    t.out = "";
+    expect(await petty("auth", "status")).toBe(0);
+    expect(t.out).toContain("  opens chosen drawers only: “Kitchen”\n");
+    expect(t.out).not.toContain("Strongbox");
     const why = "(this token opens only the 1 drawer chosen for it)";
     for (const argv of [["find", "strongbox", "gold"], ["add", "Strongbox › Gold", "1"], ["history", `${outside.id}/${outLine}`], ["move", "Strongbox", "Home"]]) {
       t.err = "";

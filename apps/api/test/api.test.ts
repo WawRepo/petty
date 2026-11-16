@@ -7,6 +7,7 @@ import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
 import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, sealedBody, userMaterial } from "../src/devtools/fixtures.js";
+import { LOGIN_LIMIT_PER_EMAIL } from "../src/lib/password.js";
 
 const app = buildApp();
 const run = crypto.randomUUID().slice(0, 8);
@@ -762,4 +763,35 @@ describe("admin and password reset (Phase 15a)", () => {
     expect((await V.login()).statusCode).toBe(200);
     expect((await V.call("POST", "/auth/reset", { token, password: "new-password-2" })).json().code).toBe("ResetInvalid"); // single use
   }, 90_000);
+});
+
+describe("asking for the login password again (PETTY-411)", () => {
+  const fresh = async (n: string) => {
+    const c = new Client(app, await userMaterial(n, { email: `${n}-${crypto.randomUUID().slice(0, 8)}@test.local` }));
+    expect((await c.signup(await makeJoinLink())).statusCode).toBe(201);
+    return c;
+  };
+  const del = async (c: Client, password: string, key?: CryptoKey) => c.call("POST", "/me/delete", { password, proof: await c.proof(key), decisions: [] });
+
+  it("a session without the vault key learns nothing about the password: the key proof is checked first", async () => {
+    const [S, thief] = [await fresh("stolen"), await fresh("thief")];
+    for (const password of ["a wrong guess", S.user.password]) {
+      const res = await del(S, password, thief.user.keys.ecdsa.privateKey); // the session, but not the vault key
+      expect(res.statusCode).toBe(403);
+      expect(res.json().code).toBe("CustodyProofInvalid");
+    }
+    expect((await S.call("GET", "/me")).statusCode).toBe(200);
+    expect((await del(S, "a wrong guess")).statusCode).toBe(401); // with the key, a wrong password is still a wrong password
+  });
+
+  it(`wrong passwords count per account: after ${LOGIN_LIMIT_PER_EMAIL} even the right one waits (429), and nothing changes`, async () => {
+    const [U, V] = [await fresh("typo"), await fresh("other")];
+    for (let i = 0; i < LOGIN_LIMIT_PER_EMAIL; i++) expect((await del(U, `wrong ${i}`)).statusCode).toBe(401);
+    const blocked = await del(U, U.user.password);
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json().code).toBe("TooManyAttempts");
+    expect((await U.call("GET", "/me")).statusCode).toBe(200); // not deleted
+    expect((await U.login()).statusCode).toBe(200); // the sign-in lockout is its own count
+    expect((await del(V, "wrong")).statusCode).toBe(401); // another account is not held back
+  }, 60_000);
 });
