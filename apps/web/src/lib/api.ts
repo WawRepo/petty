@@ -14,11 +14,14 @@ export class NetworkError extends Error {
 }
 
 /**
- * On these paths a 401 means "the password you typed is wrong", not "your session is
- * gone" — they must not sign the user out.
+ * On these calls a 401 means "the password you typed is wrong", not "your session is
+ * gone" — they must not sign the user out. Storing a new recovery code (PUT) asks for the
+ * login password too (PETTY-501); reading the recovery copy (GET) does not, so a 401 there
+ * still means the session is gone.
  */
-const CREDENTIAL_401 = (path: string): boolean =>
-  path.startsWith("/auth/") || path === "/me/vault" || path.startsWith("/me/passkeys") || path === "/me/delete";
+const CREDENTIAL_401 = (method: string, path: string): boolean =>
+  path.startsWith("/auth/") || path === "/me/vault" || path.startsWith("/me/passkeys") || path === "/me/delete" ||
+  (method === "PUT" && path === "/me/recovery-vault");
 
 let tokenProvider: (() => Promise<string | null>) | null = null;
 /** Clerk mode (PETTY-88): every call carries the current session token. */
@@ -52,7 +55,7 @@ export async function api<T = unknown>(method: "GET" | "POST" | "PUT" | "PATCH" 
   const text = await res.text();
   const json = text ? (JSON.parse(text) as unknown) : undefined;
   if (!res.ok) {
-    if (res.status === 401 && !CREDENTIAL_401(path) && onSessionGone) onSessionGone();
+    if (res.status === 401 && !CREDENTIAL_401(method, path) && onSessionGone) onSessionGone();
     const e = (json ?? {}) as Partial<ApiErrorShape>;
     throw new ApiError(res.status, e.code ?? "Http", e.context ?? {});
   }

@@ -32,6 +32,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 - A drawer whose server sends the same entry twice now says that its entries are out of order or
   repeated. It said that the drawer's data was damaged and that its owner could put back an earlier
   version, which does not help here.
+- Saving a new recovery code with a wrong login password now says "Wrong email or password." and keeps
+  you signed in. Before, the app took the refusal for an ended session and signed you out.
 
 ## [1.5.46] — 2026-11-16
 
