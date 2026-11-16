@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- A drawer's owner sees, under Members, who was invited and has not answered yet, with the role and
+  when, and can withdraw an invitation. An invitation made before the drawer got a new key is marked
+  out of date, because it can no longer be accepted. Inviting someone who has not answered yet says so,
+  instead of "Something went wrong".
+
 ## [1.5.46] — 2026-11-16
 
 ### Fixed

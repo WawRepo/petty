@@ -257,7 +257,8 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   revoked tokens go with it.
 - **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only
   while its inviter still owns the drawer, and a change of owner ends every pending one. The owner
-  lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`.
+  lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`; the
+  web app shows them under Members, where the owner withdraws one (PETTY-498).
 - **Clerk accounts need a verified email (PETTY-421).** Drawers are shared by email, so
   `POST /auth/provision` answers 403 `EmailNotVerified` and stores nothing for an address Clerk has
   not verified.

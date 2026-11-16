@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createDrawerKey, createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, reseal, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
 import { applyOp, fold, newDocument, nextRev, readDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
-import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
+import { DOCUMENT_MIN_CIPHERTEXT, DrawerInvitation } from "@petty/protocol";
 import { sealedBody, type Client } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, compose, http, newUser } from "../lib.js";
 
@@ -129,8 +129,9 @@ describe("household", () => {
     const cat = await newUser("cat");
     const pending = await invite(ann, cat);
     expect(pending.statusCode).toBe(201);
-    const listed = (await ann.call("GET", `/drawers/${shed.id}/invitations`)).json().invitations as { id: string; invitee: { id: string } }[];
-    expect(listed.map((i) => [i.id, i.invitee.id])).toEqual([[pending.json().id, cat.id]]);
+    // PETTY-498: the Members screen reads this list with the protocol's schema
+    const listed = DrawerInvitation.array().parse((await ann.call("GET", `/drawers/${shed.id}/invitations`)).json().invitations);
+    expect(listed.map((i) => [i.id, i.invitee.id, i.invitee.display_name, i.role])).toEqual([[pending.json().id, cat.id, cat.user.display_name, "write"]]);
     expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).statusCode).toBe(403); // a member, not the owner
     // ann hands the drawer to ben: what she left open is over
     expect((await ann.call("POST", `/drawers/${shed.id}/transfer`, { to_user_id: ben.id })).statusCode).toBe(201);
@@ -143,6 +144,10 @@ describe("household", () => {
     expect(again.statusCode).toBe(201);
     expect((await ann.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(404);
     expect((await ben.call("DELETE", `/invitations/${again.json().id}`)).statusCode).toBe(204);
+    // PETTY-498: withdrawn, it leaves the owner's list and the invitee's, and cannot be accepted
+    expect((await ben.call("GET", `/drawers/${shed.id}/invitations`)).json()).toEqual({ invitations: [] });
+    expect(((await cat.call("GET", "/invitations")).json().invitations as { id: string }[]).map((i) => i.id)).not.toContain(again.json().id);
+    expect((await cat.call("POST", `/invitations/${again.json().id}/accept`)).statusCode).toBe(404);
     // ann leaves, so the later steps see her drawers as before
     expect((await ann.call("POST", `/drawers/${shed.id}/leave`)).statusCode).toBe(204);
   });

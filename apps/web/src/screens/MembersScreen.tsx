@@ -2,18 +2,20 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { useBack } from "../lib/nav.js";
-import { z, type Member } from "@petty/protocol";
+import { z, type DrawerInvitation, type Member } from "@petty/protocol";
 import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
-import { api, ApiError } from "../lib/api.js";
+import { api, ApiError, NetworkError } from "../lib/api.js";
 import { cancelTransfer, inviteMember, leaveDrawer, loadAll, offerTransfer, removeMember, useDrawers, useSharingState, loadIfIdle } from "../lib/drawers.js";
 import { initial } from "../lib/format.js";
+import { drawerInvitations, withdrawInvitation } from "../lib/invitations.js";
 import { confirmPin, leftDrawerAt, memberSafetyNumber, memberStatus, pinStatus, usePins } from "../lib/pins.js";
 import { useAuth } from "../lib/session.js";
+import { relativeTime } from "../lib/time.js";
 
 const Lookup = z.object({ id: z.string(), display_name: z.string(), keys: z.object({ ecdh_pub: z.string(), ecdsa_pub: z.string(), sig_key_id: z.string() }).nullable() });
 
@@ -23,7 +25,8 @@ function SafetyNumber({ m }: { m: Member }) {
   return <span className="safety" data-testid="member-safety">{n}</span>;
 }
 
-function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onClose: () => void; drawerId: string; members: readonly Member[] }) {
+/** `invited`: who has a pending invitation to this drawer (PETTY-498); `onInvited` runs after a new one. */
+function InviteSheet({ open, onClose, drawerId, members, invited, onInvited }: { open: boolean; onClose: () => void; drawerId: string; members: readonly Member[]; invited: readonly string[]; onInvited: () => void }) {
   const { t } = useTranslation();
   const toast = useToast();
   usePins();
@@ -40,6 +43,7 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
   useEffect(() => { if (asMember) void memberSafetyNumber(asMember).then(setSafety); }, [foundId]); // safety number depends on the found user only
   const status = asMember ? pinStatus(asMember) : "unpinned";
   const already = found ? members.some((m) => m.user_id === found.id) : false;
+  const waiting = found && !already ? invited.includes(found.id) : false;
 
   async function lookup(e: FormEvent) {
     e.preventDefault();
@@ -66,10 +70,13 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
       await confirmPin(found.id, found.keys, drawerId); // PETTY-449: someone who left this drawer before is invited, and so confirmed, again
       const { mailed } = await inviteMember(drawerId, { id: found.id, keys: found.keys }, role);
       toast(t(mailed ? "invite.sent" : "invite.sentNoMail"));
+      onInvited();
       await loadAll();
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError && err.code === "AlreadyMember" ? t("invite.alreadyMember") : t("errors.unknown"));
+      const code = err instanceof ApiError ? err.code : null;
+      setError(code === "AlreadyMember" ? t("invite.alreadyMember") : code === "InvitationPending" ? t("invite.alreadyInvited", { name: found.display_name }) : t("errors.unknown"));
+      if (code === "InvitationPending") onInvited(); // the list on the screen shows the one that waits
     } finally { setBusy(false); }
   }
 
@@ -92,9 +99,10 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
           <p className="hint mb4">{t("members.safety")}</p>
           <p className="safety" data-testid="invite-safety">{safety}</p>
           {already ? <p className="error" role="alert">{t("invite.alreadyMember")}</p> : null}
+          {waiting ? <p className="error" role="alert" data-testid="invite-waiting">{t("invite.alreadyInvited", { name: found.display_name })}</p> : null}
           {status === "changed" ? <p className="error" role="alert" data-testid="invite-blocked">{t("invite.blockedChanged")}</p> : null}
-          {/* PETTY-280 (S16): someone already in the drawer gets no form to fill, only the way out */}
-          {already ? null : (
+          {/* PETTY-280 (S16): someone already in the drawer, or already invited (PETTY-498), gets no form to fill, only the way out */}
+          {already || waiting ? null : (
             <>
               <fieldset className="fieldset-plain">
                 <legend className="hint mb6 fw600">{t("invite.role")}</legend>
@@ -106,7 +114,7 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
           )}
           <div className="actions">
             <Button variant="secondary" onClick={onClose}>{t("app.cancel")}</Button>
-            {already ? null : <Button busy={busy} disabled={!compared || status === "changed"} onClick={() => void invite()}>{t("invite.send")}</Button>}
+            {already || waiting ? null : <Button busy={busy} disabled={!compared || status === "changed"} onClick={() => void invite()}>{t("invite.send")}</Button>}
           </div>
         </div>
       ) : null}
@@ -115,7 +123,7 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
 }
 
 export function MembersScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { id = "" } = useParams();
@@ -125,13 +133,30 @@ export function MembersScreen() {
   const auth = useAuth();
   usePins();
   const [invite, setInvite] = useState(false);
-  const [confirm, setConfirm] = useState<null | { kind: "remove"; m: Member } | { kind: "leave" }>(null);
+  const [confirm, setConfirm] = useState<null | { kind: "remove"; m: Member } | { kind: "leave" } | { kind: "withdraw"; inv: DrawerInvitation }>(null);
   useEffect(() => { if (state.status === "idle") loadIfIdle(); }, [state.status]);
   const view = state.drawers.get(id);
+  // PETTY-498: the owner sees the invitations that wait for an answer. Only the owner asks: the server refuses anyone else.
+  const owns = view?.summary.role === "owner";
+  const [invitations, setInvitations] = useState<{ drawer: string; list: readonly DrawerInvitation[] } | null>(null);
+  const [invitationsFailed, setInvitationsFailed] = useState(false);
+  const [asked, setAsked] = useState(0);
+  const reloadInvitations = () => setAsked((n) => n + 1);
+  useEffect(() => {
+    if (!owns) return;
+    let live = true;
+    drawerInvitations(id).then(
+      (list) => { if (live) { setInvitations({ drawer: id, list }); setInvitationsFailed(false); } },
+      // offline, the app says so already; the list comes with the next visit
+      (err) => { if (live && !(err instanceof NetworkError)) setInvitationsFailed(true); },
+    );
+    return () => { live = false; };
+  }, [id, owns, asked]);
   if (!view || auth.status !== "unlocked") return <><TopBar title={t("members.title")} onBack={back} /><main><p className="empty">{t("app.loading")}</p></main></>;
   const meId = auth.me.id;
   const isOwner = view.summary.role === "owner";
   const pending = transfers.find((x) => x.drawer_id === id);
+  const waiting = isOwner && invitations?.drawer === id ? invitations.list : [];
   // PETTY-449: the key is due for replacement and this device waits, because it gives a new key only to confirmed members
   const toConfirm = view.summary.rotation_needed && !view.rotation && view.summary.role !== "read" ? view.members.filter((m) => m.user_id !== meId && memberStatus(id, m) !== "confirmed") : [];
 
@@ -165,11 +190,34 @@ export function MembersScreen() {
             </section>
           );
         })}
+        {waiting.length || (isOwner && invitationsFailed) ? (
+          <header className="group-h"><h2>{t("members.waiting.title")}</h2></header>
+        ) : null}
+        {isOwner && invitationsFailed ? <p className="error" role="alert" data-testid="invitations-failed">{t("members.waiting.loadFailed")}</p> : null}
+        {waiting.map((inv) => (
+          <section className="card" key={inv.id} data-testid="invitation-card">
+            <p className="mb4 fw700"><span className="avatar">{initial(inv.invitee.display_name)}</span>{inv.invitee.display_name} · <span className="hint m0">{t(`members.role.${inv.role}`)}</span></p>
+            <p className="hint my6">{t("members.waiting.since", { when: relativeTime(inv.created_at, i18n.language, t) })}</p>
+            {/* the drawer's key changed since: the server would revoke it at accept (PETTY-461), so say so now */}
+            {inv.key_version !== view.summary.key_version ? <p className="error my6" data-testid="invitation-stale">{t("members.waiting.stale", { name: inv.invitee.display_name })}</p> : null}
+            <div className="actions mt8">
+              <Button variant="danger-ghost" onClick={() => setConfirm({ kind: "withdraw", inv })}>{t("members.waiting.withdraw")}</Button>
+            </div>
+          </section>
+        ))}
         {isOwner ? <button type="button" className="addbtn" onClick={() => setInvite(true)}>+ {t("members.invite")}</button> : <Button variant="danger-ghost" onClick={() => setConfirm({ kind: "leave" })}>{t("members.leave")}</Button>}
       </main>
-      <InviteSheet open={invite} onClose={() => setInvite(false)} drawerId={id} members={view.members} />
+      <InviteSheet open={invite} onClose={() => setInvite(false)} drawerId={id} members={view.members} invited={waiting.map((inv) => inv.invitee.id)} onInvited={reloadInvitations} />
       <ConfirmSheet open={confirm?.kind === "remove"} title={t("members.remove")} body={confirm?.kind === "remove" ? t("members.removeConfirm", { name: confirm.m.display_name }) : ""} confirmLabel={t("members.remove")} onClose={() => setConfirm(null)}
         onConfirm={async () => { if (confirm?.kind === "remove") await removeMember(id, confirm.m.user_id); }} />
+      <ConfirmSheet open={confirm?.kind === "withdraw"} title={t("members.waiting.withdraw")} body={confirm?.kind === "withdraw" ? t("members.waiting.withdrawConfirm", { name: confirm.inv.invitee.display_name }) : ""} confirmLabel={t("members.waiting.withdraw")} onClose={() => setConfirm(null)}
+        onConfirm={async () => {
+          if (confirm?.kind !== "withdraw") return;
+          try { await withdrawInvitation(confirm.inv.id); toast(t("members.waiting.withdrawn")); }
+          // answered or withdrawn elsewhere meanwhile: the list shows what is left
+          catch (err) { toast(t(err instanceof ApiError && err.code === "InvitationNotFound" ? "members.waiting.gone" : "errors.unknown")); }
+          finally { reloadInvitations(); }
+        }} />
       <ConfirmSheet open={confirm?.kind === "leave"} title={t("members.leave")} body={t("members.leaveConfirm")} confirmLabel={t("members.leave")} onClose={() => setConfirm(null)}
         onConfirm={async () => { await leaveDrawer(id); nav("/", { replace: true }); }} />
     </>

@@ -290,3 +290,61 @@ test("an invitation made before the drawer's key changed is refused once, says w
   await expect(pageB.getByTestId("pending-invitation")).toHaveCount(0);
   await ctxB.close();
 });
+
+test("the owner sees who has not answered yet, is told when an invitation went out of date, and withdraws it (PETTY-498)", async ({ browser }) => {
+  const alice = await signupWithKeys("alice");
+  const bob = await signupWithKeys("bob");
+  const carol = await signupWithKeys("carol");
+  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
+  const ctxC = await browser.newContext(); const pageC = await ctxC.newPage();
+  await loginAndUnlock(pageA, alice);
+  const id = await makeDrawer(pageA, "Garage");
+  await expect(pageA.getByTestId("invitation-card")).toHaveCount(0);
+  await expect(pageA.getByRole("heading", { name: "Waiting for an answer" })).toHaveCount(0);
+  await inviteViaUi(pageA, id, bob, "write");
+  // the new invitation shows at once, with its role and age
+  const bobCard = pageA.getByTestId("invitation-card").filter({ hasText: "bob" });
+  await expect(bobCard).toContainText("Writer");
+  await expect(bobCard).toContainText("Invited just now");
+  await expect(pageA.getByRole("heading", { name: "Waiting for an answer" })).toBeVisible();
+  await expect(pageA.getByRole("dialog", { name: "Invite to this drawer" })).toBeHidden(); // the toast comes before the sheet closes
+  // asking again for someone who has not answered: said so, and no second invitation
+  await pageA.getByRole("button", { name: "Invite someone" }).click();
+  await expect(pageA.getByLabel("Their email")).toHaveValue(""); // the sheet empties its field after it opens; typing before that is lost
+  await pageA.getByLabel("Their email").fill(bob.email);
+  await pageA.getByRole("button", { name: "Find" }).click();
+  await expect(pageA.getByTestId("invite-waiting")).toContainText("is already invited and has not answered yet");
+  await expect(pageA.getByRole("button", { name: "Invite", exact: true })).toHaveCount(0);
+  await pageA.getByTestId("invite-found").getByRole("button", { name: "Cancel" }).click();
+  await inviteViaUi(pageA, id, carol, "read");
+  await expect(pageA.getByTestId("invitation-card")).toHaveCount(2);
+  await expect(pageA.getByTestId("invitation-card").filter({ hasText: "carol" })).toContainText("Reader");
+  // a member does not get the list: her screen asks nothing of the owner-only route
+  await loginAndUnlock(pageC, carol);
+  await acceptViaUi(pageC);
+  await pageC.goto(`/drawers/${id}/members`);
+  await expect(pageC.getByTestId("member-card")).toHaveCount(2);
+  await expect(pageC.getByTestId("invitation-card")).toHaveCount(0);
+  await expect(pageC.getByRole("heading", { name: "Waiting for an answer" })).toHaveCount(0);
+  // carol answered, so only bob waits; removing carol gives the drawer a new key, and bob's invitation is for the old one
+  await pageA.goto(`/drawers/${id}/members`);
+  await expect(pageA.getByTestId("invitation-card")).toHaveCount(1);
+  await expect(bobCard.getByTestId("invitation-stale")).toHaveCount(0);
+  await pageA.getByTestId("member-card").filter({ hasText: "carol" }).getByRole("button", { name: "Remove" }).click();
+  await pageA.getByRole("button", { name: "Remove", exact: true }).last().click();
+  const aliceApi = await apiClient(alice);
+  await expect.poll(async () => ((await aliceApi.call("GET", `/drawers/${id}/rotation`)).json as { completed: boolean; key_version: number }), { timeout: 20_000 }).toMatchObject({ completed: true, key_version: 2 });
+  await pageA.reload();
+  await expect(bobCard.getByTestId("invitation-stale")).toContainText("Out of date");
+  // withdrawn: gone from the list, and bob can no longer accept it
+  const bobApi = await apiClient(bob);
+  const invitationId = ((await bobApi.call("GET", "/invitations")).json as { invitations: Array<{ id: string }> }).invitations[0]!.id;
+  await bobCard.getByRole("button", { name: "Withdraw invitation" }).click();
+  await pageA.getByRole("button", { name: "Withdraw invitation", exact: true }).last().click();
+  await expect(pageA.locator(".toast")).toHaveText("Invitation withdrawn");
+  await expect(pageA.getByTestId("invitation-card")).toHaveCount(0);
+  await expect(pageA.getByRole("heading", { name: "Waiting for an answer" })).toHaveCount(0);
+  expect(((await bobApi.call("GET", "/invitations")).json as { invitations: unknown[] }).invitations).toHaveLength(0);
+  expect((await bobApi.call("POST", `/invitations/${invitationId}/accept`)).status).toBe(404);
+  await ctxA.close(); await ctxC.close();
+});
