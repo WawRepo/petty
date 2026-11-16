@@ -5,7 +5,8 @@ import { Button } from "./Button.js";
 import { acceptInvitation, acceptTransfer, cancelTransfer, declineInvitation, useDrawers, useSharingState, type Transfer } from "../lib/drawers.js";
 import { confirmPin, memberSafetyNumber, pinStatus, usePins } from "../lib/pins.js";
 import { useAuth } from "../lib/session.js";
-import { NetworkError } from "../lib/api.js";
+import { ApiError, NetworkError } from "../lib/api.js";
+import { useToast } from "./Toast.js";
 
 /** PETTY-461: a choice on a card that did not go through says so on the card. */
 function useFailure(): [string | null, <T>(p: Promise<T>) => Promise<T | undefined>] {
@@ -24,6 +25,7 @@ function InvitationCard({ inv }: { inv: Invitation }) {
   const [compared, setCompared] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, run] = useFailure();
+  const toast = useToast();
   usePins();
   // PETTY-447: other keys than the ones pinned for the inviter are a key change. It is shown, and the invitation waits until
   // the new key is accepted as such, as in Members. Ticking "I compared" never puts a new key in a pin's place.
@@ -38,7 +40,11 @@ function InvitationCard({ inv }: { inv: Invitation }) {
       <label className="check-row my10"><input type="checkbox" checked={compared && !changed} disabled={changed} onChange={(e) => setCompared(e.target.checked)} /><span>{t("pending.compare", { name: inv.inviter.display_name })}</span></label>
       <div className="actions">
         <Button variant="secondary" busy={busy} onClick={() => { setBusy(true); void run(declineInvitation(inv.id)).finally(() => setBusy(false)); }}>{t("pending.decline")}</Button>
-        <Button busy={busy} disabled={!compared || changed} onClick={async () => { if (changed) return; setBusy(true); try { await run((async () => { if (inv.inviter.keys) await confirmPin(inv.inviter.id, inv.inviter.keys); await acceptInvitation(inv.id); })()); } finally { setBusy(false); } }}>{t("pending.accept")}</Button>
+        <Button busy={busy} disabled={!compared || changed} onClick={async () => { if (changed) return; setBusy(true); try { await run((async () => {
+          if (inv.inviter.keys) await confirmPin(inv.inviter.id, inv.inviter.keys);
+          // PETTY-461: an out-of-date invitation is gone after this; its card goes with it, so the reason is a toast
+          try { await acceptInvitation(inv.id); } catch (e) { if (e instanceof ApiError && e.code === "InvitationStale") { toast(t("pending.stale", { name: inv.inviter.display_name })); return; } throw e; }
+        })()); } finally { setBusy(false); } }}>{t("pending.accept")}</Button>
       </div>
       {error ? <p className="error" role="alert" data-testid="pending-error">{error}</p> : null}
     </section>

@@ -75,7 +75,8 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
   /** Invitee accepts: membership + wrap in one transaction, no cryptography needed. */
   app.post<{ Params: { id: string } }>("/invitations/:id/accept", async (req, reply) => {
     const me = requireUser(req);
-    await withTx(apiPool, async (db) => {
+    // PETTY-461: a stale invitation is revoked for good; the refusal comes after the commit, or it would undo the revoke
+    const stale = await withTx(apiPool, async (db) => {
       const inv = (await db.query("select * from invitations where id = $1 and invitee_id = $2 and state = 'pending' for update", [req.params.id, me.id])).rows[0];
       if (!inv) throw notFound("InvitationNotFound");
       const d = (await db.query<{ key_version: number; owner_id: string }>("select key_version, owner_id from drawers where id = $1", [inv.drawer_id])).rows[0];
@@ -84,12 +85,14 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       if (d.owner_id !== inv.inviter_id) throw notFound("InvitationNotFound");
       if (d.key_version !== inv.key_version) {
         await db.query("update invitations set state = 'revoked', resolved_at = now() where id = $1", [inv.id]);
-        throw conflict("InvitationStale", "the drawer key rotated since the invitation; ask the owner to invite again");
+        return true;
       }
       await db.query("insert into drawer_members (drawer_id, user_id, role) values ($1, $2, $3)", [inv.drawer_id, me.id, inv.role]);
       await db.query("insert into drawer_keys (drawer_id, user_id, key_version, wrap) values ($1, $2, $3, $4)", [inv.drawer_id, me.id, inv.key_version, JSON.stringify(inv.wrap)]);
       await db.query("update invitations set state = 'accepted', resolved_at = now() where id = $1", [inv.id]);
+      return false;
     });
+    if (stale) throw conflict("InvitationStale", "the drawer key rotated since the invitation; ask the owner to invite again");
     return reply.code(204).send();
   });
 

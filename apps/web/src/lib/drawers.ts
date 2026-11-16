@@ -634,7 +634,15 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
   const answer = InviteAnswer.parse(await api<unknown>("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee }));
   return { mailed: answer.mailed !== false };
 }
-export async function acceptInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/accept`); await loadAll(); }
+export async function acceptInvitation(invitationId: string): Promise<void> {
+  try { await api("POST", `/invitations/${invitationId}/accept`); }
+  catch (e) {
+    // PETTY-461: the server revoked it (the drawer's key changed since): reload, so its card goes, then say why
+    if (e instanceof ApiError && e.code === "InvitationStale") await loadAll();
+    throw e;
+  }
+  await loadAll();
+}
 export async function declineInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/decline`); await loadAll(); }
 /**
  * PETTY-449: once the server took the removal, this person's sealed user document remembers it, and the drawer key is

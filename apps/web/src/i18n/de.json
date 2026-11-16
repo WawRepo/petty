@@ -601,7 +601,8 @@
     "transferAccept": "Eigentum übernehmen",
     "transferDecline": "Ablehnen",
     "transferWaiting": "{name} hat die Übergabe von „{drawer}“ noch nicht angenommen.",
-    "cancel": "Angebot zurückziehen"
+    "cancel": "Angebot zurückziehen",
+      "stale": "Die Einladung von {name} ist veraltet: Der Schlüssel der Schublade hat sich seitdem geändert. Bitte {name}, dich neu einzuladen."
   },
   "members": {
     "title": "Mitglieder",

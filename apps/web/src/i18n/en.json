@@ -601,7 +601,8 @@
     "transferAccept": "Take ownership",
     "transferDecline": "Decline",
     "transferWaiting": "Waiting for {name} to accept ownership of “{drawer}”.",
-    "cancel": "Cancel offer"
+    "cancel": "Cancel offer",
+      "stale": "{name}'s invitation is out of date: the drawer's key changed since. Ask {name} to invite you again."
   },
   "members": {
     "title": "Members",
