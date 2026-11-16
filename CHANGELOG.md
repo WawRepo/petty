@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- A change to your own settings list (confirmed people, tags, places, totals) that kept meeting a newer
+  copy from another device now says it was not saved. Before, it gave up without a word.
+- Accept, Decline and "Accept new key" on an invitation, and the offers to pass a drawer on, say so on
+  the card when they fail. Confirm on the Members screen says so too.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
