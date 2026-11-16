@@ -12,6 +12,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 - For operators: the API no longer prints Fastify's deprecation warning FSTDEP023 when it starts. The
   request log is unchanged: one "request" line per request, and none for health probes.
 
+### Security
+- The Docker Compose file now runs the `app` and `migrate` containers with a read-only file system
+  (only `/tmp` is writable, in memory), with no Linux capabilities, with `no-new-privileges`, and with
+  caps on processes and memory. The app may use 1 GB; set `APP_MEMORY_LIMIT` to change it. Postgres
+  gets `no-new-privileges` too. If you added your own service on the Petty image, see docs/deploy.md.
+- The startup log line shows only the scheme, host and port of `OTEL_EXPORTER_OTLP_ENDPOINT`. Before,
+  it showed the whole address, with any user name, token, path or query in it.
+
 ## [1.5.41] — 2026-11-16
 
 ### Security

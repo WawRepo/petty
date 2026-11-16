@@ -14,6 +14,17 @@ describe("deployment", () => {
     expect(ps).toMatch(/^app running 0$/m);
   });
 
+  it("the app cannot change its files or gain rights; /tmp stays writable (PETTY-420)", () => {
+    // the migrations above ran under the same settings (x-petty-hardening in the compose file)
+    const status = compose("exec -T app cat /proc/1/status");
+    expect(status).toMatch(/^NoNewPrivs:\s+1$/m);
+    expect(status).toMatch(/^CapBnd:\s+0+$/m); // no capability can come back
+    const write = (path: string) => compose(`exec -T app sh -c "touch ${path} 2>/dev/null && echo written || echo refused"`).trim();
+    expect(write("/home/node/petty-it")).toBe("refused"); // the node user's own home: read-only file system
+    expect(write("/tmp/petty-it")).toBe("written");
+    expect(compose("exec -T app cat /sys/fs/cgroup/pids.max").trim()).toBe("256");
+  });
+
   it("health probes are not logged, other requests are (PETTY-240)", async () => {
     for (let i = 0; i < 3; i++) { await fetch(`${API}/health/live`); await fetch(`${API}/health`); }
     expect((await fetch(`${API}/config`)).status).toBe(200);

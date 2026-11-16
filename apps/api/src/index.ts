@@ -1,7 +1,7 @@
 import { config } from "./config.js";
 import { startTracing } from "./lib/tracing.js";
 import { otelResource } from "./lib/otel-resource.js";
-import { startOtlpMetrics, startOtlpLogs } from "./lib/otel-push.js";
+import { endpointForLog, startOtlpMetrics, startOtlpLogs } from "./lib/otel-push.js";
 
 const version = process.env["PETTY_VERSION"];
 // Tracing hooks node:http as Fastify requires it, and the pino instrumentation must patch pino before
@@ -32,7 +32,7 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 app.listen({ port: config.port, host: config.host }).then(async () => {
-  app.log.info({ tracing, endpoint: tracing ? config.otlpEndpoint : null, otlpPush: push, env: config.deploymentEnv || null }, "tracing");
+  app.log.info({ tracing, endpoint: tracing ? endpointForLog(config.otlpEndpoint) : null, otlpPush: push, env: config.deploymentEnv || null }, "tracing");
   if (config.metricsPort > 0) {
     await startMetricsServer(config.metricsPort, config.host);
     app.log.info({ port: config.metricsPort }, "metrics listening");

@@ -93,9 +93,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
   it("tells a command line that sends no code of its own to update, and starts no sign-in for it (PETTY-451)", async () => {
     const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
     const cliPub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
-    // what `petty auth login` sent before the 20-letter code
+    // what `petty auth login` sent before the 20-letter code; from addresses that 08-proxy, which counts
+    // its own up to the limit, never draws (PETTY-468)
     const res = await fetch(`${API}/device/code`, {
-      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `203.0.113.${10 + Math.floor(Math.random() * 200)}` },
+      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": `198.51.100.${210 + Math.floor(Math.random() * 45)}` },
       body: JSON.stringify({ cli_pub: cliPub, client_name: "petty on it-older", role: "read", expires_days: 30 }),
     });
     expect(res.status).toBe(400);

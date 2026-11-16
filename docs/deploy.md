@@ -36,6 +36,11 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
+- The `app` and `migrate` containers run with a read-only file system (only `/tmp` is writable, in
+  memory), with every Linux capability dropped, with `no-new-privileges` and with at most 256
+  processes (PETTY-420). The app may use 1 GB of memory; set `APP_MEMORY_LIMIT` (for example `2g`)
+  to change it. A service you add on the Petty image (a second app, a script) should get the same
+  settings: add `<<: *petty-hardening` to it, as `app` has.
 - Set `PETTY_IMAGE` to a tag and its digest ("Check the image" below says how to check a release's
   image). The Postgres image is pinned by digest too.
 - The compose file has no backup service. Add one (see "Backups") before you keep real data.
