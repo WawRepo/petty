@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- `petty auth status` says which drawers the token opens: every drawer (also new ones) or only the
+  chosen ones, with their names. `--json` adds `scope` and `drawers`.
+
 ### Fixed
 - The command line and the AI add-on no longer change a drawer's names, items or tags while the drawer
   has a newer key than the token holds (during or after a key change). They say so and ask you to open
