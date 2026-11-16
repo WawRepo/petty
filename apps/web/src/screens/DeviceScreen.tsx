@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
-import { DeviceRequestView, type DeviceRequestView as Request } from "@petty/protocol";
+import { DeviceRequestView, MAX_ACCESS_TOKENS, type DeviceRequestView as Request } from "@petty/protocol";
 import { deviceUserCode, normalizeDeviceCode, sealDeviceToken, WrongPassphrase } from "@petty/crypto";
 import { CodeText } from "../components/CodeText.js";
 import { Button } from "../components/Button.js";
@@ -105,6 +105,7 @@ export function DeviceScreen() {
       if (e instanceof WrongPassphrase) setError(t("auth.unlock.wrong"));
       else if (e instanceof PasskeyError) setError(t(e.code === "cancelled" ? "settings.passkey.cancelled" : "settings.passkey.unsupported"));
       else if (e instanceof ApiError && e.status === 404) { setPhase("enter"); setError(t("device.unknown")); }
+      else if (e instanceof ApiError && e.code === "TokenLimit") setError(t("tokens.limit", { max: MAX_ACCESS_TOKENS })); // PETTY-461
       else setError(t("errors.unknown"));
     } finally {
       setBusy(false);

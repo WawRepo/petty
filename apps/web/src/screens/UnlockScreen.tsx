@@ -9,6 +9,7 @@ import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
 import { ApiError } from "../lib/api.js";
+import { MAX_PASSKEYS } from "@petty/protocol";
 import { addPasskey, recoverWithCode } from "../lib/custody.js";
 import { checkPassphrase } from "../lib/passphrase.js";
 import { rememberUnlock, setRememberUnlock, signOut, unlock, unlockWithPasskey, updateMe, updateVault, useAuth, type PasskeyUnlock } from "../lib/session.js";
@@ -83,7 +84,8 @@ export function UnlockScreen() {
       await offer.open();
       nav(afterUnlock() ?? "/", { replace: true });
     } catch (err) {
-      if (err instanceof PasskeyError && err.code === "cancelled") setOErr(t("settings.passkey.cancelled"));
+      if (err instanceof ApiError && err.code === "PasskeyLimit") setOErr(t("settings.passkey.limit", { max: MAX_PASSKEYS })); // PETTY-461
+      else if (err instanceof PasskeyError && err.code === "cancelled") setOErr(t("settings.passkey.cancelled"));
       else if (err instanceof PasskeyError) setOErr(t(err.code === "exists" ? "settings.passkey.exists" : err.code === "no_prf" ? "settings.passkey.noPrf" : "settings.passkey.unsupported"));
       else if (err instanceof ApiError && err.status === 401) setOErr(t("auth.login.failed"));
       else setOErr(t("errors.unknown"));

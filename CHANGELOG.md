@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- At the most access tokens (50) or passkeys (20), Petty now says so and what to do, instead of
+  "Something went wrong".
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed

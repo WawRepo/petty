@@ -286,6 +286,7 @@
       "addedOn": "Añadida el {date}",
       "addHintPasskey": "Primero lo confirma tu llave de acceso actual (si está en tu teléfono, escanea el código QR). Después este dispositivo te pedirá Face ID, Touch ID, un PIN o una llave de seguridad.",
       "lastDoor": "Es tu última llave de acceso y no tienes frase de contraseña. Primero crea una frase de contraseña de respaldo.",
+      "limit": "Tienes {max} llaves de acceso, el máximo permitido. Elimina una que ya no uses y luego añade esta.",
       "exists": "Esta llave de acceso ya está en este dispositivo. Puede haberse sincronizado desde otro dispositivo, por ejemplo con el Llavero de iCloud o el Gestor de contraseñas de Google. Usa «Desbloquear con llave de acceso»."
     },
     "setPassphrase": "Crear frase de contraseña de respaldo",
@@ -1361,6 +1362,7 @@
     "scopePick": "Cajones para este token",
     "scopeNone": "Aún no tienes ningún cajón para elegir.",
     "scopeNeeded": "Elige qué cajones puede usar este token.",
+    "limit": "Tienes {max} tokens, el máximo permitido. Revoca uno que ya no uses y luego crea este.",
     "scopeAllShort": "todos los cajones",
     "scopeCount": "{count, plural, one {# cajón} other {# cajones}}",
     "confirm": "Un token lleva claves de cajones. Por eso, al crearlo, Petty vuelve a pedir tu frase de contraseña de la bóveda o tu llave de acceso, aunque la bóveda esté abierta.",
