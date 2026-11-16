@@ -126,7 +126,7 @@ deployment passes the same names as environment variables or secrets.
 ## Requirements (clean machine)
 
 - Docker Desktop (or any Docker with Compose v2)
-- Node 24 (LTS; `.node-version` says 24 — the image and CI use it too)
+- Node 26 (LTS; `.node-version` says 26 — the image and CI use it too)
 - pnpm 11: `corepack enable && corepack prepare pnpm@11.28.8 --activate` (the version in `package.json`)
 - GNU make (preinstalled on macOS; `apt install make` on Debian/Ubuntu)
 
