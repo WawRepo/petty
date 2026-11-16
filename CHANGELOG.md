@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.48] — 2026-11-16
+
 ### Fixed
 - A drawer that cannot be shown offers only the ways out that help. "Earlier versions" (put back an
   older copy of the drawer) now shows only where the drawer's own data is at fault, not where its
@@ -1064,7 +1066,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.47...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.48...HEAD
+[1.5.48]: https://github.com/WawRepo/petty/releases/tag/v1.5.48
 [1.5.47]: https://github.com/WawRepo/petty/releases/tag/v1.5.47
 [1.5.46]: https://github.com/WawRepo/petty/releases/tag/v1.5.46
 [1.5.45]: https://github.com/WawRepo/petty/releases/tag/v1.5.45
