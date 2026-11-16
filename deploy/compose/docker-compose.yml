@@ -11,10 +11,26 @@
 # too. Images are pinned by digest; bump the tag AND the digest together.
 # This file has no backup service: see docs/deploy.md, "Backups".
 name: petty
+
+# PETTY-420 (security review #22): the Petty containers cannot change their own files or gain rights.
+# The file system is read-only except /tmp (in memory), every Linux capability is dropped, setuid
+# programs give no new rights, and the number of processes and the memory are capped.
+x-petty-hardening: &petty-hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 256
+
 services:
   db:
     image: postgres:16.15@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
     restart: unless-stopped
+    # Postgres starts as root and then becomes its own user, so it keeps its capabilities and a
+    # writable file system; it still cannot gain rights through a setuid program.
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
     environment:
       POSTGRES_USER: petty
       POSTGRES_PASSWORD: ${OWNER_DB_PASSWORD:?set OWNER_DB_PASSWORD}
@@ -31,8 +47,10 @@ services:
       retries: 30
 
   migrate:
+    <<: *petty-hardening
     image: ${PETTY_IMAGE:?set PETTY_IMAGE to ghcr.io/wawrepo/petty:<tag>@sha256:<digest>}
     restart: "no"
+    mem_limit: 512m
     depends_on:
       db: { condition: service_healthy }
     environment:
@@ -40,8 +58,10 @@ services:
     command: ["pnpm", "migrate"]
 
   app:
+    <<: *petty-hardening
     image: ${PETTY_IMAGE:?set PETTY_IMAGE to ghcr.io/wawrepo/petty:<tag>@sha256:<digest>}
     restart: unless-stopped
+    mem_limit: ${APP_MEMORY_LIMIT:-1g}
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
