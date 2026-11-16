@@ -251,7 +251,18 @@ async function lockHere(): Promise<void> {
   resetDrawers();
   forgetSelfKey();
   forgetScreenMemory();
+  forgetAll();
   await idb.del(K_UNLOCKED);
+}
+
+/**
+ * PETTY-461: a module that keeps something from the unlocked session (the sync report) registers here;
+ * lock and sign-out call it. Returns the way to stop.
+ */
+const forgetters = new Set<() => void>();
+export function onForget(fn: () => void): () => void { forgetters.add(fn); return () => { forgetters.delete(fn); }; }
+function forgetAll(): void {
+  for (const fn of [...forgetters]) { try { fn(); } catch { /* one failing must not keep the rest */ } }
 }
 
 let signOutHandler: (() => Promise<void>) | null = null;
@@ -295,6 +306,7 @@ async function clearAll(): Promise<void> {
   resetDrawers();
   forgetSelfKey();
   forgetScreenMemory();
+  forgetAll();
   for (const k of await idb.keys()) if (!KEPT.some((p) => k.startsWith(p))) await idb.del(k);
 }
 

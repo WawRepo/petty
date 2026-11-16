@@ -13,6 +13,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   has a newer key than the token holds (during or after a key change). They say so and ask you to open
   Petty, which passes the new key on. Before, such a change was saved under the old key with the new
   key's number, and nobody could open that version of the drawer again.
+- The "something went wrong" screen names only the kind of error and its code, not its message, which
+  could quote what you wrote. A date the app cannot read shows a dash instead of breaking the screen.
+  Locking or signing out also clears the sync report, which names items and amounts.
 
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
