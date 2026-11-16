@@ -265,6 +265,11 @@ describe("household", () => {
     const other = await createRecoveryVault(generateRecoveryCode(), await generateUserKeys());
     expect((await ann.call("PUT", "/me/recovery-vault", { password: ann.user.password, proof: await ann.proof(), recovery_vault: other })).json().code).toBe("KeysMismatch");
     expect((await ann.call("PUT", "/me/recovery-vault", { password: "wrong-password", proof: await ann.proof(), recovery_vault: vault })).statusCode).toBe(401);
+    // PETTY-411: the key proof comes first, so a session without the vault key cannot test passwords here
+    const notMine = (await generateUserKeys()).ecdsa.privateKey;
+    for (const password of ["wrong-password", ann.user.password]) {
+      expect((await ann.call("PUT", "/me/recovery-vault", { password, proof: await ann.proof(notMine), recovery_vault: vault })).json().code).toBe("CustodyProofInvalid");
+    }
     expect((await ann.call("PUT", "/me/recovery-vault", { password: ann.user.password, proof: await ann.proof(), recovery_vault: vault })).statusCode).toBe(204);
     const stored = (await ann.call("GET", "/me/recovery-vault")).json().recovery_vault as VaultBlobV1;
     await expect(unlockVault(stored, code)).resolves.toBeTruthy();
