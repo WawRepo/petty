@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- Clerk mode: an admin's "Revoke sessions" now also ends the person's Clerk sessions. Before, it ended
+  only Petty's own sessions, which Clerk mode does not use, so the person stayed signed in.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
