@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.45] — 2026-11-16
+
 ### Changed
 - The image runs on Node.js 26 (LTS since 2026-10-28), up from Node.js 24. CI, `.node-version` and the
   `engines` field for developing Petty move to 26 too. The `petty` command line and the AI add-on still
@@ -1016,7 +1018,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.44...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.45...HEAD
+[1.5.45]: https://github.com/WawRepo/petty/releases/tag/v1.5.45
 [1.5.44]: https://github.com/WawRepo/petty/releases/tag/v1.5.44
 [1.5.43]: https://github.com/WawRepo/petty/releases/tag/v1.5.43
 [1.5.42]: https://github.com/WawRepo/petty/releases/tag/v1.5.42
