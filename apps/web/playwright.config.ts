@@ -13,6 +13,25 @@ const WEB_PORT = process.env.WEB_PORT ?? "5173";
 // API_PORT moves the dev API the same way when :3000 is busy (the Vite proxy and the fixtures read it too).
 const API_PORT = process.env.API_PORT ?? "3000";
 
+/**
+ * PETTY-493: the projects asked for with --project (all when none is named). Only `prod` and `clerk-prod`
+ * use the built app on :3100, so a run of `--project dev` neither builds it nor holds that port, which
+ * other checkouts on the same machine may be using.
+ */
+function projectsAsked(argv: readonly string[]): string[] | null {
+  const asked: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a.startsWith("--project=")) asked.push(a.slice("--project=".length));
+    else if (a === "--project") while (i + 1 < argv.length && !argv[i + 1]!.startsWith("-")) asked.push(argv[++i]!);
+  }
+  return asked.length ? asked : null;
+}
+const asked = projectsAsked(process.argv);
+/** `*` as Playwright reads it in a project name: any run of characters. */
+const askedFor = (name: string) => asked === null || asked.some((p) => new RegExp(`^${p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`, "i").test(name));
+const needsBuilt = askedFor("prod") || askedFor("clerk-prod");
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -33,6 +52,6 @@ export default defineConfig({
     // The suite runs the API in local mode whatever the root .env says; CLERK_E2E=1 runs it in clerk mode (needs the Clerk keys in .env).
     { command: `AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:${WEB_PORT} LOGIN_LIMIT_PER_IP=1000000 LOOKUP_LIMIT_PER_HOUR=0 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 API_PORT=${API_PORT} pnpm --filter @petty/api dev`, url: `http://127.0.0.1:${API_PORT}/health`, reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
     { command: `pnpm --filter @petty/web dev --port ${WEB_PORT}`, url: `http://localhost:${WEB_PORT}`, reuseExistingServer: true, timeout: 60_000, cwd: "../.." },
-    { command: `pnpm --filter @petty/web build && AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:3100 LOGIN_LIMIT_PER_IP=1000000 LOOKUP_LIMIT_PER_HOUR=0 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 pnpm --filter @petty/web preview:prod`, url: "http://localhost:3100/api/health", reuseExistingServer: true, timeout: 180_000, cwd: "../.." },
+    ...(needsBuilt ? [{ command: `pnpm --filter @petty/web build && AUTH_PROVIDER=${process.env["CLERK_E2E"] ? "clerk" : "local"} CLERK_AUTHORIZED_PARTIES=http://localhost:3100 LOGIN_LIMIT_PER_IP=1000000 LOOKUP_LIMIT_PER_HOUR=0 CONTACT_EMAIL=invites@example.com STORAGE_QUOTA_MB=500 pnpm --filter @petty/web preview:prod`, url: "http://localhost:3100/api/health", reuseExistingServer: true, timeout: 180_000, cwd: "../.." }] : []),
   ],
 });

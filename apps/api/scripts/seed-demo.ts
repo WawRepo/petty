@@ -39,6 +39,8 @@ async function main() {
     const r = await c.signup(await makeJoinLink());
     if (r.statusCode !== 201) throw new Error(`signup failed: ${r.body}`);
   }
+  // PETTY-493: the user document the app saves before a first drawer; without it the app warns that the server has no list of trusted keys
+  await A.editUserDoc();
 
   /** One drawer: lines, tags, a chain of entries per money line. Amounts in minor units. */
   async function drawer(name: string, tags: string[], lines: Array<{ id: string; op: DocumentOp }>, entries: Array<{ line: string; op: "add" | "withdraw"; amount: number }>) {
@@ -86,6 +88,8 @@ async function main() {
   const v1 = uuid();
   await drawer("Car", [], [money(v1, "Parking coins", "PLN")], [{ line: v1, op: "add", amount: 6000 }, { line: v1, op: "withdraw", amount: 1200 }]);
 
+  await A.confirm(B); // the safety numbers each side compares in the invite and accept steps
+  await B.confirm(A);
   const invite = async (drawerId: string, to: Client, role: "write" | "read") => {
     const boot = (await A.call("GET", "/bootstrap")).json() as { wraps: Array<{ drawer_id: string }> };
     const wrap = boot.wraps.find((w) => w.drawer_id === drawerId);

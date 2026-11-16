@@ -19,6 +19,25 @@ number, also when it adds features, and a new minor or major is started by hand 
   the hourly or daily housekeeping calls; the request role may call it but still cannot delete
   accounts or keys itself. For operators: the "maintenance" log line has a new number, `tombstones`.
 
+### Fixed
+- On a small phone, a field that you reach with Tab (or that gets focus) in a long sheet is no longer
+  hidden under the sheet's buttons at the bottom. The sheet now scrolls the field up until it is clear
+  of them.
+- PowerShell Tab completion now completes the word after a quoted one, for example the tag after
+  `petty untag 'Kitchen tin › Cash'`, and completes inside a quoted word you are typing. Before, petty
+  got the quotes as part of the name and found nothing.
+- The accounts that `make seed` and `make demo` create open without the warning that the server has no
+  list of trusted keys: the seeds now save the user document that the app keeps, with the confirmed keys
+  of the people who share a drawer.
+
+### Security
+- The AI add-on (MCP) and the `petty` command line now show characters that are invisible but still
+  read as escapes, also inside quoted names: direction controls (which can turn a line around on
+  screen), zero-width marks, tag characters (which can spell out hidden instructions that a model
+  reads), variation selectors, the soft hyphen and the byte-order mark. `--json` and the add-on write
+  them as `\uXXXX`, so the value reads back the same; the command line's other output shows `?`. A whole
+  emoji, and one joiner between two letters (as Persian and Hindi words use), stay as they are.
+
 ## [1.5.44] — 2026-11-16
 
 ### Fixed

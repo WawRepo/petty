@@ -8,6 +8,7 @@ import { buildApp } from "../../api/src/app.js";
 import { apiPool, maintPool } from "../../api/src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../../api/src/devtools/fixtures.js";
 import { run } from "../src/cli.js";
+import { unquotePowerShell } from "../src/complete.js";
 import type { Io } from "../src/io.js";
 
 /**
@@ -309,6 +310,40 @@ describe("Tab completion (PETTY-274)", () => {
     t.env["PETTY_COMPLETE_NAMES"] = "0";
     await petty("__complete", "add", "Ki");
     expect(t.out).toBe("");
+  });
+
+  it("PowerShell: the word being typed keeps its quotes, the words before it come as values (PETTY-493)", async () => {
+    const w = terminal({ env: { PETTY_TOKEN: await webToken("write"), PETTY_API_URL: `${ORIGIN}/api` } });
+    expect(await w.petty("tag", "Kitchen › Cash", "garden")).toBe(0);
+    try {
+      const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api`, PETTY_COMPLETE_SHELL: "powershell", PETTY_COMPLETE_CURRENT: "='Ki'" }, realTime: true });
+      await petty("__complete", "add");
+      expect(t.out).toBe("Kitchen › Cash\n");
+      // the next word after a quoted one: PowerShell sends that word's value, which is taken as it is
+      t.out = "";
+      t.env["PETTY_COMPLETE_CURRENT"] = "=";
+      await petty("__complete", "untag", "Kitchen › Cash");
+      expect(t.out).toBe("garden\n");
+      t.out = "";
+      t.env["PETTY_COMPLETE_CURRENT"] = '="ga';
+      await petty("__complete", "untag", "Kitchen › Cash");
+      expect(t.out).toBe("garden\n");
+    } finally {
+      expect(await w.petty("untag", "Kitchen › Cash", "garden")).toBe(0);
+    }
+  });
+
+  it("PowerShell: reads the word being typed as PowerShell does (PETTY-493)", () => {
+    expect(unquotePowerShell("'Kit")).toBe("Kit");
+    expect(unquotePowerShell("'Kit'")).toBe("Kit");
+    expect(unquotePowerShell("'a''b")).toBe("a'b");
+    expect(unquotePowerShell("\u2018a\u2019\u2019b")).toBe("a\u2019b");
+    expect(unquotePowerShell('"Shed `"box"')).toBe('Shed "box');
+    expect(unquotePowerShell('"a""b')).toBe('a"b');
+    expect(unquotePowerShell("'back`tick'")).toBe("back`tick");
+    expect(unquotePowerShell("Kit`chen")).toBe("Kitchen");
+    expect(unquotePowerShell("a\\b")).toBe("a\\b");
+    expect(unquotePowerShell("")).toBe("");
   });
 
   it("prints a script for each shell, and refuses another", async () => {

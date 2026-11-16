@@ -45,10 +45,57 @@ export class TokenError extends Error {
  * leaves DEL, the C1 control characters and the Unicode line separators as they are; here they are
  * escaped too, and the value read back is the same. Quoting marks the text as someone's data. It does
  * not stop a model from following what the text says.
+ * PETTY-493: so are the characters that show nothing (see `markInvisible`), inside the quotes too.
  */
-export const jsonText = (value: unknown, indent?: number): string =>
-  JSON.stringify(value, null, indent).replace(/[\u007f-\u009f\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+export function jsonText(value: unknown, indent?: number): string {
+  // each string literal of JSON.stringify's text is written again by jsonString; the rest stays as it is
+  const json = JSON.stringify(value, null, indent);
+  let out = "";
+  let from = 0;
+  for (let i = 0; i < json.length; i++) {
+    if (json[i] !== '"') continue;
+    let end = i + 1;
+    while (end < json.length && json[end] !== '"') end += json[end] === "\\" ? 2 : 1;
+    out += json.slice(from, i) + jsonString(JSON.parse(json.slice(i, end + 1)) as string);
+    from = end + 1;
+    i = end;
+  }
+  return out + json.slice(from);
+}
 export const quote = (text: string): string => jsonText(text);
+
+/**
+ * PETTY-493: characters that show nothing but are still read: Unicode's default-ignorable code points
+ * and the format characters. Among them the direction controls, which turn a line around on screen, the
+ * zero-width marks, the tag characters, which spell out hidden ASCII that a model reads, the variation
+ * selectors, the soft hyphen and the byte-order mark. Two kinds stay as they are, because people write
+ * with them: a whole emoji (the joiners, flag tags and variation selector inside one are part of it), and
+ * one joiner or non-joiner between two letters (Persian, Hindi and other scripts spell words with them).
+ * Group 3 holds a character to mark; groups 1 and 2 are the ones kept.
+ */
+const INVISIBLE = new RegExp(String.raw`(\p{RGI_Emoji})|((?<=[\p{L}\p{M}])[\u200c\u200d](?=[\p{L}\p{M}]))|([\p{Default_Ignorable_Code_Point}\p{Cf}])`, "gv");
+/** Each character that shows nothing, replaced by `mark(it)`; everything else as it is. */
+export function markInvisible(text: string, mark: (char: string) => string): string {
+  return text.replace(INVISIBLE, (match: string, _emoji?: string, _joiner?: string, hidden?: string) => (hidden === undefined ? match : mark(hidden)));
+}
+/** `\uXXXX` for each UTF-16 unit: JSON reads it back as the same character. */
+const escaped = (chars: string): string => Array.from({ length: chars.length }, (_, i) => `\\u${chars.charCodeAt(i).toString(16).padStart(4, "0")}`).join("");
+/**
+ * One string as a JSON literal: what JSON.stringify escapes, and also DEL, C1, the line separators and the
+ * characters that show nothing. Found in the string itself, not in its JSON form, so that a letter of an
+ * escape (the n of \n) is never taken for a letter beside a joiner.
+ */
+function jsonString(text: string): string {
+  const plain = (part: string) => JSON.stringify(part).slice(1, -1).replace(/[\u007f-\u009f\u2028\u2029]/g, escaped);
+  let out = "";
+  let from = 0;
+  for (const m of text.matchAll(INVISIBLE)) {
+    if (m[3] === undefined) continue;
+    out += plain(text.slice(from, m.index)) + escaped(m[3]);
+    from = m.index + m[0].length;
+  }
+  return `"${out}${plain(text.slice(from))}"`;
+}
 
 /**
  * The codes the server refuses a tool with that a person may be shown (PETTY-414). The server's own text
@@ -139,11 +186,8 @@ export interface AgentWarning {
   readonly count: number;
 }
 
-/** A name as one quoted value, with no control character left to reach a terminal or pose as output. */
-const quotedName = (s: string): string => JSON.stringify(s).replace(/[\u007f-\u009f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
-
-/** One warning as a sentence. Names come from other people too, so each goes out as one quoted value. */
-export function warningText(w: AgentWarning, quote: (s: string) => string = quotedName): string {
+/** One warning as a sentence. Names come from other people too, so each goes out as one quoted value (`quote`). */
+export function warningText(w: AgentWarning, quote: (s: string) => string = jsonText): string {
   if (w.code === "drawer_unreadable") return `a drawer could not be opened and is left out (id ${w.drawerId})`;
   const where = `drawer ${quote(w.drawer ?? "")}${w.item === null ? "" : ` / item ${quote(w.item)}`}`;
   const rows = `${w.count} entr${w.count === 1 ? "y" : "ies"}`;

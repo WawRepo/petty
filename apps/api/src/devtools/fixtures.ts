@@ -5,8 +5,8 @@
 import type { FastifyInstance, LightMyRequestResponse } from "fastify";
 import pg from "pg";
 import {
-  createDrawerKey, createRecoveryVault, createVault, exportPublicKeys, generateRecoveryCode, generateUserKeys,
-  patSecret, patToken, sealDocument, sealEntry, sealPatBundle, signCustodyChallenge, signDelegation, signEntry, signingKeyId, toB64, wrapDrawerKey, unwrapDrawerKey,
+  canonicalJson, createDrawerKey, createRecoveryVault, createVault, exportPublicKeys, fromB64, fromUtf8, generateRecoveryCode, generateUserKeys, hkdfAesKey, open,
+  patSecret, patToken, seal, sealDocument, sealEntry, sealPatBundle, signCustodyChallenge, signDelegation, signEntry, signingKeyId, toB64, utf8, wrapDrawerKey, unwrapDrawerKey,
   type EntryPayloadV1, type RecordIdentity, type Sealed, type Sender, type UserKeyPairs,
 } from "@petty/crypto";
 import { newDocument, type DrawerDocument } from "@petty/ledger";
@@ -155,6 +155,56 @@ export class Client {
   async unwrap(wrap: Parameters<typeof unwrapDrawerKey>[0], senderEcdhPub: string, extractable = false) {
     return unwrapDrawerKey(wrap, this.user.keys.ecdh.privateKey, { drawer_id: wrap.drawer_id, key_version: wrap.key_version, senderEcdhPublicB64: senderEcdhPub }, { extractable });
   }
+
+  /** The key and identity of this person's own user document, as the web app derives them (apps/web/src/lib/pins.ts). */
+  private async userDocKey() {
+    const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: this.user.keys.ecdh.publicKey }, this.user.keys.ecdh.privateKey, 256));
+    const key = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(this.id), "AES-GCM", ["encrypt", "decrypt"]);
+    const identity: RecordIdentity = { record_type: "document", record_id: this.id, drawer_id: this.id, line_id: null, author_id: this.id, key_version: 1, schema_version: 1 };
+    return { key, identity };
+  }
+  /** This person's user document, opened; null when the server has none. */
+  async readUserDoc(): Promise<{ version: number; doc: UserDocJson } | null> {
+    const res = await this.call("GET", "/me/doc");
+    if (res.statusCode === 204) return null;
+    const row = res.json() as { version: number; nonce: string; ciphertext: string };
+    const { key, identity } = await this.userDocKey();
+    return { version: row.version, doc: JSON.parse(fromUtf8(await open(key, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))) as UserDocJson };
+  }
+  /**
+   * Changes this person's user document and saves it sealed, as their browser does: with the counter it
+   * loaded plus one (PETTY-439). Without one yet, it starts the empty one the app saves before a first drawer.
+   */
+  async editUserDoc(change: (doc: UserDocJson) => void = () => undefined): Promise<number> {
+    const { key, identity } = await this.userDocKey();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const cur = await this.readUserDoc();
+      const doc: UserDocJson = cur?.doc ?? { v: 2, pins: {} };
+      change(doc);
+      doc.v = 2;
+      doc.rev = (cur?.doc.rev ?? 0) + 1;
+      const sealed = await seal(key, identity, utf8(canonicalJson(doc)));
+      const res = await this.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+      if (res.statusCode === 200) return res.json().version as number;
+      if (res.statusCode !== 409) throw new Error(`user document not saved: ${res.statusCode} ${res.body}`);
+    }
+    throw new Error("user document not saved: it kept changing");
+  }
+  /** This person compared `other`'s safety number and confirms their keys, as the invite and accept steps save it. */
+  async confirm(other: Client): Promise<void> {
+    const now = new Date().toISOString();
+    await this.editUserDoc((doc) => {
+      doc.pins[other.id] = { ecdh: other.user.pub.ecdh, ecdsa: other.user.pub.ecdsa, sig_key_id: other.user.sig_key_id, pinned_at: doc.pins[other.id]?.pinned_at ?? now, confirmed_at: now };
+    });
+  }
+}
+
+/** The sealed user document as the web app writes it (apps/web/src/lib/pins.ts); only the parts the dev tools touch are typed. */
+export interface UserDocJson {
+  v: 1 | 2;
+  rev?: number;
+  pins: Record<string, { ecdh: string; ecdsa: string; sig_key_id: string; pinned_at: string; confirmed_at: string | null }>;
+  [other: string]: unknown;
 }
 
 export function sealedBody(s: Sealed, keyVersion: number, schemaVersion = 1) {

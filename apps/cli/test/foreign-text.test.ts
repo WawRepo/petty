@@ -124,6 +124,25 @@ describe("foreign text in the terminal (PETTY-453)", () => {
     expect(t.out).toBe("Ho?use: Tin?[2J\n");
   });
 
+  it("shows each character that shows nothing as ?, and escapes it with --json; an emoji stays (PETTY-493)", async () => {
+    // a direction override, tag characters that spell "go", a zero-width space; and a family emoji, joiners inside
+    const hidden = `\u202e${String.fromCodePoint(0xe0067, 0xe006f)}\u200b`;
+    const family = "\u{1f468}\u200d\u{1f469}\u200d\u{1f467}";
+    const lid = await owner.createDrawer(`Lid${hidden}`, doc(`Lid${hidden}`, [{ id: crypto.randomUUID(), kind: "single", name: `Trip ${family}`, text: "" }]));
+    expect(lid.res.statusCode).toBe(201);
+    const wrap = ((await owner.call("GET", "/bootstrap")).json().wraps as { drawer_id: string }[]).find((w) => w.drawer_id === lid.id);
+    const key = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await owner.unwrap(wrap as never, owner.user.pub.ecdh, true))));
+    const tok = await owner.makeAccessToken("read", [{ drawer_id: lid.id, key_version: 1, key }]);
+    const { t, petty } = terminal({ env: { PETTY_TOKEN: tok.token } });
+    expect(await petty("drawers")).toBe(0);
+    expect(t.out.split("\n")[0]).toBe("Lid????");
+    expect(t.out).toContain(`  Trip ${family}`);
+    expect(await petty("drawers", "--json")).toBe(0);
+    expect(t.out).not.toMatch(/[\u200b\u202e\u{e0000}-\u{e007f}]/u);
+    expect(t.out).toContain('"Lid\\u202e\\udb40\\udc67\\udb40\\udc6f\\u200b"');
+    expect((JSON.parse(t.out) as { name: string }[])[0]!.name).toBe(`Lid${hidden}`);
+  });
+
   it("an error that names drawers shows them quoted, with no control character", async () => {
     const { t, petty } = terminal();
     expect(await petty("move", "tin", "Attic")).toBe(4);
