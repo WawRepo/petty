@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { verifyDelegation } from "@petty/crypto";
-import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, TokenBootstrap, UserDelegations, type DrawerSummary } from "@petty/protocol";
+import { AccessToken, AccessTokenCreate, AccessTokenKeysBody, AccessTokenSelf, MAX_ACCESS_TOKENS, TokenBootstrap, UserDelegations, type DrawerSummary } from "@petty/protocol";
 import type { DrawerRow } from "../lib/perm.js";
 import { drawerSummary, entryRow, sealedRow, userKeys } from "../lib/rows.js";
 import { apiPool } from "../db.js";
 import { iso, sha256 } from "../lib/bytes.js";
-import { badRequest, notFound, unauthorized } from "../lib/errors.js";
+import { badRequest, conflict, notFound, unauthorized } from "../lib/errors.js";
 import { requireUser } from "../lib/session.js";
 import { consumeCustodyProof } from "../lib/custody.js";
-import { PAT_PREFIX } from "../lib/tokens.js";
+import { PAT_PREFIX, dropExpiredTokenData, revokeToken } from "../lib/tokens.js";
 
 interface Row {
   id: string;
@@ -80,6 +80,11 @@ export async function tokenRoutes(app: FastifyInstance) {
       );
       if (Number(rows[0]?.n ?? 0) !== body.scope.length) throw badRequest("ScopeNotAMember");
     }
+    // PETTY-442: a limit on live tokens (not revoked, not expired). What the dead ones stored is gone: a revoked
+    // token's at its revocation, an expired one's here. Soft, like the quota: two requests at the limit may both pass.
+    await dropExpiredTokenData(apiPool, me.id);
+    const live = (await apiPool.query<{ n: string }>("select count(*)::text as n from access_tokens where user_id = $1 and revoked_at is null and (expires_at is null or expires_at > now())", [me.id])).rows[0];
+    if (Number(live?.n ?? 0) >= MAX_ACCESS_TOKENS) throw conflict("TokenLimit", "revoke a token before making another", { max: MAX_ACCESS_TOKENS });
     const { rows } = await apiPool.query<Row>(
       `insert into access_tokens (user_id, name, token_hash, role, scope, bundle_nonce, bundle_ciphertext, expires_at, ecdh_pub, ecdsa_pub, sig_key_id, delegation)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -111,11 +116,7 @@ export async function tokenRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>("/me/tokens/:id", async (req, reply) => {
     const me = requireUser(req);
     if (req.token) throw unauthorized();
-    const { rowCount } = await apiPool.query("update access_tokens set revoked_at = now() where id = $1 and user_id = $2 and revoked_at is null", [
-      req.params.id,
-      me.id,
-    ]);
-    if (!rowCount) throw notFound("TokenNotFound");
+    if (!(await revokeToken(apiPool, req.params.id, me.id))) throw notFound("TokenNotFound");
     reply.code(204);
   });
 
@@ -139,13 +140,14 @@ export async function tokenRoutes(app: FastifyInstance) {
     if (req.token) throw unauthorized();
     const body = AccessTokenKeysBody.parse(req.body);
     const { rows } = await apiPool.query<{ id: string; scope: string[] | null }>(
-      "select id, scope from access_tokens where id = $1 and user_id = $2 and revoked_at is null",
+      "select id, scope from access_tokens where id = $1 and user_id = $2 and revoked_at is null and (expires_at is null or expires_at > now())",
       [req.params.id, me.id],
     );
     const token = rows[0];
     if (!token) throw notFound("TokenNotFound");
     for (const k of body.keys) {
       if (token.scope && !token.scope.includes(k.drawer_id)) throw badRequest("OutOfScope");
+      if (k.wrap.drawer_id !== k.drawer_id || k.wrap.key_version !== k.key_version) throw badRequest("WrapMismatch", "wrap drawer/version mismatch", { drawer_id: k.drawer_id });
       // The drawer must be one this user can already open, so a wrap can never widen access.
       const ok = await apiPool.query(
         `select 1 from drawers d where d.id = $1
@@ -153,6 +155,10 @@ export async function tokenRoutes(app: FastifyInstance) {
         [k.drawer_id, me.id],
       );
       if (!ok.rowCount) throw badRequest("NotAMember");
+      // PETTY-442: and a key version this person holds a wrap for. Nobody can wrap a key they cannot open,
+      // and the versions a drawer has are few, so a token's rows cannot grow past drawers times versions.
+      const held = await apiPool.query("select 1 from drawer_keys where drawer_id = $1 and user_id = $2 and key_version = $3", [k.drawer_id, me.id, k.key_version]);
+      if (!held.rowCount) throw badRequest("KeyVersionUnknown", "no drawer key of that version", { drawer_id: k.drawer_id, key_version: k.key_version });
       await apiPool.query(
         `insert into access_token_keys (token_id, drawer_id, key_version, wrap) values ($1, $2, $3, $4)
          on conflict (token_id, drawer_id, key_version) do nothing`,
@@ -234,7 +240,7 @@ export async function tokenRoutes(app: FastifyInstance) {
   app.delete("/me/token", async (req, reply) => {
     const t = req.token;
     if (!t) throw unauthorized();
-    await apiPool.query("update access_tokens set revoked_at = now() where id = $1 and revoked_at is null", [t.id]);
+    await revokeToken(apiPool, t.id, t.userId);
     reply.code(204);
   });
 

@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import { deviceUserCode, importEcdhPublic, normalizeDeviceCode } from "@petty/crypto";
+import { importEcdhPublic, normalizeDeviceCode } from "@petty/crypto";
 import { DeviceApproveBody, DeviceCodeRequest, DeviceCodeResponse, DeviceRequestView, DeviceTokenPoll, DeviceTokenResponse } from "@petty/protocol";
 import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
 import { ApiError, badRequest, conflict, notFound, unauthorized } from "../lib/errors.js";
 import { authEvents } from "../lib/metrics.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientIp, clientNet } from "../lib/client-ip.js";
 import { checkRate } from "../lib/password.js";
 import { requireUser } from "../lib/session.js";
 
@@ -32,19 +32,23 @@ interface Row {
  * code; the person opens /device in the web app, signed in and unlocked, and allows it; the tool polls
  * until it has its answer. The web app makes an ordinary access token and seals it to the tool's
  * one-time key: this server stores and relays that blob and cannot open it. The code is derived from
- * the tool's key, so the page can tell when the key it was given is not the tool's.
+ * the tool's key and the site's address, so the page can tell when the key it was given is not the tool's.
+ * Since PETTY-451 the tool sends its code and this server only keeps it: the tool and the page check it.
  */
 export async function deviceRoutes(app: FastifyInstance) {
   /** The tool asks. No session: this is how a tool without one begins. Limited per address. */
   app.post("/device/code", async (req, reply) => {
-    if (!(await checkRate(`device-code:${clientIp(req)}`, 10, 60 * 60_000))) throw tooMany();
+    if (!(await checkRate(`device-code:${clientNet(req)}`, 10, 60 * 60_000))) throw tooMany();
     const body = DeviceCodeRequest.parse(req.body);
     try {
       await importEcdhPublic(body.cli_pub);
     } catch {
       throw badRequest("DeviceKeyInvalid");
     }
-    const userCode = await deviceUserCode(body.cli_pub);
+    // PETTY-451: a command line from before the 20-letter code sends none. It is told so by name, because
+    // it prints this code; the shorter code is not made for it.
+    if (!body.user_code) throw badRequest("CommandLineTooOld", "this command line is older than this Petty: install the one that goes with it");
+    const userCode = body.user_code;
     const deviceCode = randomToken(32);
     const { rows } = await apiPool.query<{ id: string }>(
       `insert into device_requests (device_hash, user_code, cli_pub, client_name, role, expires_days, ip, expires_at)
@@ -112,7 +116,7 @@ export async function deviceRoutes(app: FastifyInstance) {
    * same answer as an expired one.
    */
   app.post("/device/token", async (req, reply) => {
-    if (!(await checkRate(`device-poll:${clientIp(req)}`, 600, 15 * 60_000))) throw tooMany();
+    if (!(await checkRate(`device-poll:${clientNet(req)}`, 600, 15 * 60_000))) throw tooMany();
     const body = DeviceTokenPoll.parse(req.body);
     const { rows } = await apiPool.query<{ id: string; state: "pending" | "approved" | "denied"; sealed_token: unknown; expired: boolean; early: boolean }>(
       `with prev as (select id, last_poll_at from device_requests where device_hash = $1)

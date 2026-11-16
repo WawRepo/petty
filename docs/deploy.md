@@ -30,10 +30,14 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
   address in a header of their own: Fly.io `Fly-Client-IP`, Cloudflare `CF-Connecting-IP`. Name it
   in `CLIENT_IP_HEADER`, and that header counts (PETTY-301). Set it only when the app can be reached
   through that platform alone: anyone who reaches the app directly could write the header.
+- Every per-address limit counts an IPv4 client by its address and an IPv6 client by its /64 network
+  (PETTY-458): one home or phone connection holds a whole /64 and can use any address in it. An IPv4
+  address written as IPv6 (`::ffff:203.0.113.7`) counts as that IPv4 address.
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
-- Set `PETTY_IMAGE` to a tag and its digest. The Postgres image is pinned by digest too.
+- Set `PETTY_IMAGE` to a tag and its digest ("Check the image" below says how to check a release's
+  image). The Postgres image is pinned by digest too.
 - The compose file has no backup service. Add one (see "Backups") before you keep real data.
 
 ## First account
@@ -96,6 +100,38 @@ Metrics, logs and traces are described in `monitoring.md`.
 
 An agent setup (Claude Desktop) is described in `agent.md`.
 
+### Limits
+
+The server cannot read what it stores, so it limits it by size. These are fixed in the code
+(`packages/protocol/src/index.ts`); only the quota is a setting. A request outside them is refused and
+stores nothing.
+
+| What | Limit |
+|---|---|
+| An entry | 272 bytes to 16 KiB + 16, sealed (a client pads to 256-byte blocks; a 2000-byte note is about 3 KiB) |
+| A drawer's document | at least 16 KiB + 16, sealed (a client pads to 16 KiB blocks); no upper limit of its own: the request size (2 MiB) and the quota bound it |
+| A photo | about 300 KB before sealing |
+| A person's own document (trusted keys, places, tags) | 256 KiB + 16, sealed; one per account |
+| A token's sealed key bundle | 256 KiB (about 2000 drawer keys) |
+| Access tokens per account | 50 live ones (not revoked, not expired). A revoked token's bundle and wrapped drawer keys are erased at once, an expired one's when its owner next makes a token |
+| Passkeys per account | 20 |
+| A nonce | exactly 12 bytes |
+| A salt | 16 to 64 bytes |
+| A wrapped drawer key | exactly 40 bytes |
+| A public key | 48 to 128 bytes (the apps write 91) |
+| A wrapped private key in a vault copy | 64 to 256 bytes (the apps write 154) |
+| A signature; a custody challenge | exactly 64 bytes; exactly 32 bytes |
+
+The quota (`STORAGE_QUOTA_MB`) counts ciphertext bytes. Everything else in a stored row has a fixed
+size, and an entry or a document cannot be smaller than a client writes it, so every row costs
+storage. A key rotation re-encrypts rows in place: a row may not grow past its limit, and what a
+batch adds counts against the quota like any other write.
+
+Rows written before these limits existed keep the size they have, and the app still reads them; the
+limits apply to what is sent from then on. To see whether a database holds rows from before that are
+not the size a client writes: `select count(*) from entries where octet_length(nonce) <> 12;` (the
+same for `drawer_documents`, `drawer_document_history` and `drawer_photos`).
+
 ## Privacy notice and terms
 
 Petty's privacy page explains what the server can and cannot see. It cannot say who you are, which
@@ -137,11 +173,25 @@ builds a small image with `pg_dump` and `age` so a dump is encrypted before it i
 keep the age private key off the server. Drawer content is already ciphertext, but a dump still holds
 emails and vault material, so treat it as personal data.
 
-Dump, from the host, as the database owner (`C=docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env`):
+Below, `$C` stands for `docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env`.
 
+Dump, from the host, as the database owner. Save this as a script (it needs bash) and run it on a
+schedule, with your age public key in `AGE_RECIPIENT`:
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail                      # pipefail: a failed pg_dump fails the script, not only a failed age
+C="docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env"
+out="petty-$(date +%F).dump.age"
+trap 'rm -f "$out.partial"' EXIT
+$C exec -T db pg_dump -U petty -Fc petty | age -r "$AGE_RECIPIENT" > "$out.partial"
+mv "$out.partial" "$out"
 ```
-$C exec -T db pg_dump -U petty -Fc petty | age -r <your age public key> > petty-$(date +%F).dump.age
-```
+
+The dump is written under a `.partial` name and takes the day's name only when `pg_dump` and `age` both
+succeeded. If either fails, the script ends with an error and writes nothing under the day's name: an
+earlier good dump of the same day stays as it was. Let your scheduler tell you about a failed run, and
+use the same three parts (pipefail, a `.partial` name, a rename at the end) in a backup job of your own.
 
 Restore into the database (stop the app first, then start it again):
 
@@ -158,12 +208,46 @@ version as the server (this compose file runs PostgreSQL 16); an older client re
 ## Upgrading
 
 1. Take a backup (above).
-2. In `deploy/compose/.env`, set `PETTY_IMAGE` to the new tag **and** digest from the GitHub release.
+2. In `deploy/compose/.env`, set `PETTY_IMAGE` to the new tag **and** digest from the GitHub release
+   (check the image first, see below).
 3. `$C pull && $C up -d` — the one-shot `migrate` service runs the new migrations as the owner, then
    the app starts on the new image.
 4. Check `/api/health` and the version shown in Settings and the landing-page footer.
 
 Downgrading across a migration is not supported: restore the backup from step 1 instead.
+
+## Check the image
+
+A release's page names its image with a tag and a digest: `ghcr.io/wawrepo/petty:v1.2.3@sha256:…`.
+Put both in `PETTY_IMAGE`. With the digest, Docker runs exactly those bytes or nothing, whatever the
+tag points at later.
+
+To check that this repository's release workflow built that image, use GitHub's command line,
+[`gh`](https://cli.github.com), signed in (`gh auth login`), with the digest from the release page:
+
+```sh
+gh attestation verify oci://ghcr.io/wawrepo/petty@sha256:<digest> --repo WawRepo/petty \
+  --signer-workflow WawRepo/petty/.github/workflows/release.yml --source-ref refs/heads/main
+```
+
+Each release signs a statement of what it built (a build attestation, through Sigstore), and GitHub
+keeps it with the repository. The command passes only if the release workflow, run from `main`, built
+the image with exactly this digest. `oci://ghcr.io/wawrepo/petty:v1.2.3` checks whatever the tag points
+at now instead; pin the digest you checked.
+
+- A release made before attestations were added has none, and neither has an image that was built
+  by hand (`make image`, or the by-hand release steps): the command then finds no attestation and fails.
+- The check says who built the image, not that its code is good.
+- The image also carries BuildKit's provenance and an SBOM
+  (`docker buildx imagetools inspect <image> --format '{{json .Provenance}}'`). Nothing signs those two:
+  read them only for an image whose digest you checked.
+- The backup image (`petty-backup`) has no attestation. Pin it by digest.
+- The release workflow sets a version's tag once, after the release commit and its git tag are on
+  `main`, and never builds a version twice. `latest` moves with every release. A tag is still only a
+  name that the registry can point elsewhere: pin the digest.
+
+The files of a release (the command line, the MCP program, the add-on) are checked the same way:
+[cli.md](cli.md#check-what-you-download).
 
 ## Several instances
 

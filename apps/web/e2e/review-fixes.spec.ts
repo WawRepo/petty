@@ -199,13 +199,13 @@ test("S26: the /device form stays while a typed code is checked, and its field c
   await field.fill("abc");
   await page.getByTestId("device-continue").click();
   await expect(field).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByRole("alert")).toHaveText("That is not a code. A code has 12 letters, like BCDF-GHJK-LMNP.");
-  await field.fill("BCDF-GHJK-LMNP");
+  await expect(page.getByRole("alert")).toHaveText("That is not a code. A code has 20 letters, like BCDF-GHJK-LMNP-QRST-VWXZ.");
+  await field.fill("BCDF-GHJK-LMNP-QRST-VWXZ");
   await expect(field).not.toHaveAttribute("aria-invalid", "true"); // typing clears the old error
   await page.getByTestId("device-continue").click();
   await expect(page.getByRole("alert")).toContainText("No request is waiting with this code.");
   await expect(field).toHaveAttribute("aria-invalid", "true");
-  await expect(field).toHaveValue("BCDF-GHJK-LMNP");
+  await expect(field).toHaveValue("BCDF-GHJK-LMNP-QRST-VWXZ");
 });
 
 test("M3, M2, M17: the keypad stops at the currency's decimals; no amount is said under the amount; items say where they cannot move", async ({ page }) => {

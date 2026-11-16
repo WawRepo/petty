@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -58,5 +58,48 @@ describe("Tab completion in real shells (PETTY-274)", () => {
     expect(tab("petty au")).toEqual(["auth"]);
     expect(tab("petty auth ")).toEqual(["login", "status", "logout", "token"]);
     expect(tab("petty completion -s p")).toEqual(["powershell"]);
+  });
+
+  it("PowerShell quotes every candidate but a plain word, with its own rule for the quote characters (PETTY-415)", () => {
+    const ps = script("powershell");
+    expect(ps).toContain("$text = if ($_ -cmatch '\\A[A-Za-z0-9_-]+\\z') { $_ } else { \"'\" + [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($_) + \"'\" }");
+    // the script is plain ASCII: PowerShell on Windows may read a pipe in another code page
+    expect(/^[\n\x20-\x7e]*$/.test(ps)).toBe(true);
+  });
+
+  it.skipIf(!has("pwsh") || process.platform === "win32")("PowerShell: a name from a drawer goes in as one quoted argument, and the finished line runs nothing else (PETTY-415)", () => {
+    // A stand-in `petty`: asked for candidates it offers these names; run, it writes down the arguments it got.
+    // Each name holds a command that would leave a file behind if PowerShell ran it.
+    const mark = "New-Item($env:PETTY_MARK)";
+    const names = [
+      `Tin;${mark}`, "a'b", `a';${mark};'`, `$(${mark})`, "back`tick", `\`$(${mark})`, `x\u2019;${mark};\u2019`, `@(${mark})`, `{${mark}}`,
+      `a|${mark}`, `a&${mark}`, "#x", "Kitchen \u203a Cash", "K\u00fcche", "Kitchen",
+      // a name with a new line cannot be one candidate: its lines arrive apart, and each is quoted by itself
+      "new", `line;${mark}`,
+    ];
+    const fake = mkdtempSync(join(tmpdir(), "petty-pwsh-"));
+    try {
+      writeFileSync(join(fake, "names"), `${names.join("\n")}\n`);
+      writeFileSync(join(fake, "petty.ps1"), script("powershell"));
+      writeFileSync(join(fake, "petty"), `#!/bin/sh\nif [ "$1" = "__complete" ]; then cat "$PETTY_NAMES"; else for a in "$@"; do printf '%s\\n' "$a" >> "$PETTY_ARGS"; done; fi\n`);
+      chmodSync(join(fake, "petty"), 0o755);
+      const r = spawnSync("pwsh", ["-NoProfile", "-NonInteractive", "-Command", `
+        Get-Content -Raw -LiteralPath $env:PETTY_SCRIPT | Invoke-Expression
+        foreach ($c in (TabExpansion2 -inputScript 'petty add ' -cursorColumn 10).CompletionMatches) {
+          [Console]::Out.WriteLine($c.CompletionText)
+          Invoke-Expression ('petty add ' + $c.CompletionText)
+        }`], {
+        env: { ...process.env, PATH: `${fake}:${process.env["PATH"]}`, PETTY_NAMES: join(fake, "names"), PETTY_SCRIPT: join(fake, "petty.ps1"), PETTY_ARGS: join(fake, "args"), PETTY_MARK: join(fake, "mark") },
+        encoding: "utf8", timeout: 60_000,
+      });
+      expect(r.stderr).toBe("");
+      // PowerShell reads \u2018 \u2019 \u201a \u201b as a quote too: all are doubled
+      const quoted = (n: string) => (/^[A-Za-z0-9_-]+$/.test(n) ? n : `'${n.replace(/['\u2018\u2019\u201a\u201b]/g, "$&$&")}'`);
+      expect(r.stdout.trim().split(/\r?\n/)).toEqual(names.map(quoted));
+      expect(existsSync(join(fake, "mark"))).toBe(false);
+      expect(readFileSync(join(fake, "args"), "utf8").trimEnd().split("\n")).toEqual(names.flatMap((n) => ["add", n]));
+    } finally {
+      rmSync(fake, { recursive: true, force: true });
+    }
   });
 });

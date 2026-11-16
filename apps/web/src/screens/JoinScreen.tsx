@@ -37,7 +37,8 @@ export function JoinScreen() {
   useEffect(() => {
     // PETTY-215: open signup has no join link — show the form directly instead of looking one up.
     if (!token) { setInfo(openSignup() ? { valid: true, inviter_name: null, email: null } : { valid: false, inviter_name: null, email: null }); return; }
-    api("GET", `/join-links/${encodeURIComponent(token)}`).then((r) => { const i = Info.parse(r); setInfo(i); if (i.email) setEmail(i.email); }).catch(() => setInfo({ valid: false, inviter_name: null, email: null }));
+    // PETTY-457: the token is a secret; it goes in the request body, never in an address that proxies log
+    api("POST", "/join-links/lookup", { token }).then((r) => { const i = Info.parse(r); setInfo(i); if (i.email) setEmail(i.email); }).catch(() => setInfo({ valid: false, inviter_name: null, email: null }));
   }, [token]);
 
   async function submit(ev: FormEvent) {

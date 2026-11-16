@@ -13,6 +13,7 @@ import { SyncReport } from "../components/SyncReport.js";
 import { Nudges } from "../components/Nudges.js";
 import { HomeSkeleton, rememberHomeShape } from "../components/Skeleton.js";
 import { PinsWarning } from "../components/PinsWarning.js";
+import { DrawerBoundary } from "../components/DrawerBoundary.js";
 import { excludedFromTotal, pictureShown, placesShown, totalsShown, usePins, verificationShown } from "../lib/pins.js";
 import { TagChip } from "../components/TagChip.js";
 import { DEFAULT_DRAWER_ICON, KIND_CLASS, PIcon, colorClass } from "../lib/icons.js";
@@ -79,7 +80,7 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const showVerification = verificationShown(pinsDoc);
   const showTotals = totalsShown(pinsDoc);
   const nav = useNavigate();
-  const name = view.doc?.name ?? "…";
+  const name = view.doc?.name ?? view.name ?? "…";
   const w = drawerWarnings(view);
   const attention = w.problems > 0 || w.chain !== "ok" || w.negative || w.skipped > 0;
   useEffect(() => { if (view.summary.has_photo && !view.photo && view.key) void loadPhoto(view.summary.id); }, [view.summary.has_photo, view.photo, view.key, view.summary.id]);
@@ -126,6 +127,26 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
       <span className="chev" aria-hidden="true">›</span>
     </button>
   );
+}
+
+/** What a row becomes when drawing it failed: still the way to the drawer's own screen, which says why and offers the ways out. */
+function DamagedRow({ view }: { view: DrawerView }) {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  return (
+    <button type="button" className="row" onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row">
+      <span className="tile" aria-hidden="true"><PIcon name={DEFAULT_DRAWER_ICON} /></span>
+      <span className="rowmain">
+        <span className="rowtitle"><span data-testid="drawer-name">{view.doc?.name ?? view.name ?? "…"}</span></span>
+        <span className="degraded" role="status">{t("home.degradedReason.bad_document")}</span>
+      </span>
+      <span className="chev" aria-hidden="true">›</span>
+    </button>
+  );
+}
+/** A drawer's row inside its own fence (PETTY-443): one row that fails to draw does not take the other drawers, or Home, with it. */
+function FencedRow(props: Parameters<typeof DrawerRow>[0]) {
+  return <DrawerBoundary resetKey={props.view} fallback={<DamagedRow view={props.view} />}><DrawerRow {...props} /></DrawerBoundary>;
 }
 
 /** Add drawer (PETTY-54/66): a name and a place picked from the tree; a new place can be typed right there. */
@@ -241,7 +262,7 @@ export function HomeScreen() {
       if (!v) return null;
       const sub = paths.get(id)!.slice(base);
       // PETTY-121 (audit F14): the sub-place is a small label inside the card, next to the name — one row per drawer, no orphan chips.
-      return <Fragment key={id}><div className="flip-item" data-flip-id={id}><DrawerRow view={v} counted={!excluded.has(id)} dim={dim} place={sub.length ? placeLabel(sub.map(labelOf)) : ""} placeTestId="sub-place" /></div></Fragment>;
+      return <Fragment key={id}><div className="flip-item" data-flip-id={id}><FencedRow view={v} counted={!excluded.has(id)} dim={dim} place={sub.length ? placeLabel(sub.map(labelOf)) : ""} placeTestId="sub-place" /></div></Fragment>;
     });
   };
   // PETTY-250: the home with the drawers of this view around it, as on the landing page — beside the total
@@ -330,11 +351,11 @@ export function HomeScreen() {
               <p className="tsub m0" data-testid="totals-across">{t("home.across", { count: visibleIds.filter((id) => !excluded.has(id)).length })}</p>
               {tot.incomplete ? <div className="warn" role="status" data-testid="totals-incomplete">{t("home.incomplete")}</div> : null}
             </div>
-            {homeArt}
+            <DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary>
           </section>
         ) : null}
         {/* no total to show (no money yet, or totals switched off): the picture stands on its own */}
-        {!totalCard && homeArt && state.status === "ready" && !active && visibleIds.length > 0 ? <section className={`home-picture${treeArt ? " tree" : ""}`}>{homeArt}</section> : null}
+        {!totalCard && homeArt && state.status === "ready" && !active && visibleIds.length > 0 ? <section className={`home-picture${treeArt ? " tree" : ""}`}><DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary></section> : null}
         {active || state.status !== "ready" ? null : <Nudges />}
         {state.status === "ready" && !active && showPlaces && labels.size > 0 ? (
           <div className="tag-bar" role="group" aria-label={t("home.tags.label")} data-testid="tag-bar">
@@ -382,13 +403,13 @@ export function HomeScreen() {
             const v = state.drawers.get(id);
             if (!v) return null;
             const inTag = !filtering || visibleIds.includes(id);
-            if (!active) return <div className="flip-item" data-flip-id={id} key={id}><DrawerRow view={v} counted={!excluded.has(id)} dim={!inTag} place={placeText(id)} /></div>;
+            if (!active) return <div className="flip-item" data-flip-id={id} key={id}><FencedRow view={v} counted={!excluded.has(id)} dim={!inTag} place={placeText(id)} /></div>;
             const hits = inTag ? result.hits.get(id) : undefined;
             if (!hits && !(inTag && v.error)) return null; // search mode lists only the drawers that answer
             return (
               <div className={`flip-item drawer-group${hits ? " has-hits" : ""}`} key={id} data-flip-id={id} data-testid="drawer-group">
-                <DrawerRow view={v} counted={!excluded.has(id)} dim={!hits} place={placeText(id)} />
-                {hits ? (hits.length ? <SearchHits view={v} lines={hits} /> : null) : inTag && v.error ? <p className="hint m0 search-unavailable">{t("home.search.unavailable")}</p> : null}
+                <FencedRow view={v} counted={!excluded.has(id)} dim={!hits} place={placeText(id)} />
+                {hits ? (hits.length ? <DrawerBoundary resetKey={v} fallback={null}><SearchHits view={v} lines={hits} /></DrawerBoundary> : null) : inTag && v.error ? <p className="hint m0 search-unavailable">{t("home.search.unavailable")}</p> : null}
               </div>
             );
           })}

@@ -3,7 +3,13 @@ import { lengthPrefixed, utf8, type Bytes } from "./encoding.js";
 
 /** Format version of every payload this package writes. Bump only with a migration path. */
 export const SCHEMA_VERSION = 1 as const;
-export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1];
+/**
+ * PETTY-422: a drawer document that carries its own counter is format 2 (@petty/ledger owns the shape). The format
+ * is part of the AAD below, so a build that knows only format 1 cannot open such a document, and so can never
+ * save one without the counter over it. Entries and photos stay at format 1.
+ */
+export const DOCUMENT_SCHEMA_VERSION = 2 as const;
+export const SUPPORTED_SCHEMA_VERSIONS: Readonly<Record<RecordType, readonly number[]>> = { entry: [SCHEMA_VERSION], document: [SCHEMA_VERSION, DOCUMENT_SCHEMA_VERSION], photo: [SCHEMA_VERSION] };
 
 export const RECORD_TYPES = ["entry", "document", "photo"] as const;
 export type RecordType = (typeof RECORD_TYPES)[number];
@@ -35,10 +41,14 @@ function isNonEmptyString(s: unknown): s is string {
   return typeof s === "string" && s.length > 0 && s.length <= 256;
 }
 
-/** New ciphertext is always written in this build's format. Only `open` accepts older supported versions. */
+/**
+ * New ciphertext is always written in this build's format. Only `open` accepts older supported versions.
+ * A document has two: format 2 for a drawer document with its counter, and format 1 for the person's own
+ * document, a queued change, and a drawer document from before the counter that a key rotation re-seals as it is.
+ */
 export function assertSealableIdentity(id: RecordIdentity): void {
   assertIdentity(id);
-  if (id.schema_version !== SCHEMA_VERSION) throw new InvalidPayload("identity.schema_version");
+  if (id.schema_version !== SCHEMA_VERSION && !(id.record_type === "document" && id.schema_version === DOCUMENT_SCHEMA_VERSION)) throw new InvalidPayload("identity.schema_version");
 }
 
 export function assertIdentity(id: RecordIdentity): void {

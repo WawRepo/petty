@@ -6,7 +6,7 @@
  */
 import { createPasskeyVault, createRecoveryVault, createVault, generateRecoveryCode, keyPairsOf, signCustodyChallenge, unlockPasskeyVault, unlockVault, zero, type UnlockedKeys, type VaultBlobV1 } from "@petty/crypto";
 import { CustodyChallenge, PasskeyEntry, type CustodyProof, type Me } from "@petty/protocol";
-import { api } from "./api.js";
+import { api, ApiError } from "./api.js";
 import { evaluatePrf, registerPasskey, rememberPasskey } from "./passkey.js";
 
 /**
@@ -20,22 +20,54 @@ export async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProo
   return { challenge: c.challenge, signature: await signCustodyChallenge(ecdsaPrivate, c.challenge) };
 }
 
+/**
+ * One call that needs a custody proof, for work the app does by itself and in steps: a key rotation
+ * (PETTY-440) and deleting a line (PETTY-441). The server keeps one challenge per person and each proof
+ * works once, so these calls go one after another, each with a fresh proof. When another tab or device
+ * asked for a challenge in between, the server answers 403 CustodyProofRequired and the call is made again.
+ */
+let proved: Promise<unknown> = Promise.resolve();
+export function withCustodyProof<T>(ecdsaPrivate: CryptoKey, call: (proof: CustodyProof) => Promise<T>): Promise<T> {
+  const run = async (): Promise<T> => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await call(await custodyProof(ecdsaPrivate));
+      } catch (e) {
+        if (attempt < 2 && e instanceof ApiError && e.code === "CustodyProofRequired") continue;
+        throw e;
+      }
+    }
+  };
+  const next = proved.then(run, run);
+  proved = next.catch(() => undefined);
+  return next;
+}
+
 const pw = (loginPassword?: string) => (loginPassword ? { password: loginPassword } : {});
 
 /** Opens the passphrase copy EXTRACTABLE (proves the passphrase before any biometric prompt). Throws WrongPassphrase. */
-export async function openWithPassphrase(me: Me, passphrase: string): Promise<UnlockedKeys> {
+export async function openWithPassphrase(me: Me, passphrase: string, extractable = true): Promise<UnlockedKeys> {
   if (!me.vault) throw new Error("no passphrase vault");
-  return unlockVault(me.vault, passphrase, { extractable: true });
+  return unlockVault(me.vault, passphrase, { extractable });
 }
 
 /** Opens any of the account's passkey copies EXTRACTABLE: the authenticator prompt is the confirmation. */
-export async function openWithPasskey(me: Me): Promise<UnlockedKeys> {
+export async function openWithPasskey(me: Me, extractable = true): Promise<UnlockedKeys> {
   const { credential_id, prf } = await evaluatePrf(me.passkeys);
   try {
     const pk = me.passkeys.find((p) => p.credential_id === credential_id);
     if (!pk) throw new Error("unknown passkey");
-    return await unlockPasskeyVault(pk.vault, prf, { extractable: true });
+    return await unlockPasskeyVault(pk.vault, prf, { extractable });
   } finally { zero(prf); }
+}
+
+/**
+ * Opens the vault once more, to confirm one action while it is already unlocked (PETTY-452): with the
+ * passphrase when one is given, else with a passkey prompt. Nothing needs the key bytes here, so the keys
+ * are not extractable. Throws WrongPassphrase, or PasskeyError when the prompt fails or is cancelled.
+ */
+export function openVaultAgain(me: Me, passphrase: string | null): Promise<UnlockedKeys> {
+  return passphrase ? openWithPassphrase(me, passphrase, false) : openWithPasskey(me, false);
 }
 
 /** Opens the recovery-code copy EXTRACTABLE. Throws WrongPassphrase for a bad code. */

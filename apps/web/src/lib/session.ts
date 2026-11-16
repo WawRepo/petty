@@ -2,8 +2,9 @@ import { useSyncExternalStore } from "react";
 import type { Me } from "@petty/protocol";
 import { OwnKeyMismatch, safetyNumber, sessionKeysFrom, unlockPasskeyVault, unlockVault, zero, type PublicKeys, type UnlockedKeys, type UserKeyPairs } from "@petty/crypto";
 import { evaluatePrf } from "./passkey.js";
-import { api, ApiError, NetworkError, setSessionGoneHandler } from "./api.js";
+import { api, ApiError, NetworkError, setBeforeRequest, setSessionGoneHandler } from "./api.js";
 import { idb } from "./idb.js";
+import { onBackOnline } from "./net.js";
 import { resetDrawers } from "./drawers.js";
 import { forgetSelfKey } from "./pins.js";
 
@@ -42,6 +43,8 @@ export type Auth =
   | { status: "unlocked"; me: Me; keys: UnlockedKeys; expiresAt: number };
 
 let state: Auth = { status: "loading" };
+/** Counts the locks and wipes of this tab: a start that began before one does not open the vault from what it read earlier. */
+let ended = 0;
 const listeners = new Set<() => void>();
 function set(next: Auth): void { state = next; for (const l of listeners) l(); }
 
@@ -54,23 +57,62 @@ export function getAuth(): Auth { return state; }
 async function sessionGone(): Promise<void> {
   const s = state;
   if (s.status !== "locked" && s.status !== "unlocked") return;
+  tellTabs("signout");
   await clearAll();
   set({ status: "anonymous" });
 }
 setSessionGoneHandler(() => { void sessionGone(); });
+
+/**
+ * PETTY-450: "Lock now" and a sign-out reach every tab of this browser at once, so no other tab keeps the
+ * keys and the opened drawers in memory. The message is one word and holds nothing else. A browser
+ * without BroadcastChannel works as before: each tab on its own.
+ */
+type TabMessage = "lock" | "signout";
+let tabs: BroadcastChannel | null = null;
+try { if (typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") tabs = new BroadcastChannel("petty.session"); } catch { /* no channel: this tab only */ }
+function tellTabs(m: TabMessage): void { try { tabs?.postMessage(m); } catch { /* this tab is locked or signed out all the same */ } }
+if (tabs) {
+  tabs.onmessage = (e: MessageEvent<unknown>) => {
+    if (e.data === "lock") void lockHere();
+    else if (e.data === "signout" && state.status !== "anonymous") void toAnonymous();
+  };
+}
+
+/**
+ * PETTY-450, local mode: a sign-out that does not reach the server (offline) would leave the session alive
+ * there, with its cookie still in this browser. So the logout is owed until the server has answered it: a
+ * flag with nothing secret in it (rule 1), set before the request. While it is set, the logout is sent
+ * before any other request: at the next start, or when the network is back. A new sign-in ends the debt,
+ * because the cookie is then the new session's and the old one can no longer be reached from here.
+ */
+const K_LOGOUT_OWED = "petty.logoutOwed";
+const logoutOwed = (): boolean => { try { return localStorage.getItem(K_LOGOUT_OWED) === "1"; } catch { return false; } };
+const setLogoutOwed = (on: boolean): void => { try { if (on) localStorage.setItem(K_LOGOUT_OWED, "1"); else localStorage.removeItem(K_LOGOUT_OWED); } catch { /* ignore */ } };
+let settling: Promise<void> | null = null;
+function settleLogout(): Promise<void> {
+  settling ??= (async () => {
+    // Any answer settles it: 204 ended the session, an error status means the server has none to end.
+    try { await api("POST", "/auth/logout"); } catch (e) { if (e instanceof NetworkError) throw e; }
+    setLogoutOwed(false);
+  })().finally(() => { settling = null; });
+  return settling;
+}
+setBeforeRequest((path) => (path !== "/auth/logout" && logoutOwed() ? settleLogout().catch(() => undefined) : Promise.resolve()));
+onBackOnline(() => { if (logoutOwed()) void settleLogout().catch(() => undefined); });
 
 /** The 24 h vault lock must also fire while the page stays open, not only at the next boot. */
 let lockTimer: number | undefined;
 function scheduleLock(expiresAt: number): void {
   if (typeof window === "undefined") return;
   window.clearTimeout(lockTimer);
-  lockTimer = window.setTimeout(() => { void lockNow(); }, Math.min(2_147_000_000, Math.max(0, expiresAt - Date.now()) + 250));
+  lockTimer = window.setTimeout(() => { void lockHere(); }, Math.min(2_147_000_000, Math.max(0, expiresAt - Date.now()) + 250));
 }
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
     const s = state;
-    if (s.status === "unlocked" && s.expiresAt <= Date.now()) { void lockNow(); return; }
+    if (s.status === "unlocked" && s.expiresAt <= Date.now()) { void lockHere(); return; }
     // Returning to the foreground: one cheap call. A dead session signs out via the 401 handler; offline is ignored.
     if (s.status === "unlocked" || s.status === "locked") void api("GET", "/me").catch(() => undefined);
   });
@@ -94,6 +136,10 @@ const wasSignedIn = () => { try { return localStorage.getItem(K_SIGNED) === "1";
 /** On app start: who am I, and is the vault still open from a previous visit? `assumeSignedIn` (Clerk mode) skips the local marker check. */
 export async function boot(opts: { assumeSignedIn?: boolean } = {}): Promise<void> {
   let me: Me | undefined;
+  // PETTY-450: a sign-out the server has not heard of yet is finished first. Nothing local is left of it, and the
+  // logout is on its way before any other request.
+  if (logoutOwed()) { void settleLogout().catch(() => undefined); await clearAll(); }
+  const since = ended;
   if (!opts.assumeSignedIn && !wasSignedIn() && !(await idb.get<Me>(K_ME))) { set({ status: "anonymous" }); return; }
   try {
     me = await api<Me>("GET", "/me");
@@ -107,7 +153,8 @@ export async function boot(opts: { assumeSignedIn?: boolean } = {}): Promise<voi
   }
   const cached = await idb.get<UnlockedRecord>(K_UNLOCKED);
   // A server whose keys for this account changed since the unlock gets a locked vault: the unlock then says why.
-  if (cached && cached.userId === me.id && cached.expiresAt > Date.now() && (cached.scope ?? undefined) === sessionScope && cached.pub && samePub(cached.pub, me.pub)) {
+  // ...and a lock or a sign-out that came from another tab while this start was under way stands (PETTY-450).
+  if (cached && ended === since && cached.userId === me.id && cached.expiresAt > Date.now() && (cached.scope ?? undefined) === sessionScope && cached.pub && samePub(cached.pub, me.pub)) {
     set({ status: "unlocked", me, keys: { ecdhPrivate: cached.ecdhPrivate, ecdsaPrivate: cached.ecdsaPrivate, pub: cached.pub }, expiresAt: cached.expiresAt });
     scheduleLock(cached.expiresAt);
     return;
@@ -127,6 +174,7 @@ export async function updateMe(patch: Partial<Pick<Me, "vault" | "passkeys" | "d
 export const updateVault = (vault: Me["vault"]): Promise<void> => updateMe({ vault });
 
 export async function afterLogin(me: Me): Promise<void> {
+  setLogoutOwed(false);
   await idb.set(K_ME, me);
   markSignedIn(true);
   set({ status: "locked", me });
@@ -185,7 +233,14 @@ export async function unlockWithKeys(keys: UserKeyPairs): Promise<void> {
   await openSession(signedIn(), await sessionKeysFrom(keys));
 }
 
+/** "Lock now": this tab and, at once, every other tab of this browser (PETTY-450). The 24 h lock is each tab's own (`lockHere`). */
 export async function lockNow(): Promise<void> {
+  tellTabs("lock");
+  await lockHere();
+}
+
+async function lockHere(): Promise<void> {
+  ended += 1;
   if (typeof window !== "undefined") window.clearTimeout(lockTimer);
   // Locked first (PETTY-326): the store's reset below re-renders the screen still on view, and while the
   // session still said "unlocked" it started a load that then failed on the lock and stayed "loading" —
@@ -206,10 +261,12 @@ export async function signOut(): Promise<void> {
   // the cache) while the store is being wiped underneath it. And the wipe BEFORE the provider's
   // sign-out (PETTY-140): Clerk's signOut navigates away, and a wipe started after it never finishes —
   // the unlocked key handles would survive in IndexedDB and open the vault for the next sign-in.
+  if (!signOutHandler) setLogoutOwed(true); // PETTY-450: owed from here on, also when the page goes away before the request
   set({ status: "anonymous" });
+  tellTabs("signout"); // PETTY-450: the other tabs of this browser drop their keys and drawers too
   await clearAll();
   if (signOutHandler) { try { await signOutHandler(); } catch { /* offline: local sign-out still happened */ } }
-  else { try { await api("POST", "/auth/logout"); } catch { /* offline: local sign-out still happened */ } }
+  else { try { await settleLogout(); } catch { /* offline: local sign-out still happened; the logout stays owed */ } }
 }
 
 /**
@@ -231,6 +288,7 @@ export async function toAnonymous(): Promise<void> {
  */
 const KEPT = ["head.", "userdoc."];
 async function clearAll(): Promise<void> {
+  ended += 1;
   markSignedIn(false);
   resetDrawers();
   forgetSelfKey();

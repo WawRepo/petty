@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, UserDocRow, UserLookup, UserLookupBody, VaultBlob, type Me as MeT } from "@petty/protocol";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, MAX_PASSKEYS, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, StoredVaultBlob, UserDocRow, UserLookup, UserLookupBody, type Me as MeT } from "@petty/protocol";
 import { config } from "../config.js";
 import { storageUsed } from "../lib/quota.js";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
@@ -7,7 +7,7 @@ import { deleteClerkUser } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { badRequest, conflict, notFound, unauthorized, ApiError } from "../lib/errors.js";
 import { checkRate, verifyPassword } from "../lib/password.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientNet } from "../lib/client-ip.js";
 import { maintPool } from "../db.js";
 import { mails } from "../lib/mail.js";
 import { destroySession, hasLoginPassword } from "../lib/session.js";
@@ -54,14 +54,14 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
    * Exact-email lookup for inviting. Returns the active public keys so the inviter can pin and show the safety number.
    * PETTY-408: the inviter must learn whether the address has an account (the sheet offers a join link when it has
    * none), so the answer cannot hide that. Instead each user gets config.lookupLimitPerHour lookups an hour, and each
-   * client address three times as many. The address travels in a POST body; GET ?email= stays for web app tabs opened
-   * before the change, and safeUrl keeps its query string out of logs and traces.
+   * client address three times as many. The address travels in a POST body, never in a URL (PETTY-457: the GET
+   * ?email= form, kept a while for web app tabs opened before PETTY-408, is gone).
    */
   const lookup = async (req: FastifyRequest, reply: FastifyReply, input: unknown) => {
     const me = requireUser(req);
     const { email } = UserLookupBody.parse(input);
     const max = config.lookupLimitPerHour;
-    if (max > 0 && (!(await checkRate(`lookup:${me.id}`, max, HOUR_MS)) || !(await checkRate(`lookup-ip:${clientIp(req)}`, max * 3, HOUR_MS)))) {
+    if (max > 0 && (!(await checkRate(`lookup:${me.id}`, max, HOUR_MS)) || !(await checkRate(`lookup-ip:${clientNet(req)}`, max * 3, HOUR_MS)))) {
       reply.header("retry-after", "3600");
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
@@ -76,7 +76,6 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     return UserLookup.parse({ id: r.id, display_name: r.display_name, keys: userKeys(r) });
   };
   app.post("/users/lookup", async (req, reply) => lookup(req, reply, req.body));
-  app.get("/users/lookup", async (req, reply) => lookup(req, reply, req.query));
 
   /** Every key a user ever published, so old entries can be verified against retired keys. */
   app.get<{ Params: { id: string } }>("/users/:id/keys", async (req) => {
@@ -92,7 +91,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const r = (await apiPool.query<{ recovery_vault: unknown }>("select recovery_vault from users where id = $1", [me.id])).rows[0];
     if (!r?.recovery_vault) throw notFound("RecoveryVaultNotFound");
-    return { recovery_vault: VaultBlob.parse(r.recovery_vault) };
+    return { recovery_vault: StoredVaultBlob.parse(r.recovery_vault) };
   });
 
   /** A challenge for the destructive custody calls below (security review SR-2). Five minutes, single use. */
@@ -158,6 +157,9 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const v = body.passkey.vault;
     if (v.kind !== "passkey" || v.pub.ecdh !== u.ecdh_pub || v.pub.ecdsa !== u.ecdsa_pub) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
     const pk = PasskeyVault.parse(body.passkey);
+    // PETTY-442: a limit per account. Saving a passkey the account already has (the same credential) replaces it and always passes.
+    const others = (await apiPool.query<{ n: string }>("select count(*)::text as n from passkey_vaults where user_id = $1 and credential_id <> $2", [me.id, pk.credential_id])).rows[0];
+    if (Number(others?.n ?? 0) >= MAX_PASSKEYS) throw conflict("PasskeyLimit", "remove a passkey before adding another", { max: MAX_PASSKEYS });
     const row = (await apiPool.query<PasskeyRow>(
       `insert into passkey_vaults (user_id, credential_id, prf_salt, vault, label, transports) values ($1, $2, $3, $4, $5, $6)
        on conflict (user_id, credential_id) do update set prf_salt = excluded.prf_salt, vault = excluded.vault, label = excluded.label, transports = excluded.transports, created_at = now()
@@ -262,6 +264,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
         await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [t.drawer_id, t.to]);
         await db.query("delete from drawer_keys where drawer_id = $1 and user_id = $2", [t.drawer_id, me.id]);
         await db.query("delete from ownership_transfers where drawer_id = $1", [t.drawer_id]);
+        // PETTY-446: a pending invitation ends with the ownership it was made under
+        await db.query("update invitations set state = 'revoked', resolved_at = now() where drawer_id = $1 and state = 'pending'", [t.drawer_id]);
       }
       for (const id of p.memberships) {
         await db.query("delete from drawer_members where drawer_id = $1 and user_id = $2", [id, me.id]);

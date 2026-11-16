@@ -107,7 +107,7 @@ test("revoke rotates the key: the removed member's old key cannot open anything 
   const { selfWrap } = await createDrawerKey(sender, id, 3);
   const k3 = await unwrap2(selfWrap, alice.keys.ecdh.privateKey, { drawer_id: id, key_version: 3, senderEcdhPublicB64: alice.ecdhPub }, { extractable: true });
   const w3 = await wrapDrawerKey(k3, sender, alice.ecdhPub, id, 3);
-  expect((await aliceApi.call("POST", `/drawers/${id}/rotation`, { to_version: 3, wraps: [{ user_id: aliceApi.id, wrap: w3 }] })).status).toBe(201);
+  expect((await aliceApi.call("POST", `/drawers/${id}/rotation`, { to_version: 3, wraps: [{ user_id: aliceApi.id, wrap: w3 }], proof: await aliceApi.proof(alice.keys) })).status).toBe(201);
   expect(((await aliceApi.call("GET", `/drawers/${id}/rotation`)).json as { completed: boolean }).completed).toBe(false);
   await pageA.goto("/");
   await expect.poll(async () => ((await aliceApi.call("GET", `/drawers/${id}/rotation`)).json as { completed: boolean; key_version: number }), { timeout: 20_000 }).toMatchObject({ completed: true, key_version: 3 });

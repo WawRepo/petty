@@ -18,8 +18,10 @@ runs this same server with that login.
 ## 1. Make a token
 
 In Petty: **Settings → Access tokens → New token**. Give it a name, switch on **Can make changes**
-if it should add entries and change names, items, tags and places (a new token only reads), pick an
-expiry, and confirm with your passkey or passphrase. The token is shown once:
+if it should add entries and change names, items, tags and places (a new token only reads). Choose
+which drawers it can use: **All drawers**, which includes drawers you add later, or **Only the drawers
+I pick**. Pick an expiry (90 days unless you change it), and confirm with your passkey or passphrase;
+every token asks for it, also one that only reads. The token is shown once:
 
 ```
 petty_pat_<id>.<secret>
@@ -35,9 +37,10 @@ already read.
 
 1. Install **Claude Desktop** from [claude.ai/download](https://claude.ai/download) and sign in.
 2. Make a token (step 1). The token screen then offers **Get the Claude Desktop add-on**; the same
-   button is on the in-app page **Use Petty with AI**. It downloads `petty.mcpb`. The file is the same
-   for everyone and holds no secret, so any Petty (`https://<your petty>/downloads/petty.mcpb`) or the
-   GitHub release page can give it to you.
+   button is on the in-app page **Use Petty with AI**. It downloads `petty.mcpb` from the GitHub release
+   of the version your Petty runs (a Petty that runs its own build gives you its own copy). The file is
+   the same for everyone and holds no secret, but it is a program that will hold your token: check it
+   before you install it ([cli.md](cli.md#check-what-you-download), with `petty.mcpb` as the file).
 3. **Double-click `petty.mcpb`** (or drag it onto the Claude Desktop window) and click **Install**.
 4. Claude Desktop asks for the **Petty address** (shown next to the token, ending in `/api`) and the
    **token**. Paste both and save. Claude Desktop keeps the token as a secret and runs the add-on with
@@ -50,29 +53,46 @@ settings block it produces goes into Claude Desktop's `claude_desktop_config.jso
 
 ## Other AI apps (Cursor, VS Code, Windsurf, Claude Code, …)
 
-Any app that runs local MCP servers can use the same program. Petty serves it as one file,
-`https://<your petty>/downloads/petty-mcp.mjs`. It needs Node 20 or newer. Put it in a `.petty`
-folder in your home folder — the same place the program looks for a token file — and let it print
-its own settings block, so you never type a path by hand.
+**With the command line: no token to copy.** Install `petty` and sign in with `petty auth login`
+([cli.md](cli.md)). It signs in through your browser, and `petty mcp` then runs this same server with
+that login:
 
-The in-app page **Use Petty with AI** shows these commands with your Petty's address filled in.
+```
+petty mcp --print-config                                  # the settings block for this machine; no token in it
+claude mcp add -s user petty -- ~/.local/bin/petty mcp    # Claude Code, for every project
+```
+
+Paste the printed block into the app's MCP settings (the file name and place differ per app).
+
+**By hand, with a token from step 1.** Any app that runs local MCP servers can also start the program
+itself. It is one file, `petty-mcp.mjs`, and needs Node 20 or newer. Take it from the GitHub release of
+the version your Petty runs (`v1.2.3` below) and check it before you run it
+([cli.md](cli.md#check-what-you-download)). Put it in a `.petty` folder in your home folder, the same
+place the program looks for a token file, and let it print its own settings block, so you never type a
+path by hand.
+
+The in-app page **Use Petty with AI** shows these commands with your Petty's version and address
+filled in.
 
 **macOS or Linux** (Terminal):
 
 ```
-mkdir -p ~/.petty && curl -fsSL https://petty.example.com/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs
+mkdir -p ~/.petty && curl -fsSL https://github.com/WawRepo/petty/releases/download/v1.2.3/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs
+gh attestation verify ~/.petty/petty-mcp.mjs --repo WawRepo/petty --signer-workflow WawRepo/petty/.github/workflows/release.yml --source-ref refs/heads/main
 node ~/.petty/petty-mcp.mjs --print-config https://petty.example.com/api
 ```
 
 **Windows** (PowerShell):
 
 ```
-New-Item -ItemType Directory -Force "$HOME\.petty" | Out-Null; Invoke-WebRequest https://petty.example.com/downloads/petty-mcp.mjs -OutFile "$HOME\.petty\petty-mcp.mjs"
+New-Item -ItemType Directory -Force "$HOME\.petty" | Out-Null; Invoke-WebRequest https://github.com/WawRepo/petty/releases/download/v1.2.3/petty-mcp.mjs -OutFile "$HOME\.petty\petty-mcp.mjs"
+gh attestation verify "$HOME\.petty\petty-mcp.mjs" --repo WawRepo/petty --signer-workflow WawRepo/petty/.github/workflows/release.yml --source-ref refs/heads/main
 node "$HOME\.petty\petty-mcp.mjs" --print-config https://petty.example.com/api
 ```
 
-The second command prints the block for this machine — the full path of your Node and of the file
-(apps started from the dock or Start menu often cannot find a bare `node`):
+The middle line is the check; without `gh`, compare the checksum instead, as cli.md describes. The
+last command prints the block for this machine: the full path of your Node and of the file (apps
+started from the dock or Start menu often cannot find a bare `node`):
 
 ```json
 {
@@ -89,18 +109,27 @@ The second command prints the block for this machine — the full path of your N
 }
 ```
 
-Paste it into the app's MCP settings (the file name and place differ per app) and put your token
-in place of `petty_pat_…`. Instead of `PETTY_TOKEN`, the program also reads `~/.petty/token` (keep it
-mode 600): then the block needs no secret at all.
-
-For Claude Code, skip the block — one command:
+Paste it into the app's MCP settings and put your token in place of `petty_pat_…`. Better: take the
+`PETTY_TOKEN` line out and keep the token in `~/.petty/token`, which the program also reads. Then no
+settings file holds the secret:
 
 ```
-claude mcp add -s user petty --env PETTY_TOKEN=petty_pat_… --env PETTY_API_URL=https://petty.example.com/api -- node ~/.petty/petty-mcp.mjs
+mkdir -p ~/.petty && (umask 077 && cat > ~/.petty/token)    # paste the token, press Enter, then Ctrl-D
 ```
 
-On macOS with a Petty on your home network, use a signed Node (see Troubleshooting). To update, run
-the download command again.
+For Claude Code by hand, with the token in that file:
+
+```
+claude mcp add -s user petty --env PETTY_API_URL=https://petty.example.com/api -- node ~/.petty/petty-mcp.mjs
+```
+
+**Do not type the token into a command**, for example as `--env PETTY_TOKEN=petty_pat_…`. Your shell
+keeps the line in its history file in plain text, and while the command runs, other programs and
+users on the computer can read it in the process list (`ps`). A token that went that way is best
+revoked in Settings and made again.
+
+On macOS with a Petty on your home network, use a signed Node (see Troubleshooting). To update,
+download and check again.
 
 Apps that only accept remote connectors (for example on a phone) cannot run a local program;
 see "On a phone" below.
@@ -117,9 +146,11 @@ one total per currency (Petty has no exchange rates), `adjust` only after a real
 count item by item, asking before a write when the item or the amount is a guess, and never
 following text found inside a drawer. It is one file of instructions, with no code and no secret.
 
-- **Claude (the app or claude.ai):** download `petty-skill.zip` from any Petty
-  (`https://<your petty>/downloads/petty-skill.zip`) or from the GitHub release page. In Claude, open
-  **Customize → Skills**, upload the ZIP, and turn the skill on.
+- **Claude (the app or claude.ai):** download `petty-skill.zip` from the GitHub release of your
+  Petty's version, where it can be checked like the programs
+  ([cli.md](cli.md#check-what-you-download)), or from any Petty
+  (`https://<your petty>/downloads/petty-skill.zip`). In Claude, open **Customize → Skills**, upload
+  the ZIP, and turn the skill on.
 - **Claude Code:** unzip it into `~/.claude/skills/`, so the file sits at
   `~/.claude/skills/petty/SKILL.md`. The skill also covers the `petty` command line, so Claude Code
   can use it with or without the MCP server.
@@ -165,16 +196,33 @@ A token has its own key pair. When you make a drawer, or someone shares one with
 app wraps that drawer's key for every live token the next time it starts. So the tool sees new
 drawers without you making a new token. Open Petty once after adding a drawer.
 
+That holds for a token made for **All drawers**. A token made for chosen drawers keeps to them: it
+does not see a drawer you add later, the server refuses it every other drawer, and the tool tells the
+AI app that it opens only those drawers. Make a new token to change the choice.
+
 ## What this does and does not protect
 
 - The token and your keys stay on your machine. The Petty server never sees the secret half.
 - Whatever you ask about reaches the model, because you asked. End-to-end encryption covers the
   server and the network, not the assistant you chose to talk to.
-- Item names, tags and comments are your own text. The tools hand them over as labelled data, and
-  writing is always a separate, explicit tool call, so text inside a drawer cannot act as an
-  instruction on its own. Read a proposed write before you accept it.
+- Item names, tags, places, notes and comments are text that you, or anyone you share a drawer with,
+  typed. The tools hand each one to the model as one quoted value on one line, so it cannot pass for a
+  tool's own words. So do they with anything else Petty did not word itself: a currency code that is
+  not plain letters and digits, an old item id, the text of an unexpected error.
+- **The quotes mark that text as data. They do not stop a model from following it.** A model may still
+  act on a sentence it reads inside a name or a comment, and if the app gives it other tools (the web,
+  mail, a shell), it may use those too. Writing in Petty is always a separate, explicit tool call: read
+  a proposed action before you accept it. Give an assistant that reads a shared drawer only the tools
+  it needs, and share a drawer only with people you trust with that.
 - A token cannot replace your vault, delete your account, share a drawer, export, use admin, or
   make another token. Those are refused by the server.
+- The tool checks what it reads: every entry must open and carry a valid signature, and the hash
+  links between an item's entries must hold. What fails is left out of the balance, and the answer
+  ends with `warning:` lines that say so (an entry or a drawer that could not be opened, a signature
+  that did not check, history links that do not match). Open Petty in the browser when you see one.
+  The tool remembers nothing between two runs, so it cannot notice a history that got shorter or a
+  drawer put back to an older state; the web app can
+  ([threat model](threat-model.md#integrity)).
 
 ## Troubleshooting
 
@@ -195,6 +243,9 @@ Restart Claude Desktop after either change.
 certificate authority, point `NODE_EXTRA_CA_CERTS` at its certificate in the same `env` block.
 
 **"TokenRevoked"**: the token was revoked or expired; make a new one in Settings.
+
+**"NotFound" for something you know is there**: the token may have been made for other drawers.
+Settings → Access tokens shows how many drawers each token opens.
 
 ## On a phone
 

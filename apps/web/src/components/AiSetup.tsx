@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "./Button.js";
 import { useToast } from "./Toast.js";
+import { appVersion } from "../lib/authConfig.js";
+import { downloadUrl, releaseFor, type Release } from "../lib/downloads.js";
 
 /**
  * "Set it up in your app" (PETTY-316/319), on the landing page and, since PETTY-333, in Settings for
@@ -15,22 +17,25 @@ import { useToast } from "./Toast.js";
  * add it to Claude Code by its full path — ~/.local/bin is often not on the PATH Claude Code starts
  * programs with — for every project (`-s user`), not only the folder it was typed in. The editors' lines
  * download petty-mcp.mjs too, instead of asking for it to be saved by hand.
+ *
+ * PETTY-418: the files come from the GitHub release of the version that runs here, when there is one
+ * (lib/downloads.ts); the hint under the lines says which it is and where the checks are described.
  */
 const APPS = ["desktop", "code", "cursor", "vscode", "windsurf", "any"] as const;
 type App = (typeof APPS)[number];
 const EDITORS: readonly App[] = ["cursor", "vscode", "windsurf"];
 
-export function aiSetupLines(app: App, origin: string): string | null {
+export function aiSetupLines(app: App, origin: string, release: Release | null): string | null {
   switch (app) {
     case "desktop": return `${origin}/api`;
     case "code": return [
-      `mkdir -p ~/.local/bin && curl -fsSL ${origin}/downloads/petty.mjs -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty`,
+      `mkdir -p ~/.local/bin && curl -fsSL ${downloadUrl("petty.mjs", release, origin)} -o ~/.local/bin/petty && chmod +x ~/.local/bin/petty`,
       `~/.local/bin/petty auth login --host ${origin}`,
       "claude mcp add -s user petty -- ~/.local/bin/petty mcp",
     ].join("\n");
     case "any": return "io.github.WawRepo/petty";
     default: return [
-      `mkdir -p ~/.petty && curl -fsSL ${origin}/downloads/petty-mcp.mjs -o ~/.petty/petty-mcp.mjs`,
+      `mkdir -p ~/.petty && curl -fsSL ${downloadUrl("petty-mcp.mjs", release, origin)} -o ~/.petty/petty-mcp.mjs`,
       `node ~/.petty/petty-mcp.mjs --print-config ${origin}/api`,
     ].join("\n");
   }
@@ -41,7 +46,8 @@ export function AiSetup({ titleId }: { titleId: string }) {
   const toast = useToast();
   const [app, setApp] = useState<App>("desktop");
   const name = t(`landing.ai.apps.${app}`);
-  const lines = aiSetupLines(app, location.origin);
+  const release = releaseFor(appVersion());
+  const lines = aiSetupLines(app, location.origin, release);
   const setup = t(EDITORS.includes(app) ? "landing.ai.setup.editor" : `landing.ai.setup.${app}`, { app: name });
   const copy = () => { if (lines) void navigator.clipboard?.writeText(lines).then(() => toast(t("app.copied"))); };
   return (
@@ -59,9 +65,10 @@ export function AiSetup({ titleId }: { titleId: string }) {
         {lines ? <code className="ai-command" data-testid="ai-command">{lines}</code> : null}
         <div className="ai-setup-actions">
           {lines && app !== "any" ? <Button variant="secondary" onClick={copy} data-testid="ai-copy">{t("app.copy")}</Button> : null}
-          {app === "desktop" ? <a className="btn btn-secondary" href="/downloads/petty.mcpb" download="petty.mcpb" data-testid="ai-mcpb">{t("tokens.addonDownload")}</a> : null}
+          {app === "desktop" ? <a className="btn btn-secondary" href={downloadUrl("petty.mcpb", release)} download="petty.mcpb" data-testid="ai-mcpb">{t("tokens.addonDownload")}</a> : null}
         </div>
         {app === "code" || EDITORS.includes(app) ? <p className="hint m0" data-testid="ai-windows">{t("landing.ai.setup.windows")}</p> : null}
+        {app !== "any" ? <p className="hint m0" data-testid="ai-files-from">{release ? t("landing.ai.setup.fromRelease", { version: release.version }) : t("landing.ai.setup.fromHere")}</p> : null}
       </div>
     </>
   );

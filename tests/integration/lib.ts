@@ -42,7 +42,8 @@ const run = crypto.randomUUID().slice(0, 8);
 
 /** A new person. The first join link comes from the operator script, as for a real first account. */
 export async function newUser(name: string, joinToken?: string): Promise<Client> {
-  const token = joinToken ?? /\/join\/([A-Za-z0-9_-]+)/.exec(compose("exec -T app pnpm --silent join-link"))![1]!;
+  // the script prints <app>/join#<token>; an image before PETTY-457 (the upgrade run's base) printed /join/<token>
+  const token = joinToken ?? /\/join[#/]([A-Za-z0-9_-]+)/.exec(compose("exec -T app pnpm --silent join-link"))![1]!;
   const c = new Client(http, await userMaterial(`${name}-${run}`, { email: `${name}-${run}@petty.test` }));
   const res = await c.signup(token);
   if (res.statusCode !== 201) throw new Error(`signup ${name}: ${res.statusCode} ${res.body}`);

@@ -1,3 +1,4 @@
+import { DOCUMENT_SCHEMA_VERSION } from "@petty/crypto";
 import { LedgerError } from "./errors.js";
 import { assertCurrencyCode, canChangeKind } from "./rules.js";
 import { MAX_EXPONENT } from "./money.js";
@@ -42,6 +43,50 @@ function name(s: string): string {
 
 export function newDocument(drawerName: string): DrawerDocument {
   return { v: 1, name: name(drawerName), has_photo: false, lines: [], verifications: [] };
+}
+
+/**
+ * The counter of a drawer document (PETTY-422). The server's version number of a document is a plain column
+ * that the server writes, so a server could give an older sealed copy a newer number. `rev` is sealed with
+ * the content: every write stores the counter it loaded plus one, and a reader that remembers a counter
+ * refuses a document with a lower one, or with none (`revRolledBack`). A document with a counter is a row of
+ * format DOCUMENT_SCHEMA_VERSION, which is part of the AAD: a build from before the counter cannot open it,
+ * and so can never save a document without the counter over it.
+ *
+ * How far a counter may be ahead of the drawer's version number: each write raises both by one, so a counter
+ * is never ahead of it. The room is for a document that was written between the server's two reads of one
+ * answer. A counter further ahead is refused and never remembered: nobody who holds the drawer key, a tool
+ * with a leaked token included, can then use the counter up, and an earlier version can always be put back.
+ */
+export const REV_AHEAD_MAX = 64;
+
+/**
+ * A document that came out of a ciphertext, checked against the row it came from: its shape, and its counter.
+ * `version` is the drawer's version number that this document had. Format 1 has no counter; a `rev` found in
+ * one is left out. Format 2 must have one. Throws LedgerError("bad_document").
+ */
+export function readDocument(x: unknown, row: { readonly schema_version: number; readonly version: number }): DrawerDocument {
+  assertDocumentShape(x);
+  if (row.schema_version < DOCUMENT_SCHEMA_VERSION) {
+    if (x.rev === undefined) return x;
+    const { rev: _none, ...rest } = x;
+    void _none;
+    return rest;
+  }
+  if (x.rev === undefined || x.rev > row.version + REV_AHEAD_MAX) throw new LedgerError("bad_document");
+  return x;
+}
+
+/** The document as its next write stores it: the counter it was loaded with, plus one. 1 for a document that had none. */
+export function nextRev(doc: DrawerDocument): DrawerDocument {
+  const rev = (doc.rev ?? 0) + 1;
+  if (!Number.isSafeInteger(rev)) throw new LedgerError("bad_document");
+  return { ...doc, rev };
+}
+
+/** True when a reader that remembers the counter `known` must refuse this document: its counter is lower, or it has none. */
+export function revRolledBack(doc: DrawerDocument, known: number | null): boolean {
+  return known !== null && (doc.rev ?? 0) < known;
 }
 
 /** An icon slug: the app maps it to a drawing; the ledger only keeps it short and plain. */
@@ -159,6 +204,8 @@ export function parsePlace(text: string): string[] { return text.split(/[\s,/>â€
 export function placeLabel(path: readonly string[]): string { return path.join(" â€º "); }
 export function hasTag(doc: DrawerDocument, folded: string): boolean { return tagsOf(doc).some((t) => foldText(t) === folded); }
 
+const NEW_LINE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function applyOp(doc: DrawerDocument, op: DocumentOp, ctx: OpContext): DrawerDocument {
   switch (op.type) {
     case "rename_drawer":
@@ -197,6 +244,8 @@ export function applyOp(doc: DrawerDocument, op: DocumentOp, ctx: OpContext): Dr
       return replaceLine(doc, i, assertLine({ ...rest, counted: op.counted } as Line));
     }
     case "add_line": {
+      // PETTY-414: a new item's id is a UUID. An id already in a document is read as it is (assertLine).
+      if (typeof op.line.id !== "string" || !NEW_LINE_ID.test(op.line.id)) throw new LedgerError("bad_line_id");
       if (doc.lines.some((l) => l.id === op.line.id)) throw new LedgerError("line_exists", { line_id: op.line.id });
       if (doc.lines.length >= MAX_LINES) throw new LedgerError("too_many_lines");
       const line = assertLine(op.line);
@@ -281,6 +330,7 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
   }
   if (d["icon"] !== undefined && (typeof d["icon"] !== "string" || !ICON_SLUG.test(d["icon"]))) throw new LedgerError("bad_document");
   if (d["color"] !== undefined && (typeof d["color"] !== "string" || !ICON_SLUG.test(d["color"]))) throw new LedgerError("bad_document");
+  if (d["rev"] !== undefined && (!Number.isSafeInteger(d["rev"]) || (d["rev"] as number) < 1)) throw new LedgerError("bad_document");
   const ids = new Set<string>();
   for (const l of d["lines"] as Line[]) {
     assertLine(l);
@@ -291,7 +341,22 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
     if (typeof v.id !== "string" || typeof v.author_id !== "string" || typeof v.logged_at !== "string" || typeof v.comment !== "string" || !Array.isArray(v.lines)) {
       throw new LedgerError("bad_document");
     }
+    for (const vl of v.lines as readonly unknown[]) assertVerificationLine(vl);
   }
+}
+
+const LINE_KINDS: readonly unknown[] = ["money", "countable", "single"];
+const absentOr = (x: unknown, ok: (x: unknown) => boolean): boolean => x === undefined || x === null || ok(x);
+/**
+ * One line of a verification. A field that is left out reads as null, so verifications written before a
+ * field existed still pass. A balance or a head that is not an exact integer is refused: the screens
+ * format what is stored here.
+ */
+function assertVerificationLine(x: unknown): void {
+  if (typeof x !== "object" || x === null) throw new LedgerError("bad_document");
+  const l = x as Record<string, unknown>;
+  if (typeof l["line_id"] !== "string" || !absentOr(l["kind"], (k) => LINE_KINDS.includes(k)) || !absentOr(l["balance"], Number.isSafeInteger)
+    || !absentOr(l["present"], (p) => typeof p === "boolean") || !absentOr(l["head_seq"], Number.isSafeInteger)) throw new LedgerError("bad_document");
 }
 
 export type StalenessStatus = "never" | "verified" | "stale";
@@ -338,7 +403,9 @@ export interface Totals {
 /**
  * Cross-drawer totals by currency code (upper-cased). Countables are excluded
  * by construction. Two lines with the same code but different exponents
- * (a relabelled line) are summed at the larger exponent, exactly.
+ * (a relabelled line) are summed at the larger exponent, exactly. A currency
+ * whose sum leaves the exact integers is left out and the result is marked
+ * incomplete: a total is exact or it is not shown.
  * Ordered largest first (compared at a common exponent, ties by code) and
  * without zero totals: the home screen is a glance for "the big pile", and a
  * currency nobody holds any more is noise there. Negatives stay; they are a
@@ -346,16 +413,17 @@ export interface Totals {
  */
 export function totals(drawers: readonly DrawerForTotals[]): Totals {
   const acc = new Map<string, { exponent: number; amount: number }>();
+  const tooLarge = new Set<string>();
   let incomplete = false;
   for (const d of drawers) {
     if (!d.ok) { incomplete = true; continue; }
     for (const { line, balance } of d.moneyLines) {
       const code = line.currency.trim().toUpperCase();
-      const cur = acc.get(code);
-      if (!cur) { acc.set(code, { exponent: line.exponent, amount: balance }); continue; }
+      if (tooLarge.has(code)) continue;
+      const cur = acc.get(code) ?? { exponent: line.exponent, amount: 0 };
       const exp = Math.max(cur.exponent, line.exponent);
       const scaled = cur.amount * 10 ** (exp - cur.exponent) + balance * 10 ** (exp - line.exponent);
-      if (!Number.isSafeInteger(scaled)) throw new LedgerError("too_large", { currency: code });
+      if (!Number.isSafeInteger(scaled)) { acc.delete(code); tooLarge.add(code); incomplete = true; continue; }
       acc.set(code, { exponent: exp, amount: scaled });
     }
   }
@@ -364,4 +432,22 @@ export function totals(drawers: readonly DrawerForTotals[]): Totals {
   const scaled = (c: { amount: number; exponent: number }) => c.amount * 10 ** (maxExp - c.exponent);
   byCurrency.sort((a, b) => scaled(b) - scaled(a) || a.code.localeCompare(b.code));
   return { byCurrency, incomplete };
+}
+
+/**
+ * Whether every sum a screen makes of these money lines is exact: of all of them or of any part, per
+ * currency code, at the larger exponent. Checked on the absolute values, so the order and the signs do
+ * not matter. False means the balances must not be added up or shown.
+ */
+export function sumsAreExact(moneyLines: readonly LineBalance[]): boolean {
+  const acc = new Map<string, { exponent: number; amount: number }>();
+  for (const { line, balance } of moneyLines) {
+    const code = line.currency.trim().toUpperCase();
+    const cur = acc.get(code) ?? { exponent: line.exponent, amount: 0 };
+    const exp = Math.max(cur.exponent, line.exponent);
+    const sum = cur.amount * 10 ** (exp - cur.exponent) + Math.abs(balance) * 10 ** (exp - line.exponent);
+    if (!Number.isSafeInteger(sum)) return false;
+    acc.set(code, { exponent: exp, amount: sum });
+  }
+  return true;
 }

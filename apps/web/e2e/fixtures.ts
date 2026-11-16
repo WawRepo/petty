@@ -90,7 +90,7 @@ export const test = base.extend<Fixtures>({
 export { expect };
 
 // ---------------------------------------------------------------- Phase 6 helpers
-import { createDrawerKey, signCustodyChallenge, unwrapDrawerKey, wrapDrawerKey, type DrawerKeyWrapV1 as _W, type UserKeyPairs } from "@petty/crypto";
+import { canonicalJson, createDrawerKey, fromB64, fromUtf8, hkdfAesKey, open, openDocument, seal, signCustodyChallenge, toB64, unwrapDrawerKey, utf8, wrapDrawerKey, type DrawerKeyWrapV1 as _W, type UserKeyPairs } from "@petty/crypto";
 void createDrawerKey;
 
 export interface TestUserWithKeys extends TestUser { keys: UserKeyPairs; ecdhPub: string; recoveryCode: string }
@@ -143,8 +143,73 @@ export async function shareViaApi(owner: TestUserWithKeys, drawerId: string, inv
   const inv = await o.call("POST", `/drawers/${drawerId}/invitations`, { invitee_id: (await apiClient(invitee)).id, role, wrap: forInvitee });
   if (inv.status !== 201) throw new Error(`invite failed: ${inv.status} ${JSON.stringify(inv.json)}`);
   const i = await apiClient(invitee);
+  // PETTY-438: as the accept card does, the invitee confirms the inviter first; a key from someone not confirmed stays closed
+  await confirmViaApi(invitee, owner);
   const acc = await i.call("POST", `/invitations/${(inv.json as { id: string }).id}/accept`);
   if (acc.status !== 204) throw new Error(`accept failed: ${acc.status}`);
+}
+
+/** The sealed user document as the web app writes it (apps/web/src/lib/pins.ts); only the parts the tests touch are typed. */
+export interface UserDocJson {
+  /** 2 with the counter `rev` inside (PETTY-439); 1 is a document from before the counter. */
+  v: 1 | 2;
+  rev?: number;
+  pins: Record<string, { ecdh: string; ecdsa: string; sig_key_id: string; pinned_at: string; confirmed_at: string | null }>;
+  drawer_keys?: Record<string, number>;
+  drawer_key_fps?: Record<string, Record<string, string>>;
+  drawer_revs?: Record<string, number>;
+  [other: string]: unknown;
+}
+async function userDocKey(user: TestUserWithKeys, userId: string) {
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: user.keys.ecdh.publicKey }, user.keys.ecdh.privateKey, 256));
+  const key = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(userId), "AES-GCM", ["encrypt", "decrypt"]);
+  return { key, identity: { record_type: "document", record_id: userId, drawer_id: userId, line_id: null, author_id: userId, key_version: 1, schema_version: 1 } as const };
+}
+/** A person's user document, opened in Node with their own keys; null when the server has none. */
+export async function readUserDoc(user: TestUserWithKeys): Promise<{ version: number; doc: UserDocJson } | null> {
+  const api = await apiClient(user);
+  const { key, identity } = await userDocKey(user, api.id);
+  const row = (await api.call("GET", "/me/doc")).json as { version: number; nonce: string; ciphertext: string } | undefined;
+  if (!row) return null;
+  return { version: row.version, doc: JSON.parse(fromUtf8(await open(key, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))) as UserDocJson };
+}
+/**
+ * Changes a person's user document from Node and saves it sealed, as their own browser would: with the counter it
+ * loaded plus one (PETTY-439). Tries again when the app saved in between. `older: true` saves it as a Petty from
+ * before the counter did: `v` 1 and no counter.
+ */
+export async function editUserDoc(user: TestUserWithKeys, change: (doc: UserDocJson) => void, opts: { older?: boolean } = {}): Promise<void> {
+  const api = await apiClient(user);
+  const { key, identity } = await userDocKey(user, api.id);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const cur = await readUserDoc(user);
+    const doc: UserDocJson = cur?.doc ?? { v: 1, pins: {} };
+    change(doc);
+    if (opts.older) { doc.v = 1; delete doc.rev; } else { doc.v = 2; doc.rev = (doc.rev ?? 0) + 1; }
+    const sealed = await seal(key, identity, utf8(canonicalJson(doc)));
+    const put = await api.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+    if (put.status === 200) return;
+    if (put.status !== 409) throw new Error(`user document not saved: ${put.status}`);
+  }
+  throw new Error("user document not saved: it kept changing");
+}
+/** A drawer's document as the server holds it now, opened in Node with a member's own keys: its version number, its format, and what is inside. */
+export async function readDrawerDoc(user: TestUserWithKeys, drawerId: string): Promise<{ version: number; keyVersion: number; schemaVersion: number; doc: { rev?: number; name: string; lines: { name: string }[]; [other: string]: unknown } }> {
+  const api = await apiClient(user);
+  const got = (await api.call("GET", `/drawers/${drawerId}`)).json as { drawer: { version: number }; document: { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string } };
+  const d = got.document;
+  const wrap = ((await api.call("GET", "/bootstrap")).json as { wraps: _W[] }).wraps.find((w) => w.drawer_id === drawerId && w.key_version === d.key_version)!;
+  const key = await unwrapDrawerKey(wrap, user.keys.ecdh.privateKey, { drawer_id: drawerId, key_version: d.key_version, senderEcdhPublicB64: wrap.sender_ecdh_pub });
+  const doc = await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: d.author_id, key_version: d.key_version, schema_version: d.schema_version }, { nonce: fromB64(d.nonce), ciphertext: fromB64(d.ciphertext) });
+  return { version: got.drawer.version, keyVersion: d.key_version, schemaVersion: d.schema_version, doc: doc as { rev?: number; name: string; lines: { name: string }[] } };
+}
+/** `who` compared `other`'s safety number and confirms their keys: what "Numbers match" and the invite and accept steps save. */
+export async function confirmViaApi(who: TestUserWithKeys, other: TestUserWithKeys): Promise<void> {
+  const pub = await exportPublicKeys(other.keys);
+  const otherId = (await apiClient(other)).id;
+  const sigKeyId = await signingKeyId(pub.ecdsa);
+  const now = new Date().toISOString();
+  await editUserDoc(who, (doc) => { doc.pins[otherId] = { ecdh: pub.ecdh, ecdsa: pub.ecdsa, sig_key_id: sigKeyId, pinned_at: doc.pins[otherId]?.pinned_at ?? now, confirmed_at: now }; });
 }
 
 /** Flips one byte of a drawer document's ciphertext straight in Postgres (simulating tampering / corruption). */

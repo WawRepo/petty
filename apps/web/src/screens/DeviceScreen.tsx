@@ -7,13 +7,14 @@ import { CodeText } from "../components/CodeText.js";
 import { Button } from "../components/Button.js";
 import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
+import { scopeOf, TokenScope, type ScopeChoice } from "../components/TokenScope.js";
 import { TopBar } from "../components/TopBar.js";
 import { createAccessToken, revokeAccessToken } from "../lib/accessTokens.js";
 import { clearAfterUnlock } from "../lib/afterUnlock.js";
 import { api, ApiError } from "../lib/api.js";
-import { openWithPasskey, openWithPassphrase } from "../lib/custody.js";
 import { loadIfIdle, useDrawers } from "../lib/drawers.js";
 import { useBack } from "../lib/nav.js";
+import { PasskeyError } from "../lib/passkey.js";
 import { getAuth } from "../lib/session.js";
 import { relativeTime } from "../lib/time.js";
 
@@ -25,7 +26,9 @@ type Phase = "enter" | "loading" | "ask" | "mismatch" | "done" | "denied";
  * login` does. Signed in and unlocked, the person sees what asks and allows or denies it. Allowing makes
  * an ordinary access token here, as Settings → Access tokens does, and seals it to the tool's one-time
  * key: the server only relays the sealed token. The code is worked out again from the tool's key the
- * server passed on; if it differs, the request was changed on its way and cannot be allowed.
+ * server passed on and from this page's own address (PETTY-451); if it differs, the request was changed
+ * on its way, or the terminal was given another address, and it cannot be allowed. As in Settings
+ * (PETTY-452), the person picks the drawers and opens the vault again, for a reading token too.
  */
 export function DeviceScreen() {
   const { t, i18n } = useTranslation();
@@ -37,6 +40,7 @@ export function DeviceScreen() {
   const [req, setReq] = useState<Request | null>(null);
   const [write, setWrite] = useState(true);
   const [days, setDays] = useState<number>(90);
+  const [scope, setScope] = useState<ScopeChoice>(null);
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +56,7 @@ export function DeviceScreen() {
     setError(null);
     try {
       const r = DeviceRequestView.parse(await api<unknown>("GET", `/device/${code}`));
-      if (r.user_code !== code || (await deviceUserCode(r.cli_pub)) !== code) { setPhase("mismatch"); return; }
+      if (r.user_code !== code || (await deviceUserCode(r.cli_pub, location.origin)) !== code) { setPhase("mismatch"); return; }
       setReq(r);
       setWrite(r.role === "write");
       setDays(r.expires_days ?? 0);
@@ -77,17 +81,19 @@ export function DeviceScreen() {
 
   async function allow() {
     if (!req || !me) return;
+    const chosen = scopeOf(scope);
+    if (chosen === undefined) { setError(t("tokens.scopeNeeded")); return; }
+    if (me.vault && !pass && !me.passkeys.length) { setError(t("tokens.passphraseNeeded")); return; }
     setBusy(true);
     setError(null);
     let madeId: string | null = null;
     try {
-      const unlocked = write ? (me.vault && pass ? await openWithPassphrase(me, pass) : await openWithPasskey(me)) : undefined;
       const made = await createAccessToken({
         name: req.client_name,
         role: write ? "write" : "read",
-        scope: null,
+        scope: chosen,
         expiresAt: days ? new Date(Date.now() + days * 86_400_000).toISOString() : null,
-        ...(unlocked ? { unlocked } : {}),
+        passphrase: me.vault && pass ? pass : null,
       });
       madeId = made.row.id;
       const sealed = await sealDeviceToken(req.cli_pub, made.token, { requestId: req.id, userCode: req.user_code, origin: location.origin });
@@ -97,6 +103,7 @@ export function DeviceScreen() {
       // a token the tool will never receive must not stay behind
       if (madeId) await revokeAccessToken(madeId).catch(() => undefined);
       if (e instanceof WrongPassphrase) setError(t("auth.unlock.wrong"));
+      else if (e instanceof PasskeyError) setError(t(e.code === "cancelled" ? "settings.passkey.cancelled" : "settings.passkey.unsupported"));
       else if (e instanceof ApiError && e.status === 404) { setPhase("enter"); setError(t("device.unknown")); }
       else setError(t("errors.unknown"));
     } finally {
@@ -125,7 +132,7 @@ export function DeviceScreen() {
         {phase === "enter" || (phase === "loading" && typed) ? (
           <form className="card" onSubmit={submitCode} noValidate>
             <p className="hint mt0"><CodeText text={t("device.enterBody")} /></p>
-            <TextField label={t("device.code")} value={typed} autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="BCDF-GHJK-LMNP"
+            <TextField label={t("device.code")} value={typed} autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="BCDF-GHJK-LMNP-QRST-VWXZ"
               data-testid="device-code" onChange={(e) => { setTyped(e.target.value); setError(null); }} error={error ? <CodeText text={error} /> : null} />
             <div className="actions"><Button type="submit" busy={phase === "loading"} data-testid="device-continue">{t("device.continue")}</Button></div>
           </form>
@@ -133,7 +140,7 @@ export function DeviceScreen() {
 
         {phase === "loading" && !typed ? <p className="hint" role="status">{t("device.checking")}</p> : null}
 
-        {phase === "mismatch" ? <p className="warn-box danger" role="alert" data-testid="device-mismatch"><CodeText text={t("device.mismatch")} /></p> : null}
+        {phase === "mismatch" ? <p className="warn-box danger" role="alert" data-testid="device-mismatch"><CodeText text={t("device.mismatch", { origin: location.origin })} /></p> : null}
 
         {phase === "ask" && req ? (
           <section className="card" data-testid="device-ask">
@@ -145,13 +152,15 @@ export function DeviceScreen() {
             {req.role === "write" ? (
               <SwitchRow label={t("tokens.mayWriteSwitch")} hint={t("tokens.mayWriteHint")} checked={write} onChange={setWrite} testId="device-write" />
             ) : <p className="hint">{t("device.readOnly")}</p>}
+            <TokenScope value={scope} onChange={(next) => { setScope(next); setError(null); }} testId="device-scope" />
             <div className="field mt12">
               <label htmlFor="device-expiry">{t("tokens.expiry")}</label>
               <select id="device-expiry" value={days} onChange={(e) => setDays(Number(e.target.value))} data-testid="device-expiry">
                 {DAYS.map((d) => <option key={d} value={d}>{d ? t("tokens.days", { count: d }) : t("tokens.never")}</option>)}
               </select>
             </div>
-            {write && me?.vault ? (
+            <p className="hint">{t("tokens.confirm")}</p>
+            {me?.vault ? (
               <TextField label={t("auth.unlock.passphrase")} type="password" autoComplete="current-password" value={pass} data-testid="device-passphrase"
                 hint={me.passkeys.length ? t("tokens.passphraseOrPasskey") : undefined} onChange={(e) => setPass(e.target.value)} />
             ) : null}

@@ -103,12 +103,12 @@ export class Client {
    * Makes an access token (PETTY-164) and returns its row id, the bearer a tool would send, and the
    * whole token string. `drawers` are copied into the bundle, as the web app does at creation.
    */
-  async makeAccessToken(role: "read" | "write" = "read", drawers: { drawer_id: string; key_version: number; key: string }[] = []) {
+  async makeAccessToken(role: "read" | "write" = "read", drawers: { drawer_id: string; key_version: number; key: string }[] = [], scope: string[] | null = null) {
     const tokenId = toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/[+/=]/g, "_");
     const secret = patSecret();
     const signing = role === "write" ? await this.tokenSigning() : null;
     const bundle = await sealPatBundle(secret, tokenId, { v: 1, user_id: this.id, drawers, ...(signing ? signing.bundle : {}) });
-    const res = await this.call("POST", "/me/tokens", { token_id: tokenId, name: "Assistant", role, scope: null, expires_at: null, bundle, proof: await this.proof(), ...(signing ? { signing: signing.body } : {}) });
+    const res = await this.call("POST", "/me/tokens", { token_id: tokenId, name: "Assistant", role, scope, expires_at: null, bundle, proof: await this.proof(), ...(signing ? { signing: signing.body } : {}) });
     return { res, rowId: res.json().id as string, bearer: `petty_pat_${tokenId}`, token: patToken(tokenId, secret) };
   }
 
@@ -127,8 +127,9 @@ export class Client {
     return { id, key, document, res };
   }
 
-  async sealDoc(drawerId: string, key: CryptoKey, doc: DrawerDocument, keyVersion = 1): Promise<Sealed> {
-    return sealDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: this.id, key_version: keyVersion, schema_version: 1 }, doc);
+  /** `schemaVersion` 1 is a document from before the counter (PETTY-422); 2 is one with `rev` inside. */
+  async sealDoc(drawerId: string, key: CryptoKey, doc: DrawerDocument, keyVersion = 1, schemaVersion = 1): Promise<Sealed> {
+    return sealDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: this.id, key_version: keyVersion, schema_version: schemaVersion }, doc);
   }
 
   /** Signs and seals an entry, then posts it. */
@@ -156,6 +157,6 @@ export class Client {
   }
 }
 
-export function sealedBody(s: Sealed, keyVersion: number) {
-  return { key_version: keyVersion, schema_version: 1, nonce: toB64(s.nonce), ciphertext: toB64(s.ciphertext) };
+export function sealedBody(s: Sealed, keyVersion: number, schemaVersion = 1) {
+  return { key_version: keyVersion, schema_version: schemaVersion, nonce: toB64(s.nonce), ciphertext: toB64(s.ciphertext) };
 }

@@ -66,6 +66,8 @@ p > .btn-ghost:first-child { margin-left: -8px; } /* PETTY-280 (S19/F22): its te
    instead of squeezing (fit-content: a label wider than the whole row still wraps inside its button) */
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .actions .btn { flex: 1 1 0; min-width: fit-content; }
+/* PETTY-452: an error shown with the buttons takes a row of its own above them */
+.actions > .error { flex: 1 0 100%; margin: 0; }
 .overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
 .sheet { background: var(--bg); width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); box-shadow: 0 -10px 30px rgba(0,0,0,0.22); padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px)); max-height: 92vh; max-height: 92dvh; overflow-y: auto; animation: sheet-up 0.18s ease-out; }
 .sheet h2 { margin: 0 0 16px; font-size: 19px; }

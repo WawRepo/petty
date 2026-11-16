@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { clientIp } from "./client-ip.js";
+import { clientNet } from "./client-ip.js";
 import { ApiError } from "./errors.js";
 import { checkRate } from "./password.js";
 import { isHealthProbe } from "./tracing.js";
@@ -17,7 +17,7 @@ export function apiRateLimit(app: FastifyInstance, o: { perMinute: number; apiPr
     const path = req.url.split("?")[0] ?? "";
     if (o.apiPrefix && path !== o.apiPrefix && !path.startsWith(`${o.apiPrefix}/`)) return;
     if (isHealthProbe(path)) return;
-    if (!(await checkRate(`api:${clientIp(req, o.clientIpHeader)}`, o.perMinute, 60_000))) {
+    if (!(await checkRate(`api:${clientNet(req, o.clientIpHeader)}`, o.perMinute, 60_000))) {
       reply.header("retry-after", "60");
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }

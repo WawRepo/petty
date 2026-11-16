@@ -7,6 +7,7 @@ import { ClerkGate } from "./ClerkGate.js";
 import { isClerk } from "./lib/authConfig.js";
 import { HomeScreen } from "./screens/HomeScreen.js";
 import { PageSkeleton } from "./components/Skeleton.js";
+import { DrawerFence } from "./components/DamagedDrawer.js";
 import { LoginScreen } from "./screens/LoginScreen.js";
 import { UnlockScreen } from "./screens/UnlockScreen.js";
 import { afterUnlock, rememberAfterUnlock } from "./lib/afterUnlock.js";
@@ -168,8 +169,9 @@ export function App() {
             <Route path="/device" element={<Guard need="unlocked"><DeviceScreen /></Guard>} />
             <Route path="/unlock" element={<Guard need="locked"><UnlockScreen /></Guard>} />
             <Route path="/" element={<RootRoute />} />
-            <Route path="/drawers/:id" element={<Guard need="unlocked"><DrawerScreen /></Guard>} />
-            <Route path="/drawers/:id/lines/:lineId" element={<Guard need="unlocked"><LineScreen /></Guard>} />
+            {/* PETTY-443: a drawer's own screens sit in a fence each, so one that fails to draw is shown as damaged and the app stays */}
+            <Route path="/drawers/:id" element={<Guard need="unlocked"><DrawerFence><DrawerScreen /></DrawerFence></Guard>} />
+            <Route path="/drawers/:id/lines/:lineId" element={<Guard need="unlocked"><DrawerFence><LineScreen /></DrawerFence></Guard>} />
             <Route path="/drawers/:id/members" element={<Guard need="unlocked"><MembersScreen /></Guard>} />
             <Route path="/settings" element={<Guard need="unlocked"><SettingsScreen /></Guard>} />
             <Route path="/places" element={<Guard need="unlocked"><PlacesScreen /></Guard>} />

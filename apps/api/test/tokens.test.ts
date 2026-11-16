@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fromB64, openDocument, openPatBundle, patSecret, patToken, sealPatBundle, splitPatToken, toB64, wrapDrawerKey } from "@petty/crypto";
-import { applyOp, newDocument } from "@petty/ledger";
+import { applyOp, newDocument, nextRev, readDocument } from "@petty/ledger";
+import { DOCUMENT_MIN_CIPHERTEXT } from "@petty/protocol";
 import { buildApp } from "../src/app.js";
 import { apiPool, maintPool } from "../src/db.js";
-import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
+import { Client, makeJoinLink, sealedBody, userMaterial } from "../src/devtools/fixtures.js";
 
 /**
  * Access tokens (PETTY-164): the owner's own tools. The server holds the id half and a bundle
@@ -117,7 +118,7 @@ describe("access tokens (PETTY-164)", () => {
     const before = await open();
     expect((before.doc as { name: string }).name).toBe("Undo me");
 
-    const junk = { base_version: before.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(40))) };
+    const junk = { base_version: before.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))) };
     expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: true })).statusCode).toBe(403);
     expect((await write("PUT", `/drawers/${d.id}/document`, { ...junk, verification: false })).statusCode).toBe(200);
     const broken = await open();
@@ -127,16 +128,20 @@ describe("access tokens (PETTY-164)", () => {
     expect((await write("GET", `/drawers/${d.id}/document/history`)).statusCode).toBe(403);
     const hist = await A.call("GET", `/drawers/${d.id}/document/history`);
     expect(hist.statusCode).toBe(200);
-    const [last] = hist.json().history as { id: string; version: number; by_token: boolean }[];
+    const [last] = hist.json().history as { id: string; version: number; by_token: boolean; document: { author_id: string; key_version: number; schema_version: number; nonce: string; ciphertext: string } }[];
     expect(last!.by_token).toBe(true);
     expect(last!.version).toBe(before.version);
     expect([403, 404]).toContain((await B.call("GET", `/drawers/${d.id}/document/history`)).statusCode);
     expect((await write("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(403);
 
-    const restored = await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version });
+    // PETTY-422: the owner's app opens the kept copy and saves it as a normal write, with a counter inside; the server copies nothing back
+    expect((await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(410);
+    const h = last!.document;
+    const kept = readDocument(await openDocument(d.key, { record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: h.author_id, key_version: h.key_version, schema_version: h.schema_version }, { nonce: fromB64(h.nonce), ciphertext: fromB64(h.ciphertext) }), { schema_version: h.schema_version, version: last!.version });
+    const restored = await A.call("PUT", `/drawers/${d.id}/document`, { ...sealedBody(await A.sealDoc(d.id, d.key, nextRev(kept), 1, 2), 1, 2), base_version: broken.version, verification: false });
     expect(restored.statusCode).toBe(200);
     const after = await open();
-    expect(after.doc).toEqual(before.doc);
+    expect(after.doc).toEqual({ ...(before.doc as object), rev: 1 });
     // the junk is itself kept, so a wrong restore can be undone too
     expect((await A.call("GET", `/drawers/${d.id}/document/history`)).json().history).toHaveLength(2);
   });
@@ -149,6 +154,49 @@ describe("access tokens (PETTY-164)", () => {
     const t = made;
     expect((await tool(t.token)("GET", `/drawers/${inside.id}`)).statusCode).toBe(200);
     expect((await tool(t.token)("GET", `/drawers/${outside.id}`)).statusCode).toBe(403);
+  });
+
+  // PETTY-452: the web app now makes tokens for chosen drawers; this is every drawer route a token may use
+  it("a writing token for one drawer can neither read nor write another: document, entries, photo, wraps", async () => {
+    const inside = await drawer(A, "In scope");
+    const outside = await drawer(A, "Out of scope");
+    const made = await makeToken(A, { role: "write", scope: [inside.id] });
+    const t = tool(made.token);
+    const got = (await A.call("GET", `/drawers/${outside.id}`)).json();
+    const document = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: got.document.nonce, ciphertext: got.document.ciphertext, verification: false };
+    const entry = { id: crypto.randomUUID(), line_id: outside.line, key_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", sig: "AAAA", hash: "AAAA", prev_hash: null };
+    const refused: [("GET" | "POST" | "PUT"), string, unknown?][] = [
+      ["GET", `/drawers/${outside.id}`],
+      ["GET", `/drawers/${outside.id}/lines/${outside.line}/entries`],
+      ["GET", `/drawers/${outside.id}/photo`],
+      ["PUT", `/drawers/${outside.id}/document`, document],
+      ["POST", `/drawers/${outside.id}/entries`, entry],
+    ];
+    for (const [method, url, body] of refused) {
+      const res = await t(method, url, body);
+      expect(res.statusCode, `${method} ${url}`).toBe(403);
+      expect(res.json().code, `${method} ${url}`).toBe("TokenOutOfScope");
+    }
+    // nothing of the other drawer changed, and its key never reaches the token
+    expect((await A.call("GET", `/drawers/${outside.id}`)).json().drawer.version).toBe(got.drawer.version);
+    expect((await A.call("GET", `/drawers/${outside.id}/lines/${outside.line}/entries`)).json().entries).toHaveLength(0);
+    expect((await t("GET", "/me/token/keys")).json().keys).toEqual([]);
+    expect((await t("GET", "/me/token/bootstrap")).json().drawers.map((d: { id: string }) => d.id)).toEqual([inside.id]);
+    // the owner's app cannot hand it the other drawer's key later either: a wrap outside the scope is not kept
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits", "deriveKey"]);
+    const pub = toB64(new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey)));
+    const wraps = (await A.call("GET", "/bootstrap")).json().wraps;
+    const wrapFor = async (drawerId: string) =>
+      wrapDrawerKey(await A.unwrap(wraps.find((w: { drawer_id: string }) => w.drawer_id === drawerId), A.user.pub.ecdh, true), { ecdhPrivate: A.user.keys.ecdh.privateKey, ecdhPublicB64: A.user.pub.ecdh }, pub, drawerId, 1);
+    const later = await A.call("POST", `/me/tokens/${made.res.json().id}/keys`, { keys: [{ drawer_id: outside.id, key_version: 1, wrap: await wrapFor(outside.id) }] });
+    expect(later.statusCode).toBe(400);
+    expect(later.json().code).toBe("OutOfScope");
+    expect((await A.call("POST", `/me/tokens/${made.res.json().id}/keys`, { keys: [{ drawer_id: inside.id, key_version: 1, wrap: await wrapFor(inside.id) }] })).statusCode).toBe(204);
+    expect((await t("GET", "/me/token/keys")).json().keys.map((k: { drawer_id: string }) => k.drawer_id)).toEqual([inside.id]);
+    // its own drawer is open to it: the same calls pass the scope check there
+    expect((await t("GET", `/drawers/${inside.id}`)).statusCode).toBe(200);
+    expect((await t("GET", `/drawers/${inside.id}/lines/${inside.line}/entries`)).statusCode).toBe(200);
+    expect((await t("POST", `/drawers/${inside.id}/entries`, { ...entry, line_id: inside.line })).statusCode).not.toBe(403);
   });
 
   it("a token loads only its own start-up data, never the vault (PETTY-182)", async () => {

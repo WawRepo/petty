@@ -40,7 +40,7 @@ export async function sealWithNonce(key: CryptoKey, identity: RecordIdentity, pl
 export async function open(key: CryptoKey, identity: RecordIdentity, sealed: Sealed): Promise<Bytes> {
   assertIdentity(identity);
   const ctx = identityContext(identity);
-  if (!SUPPORTED_SCHEMA_VERSIONS.includes(identity.schema_version)) throw new UnknownSchemaVersion(ctx);
+  if (!SUPPORTED_SCHEMA_VERSIONS[identity.record_type].includes(identity.schema_version)) throw new UnknownSchemaVersion(ctx);
   if (sealed.nonce.length !== NONCE_BYTES) throw new AuthTagMismatch(ctx);
   let padded: ArrayBuffer;
   try {

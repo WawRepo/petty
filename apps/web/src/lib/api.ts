@@ -28,7 +28,12 @@ let onSessionGone: (() => void) | null = null;
 /** session.ts registers this: any other 401 means the server no longer knows this session. */
 export function setSessionGoneHandler(h: () => void): void { onSessionGone = h; }
 
+let beforeRequest: ((path: string) => Promise<void>) | null = null;
+/** session.ts registers this (PETTY-450): it runs before every request and may send one of its own first. */
+export function setBeforeRequest(h: (path: string) => Promise<void>): void { beforeRequest = h; }
+
 export async function api<T = unknown>(method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
+  if (beforeRequest) await beforeRequest(path);
   let res: Response;
   try {
     const token = tokenProvider ? await tokenProvider().catch(() => null) : null;

@@ -33,6 +33,14 @@ describe("fold", () => {
     expect(r2.balance).toBe(8);
   });
 
+  it("PETTY-448: the balance starts at a sealed Adjust, never at a row the server only flags as a count", () => {
+    const r = fold([fake(1, "adjust", 10000), { ...fake(2, "add", 100), is_checkpoint: true }, fake(3, "add", 5)]);
+    expect(r.balance).toBe(10105);
+    expect(r.checkpoint?.seq).toBe(1);
+    // and an Adjust the server does not flag still starts it: the sealed operation is what counts
+    expect(fold([fake(1, "add", 7), { ...fake(2, "adjust", 50), is_checkpoint: false }, fake(3, "add", 1)]).balance).toBe(51);
+  });
+
   it("SPEC-ISSUES A4: a Reverse of an entry older than the last Adjust is not applied (folds to 50, not 550)", () => {
     const log = [
       fake(1, "add", 10000),                              // 100.00
@@ -78,8 +86,10 @@ describe("fold", () => {
     expect(reverseOf(log[6]!, r)).toEqual({ ok: false, code: "adjust_not_reversible" });
   });
 
-  it("rejects duplicate seqs and mixed lines", () => {
+  it("rejects duplicate seqs, the same entry twice, and mixed lines", () => {
     expect(() => fold([fake(1, "add", 1), fake(1, "add", 1, { id: "x" })])).toThrow(LedgerError);
+    // PETTY-448: one entry served under two numbers is not counted twice
+    expect(() => fold([fake(1, "add", 1, { id: "x" }), fake(2, "add", 1, { id: "x" })])).toThrow(expect.objectContaining({ code: "duplicate_entry" }));
     expect(() => fold([fake(1, "add", 1), fake(2, "add", 1, { line_id: "other" })])).toThrow(LedgerError);
   });
 });

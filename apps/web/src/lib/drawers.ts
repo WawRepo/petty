@@ -9,23 +9,23 @@ import { useSyncExternalStore } from "react";
 import { resetHomePlace } from "./homePlace.js";
 import {
   delegationCovers, fromB64, importEcdsaPublic, openDocument, verifyDelegation, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
-  createDrawerKey, hashEntry, PettyCryptoError, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
+  createDrawerKey, hashEntry, PettyCryptoError, DOCUMENT_SCHEMA_VERSION, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
-import { applyOps, assertDocumentShape, fold, newDocument, reverseOf, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
+import { applyOps, fold, newDocument, nextRev, readDocument, revRolledBack, reverseOf, sumsAreExact, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type LineBalance, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
 import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
-import { acceptedDocVersion, acceptedKeyVersion, getPin, loadPins, pinMembers, pinStatus, pinsBlocked, recordDrawerVersions, usePins } from "./pins.js";
+import { acceptedDocRev, acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, confirmedFor, drawersNeedUserDoc, getPin, leftDrawerAt, loadPins, noteMembers, pinMembers, pinStatus, pinnedSigningKeys, pinsBlocked, pinsReady, recordDrawerVersions, recordLeft, rotationOwed, startUserDoc, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
-import { custodyProof } from "./custody.js";
+import { custodyProof, withCustodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
-import { canonicalJson, utf8, seal, open as openSealed, fromUtf8 } from "@petty/crypto";
+import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, signingKeyId, toHex, zero } from "@petty/crypto";
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_key_changed" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_left" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -37,6 +37,8 @@ export interface DrawerView {
   readonly members: readonly Member[];
   readonly key: CryptoKey | null;
   readonly doc: DrawerDocument | null;
+  /** the drawer's name when its document opened but its content cannot be shown (`error` set, `doc` null) */
+  readonly name?: string;
   /** line id → entries since the line's latest Adjust, seq order */
   readonly entries: ReadonlyMap<string, readonly LedgerEntry[]>;
   /** line id → pages before the window (display only, never folded) */
@@ -79,7 +81,14 @@ function patch(id: string, p: Partial<DrawerView>): void {
   const cur = state.drawers.get(id);
   if (!cur) return;
   const drawers = new Map(state.drawers);
-  drawers.set(id, { ...cur, ...p });
+  let next: DrawerView = { ...cur, ...p };
+  // PETTY-443: new content is checked here, before any screen draws it
+  if ((p.doc || p.entries) && next.doc) {
+    const damage = contentError(next.doc, next.entries);
+    if (damage) next = { ...next, doc: null, name: next.doc.name, error: damage };
+    else if (next.error === "bad_entries" || next.error === "sum_too_large") next = { ...next, error: null };
+  }
+  drawers.set(id, next);
   set({ ...state, drawers });
 }
 export function useDrawers(): DrawersState {
@@ -115,8 +124,9 @@ function me() {
 }
 
 const sealedOf = (r: { nonce: string; ciphertext: string }): Sealed => ({ nonce: fromB64(r.nonce), ciphertext: fromB64(r.ciphertext) });
-const docIdentity = (d: DrawerSummary, author: string, keyVersion = d.key_version): RecordIdentity =>
-  ({ record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: author, key_version: keyVersion, schema_version: 1 });
+/** PETTY-422: a document is written in the format with a counter inside, and opened in the format its row names. */
+const docIdentity = (d: DrawerSummary, author: string, keyVersion = d.key_version, schemaVersion: number = DOCUMENT_SCHEMA_VERSION): RecordIdentity =>
+  ({ record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: author, key_version: keyVersion, schema_version: schemaVersion });
 const photoIdentity = (d: DrawerSummary, author: string, keyVersion = d.key_version): RecordIdentity =>
   ({ record_type: "photo", record_id: d.id, drawer_id: d.id, line_id: null, author_id: author, key_version: keyVersion, schema_version: 1 });
 const entryIdentity = (r: EntryRow): RecordIdentity =>
@@ -133,18 +143,25 @@ const entryIdentity = (r: EntryRow): RecordIdentity =>
  * so a member it added could be the server itself, and this device would then write, and re-seal the
  * whole drawer, under a key the server knows. Nothing is pinned here: pins come from the member list
  * and from the invite and accept steps.
+ *
+ * PETTY-438: the same holds at every key version, the first one included. A key that another person wrapped is
+ * taken only when I confirmed their safety number, or when it is the key I already accepted for this drawer: the
+ * version my user document lists, with the fingerprint it keeps (`openWrap` compares it). While that document is
+ * missing, rolled back or not loaded, only a key I wrapped myself is taken.
+ *
+ * PETTY-449: a confirmed pin outlives the membership. So a key from someone I know left this drawer, or was removed from
+ * it, is taken only up to the newest version they held then (`confirmedFor`). A newer one stays closed until I confirm
+ * them again as a member. Keys I already accepted still open.
  */
 export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Member[]): Promise<{ pub: string } | { error: DrawerError }> {
   const a = me();
   if (wrap.sender_id === a.me.id) return { pub: a.keys.pub.ecdh };
+  if (!pinsReady()) return { error: "pins_blocked" };
   if (!wrap.sender_id) return { error: "sender_unknown" };
   const pin = getPin(wrap.sender_id);
-  const accepted = acceptedKeyVersion(wrap.drawer_id);
-  if (accepted !== null && wrap.key_version > accepted) {
-    if (!pin) return { error: "sender_unknown" };
-    if (!pin.confirmed_at) return { error: "sender_unconfirmed" };
-    return { pub: pin.ecdh };
-  }
+  if (pin && confirmedFor(wrap.drawer_id, wrap.sender_id, wrap.key_version)) return { pub: pin.ecdh };
+  const accepted = acceptedKeyFingerprint(wrap.drawer_id, wrap.key_version) !== null || acceptedKeyVersion(wrap.drawer_id) === wrap.key_version;
+  if (!accepted) return { error: !pin ? "sender_unknown" : pin.confirmed_at && leftDrawerAt(wrap.drawer_id, wrap.sender_id) !== null ? "sender_left" : "sender_unconfirmed" };
   if (pin) return { pub: pin.ecdh };
   const m = members.find((x) => x.user_id === wrap.sender_id);
   if (m?.keys) return { pub: m.keys.ecdh_pub };
@@ -157,16 +174,39 @@ export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Memb
   return { error: "sender_unknown" };
 }
 
-async function unwrapVersion(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], members: readonly Member[], version: number): Promise<{ key: CryptoKey } | { error: DrawerError }> {
-  const wrap = wraps.find((w) => w.drawer_id === d.id && w.key_version === version);
-  if (!wrap) return { error: "no_key" };
+/**
+ * PETTY-438: a fingerprint of a drawer key, for the sealed user document: HKDF over the key, bound to the drawer and
+ * the key version. The key bytes are in memory for this call only; nothing of them is stored.
+ */
+async function keyFingerprint(extractable: CryptoKey, drawerId: string, version: number): Promise<string> {
+  const raw = new Uint8Array(await crypto.subtle.exportKey("raw", extractable));
+  try { return toHex(await hkdfDerive(raw, utf8(drawerId), utf8(`petty/drawer-key-fingerprint/v1/${version}`), 32)); } finally { zero(raw); }
+}
+
+/**
+ * Opens one of my wraps as the key of this drawer at this version, under the rules of `expectedSender`. PETTY-438:
+ * and refuses a key other than the one my user document remembers for that version. `fp` is the key's fingerprint.
+ * Every place that takes a drawer key goes through here.
+ */
+export async function openWrap(drawerId: string, version: number, wrap: DrawerKeyWrap, members: readonly Member[], opts: { extractable?: boolean } = {}): Promise<{ key: CryptoKey; fp: string } | { error: DrawerError }> {
   const sender = await expectedSender(wrap, members);
   if ("error" in sender) return sender;
+  const expected = { drawer_id: drawerId, key_version: version, senderEcdhPublicB64: sender.pub };
   try {
-    return { key: await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, { drawer_id: d.id, key_version: version, senderEcdhPublicB64: sender.pub }) };
+    const extractable = await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, expected, { extractable: true });
+    const fp = await keyFingerprint(extractable, drawerId, version);
+    const known = acceptedKeyFingerprint(drawerId, version);
+    if (known !== null && known !== fp) return { error: "key_replaced" };
+    return { key: opts.extractable ? extractable : await unwrapDrawerKey(wrap, me().keys.ecdhPrivate, expected), fp };
   } catch (e) {
     return { error: e instanceof PettyCryptoError && e.code === "SenderKeyMismatch" ? "sender_key_changed" : "unwrap_failed" };
   }
+}
+
+async function unwrapVersion(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], members: readonly Member[], version: number): Promise<{ key: CryptoKey; fp: string } | { error: DrawerError }> {
+  const wrap = wraps.find((w) => w.drawer_id === d.id && w.key_version === version);
+  if (!wrap) return { error: "no_key" };
+  return openWrap(d.id, version, wrap, members);
 }
 
 /** Keys by version for one drawer: the current one plus, during a rotation, older ones on demand. */
@@ -184,19 +224,20 @@ async function keyResolver(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], me
 
 function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
+  // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
+  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
   if (e instanceof LedgerError) return "bad_document";
   return "decrypt_failed";
 }
 
-async function decryptDocument(key: CryptoKey, d: DrawerSummary, row: SealedRow): Promise<DrawerDocument> {
-  const doc = await openDocument(key, docIdentity(d, row.author_id, row.key_version), sealedOf(row));
-  assertDocumentShape(doc);
-  return doc;
+/** `version` is the drawer's version number that this document had: the drawer's own for the current one. */
+async function decryptDocument(key: CryptoKey, d: DrawerSummary, row: SealedRow, version = d.version): Promise<DrawerDocument> {
+  return readDocument(await openDocument(key, docIdentity(d, row.author_id, row.key_version, row.schema_version), sealedOf(row)), { schema_version: row.schema_version, version });
 }
 
 /** Display names of authors who are no longer members (left, removed, deleted), learned from /users/:id/keys. */
 const nameCache = new Map<string, string>();
-/** Signing keys by sig_key_id. Current keys come from the member list; retired ones from /users/:id/keys. */
+/** Imported signing keys, by author, key id and the key itself (PETTY-413): a key found for one author never serves another's entry. */
 const keyCache = new Map<string, CryptoKey>();
 /** One fetch per author per minute, so a log full of token-signed entries does not fetch once per entry. */
 const FETCH_TTL_MS = 60_000;
@@ -210,15 +251,29 @@ function fetchOnce<T>(url: string): Promise<T> {
   return p;
 }
 
-/** The author's ACCOUNT signing key with this id, as base64 SPKI: from the member list, else from every key they ever published. */
-async function accountSpki(members: readonly Member[], authorId: string, sigKeyId: string): Promise<string | null> {
-  const m = members.find((x) => x.user_id === authorId && x.keys?.sig_key_id === sigKeyId)?.keys?.ecdsa_pub;
-  if (m) return m;
-  try {
-    const r = await fetchOnce<{ display_name: string; keys: Array<{ sig_key_id: string; ecdsa_pub: string } | null> }>(`/users/${authorId}/keys`);
-    nameCache.set(authorId, r.display_name);
-    return r.keys.find((k) => k?.sig_key_id === sigKeyId)?.ecdsa_pub ?? null;
-  } catch { return null; }
+/**
+ * The author's ACCOUNT signing key with this id, as base64 SPKI. PETTY-413: it counts as the author's (`pinned`) only when
+ * this person holds it for them: my own key, from my vault, or a key in my pin of the author, the current one or an
+ * earlier one I confirmed. The server lists keys too, in the member list and in /users/:id/keys, and could list one of
+ * its own: for an author I pinned, no key from there is taken. For an author I never pinned (someone who left before I
+ * came), the listed key checks the signature and the entry is shown as not confirmed. The id asked for must be the id
+ * of the very key that is returned, whatever id the server put next to it.
+ */
+async function accountSpki(members: readonly Member[], authorId: string, sigKeyId: string): Promise<{ spki: string; pinned: boolean } | null> {
+  const a = getAuth();
+  const member = members.find((x) => x.user_id === authorId);
+  let listed: Array<string | undefined> = [member?.keys?.ecdsa_pub];
+  if (!member) {
+    // not a member any more (left, removed, or deleted account): the server keeps their name and every key they published
+    try {
+      const r = await fetchOnce<{ display_name: string; keys: Array<{ ecdsa_pub: string } | null> }>(`/users/${authorId}/keys`);
+      nameCache.set(authorId, r.display_name);
+      listed = r.keys.map((k) => k?.ecdsa_pub);
+    } catch { /* offline or unknown user */ }
+  }
+  const held = a.status === "unlocked" && authorId === a.me.id ? [a.keys.pub.ecdsa] : pinnedSigningKeys(authorId);
+  for (const spki of held ?? listed) if (spki && (await signingKeyId(spki)) === sigKeyId) return { spki, pinned: held !== null };
+  return null;
 }
 
 /**
@@ -226,51 +281,94 @@ async function accountSpki(members: readonly Member[], authorId: string, sigKeyI
  * account key signed a delegation for it, and only for entries the server received before the
  * delegation expired or was revoked. The server hands out the delegations but cannot forge one.
  */
-async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<CryptoKey | null> {
+async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; sig_key_id: string; pinned: boolean } | null> {
   let list: UserDelegations["delegations"];
   try { list = (await fetchOnce<UserDelegations>(`/users/${authorId}/delegations`)).delegations; } catch { return null; }
   const hit = list.find((x) => x.delegation.token_sig_key_id === sigKeyId && x.delegation.user_id === authorId);
   if (!hit) return null;
-  const spki = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
-  if (!spki) return null;
+  // PETTY-413: the account key that vouches for the token's key is found by the same rule as an entry's own key
+  const account = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
+  if (!account) return null;
   try {
-    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: spki });
+    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: account.spki });
     if (!delegationCovers(d, receivedAt, hit.revoked_at)) return null;
-    return await importEcdsaPublic(d.token_ecdsa_pub);
+    return { key: await importEcdsaPublic(d.token_ecdsa_pub), sig_key_id: d.token_sig_key_id, pinned: account.pinned };
   } catch { return null; }
 }
 
-async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<CryptoKey | null> {
-  const cached = keyCache.get(sigKeyId);
-  if (cached) return cached;
-  const spki = await accountSpki(members, authorId, sigKeyId);
-  if (!spki) return delegatedKey(members, authorId, sigKeyId, receivedAt);
-  const k = await importEcdsaPublic(spki);
-  keyCache.set(sigKeyId, k);
-  return k;
+/**
+ * The key an entry must verify against, the id of that key, whether this person holds the account key behind it for the
+ * author (`pinned`, see accountSpki), and whether it is a token's own key (a tool wrote the entry) rather than an account key.
+ */
+async function authorKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; sig_key_id: string; pinned: boolean; byToken: boolean } | null> {
+  const account = await accountSpki(members, authorId, sigKeyId);
+  if (!account) { const d = await delegatedKey(members, authorId, sigKeyId, receivedAt); return d && { ...d, byToken: true }; }
+  const cacheKey = `${authorId} ${sigKeyId} ${account.spki}`;
+  const k = keyCache.get(cacheKey) ?? await importEcdsaPublic(account.spki);
+  keyCache.set(cacheKey, k);
+  return { key: k, sig_key_id: sigKeyId, pinned: account.pinned, byToken: false };
 }
 
 /**
  * Open every row; verify each signature against the author's key. A row that
  * fails to open or verify is reported as a problem and left out of the window
  * (a forged or unreadable entry must not move a balance silently).
+ * PETTY-413: an entry of an author this person pinned counts only under a key pinned for them. An entry of an author
+ * never pinned here stays in the window, since the entries after it link to it, marked `unconfirmed_author`.
+ * `windows`: the rows are each line's window, so one that does not start at a count is read further back (backToCount).
  */
-async function decryptEntries(keyFor: (version: number) => Promise<CryptoKey>, rows: readonly EntryRow[], members: readonly Member[]): Promise<{ byLine: Map<string, LedgerEntry[]>; problems: EntryProblem[] }> {
+async function decryptEntries(keyFor: (version: number) => Promise<CryptoKey>, rows: readonly EntryRow[], members: readonly Member[], windows = true): Promise<{ byLine: Map<string, LedgerEntry[]>; problems: EntryProblem[] }> {
   const byLine = new Map<string, LedgerEntry[]>();
   const problems: EntryProblem[] = [];
   for (const r of rows) {
     let entry: SignedEntryV1;
     try { entry = await openEntryUnverified(await keyFor(r.key_version), entryIdentity(r), sealedOf(r)); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "decrypt_failed" }); continue; }
-    const k = await authorKey(members, entry.author_id, entry.sig_key_id, r.received_at);
+    // PETTY-413: the author is the row's (the ciphertext is bound to it, and to the row's drawer and line); the key id is that of the key used
+    const k = await authorKey(members, r.author_id, entry.sig_key_id, r.received_at);
     if (!k) { problems.push({ line_id: r.line_id, entry_id: r.id, code: "author_key_missing" }); continue; }
-    try { await verifyEntry(entry, { author_id: entry.author_id, sig_key_id: entry.sig_key_id, ecdsaPublic: k }); }
+    try { await verifyEntry(entry, { author_id: r.author_id, sig_key_id: k.sig_key_id, ecdsaPublic: k.key }); }
     catch { problems.push({ line_id: r.line_id, entry_id: r.id, code: "signature_invalid" }); continue; }
     const list = byLine.get(r.line_id) ?? [];
-    list.push({ seq: r.seq, received_at: r.received_at, entry });
+    list.push({ seq: r.seq, received_at: r.received_at, entry, is_checkpoint: r.is_checkpoint, by_token: k.byToken, ...(k.pinned ? {} : { unconfirmed_author: true }) });
     byLine.set(r.line_id, list);
   }
+  if (windows) await backToCount(keyFor, rows, members, byLine, problems);
   return { byLine, problems };
+}
+
+const linePage = (drawerId: string, lineId: string, before: number) =>
+  api<{ entries: EntryRow[]; has_more: boolean }>("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=200&before=${before}`);
+
+/**
+ * PETTY-448: a balance is folded from a count, or from the line's first entry (rule 6). The server picks each window by
+ * its own "count" flag, which the sealed entry may contradict, and the row at a window's start may not open. Such a
+ * window is read further back, to the line's latest real count; verifyChain then reports the cause. Rows that cannot be
+ * fetched (offline) leave the window as it came, which verifyChain reports too.
+ */
+async function backToCount(keyFor: (version: number) => Promise<CryptoKey>, rows: readonly EntryRow[], members: readonly Member[], byLine: Map<string, LedgerEntry[]>, problems: EntryProblem[]): Promise<void> {
+  for (const [lineId, list] of byLine) {
+    const start = list.reduce((a, e) => (e.seq < a.seq ? e : a));
+    // a real start: a count, or an entry that links to nothing and that the server does not call a count either
+    if (start.entry.op === "adjust" || (start.entry.prev_hash === null && !start.is_checkpoint)) continue;
+    const served = rows.filter((r) => r.line_id === lineId);
+    let before = Math.min(...served.map((r) => r.seq));
+    for (let page = 0; before > 1 && page < 20; page++) {
+      let got: { entries: EntryRow[]; has_more: boolean };
+      try { got = await linePage(served[0]!.drawer_id, lineId, before); } catch { break; }
+      const older = got.entries.filter((r) => r.line_id === lineId && r.seq < before).sort((a, b) => a.seq - b.seq);
+      if (!older.length) break;
+      const opened = await decryptEntries(keyFor, older, members, false);
+      const entries = opened.byLine.get(lineId) ?? [];
+      let count = entries.length - 1;
+      while (count >= 0 && entries[count]!.entry.op !== "adjust") count--;
+      const from = count >= 0 ? entries[count]!.seq : 0; // nothing before the count is part of the window
+      list.unshift(...entries.filter((e) => e.seq >= from));
+      problems.push(...opened.problems.filter((p) => older.some((r) => r.id === p.entry_id && r.seq >= from)));
+      if (count >= 0 || !got.has_more) break;
+      before = older[0]!.seq;
+    }
+  }
 }
 
 const headKey = (drawerId: string, lineId: string) => `head.${drawerId}.${lineId}`;
@@ -282,7 +380,7 @@ const headKey = (drawerId: string, lineId: string) => `head.${drawerId}.${lineId
  * not open are already reported as entry problems. A head of a line the document no longer lists is dropped: a member
  * deleted the line (deleteLine drops it on their own device), and a restored document may bring the line back empty.
  */
-async function checkChains(drawerId: string, doc: DrawerDocument, byLine: ReadonlyMap<string, readonly LedgerEntry[]>, served: ReadonlySet<string>): Promise<Map<string, ChainResult>> {
+async function checkChains(drawerId: string, doc: DrawerDocument, byLine: ReadonlyMap<string, readonly LedgerEntry[]>, served: ReadonlySet<string>, open: OpenRows): Promise<Map<string, ChainResult>> {
   const out = new Map<string, ChainResult>();
   const listed = new Set(doc.lines.map((l) => l.id));
   const prefix = headKey(drawerId, "");
@@ -293,13 +391,41 @@ async function checkChains(drawerId: string, doc: DrawerDocument, byLine: Readon
   for (const lineId of new Set([...byLine.keys(), ...listed])) {
     const entries = byLine.get(lineId) ?? [];
     if (!entries.length && served.has(lineId)) continue;
-    const pinned = (await idb.get<PinnedHead>(headKey(drawerId, lineId))) ?? null;
-    if (!entries.length && !pinned) continue;
-    const r = await verifyChain(entries, pinned);
-    out.set(lineId, r);
-    if (r.status === "ok" && r.head) await idb.set(headKey(drawerId, lineId), r.head);
+    if (!entries.length && !(await idb.get<PinnedHead>(headKey(drawerId, lineId)))) continue;
+    out.set(lineId, await checkLine(drawerId, lineId, entries, open));
   }
   return out;
+}
+
+/** Opens rows fetched from before a window. They are only searched for the pinned head: what does not open is reported when the history is shown. */
+type OpenRows = (rows: readonly EntryRow[]) => Promise<LedgerEntry[]>;
+const openWith = (keyFor: (version: number) => Promise<CryptoKey>, members: readonly Member[]): OpenRows =>
+  async (rows) => [...(await decryptEntries(keyFor, rows, members, false)).byLine.values()].flat();
+
+/**
+ * One line's window against the head pinned for it; the head moves on only when the check is clean.
+ * PETTY-444: the head is found by its hash. After a count started a new window it lies before that window, so the rows
+ * before the window are fetched until it is found, at most 20 pages. When they cannot be fetched, the head counts as
+ * missing. Offline nothing can be fetched: the links are still checked, and the head stays as it is for the next load.
+ */
+async function checkLine(drawerId: string, lineId: string, entries: readonly LedgerEntry[], open: OpenRows): Promise<ChainResult> {
+  const pinned = (await idb.get<PinnedHead>(headKey(drawerId, lineId))) ?? null;
+  let r = await verifyChain(entries, pinned);
+  if (r.searchOlder && !isOnline()) return verifyChain(entries);
+  const older: LedgerEntry[] = [];
+  let before = Math.min(...entries.map((e) => e.seq));
+  for (let page = 0; r.searchOlder && before > 1 && page < 20; page++) {
+    let got: { entries: EntryRow[]; has_more: boolean };
+    try { got = await linePage(drawerId, lineId, before); } catch { break; }
+    const rows = got.entries.filter((e) => e.seq < before);
+    if (!rows.length) break;
+    older.push(...await open(rows));
+    before = Math.min(...rows.map((e) => e.seq));
+    r = await verifyChain(entries, pinned, older);
+    if (!got.has_more) break;
+  }
+  if (r.status === "ok" && r.head) await idb.set(headKey(drawerId, lineId), r.head);
+  return r;
 }
 
 /** The user has looked at a broken/truncated line and accepts the log as it is now: pin the current head. */
@@ -310,11 +436,19 @@ export async function acknowledgeChain(drawerId: string, lineId: string): Promis
   else await idb.del(headKey(drawerId, lineId));
   if (view) {
     const chains = new Map(view.chains);
-    const again = await verifyChain(view.entries.get(lineId) ?? [], r?.head ?? null);
-    chains.set(lineId, again);
+    const shown = view.entries.get(lineId) ?? [];
+    const again = await verifyChain(shown, r?.head ?? null);
+    // the accepted head is not on screen only when a count queued on this device stands in for the window: check the links alone
+    chains.set(lineId, again.searchOlder ? await verifyChain(shown) : again);
     patch(drawerId, { chains });
   }
 }
+
+/**
+ * PETTY-449: a drawer as the server lists it, with its key also due for replacement when this person's sealed user
+ * document says that someone left while the drawer had this key. The server's own `rotation_needed` is not waited for.
+ */
+const withOwed = (d: DrawerSummary): DrawerSummary => (!d.rotation_needed && rotationOwed(d.id, d.key_version) ? { ...d, rotation_needed: true } : d);
 
 /** GET /bootstrap, then decrypt everything. A drawer that fails stays listed with an error, never silently dropped. */
 let loading: Promise<void> | null = null;
@@ -360,22 +494,27 @@ async function loadOnce(): Promise<void> {
     boot = cached.boot;
     fromCache = true;
   }
+  if (boot.drawers.length) drawersNeedUserDoc(); // PETTY-438: before anything is pinned on first sight
   const outbox = await outboxList(meId);
   const everyone = new Map<string, Member>();
   for (const list of Object.values(boot.members)) for (const m of list) everyone.set(m.user_id, m);
   for (const inv of boot.invitations) if (inv.inviter.keys) everyone.set(inv.inviter.id, { user_id: inv.inviter.id, display_name: inv.inviter.display_name, role: "owner", keys: inv.inviter.keys });
   try { await pinMembers([...everyone.values()]); } catch { /* keep going with what we have */ }
+  // PETTY-449: who is in each drawer now, against who was there before. Someone no longer listed left: the key they hold is owed a replacement.
+  if (!fromCache) await noteMembers(boot.drawers.map((d) => ({ id: d.id, key_version: d.key_version, members: (boot.members[d.id] ?? []).map((m) => m.user_id), wraps: boot.wraps.filter((w) => w.drawer_id === d.id) }))).catch(() => undefined);
   const drawers = new Map<string, DrawerView>();
   const toRotate: string[] = [];
   const toResume: string[] = [];
   const opened = new Map<string, number>(); // PETTY-398: key versions to remember as accepted
+  const fps = new Map<string, { version: number; fp: string }>(); // PETTY-438: their fingerprints, where none is remembered yet
   const docVersions = new Map<string, number>(); // PETTY-403: document versions to remember as opened
+  const docRevs = new Map<string, number>(); // PETTY-422: the counters found inside them
   for (const d of boot.drawers) {
     const members = boot.members[d.id] ?? [];
     const prev = state.drawers.get(d.id);
     const wraps = boot.wraps.filter((w) => w.drawer_id === d.id);
     const keyChanged = members.filter((m) => pinStatus(m) === "changed").map((m) => m.user_id);
-    const base: DrawerView = { summary: d, members, key: null, doc: null, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: prev?.photo ?? null, docAuthor: boot.documents[d.id]?.author_id ?? d.owner_id, wraps, keyChanged, rotation: prev?.rotation ?? null, pending: new Set(), pendingOps: 0 };
+    const base: DrawerView = { summary: withOwed(d), members, key: null, doc: null, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: prev?.photo ?? null, docAuthor: boot.documents[d.id]?.author_id ?? d.owner_id, wraps, keyChanged, rotation: prev?.rotation ?? null, pending: new Set(), pendingOps: 0 };
     // PETTY-398: a drawer whose key is older than one this person already had is refused: the server went back
     // to a key that a removed member may still hold.
     const accepted = acceptedKeyVersion(d.id);
@@ -387,26 +526,36 @@ async function loadOnce(): Promise<void> {
     const k = await unwrapVersion(d, wraps, members, d.key_version);
     if ("error" in k) { drawers.set(d.id, { ...base, error: k.error }); continue; }
     if (accepted === null || d.key_version > accepted) opened.set(d.id, d.key_version);
+    if (acceptedKeyFingerprint(d.id, d.key_version) === null) fps.set(d.id, { version: d.key_version, fp: k.fp });
     try {
       const row = boot.documents[d.id];
       if (!row) throw new Error("no document");
       const keyFor = await keyResolver(d, wraps, members);
       const doc = await decryptDocument(await keyFor(row.key_version), d, row);
+      // PETTY-422: the version number is the server's own. The counter inside the document is not: one lower than this
+      // person already opened, or none after one was seen, is an older copy under a number that does not say so.
+      const seenRev = acceptedDocRev(d.id);
+      if (revRolledBack(doc, seenRev)) { drawers.set(d.id, { ...base, key: k.key, error: "doc_rolled_back" }); continue; }
       if (seenDoc === null || d.version > seenDoc) docVersions.set(d.id, d.version);
+      if (doc.rev !== undefined && doc.rev > (seenRev ?? 0)) docRevs.set(d.id, doc.rev);
       const rows = boot.entries.filter((e) => e.drawer_id === d.id);
       const { byLine, problems } = await decryptEntries(keyFor, rows, members);
-      const chains = await checkChains(d.id, doc, byLine, new Set(rows.map((r) => r.line_id)));
+      const chains = await checkChains(d.id, doc, byLine, new Set(rows.map((r) => r.line_id)), openWith(keyFor, members));
       const merged = await mergePending(d, k.key, keyFor, doc, byLine, outbox.filter((o) => o.drawer_id === d.id));
       drawers.set(d.id, { ...base, key: k.key, doc: merged.doc, entries: merged.entries, chains, entryProblems: problems, pending: merged.pending, pendingOps: merged.pendingOps });
-      if (d.role !== "read" && !fromCache) {
-        if (d.rotation_needed) toRotate.push(d.id);
+      // PETTY-443: listed as damaged instead. Everything opened, so a key that must turn still turns below.
+      const damage = contentError(merged.doc, merged.entries);
+      if (damage) drawers.set(d.id, { ...base, key: k.key, name: merged.doc.name, error: damage });
+      // PETTY-438: no rotation starts or goes on while the user document is missing, rolled back or not loaded
+      if (d.role !== "read" && !fromCache && pinsReady()) {
+        if (base.summary.rotation_needed) toRotate.push(d.id);
         else if (row.key_version < d.key_version || rows.some((e) => e.key_version < d.key_version)) toResume.push(d.id);
       }
     } catch (e) {
       drawers.set(d.id, { ...base, key: k.key, error: errorCode(e) });
     }
   }
-  if (opened.size || docVersions.size) await recordDrawerVersions(opened, docVersions).catch(() => undefined); // offline: remembered at the next load
+  if (opened.size || docVersions.size || fps.size || docRevs.size) await recordDrawerVersions(opened, docVersions, fps, docRevs).catch(() => undefined); // offline: remembered at the next load
   const oldest = outbox.length ? Math.max(...outbox.map((o) => Date.now() - Date.parse(o.created_at))) : null;
   // PETTY-245: what was created or deleted here while this ran stays as it is now
   const order = boot.drawers.map((d) => d.id);
@@ -419,6 +568,7 @@ async function loadOnce(): Promise<void> {
   // Anything queued while offline goes out now (idempotent by client id); a reload mid-send just resumes here.
   if (!fromCache && outbox.length) { const sync = await import("./sync.js"); void sync.syncOutbox(); }
   // A removed member means the key must turn (SPEC-ISSUES A7); any writer's client does it, and resumes an unfinished one.
+  // PETTY-449: also when only this person's user document says that someone left (`withOwed`), not the server.
   if (toRotate.length || toResume.length) {
     const rot = await import("./rotation.js");
     for (const id of toRotate) rot.rotateDrawer(id).catch(() => undefined);
@@ -438,6 +588,7 @@ async function mergePending(d: DrawerSummary, key: CryptoKey, keyFor: (v: number
         const b = item.body as { id: string; line_id: string; key_version: number; nonce: string; ciphertext: string };
         const entry = await openEntryUnverified(await keyFor(b.key_version), { record_type: "entry", record_id: b.id, drawer_id: d.id, line_id: b.line_id, author_id: a.me.id, key_version: b.key_version, schema_version: 1 }, { nonce: fromB64(b.nonce), ciphertext: fromB64(b.ciphertext) });
         const list = byLine.get(b.line_id) ?? [];
+        if (list.some((e) => e.entry.id === b.id)) continue; // it has landed already: the next sync takes it off the queue
         const seq = (list[list.length - 1]?.seq ?? 0) + 1;
         if (entry.op === "adjust") byLine.set(b.line_id, [{ seq, received_at: item.created_at, entry }]);
         else byLine.set(b.line_id, [...list, { seq, received_at: item.created_at, entry }]);
@@ -476,21 +627,49 @@ export async function inviteMember(id: string, invitee: { id: string; keys: { ec
   if (!pin || pin.ecdh !== invitee.keys.ecdh_pub) throw new Error("KeyNotConfirmed");
   const wrap = view.wraps.find((w) => w.key_version === view.summary.key_version);
   if (!wrap) throw new Error("no wrap");
-  const sender = await expectedSender(wrap, view.members);
-  if ("error" in sender) throw new Error(sender.error);
-  const extractable = await unwrapDrawerKey(wrap, a.keys.ecdhPrivate, { drawer_id: id, key_version: view.summary.key_version, senderEcdhPublicB64: sender.pub }, { extractable: true });
+  const opened = await openWrap(id, view.summary.key_version, wrap, view.members, { extractable: true });
+  if ("error" in opened) throw new Error(opened.error);
   const { wrapDrawerKey } = await import("@petty/crypto");
-  const forInvitee = await wrapDrawerKey(extractable, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
+  const forInvitee = await wrapDrawerKey(opened.key, { ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, pin.ecdh, id, view.summary.key_version);
   const answer = InviteAnswer.parse(await api<unknown>("POST", `/drawers/${id}/invitations`, { invitee_id: invitee.id, role, wrap: forInvitee }));
   return { mailed: answer.mailed !== false };
 }
 export async function acceptInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/accept`); await loadAll(); }
 export async function declineInvitation(invitationId: string): Promise<void> { await api("POST", `/invitations/${invitationId}/decline`); await loadAll(); }
-export async function removeMember(id: string, userId: string): Promise<void> { await api("DELETE", `/drawers/${id}/members/${userId}`); await loadAll(); }
+/**
+ * PETTY-449: once the server took the removal, this person's sealed user document remembers it, and the drawer key is
+ * replaced at once from that memory (`withOwed`), here or in a later session or on another device of this account,
+ * whether or not the server ever says that a rotation is needed. The load notes who is gone from the list. The one
+ * removed held every key up to the one the drawer has right now, which may be newer than the one this device had
+ * accepted, or the server may still list them: that is noted after the load, and the key replaced then.
+ */
+export async function removeMember(id: string, userId: string): Promise<void> {
+  await api("DELETE", `/drawers/${id}/members/${userId}`);
+  await loadAll();
+  const now = state.drawers.get(id);
+  if (now?.key && await recordLeft(id, userId, now.summary.key_version).catch(() => false)) await loadAll();
+}
 export async function leaveDrawer(id: string): Promise<void> { await api("POST", `/drawers/${id}/leave`); await loadAll(); }
 export async function offerTransfer(id: string, userId: string): Promise<void> { await api("POST", `/drawers/${id}/transfer`, { to_user_id: userId }); await loadAll(); }
 export async function acceptTransfer(id: string): Promise<void> { await api("POST", `/drawers/${id}/transfer/accept`); await loadAll(); }
 export async function cancelTransfer(id: string): Promise<void> { await api("DELETE", `/drawers/${id}/transfer`); await loadAll(); }
+
+/**
+ * What makes an opened drawer unshowable (PETTY-443): a log the fold refuses, or sums that leave the exact
+ * integers, in one line or over the lines of one currency. Found when the content arrives, never while a
+ * screen draws: such a drawer is listed as damaged, with the reason, and shows no number at all.
+ */
+function contentError(doc: DrawerDocument, entries: ReadonlyMap<string, readonly LedgerEntry[]>): DrawerError | null {
+  const money: LineBalance[] = [];
+  for (const l of doc.lines) {
+    if (l.kind === "single") continue;
+    let f: FoldResult;
+    try { f = fold(entries.get(l.id) ?? []); } catch { return "bad_entries"; }
+    if (f.overflow) return "sum_too_large";
+    if (l.kind === "money") money.push({ line: l, balance: f.balance });
+  }
+  return sumsAreExact(money) ? null : "sum_too_large";
+}
 
 export function lineFold(view: DrawerView, lineId: string): FoldResult {
   return fold(view.entries.get(lineId) ?? []);
@@ -519,10 +698,11 @@ export async function createDrawer(name: string, tags: readonly string[] = []): 
   const a = me();
   const id = crypto.randomUUID();
   const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
-  const doc = applyOps(newDocument(name), [{ type: "set_tags", tags }], { lineHasEntries: () => false });
+  const doc = nextRev(applyOps(newDocument(name), [{ type: "set_tags", tags }], { lineHasEntries: () => false })); // PETTY-422: the counter starts at 1
   const summary: DrawerSummary = { id, owner_id: a.me.id, role: "owner", version: 1, key_version: 1, last_write_at: new Date().toISOString(), last_verified_at: null, rotation_needed: false, has_photo: false };
   const sealed = await sealDocument(key, docIdentity(summary, a.me.id), doc);
-  const made = await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
+  await startUserDoc(); // PETTY-438: an account with a drawer has a user document
+  const made = await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });
   const drawers = new Map(state.drawers);
   drawers.set(id, { summary: made, members: [{ user_id: a.me.id, display_name: a.me.display_name, role: "owner", keys: a.me.keys }], key, doc, entries: new Map(), history: new Map(), chains: new Map(), entryProblems: [], error: null, photo: null, docAuthor: a.me.id, wraps: [{ ...selfWrap, sender_id: a.me.id }], keyChanged: [], rotation: null, pending: new Set(), pendingOps: 0 });
   created.set(id, ++changeSeq);
@@ -544,7 +724,12 @@ async function refetch(id: string): Promise<DrawerView> {
     throw new Error("doc_rolled_back");
   }
   const doc = await decryptDocument(view.key, r.drawer, r.document);
-  patch(id, { summary: r.drawer, doc, docAuthor: r.document.author_id });
+  // PETTY-422: nor to one whose counter inside is lower than the one on screen or one already opened
+  if (revRolledBack(doc, Math.max(view.doc?.rev ?? 0, acceptedDocRev(id) ?? 0) || null)) {
+    patch(id, { doc: null, error: "doc_rolled_back" });
+    throw new Error("doc_rolled_back");
+  }
+  patch(id, { summary: withOwed(r.drawer), doc, docAuthor: r.document.author_id });
   return state.drawers.get(id)!;
 }
 
@@ -574,18 +759,20 @@ export async function mutateDocument(id: string, ops: readonly DocumentOp[], opt
   if (!isOnline() && !opts.forceOnline) { await queue(); return; }
   for (let attempt = 0; attempt < 4; attempt++) {
     let next: DrawerDocument;
-    try { next = applyOps(view.doc!, ops, ctxFor(view)); } catch (e) { throw new OpsNoLongerApply(e instanceof LedgerError ? e.code : "unknown"); }
+    // PETTY-422: the counter this copy was loaded with, plus one. After a VersionConflict the copy is the fresh one.
+    try { next = nextRev(applyOps(view.doc!, ops, ctxFor(view))); } catch (e) { throw new OpsNoLongerApply(e instanceof LedgerError ? e.code : "unknown"); }
     const sealed = await sealDocument(key, docIdentity(view.summary, a.me.id), next);
     try {
       const r = await api<{ version: number; last_write_at: string; last_verified_at: string | null }>("PUT", `/drawers/${id}/document`, {
-        base_version: view.summary.version, key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: opts.verification ?? false,
+        base_version: view.summary.version, key_version: view.summary.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: opts.verification ?? false,
       });
       patch(id, { doc: next, docAuthor: a.me.id, summary: { ...view.summary, version: r.version, last_write_at: r.last_write_at, last_verified_at: r.last_verified_at } });
       return;
     } catch (e) {
       if (e instanceof NetworkError && !opts.forceOnline) { await queue(); return; }
       if (e instanceof ApiError && e.code === "VersionConflict") { view = await refetch(id); continue; }
-      if (e instanceof ApiError && e.code === "KeyVersionMismatch") { await loadAll(); view = state.drawers.get(id); if (!view?.key) throw e; continue; }
+      // PETTY-422: the reload may refuse the drawer (an older copy, a damaged document): then there is nothing to save on
+      if (e instanceof ApiError && e.code === "KeyVersionMismatch") { await loadAll(); view = state.drawers.get(id); if (!view?.key || !view.doc) throw e; continue; }
       throw e;
     }
   }
@@ -612,12 +799,12 @@ export async function deleteLine(id: string, lineId: string): Promise<void> {
   if (!view?.key || !view.doc) throw new Error("drawer not ready");
   const key = view.key;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const next = applyOps(view.doc!, [{ type: "remove_line", line_id: lineId }], ctxFor(view));
+    const next = nextRev(applyOps(view.doc!, [{ type: "remove_line", line_id: lineId }], ctxFor(view)));
     const sealed = await sealDocument(key, docIdentity(view.summary, a.me.id), next);
     try {
-      const r = await api<{ version: number; last_write_at: string; last_verified_at: string | null }>("POST", `/drawers/${id}/lines/${lineId}/delete`, {
-        document: { base_version: view.summary.version, key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false },
-      });
+      const document = { base_version: view.summary.version, key_version: view.summary.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false };
+      // PETTY-441: the line's entries go for good, so the server wants a custody proof, as for deleting a drawer
+      const r = await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api<{ version: number; last_write_at: string; last_verified_at: string | null }>("POST", `/drawers/${id}/lines/${lineId}/delete`, { document, proof }));
       const entries = new Map(view.entries); entries.delete(lineId);
       const chains = new Map(view.chains); chains.delete(lineId);
       await idb.del(headKey(id, lineId));
@@ -685,9 +872,7 @@ export async function appendEntry(id: string, line: Line, op: EntryOp, amount: n
   const entries = new Map(view.entries);
   entries.set(line.id, nextEntries);
   const chains = new Map(view.chains);
-  const chain = await verifyChain(nextEntries, (await idb.get<PinnedHead>(headKey(id, line.id))) ?? null);
-  chains.set(line.id, chain);
-  if (chain.status === "ok" && chain.head) await idb.set(headKey(id, line.id), chain.head);
+  chains.set(line.id, await checkLine(id, line.id, nextEntries, openWith(await keyResolver(view.summary, view.wraps, view.members), view.members)));
   patch(id, { entries, chains, summary: { ...view.summary, last_write_at: r.entry.received_at } });
   return le;
 }
@@ -715,13 +900,12 @@ export async function reloadLine(id: string, lineId: string): Promise<void> {
   }
   const cpIdx = rows.findIndex((e) => e.is_checkpoint);
   const window = (cpIdx >= 0 ? rows.slice(0, cpIdx + 1) : rows).reverse();
-  const { byLine, problems } = await decryptEntries(await keyResolver(view.summary, view.wraps, view.members), window, view.members);
+  const keyFor = await keyResolver(view.summary, view.wraps, view.members);
+  const { byLine, problems } = await decryptEntries(keyFor, window, view.members);
   const entries = new Map(view.entries);
   entries.set(lineId, byLine.get(lineId) ?? []);
   const chains = new Map(view.chains);
-  chains.set(lineId, await verifyChain(entries.get(lineId) ?? [], (await idb.get<PinnedHead>(headKey(id, lineId))) ?? null));
-  const c = chains.get(lineId)!;
-  if (c.status === "ok" && c.head) await idb.set(headKey(id, lineId), c.head);
+  chains.set(lineId, await checkLine(id, lineId, entries.get(lineId) ?? [], openWith(keyFor, view.members)));
   const history = new Map(view.history); history.delete(lineId);
   patch(id, { entries, chains, history, entryProblems: [...view.entryProblems.filter((p) => p.line_id !== lineId), ...problems] });
 }
@@ -734,7 +918,7 @@ export async function loadOlder(id: string, lineId: string): Promise<void> {
   const oldest = h.older[0]?.seq ?? view.entries.get(lineId)?.[0]?.seq;
   if (!h.hasMore || oldest === undefined) { patch(id, { history: new Map(view.history).set(lineId, { older: h.older, hasMore: false }) }); return; }
   const r = await api<{ entries: EntryRow[]; has_more: boolean }>("GET", `/drawers/${id}/lines/${lineId}/entries?limit=50&before=${oldest}`);
-  const { byLine, problems } = await decryptEntries(await keyResolver(view.summary, view.wraps, view.members), [...r.entries].reverse(), view.members);
+  const { byLine, problems } = await decryptEntries(await keyResolver(view.summary, view.wraps, view.members), [...r.entries].reverse(), view.members, false);
   const history = new Map(view.history);
   history.set(lineId, { older: [...(byLine.get(lineId) ?? []), ...h.older], hasMore: r.has_more });
   patch(id, { history, entryProblems: [...view.entryProblems, ...problems] });
@@ -780,32 +964,58 @@ export interface DocumentVersion {
   readonly lines: number | null;
 }
 
+/**
+ * One sealed document of this drawer, the current one or a kept version, opened with the drawer key of its time
+ * (PETTY-422: an older key too, when this device holds it). `version` is the drawer's version number it had.
+ * Null when it cannot be opened here: damaged, or under a key this device does not take.
+ */
+async function openKept(view: DrawerView, row: SealedRow, version: number, olderKey: (version: number) => Promise<CryptoKey>): Promise<DrawerDocument | null> {
+  try {
+    const key = row.key_version === view.summary.key_version && view.key ? view.key : await olderKey(row.key_version);
+    return await decryptDocument(key, view.summary, row, version);
+  } catch { return null; }
+}
+
 /** Earlier versions, newest first, opened here with the drawer key. Owner only (the server says 403 to others). */
 export async function documentHistory(id: string): Promise<DocumentVersion[]> {
   const view = state.drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
   const r = DocumentHistory.parse(await api<unknown>("GET", `/drawers/${id}/document/history`));
+  const olderKey = await keyResolver(view.summary, view.wraps, view.members);
   const out: DocumentVersion[] = [];
   for (const h of r.history) {
-    let name: string | null = null;
-    let lines: number | null = null;
-    if (h.document.key_version === view.summary.key_version) {
-      try {
-        const doc = await openDocument(view.key, docIdentity(view.summary, h.document.author_id, h.document.key_version), sealedOf(h.document));
-        assertDocumentShape(doc);
-        name = doc.name;
-        lines = doc.lines.length;
-      } catch { /* damaged or not ours: listed, not restorable */ }
-    }
-    out.push({ id: h.id, replacedAt: h.replaced_at, byToken: h.by_token, name, lines });
+    const doc = await openKept(view, h.document, h.version, olderKey); // null: listed, not restorable
+    out.push({ id: h.id, replacedAt: h.replaced_at, byToken: h.by_token, name: doc?.name ?? null, lines: doc?.lines.length ?? null });
   }
   return out;
 }
 
-/** Puts an earlier version back, exactly as it was sealed. The current one becomes a version itself. */
+/**
+ * Puts an earlier version back. The current one becomes a version itself.
+ * PETTY-422: this app opens the kept copy and saves it as a normal write: sealed with the current key, and with a
+ * counter above every one it knows of (the current document, the kept versions, what this person's user document
+ * remembers), so no member's app takes it for an older state of the drawer. The server no longer copies a kept
+ * document back as it was sealed: its old counter would come back with it.
+ */
 export async function restoreDocument(id: string, versionId: string): Promise<void> {
+  const a = me();
   const view = state.drawers.get(id);
-  if (!view) throw new Error("drawer not ready");
-  await api("POST", `/drawers/${id}/document/restore`, { history_id: versionId, base_version: view.summary.version });
+  if (!view?.key) throw new Error("drawer not ready");
+  const cur = await api<{ drawer: DrawerSummary; document: SealedRow }>("GET", `/drawers/${id}`);
+  if (cur.drawer.key_version !== view.summary.key_version) { await loadAll(); throw new ApiError(409, "KeyVersionMismatch"); } // the key was replaced meanwhile: from the fresh state
+  const r = DocumentHistory.parse(await api<unknown>("GET", `/drawers/${id}/document/history`));
+  const olderKey = await keyResolver(view.summary, view.wraps, view.members);
+  // the current document may be the damaged one that is being undone: then it has no counter to give
+  const current = await openKept(view, cur.document, cur.drawer.version, olderKey);
+  let rev = Math.max(current?.rev ?? 0, view.doc?.rev ?? 0, acceptedDocRev(id) ?? 0);
+  let kept: DrawerDocument | null = null;
+  for (const h of r.history) {
+    const doc = await openKept(view, h.document, h.version, olderKey);
+    rev = Math.max(rev, doc?.rev ?? 0);
+    if (h.id === versionId) kept = doc;
+  }
+  if (!kept) throw new Error("version not readable");
+  const sealed = await sealDocument(view.key, docIdentity(cur.drawer, a.me.id), nextRev({ ...kept, rev }));
+  await api("PUT", `/drawers/${id}/document`, { base_version: cur.drawer.version, key_version: cur.drawer.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false });
   await loadAll();
 }

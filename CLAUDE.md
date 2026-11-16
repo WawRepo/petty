@@ -129,9 +129,17 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
   it `vX.Y.Z`, builds and pushes the image, and publishes the GitHub Release with that section as notes.
   Then a last job lists the add-on in the MCP Registry (`mcp-registry.yml`). The release is already
   out at that point: if only that job fails, run `gh workflow run mcp-registry.yml --ref main -f tag=vX.Y.Z`.
+- **Nothing carries the version before the commit and its tag are on main** (PETTY-456). The image is
+  pushed by digest, and the `attest` job signs build attestations for the image and the release's files
+  (PETTY-418; `gh attestation verify`, see `docs/deploy.md` and `docs/cli.md`). Only then does `publish`
+  push the commit and tag, tag the image `vX.Y.Z`, publish the GitHub Release and move `latest`, in
+  that order. A run that fails before the push leaves no version anywhere. If `publish` fails after the
+  push, re-run the failed job before main moves: its push is then a no-op and the rest goes on.
+  `scripts/release-workflow.test.ts` holds this order and the rule below.
 - **No job that runs dependency code holds a write token** (PETTY-406). `pnpm install` and the packs run in
-  a read-only job; only `publish`, which runs no dependency code, can push to the repository. Keep it so
-  when you change the workflow: any step can read its job's token.
+  a read-only job; only `publish`, which runs no dependency code, can push to the repository, and only
+  `attest`, which runs none either, can sign. Keep it so when you change the workflow: any step can
+  read its job's token.
 - **Never bump a version or write a version heading by hand.** Each user-visible change adds its lines
   under `## [Unreleased]` in the same commit as the change. An empty section ships as "Maintenance only".
 - **After a release, pull before you push:** main has the release commit on top. Deploying a release is
@@ -139,11 +147,14 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
 - **When Actions cannot run** (v1.5.1–v1.5.8 were made this way, while Actions were blocked on the then
   private repository), do the workflow's steps by hand, in its order: `node scripts/release.ts X.Y.Z
   <date> notes.md`; commit "Release X.Y.Z" and an annotated tag `vX.Y.Z`; build from `git archive
-  vX.Y.Z` on an amd64 machine (`docker buildx build --platform linux/amd64 --provenance=true --sbom=true
-  --build-arg PETTY_VERSION=vX.Y.Z -t <image>:vX.Y.Z --push`; releases are amd64 only since PETTY-385);
+  vX.Y.Z` on an amd64 machine, pushed by digest with no tag (`docker buildx build --platform linux/amd64
+  --provenance=true --sbom=true --build-arg PETTY_VERSION=vX.Y.Z --metadata-file meta.json --output
+  type=image,name=<image>,push-by-digest=true,name-canonical=true,push=true`; the digest is
+  `containerimage.digest` in `meta.json`; releases are amd64 only since PETTY-385);
   run the upgrade test (`make integration BASE=<previous image>`); push main and the
-  tag together (`git push --atomic`); pack the add-on, the skill and the command line, write `SHA256SUMS`,
+  tag together (`git push --atomic`); only then tag the image (`docker buildx imagetools create --tag
+  <image>:vX.Y.Z <image>@<digest>`); pack the add-on, the skill and the command line, write `SHA256SUMS`,
   and `gh release create` with the section as notes; move `latest`; list the add-on in the MCP Registry
   (`node scripts/mcp-server-json.ts vX.Y.Z petty.mcpb > server.json`, then `mcp-publisher login github`
   and `mcp-publisher publish server.json`). An image built this way has no CI provenance (no source
-  revision).
+  revision), and neither it nor the files have an attestation: `gh attestation verify` finds none.

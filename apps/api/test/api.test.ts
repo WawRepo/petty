@@ -350,9 +350,9 @@ describe("rotation (SPEC-ISSUES A7)", () => {
     const exKey2 = await B.unwrap((await B.wrapFor(await (await import("@petty/crypto")).unwrapDrawerKey((await (await import("@petty/crypto")).createDrawerKey(B.sender, id, 2)).selfWrap, B.user.keys.ecdh.privateKey, { drawer_id: id, key_version: 2, senderEcdhPublicB64: B.user.pub.ecdh }, { extractable: true }), B.user.pub.ecdh, id, 2)), B.user.pub.ecdh, true);
     void key2;
     const wraps = [{ user_id: A.id, wrap: await B.wrapFor(exKey2, A.user.pub.ecdh, id, 2) }, { user_id: B.id, wrap: await B.wrapFor(exKey2, B.user.pub.ecdh, id, 2) }];
-    const incomplete = await B.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps: wraps.slice(0, 1) });
+    const incomplete = await B.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps: wraps.slice(0, 1), proof: await B.proof() });
     expect(incomplete.statusCode).toBe(400);
-    const start = await B.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps });
+    const start = await B.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps, proof: await B.proof() });
     expect(start.statusCode).toBe(201);
     expect(start.json()).toMatchObject({ key_version: 2, pending_entries: 2, document_pending: true, completed: false });
     // old-key writes are refused; new-key writes work at once
@@ -371,11 +371,11 @@ describe("rotation (SPEC-ISSUES A7)", () => {
     };
     const old = rows.entries.filter((r: { key_version: number }) => r.key_version === 1);
     expect(old.length).toBe(2);
-    const b1 = await B.call("PUT", `/drawers/${id}/rotation/batch`, { to_version: 2, entries: [await reSealed(old[0])] });
+    const b1 = await B.call("PUT", `/drawers/${id}/rotation/batch`, { to_version: 2, entries: [await reSealed(old[0])], proof: await B.proof() });
     expect(b1.json()).toMatchObject({ pending_entries: 1, completed: false });
     const docId = { record_type: "document" as const, record_id: id, drawer_id: id, line_id: null, author_id: rows.document.author_id, key_version: 1, schema_version: 1 };
     const doc = await openDocument(key, docId, { nonce: fb(rows.document.nonce), ciphertext: fb(rows.document.ciphertext) });
-    const b2 = await B.call("PUT", `/drawers/${id}/rotation/batch`, { to_version: 2, entries: [await reSealed(old[1])], document: sealedBody(await B.sealDoc(id, exKey2, doc as never, 2), 2) });
+    const b2 = await B.call("PUT", `/drawers/${id}/rotation/batch`, { to_version: 2, entries: [await reSealed(old[1])], document: sealedBody(await B.sealDoc(id, exKey2, doc as never, 2), 2), proof: await B.proof() });
     expect(b2.json()).toMatchObject({ pending_entries: 0, document_pending: false, completed: true });
     expect((await owner.query("select count(*)::int as n from entries where drawer_id = $1 and key_version = 1", [id])).rows[0].n).toBe(0);
     void e1; void e2;
@@ -583,7 +583,7 @@ describe("line deletion", () => {
     await A.postEntry(id, key, line, "add", 1);
     await A.postEntry(id, key, line, "add", 2);
     const without = applyOp(doc, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
-    const res = await B.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await B.sealDoc(id, key, without), 1), base_version: 1 } });
+    const res = await B.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await B.sealDoc(id, key, without), 1), base_version: 1 }, proof: await B.proof() });
     expect(res.statusCode).toBe(200);
     expect(res.json().deleted_entries).toBe(2);
     expect((await owner.query("select count(*)::int as n from entries where drawer_id = $1", [id])).rows[0].n).toBe(0);
@@ -647,7 +647,7 @@ describe("storage limits (PETTY-243)", () => {
     expect((await A.call("DELETE", `/drawers/${id}/photo`)).statusCode).toBe(204);
     const without = applyOp(doc, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
     setQuota((await storage(A)).used_bytes);
-    expect((await A.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await A.sealDoc(id, key, without), 1), base_version: 1 } })).statusCode).toBe(200);
+    expect((await A.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await A.sealDoc(id, key, without), 1), base_version: 1 }, proof: await A.proof() })).statusCode).toBe(200);
     // the member's own storage is untouched by their writes into A's drawer
     expect((await storage(B)).used_bytes).toBe(memberBefore);
   }, 60_000);

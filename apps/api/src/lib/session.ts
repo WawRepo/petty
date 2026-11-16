@@ -104,6 +104,16 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest("sessionId", null);
   app.decorateRequest("clerk", null);
   app.decorateRequest("token", null);
+  // PETTY-409: a browser marks where a request comes from (Sec-Fetch-Site). A request that changes
+  // something is taken only when the mark is "same-origin": Petty's own pages. "same-site" is not enough,
+  // it is any host under the same domain. The check comes before the session is looked up and holds for
+  // every route and both sign-in modes. A request with no such header was not sent by a current browser
+  // (the command line, the add-on, curl, an older browser) and goes on as before, to the JSON-only rule below.
+  app.addHook("onRequest", async (req) => {
+    if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return;
+    const site = req.headers["sec-fetch-site"];
+    if (site !== undefined && site !== "same-origin") throw forbidden("CrossSiteRequest");
+  });
   app.addHook("onRequest", async (req) => {
     // Access tokens (PETTY-164) work in both modes and are checked first: they carry their own prefix.
     const auth = req.headers.authorization ?? "";
@@ -146,7 +156,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
     if (r.stale) apiPool.query("update sessions set last_seen_at = now() where id = $1", [r.sid]).catch(() => undefined);
     touchUser(r.id);
   });
-  // Cross-site request forgery guard: mutations must be JSON, which browsers cannot send cross-origin without CORS.
+  // Cross-site request forgery guard, second part: a body must be JSON, which browsers cannot send cross-origin without CORS.
   // A token may only do what tokens.ts allows, and only inside its scope.
   app.addHook("preHandler", async (req) => {
     if (req.token) assertTokenMay(req, req.token);

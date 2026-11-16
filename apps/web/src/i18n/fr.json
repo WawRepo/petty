@@ -140,6 +140,7 @@
       "displayName": "Nom (facultatif)",
       "displayNameHint": "Le nom que voient les personnes avec qui vous partagez des tiroirs. Si vous le laissez vide, le nom de votre compte de connexion est utilisé.",
       "already": "Ce compte a déjà un coffre. Rechargez l’application.",
+      "emailNotVerified": "Votre adresse e-mail n’est pas encore confirmée. Confirmez-la dans votre compte de connexion, puis réessayez.",
       "explainer": {
         "identity": "Votre session est ouverte. Le coffre est un second verrou, distinct : il ouvre vos tiroirs sur cet appareil. Le serveur n’en garde qu’une copie verrouillée."
       },
@@ -190,14 +191,19 @@
     "degradedReason": {
       "no_key": "Vous n’avez pas encore de clé pour ce tiroir. Demandez à son propriétaire de le partager à nouveau.",
       "sender_unknown": "La clé a été partagée par une personne que vous ne connaissez pas encore.",
-      "sender_unconfirmed": "Ce tiroir a une nouvelle clé d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
+      "sender_unconfirmed": "La clé de ce tiroir vient d’un membre dont vous n’avez pas confirmé le numéro de sécurité. Comparez-le dans Membres et choisissez « Même numéro » pour ouvrir le tiroir.",
+      "sender_left": "La clé de ce tiroir vient d’une personne qui a quitté ce tiroir ou en a été retirée, donc Petty ne l’a pas ouvert. Si elle est de nouveau membre, comparez son numéro de sécurité dans Membres et choisissez « Même numéro ». Sinon, quelqu’un a peut-être modifié le serveur.",
       "sender_key_changed": "La clé de la personne qui a partagé ce tiroir a changé. Vérifiez son numéro de sécurité dans Membres.",
+      "pins_blocked": "La clé de ce tiroir vous a été donnée par une autre personne, et Petty ne peut pas vérifier cette personne pour l’instant : votre liste de clés de confiance manque sur le serveur, est plus ancienne qu’avant ou ne s’est pas chargée. Cherchez l’avertissement sur l’écran d’accueil, ou réessayez une fois en ligne.",
       "key_rolled_back": "Le serveur a envoyé une clé de ce tiroir plus ancienne que celle que vous aviez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "key_replaced": "Le serveur a envoyé pour ce tiroir une autre clé que celle que vous utilisiez déjà, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
       "doc_rolled_back": "Le serveur a envoyé une version de ce tiroir plus ancienne que celle que vous aviez déjà ouverte, donc Petty ne l’a pas ouvert. Les éléments ajoutés depuis manqueraient. Quelqu’un a peut-être modifié le serveur.",
       "unwrap_failed": "Ce tiroir n’a pas pu être ouvert sur cet appareil. Demandez à son propriétaire de le partager à nouveau.",
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
       "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
-      "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour."
+      "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour.",
+      "bad_entries": "Les opérations d’un élément de ce tiroir ne sont pas dans l’ordre, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "sum_too_large": "Les montants de ce tiroir donnent ensemble un nombre trop grand pour être affiché, donc Petty n’en affiche aucun. Quelqu’un a peut-être ajouté une opération avec un montant erroné."
     },
     "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}",
     "picture": {
@@ -345,6 +351,8 @@
     "deleteConfirm": "Supprimer « {name} » avec tous ses éléments et leur historique ? Cette action est irréversible.",
     "deleteBtn": "Supprimer",
     "deleteType": "Saisissez le nom du tiroir pour confirmer",
+    "deleteDamagedConfirm": "Supprimer ce tiroir avec tous ses éléments et leur historique ? Cette action est irréversible.",
+    "deleteDamagedType": "Saisissez ce mot pour confirmer",
     "photoAdd": "Ajouter une photo",
     "photoChange": "Changer la photo",
     "photoRemove": "Supprimer la photo",
@@ -508,6 +516,7 @@
     "row": {
       "reversed": "inversé",
       "cancels": "compense une opération antérieure",
+      "unconfirmed": "auteur non confirmé",
       "adjustHint": "({delta})",
       "by": "par {name}",
       "options": "Options de l’opération"
@@ -534,6 +543,7 @@
       "truncated": "L’historique est plus court que lors de votre dernière consultation. Des opérations ont peut-être été supprimées.",
       "acknowledge": "Accepter tel quel",
       "skipped": "{count, plural, one {# opération n’est pas prise en compte dans le solde, car elle enfreint les règles.} other {# opérations ne sont pas prises en compte dans le solde, car elles enfreignent les règles.}}",
+      "unconfirmed": "{count, plural, one {# opération vient d’une personne qui n’est pas dans votre liste de clés de confiance, par exemple quelqu’un qui est parti avant votre arrivée. Petty ne peut pas vérifier qui l’a écrite. Son montant est compté dans le solde.} other {# opérations viennent d’une personne qui n’est pas dans votre liste de clés de confiance, par exemple quelqu’un qui est parti avant votre arrivée. Petty ne peut pas vérifier qui les a écrites. Leurs montants sont comptés dans le solde.}}",
       "negative": "Solde négatif. Comptez cet élément et ajustez-le."
     }
   },
@@ -606,6 +616,7 @@
       "confirmed": "Comparé",
       "unconfirmed": "Pas encore comparé",
       "changed": "Sa clé a changé. Comparez à nouveau les numéros de sécurité avant de partager.",
+      "back": "Cette personne a quitté ce tiroir ou en a été retirée, et figure de nouveau dans la liste. Comparez à nouveau les numéros de sécurité si vous savez qu’elle a été réinvitée.",
       "unpinned": "Pas encore configuré"
     },
     "confirm": "Même numéro",
@@ -728,6 +739,9 @@
   "pins": {
     "rolledBackTitle": "Le serveur a une copie plus ancienne de vos clés de confiance",
     "rolledBack": "Sur cet appareil, votre liste de clés de confiance était en version {seen} ; le serveur a maintenant la version {server}. Il peut s’agir d’une sauvegarde restaurée, ou de quelqu’un qui tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "rolledBackInside": "La copie de votre liste de clés de confiance envoyée par le serveur est plus ancienne que celle que cet appareil a vue en dernier, mais le serveur ne lui donne pas un numéro plus ancien. Quelqu’un a peut-être modifié le serveur, ou tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "missingTitle": "Le serveur n’a pas votre liste de clés de confiance",
+    "missing": "Votre compte a des tiroirs, le serveur devrait donc avoir cette liste. Elle peut manquer parce que votre compte est plus ancien que la liste, parce qu’une sauvegarde a été restaurée, ou parce que quelqu’un tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, Petty n’ouvre que les tiroirs dont vous avez créé la clé, et vous ne pouvez pas partager de tiroirs. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau.",
     "startOver": "Commencer une nouvelle liste"
   },
   "privacy": {
@@ -865,7 +879,9 @@
         "code": "Dans un terminal (Node 20 ou plus récent) : installez la ligne de commande petty, connectez-vous à ce Petty (une de ses pages s’ouvre pour l’autoriser), puis ajoutez-le à Claude Code pour tous les projets :",
         "editor": "Dans un terminal (Node 20 ou plus récent) : enregistrez petty-mcp.mjs, puis collez dans {app} le bloc de réglages qu’affiche la deuxième ligne, avec votre jeton d’accès à la place de petty_pat_… :",
         "any": "Toute application qui lance des serveurs MCP locaux peut utiliser Petty. Dans le registre MCP officiel, son nom est :",
-        "windows": "Sous Windows, la page Utiliser Petty avec l’IA, plus bas, donne les mêmes étapes pour PowerShell."
+        "windows": "Sous Windows, la page Utiliser Petty avec l’IA, plus bas, donne les mêmes étapes pour PowerShell.",
+        "fromRelease": "Les fichiers viennent de la version publiée sur GitHub ({version}). La page Utiliser Petty avec l’IA, plus bas, explique comment les vérifier.",
+        "fromHere": "Les fichiers viennent de ce Petty lui-même, et rien ne les vérifie. La page Utiliser Petty avec l’IA, plus bas, en dit plus."
       },
       "badgesLabel": "En bref",
       "badges": {
@@ -1335,7 +1351,19 @@
     "addonTitle": "L’utiliser dans Claude Desktop",
     "addonBody": "Téléchargez l’extension, double-cliquez dessus et cliquez sur Installer. Claude Desktop demande alors deux choses : l’adresse ci-dessous et le jeton ci-dessus.",
     "addonDownload": "Obtenir l’extension Claude Desktop",
-    "address": "Adresse Petty"
+    "address": "Adresse Petty",
+    "scope": "Tiroirs qu’il peut utiliser",
+    "scopeAll": "Tous les tiroirs",
+    "scopeAllHint": "Y compris chaque tiroir que vous ajouterez ou recevrez plus tard.",
+    "scopeSome": "Seulement les tiroirs que je choisis",
+    "scopeSomeHint": "Un tiroir ajouté plus tard reste en dehors.",
+    "scopePick": "Tiroirs pour ce jeton",
+    "scopeNone": "Vous n’avez pas encore de tiroir à choisir.",
+    "scopeNeeded": "Choisissez les tiroirs que ce jeton peut utiliser.",
+    "scopeAllShort": "tous les tiroirs",
+    "scopeCount": "{count, plural, one {# tiroir} other {# tiroirs}}",
+    "confirm": "Un jeton contient des clés de tiroir. C’est pourquoi sa création redemande votre phrase secrète du coffre ou votre clé d’accès, même si le coffre est ouvert.",
+    "passphraseNeeded": "Saisissez la phrase secrète du coffre."
   },
   "device": {
     "title": "Connecter un outil en ligne de commande",
@@ -1343,15 +1371,15 @@
     "code": "Code",
     "continue": "Continuer",
     "checking": "Vérification du code…",
-    "notACode": "Ce n’est pas un code. Un code compte 12 lettres, comme BCDF-GHJK-LMNP.",
+    "notACode": "Ce n’est pas un code. Un code compte 20 lettres, comme BCDF-GHJK-LMNP-QRST-VWXZ.",
     "unknown": "Aucune demande en attente ne correspond à ce code. Elle a peut-être expiré au bout de 15 minutes, ou elle a déjà servi. Relancez `petty auth login`.",
     "tooMany": "Trop de tentatives. Patientez quelques minutes, puis réessayez.",
-    "mismatch": "Cette demande ne correspond pas à son code : elle a été modifiée en chemin. Ne l’autorisez pas. Relancez `petty auth login` et prévenez la personne qui gère ce Petty.",
+    "mismatch": "Cette demande ne correspond pas à son code. Elle a été modifiée en chemin, ou votre terminal a reçu une autre adresse que celle de cette page ({origin}). Ne l’autorisez pas. Relancez `petty auth login --host {origin}`. Si cela se reproduit, prévenez la personne qui gère ce Petty.",
     "askTitle": "Autoriser « {name} » ?",
     "checkCode": "Vérifiez que votre terminal affiche ce code :",
     "asked": "Demande envoyée {when}.",
     "askedFrom": "Demande envoyée {when}, depuis {ip}.",
-    "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie de vos clés de tiroir : il pourra lire tous les tiroirs que vous pouvez ouvrir.",
+    "onlyYours": "N’autorisez cette demande que si vous venez de la lancer vous-même. L’outil reçoit une copie des clés des tiroirs que vous choisissez ci-dessous : il pourra lire chacun d’eux.",
     "readOnly": "Il ne demande qu’un accès en lecture. Il ne peut rien modifier.",
     "allow": "Autoriser",
     "deny": "Refuser",
@@ -1372,6 +1400,15 @@
       "Confirmez avec votre clé d’accès ou votre phrase secrète du coffre.",
       "Copiez le jeton. Il ne s’affiche qu’une seule fois."
     ],
+    "filesTitle": "D’où viennent les programmes",
+    "filesRelease": "L’extension, `petty-mcp.mjs` et `petty` s’exécutent sur votre ordinateur et détiennent votre jeton. Les boutons et les commandes de cette page les prennent dans la version publiée sur GitHub que ce Petty exécute ({version}), et non sur ce Petty.",
+    "filesCheck": "Vous pouvez vérifier un fichier après l’avoir téléchargé et avant de le lancer. Avec la ligne de commande de GitHub, `gh`, une fois connecté, lancez la ligne qui correspond à votre fichier :",
+    "filesCheckMeans": "La vérification ne réussit que si le workflow de publication de ce dépôt a construit exactement ce fichier. Sans `gh`, comparez le SHA-256 du fichier avec sa ligne dans le `SHA256SUMS` de la version. Cela montre seulement que votre fichier est celui de la page de la version.",
+    "filesLimits": "Personne ne fait ces vérifications à votre place. Cette page vient de ce Petty, lisez donc les adresses dans les commandes : elles doivent commencer par `{url}`. Ce Petty sert aussi ses propres copies sous `/downloads/`. Rien ne les vérifie.",
+    "filesSums": "SHA256SUMS de la version {version}",
+    "filesDocs": "Les vérifications, pas à pas",
+    "filesOwn": "L’extension, `petty-mcp.mjs` et `petty` s’exécutent sur votre ordinateur et détiennent votre jeton. Ce Petty exécute une compilation qui n’est pas une version publiée ({version}) ; les boutons et les commandes de cette page les prennent donc sur ce Petty lui-même.",
+    "filesOwnTrust": "Rien ne vérifie ces fichiers. Ne les utilisez que si vous faites confiance à la personne qui gère ce Petty autant qu’à un programme qu’elle vous remettrait en main propre.",
     "desktopTitle": "2a. Claude Desktop",
     "desktopSteps": [
       "Installez Claude Desktop depuis claude.ai/download et connectez-vous, si ce n’est pas déjà fait.",
@@ -1380,7 +1417,7 @@
       "Claude Desktop demande deux choses : collez cette adresse Petty et votre jeton, puis enregistrez. Vous pourrez les modifier plus tard dans Claude Desktop → Paramètres → Extensions → Petty.",
       "Ouvrez une nouvelle conversation et demandez : « Qu’y a-t-il dans mes tiroirs ? » Sur Mac, autorisez l’accès au réseau si on vous le demande, puis redémarrez Claude Desktop."
     ],
-    "otherTitle": "2b. Autres applications d’IA (Cursor, VS Code, Windsurf, Claude Code)",
+    "otherTitle": "2c. Autres applications d’IA, à la main (Cursor, VS Code, Windsurf)",
     "otherSteps": [
       "Installez Node 20 ou une version plus récente.",
       "Lancez ci-dessous les deux commandes adaptées à votre ordinateur. La première enregistre `petty-mcp.mjs` dans un dossier `.petty` de votre dossier personnel ; la seconde affiche le bloc de configuration avec le vrai chemin de ce fichier.",
@@ -1391,8 +1428,8 @@
     "windows": "Windows (PowerShell)",
     "manual": "Ou téléchargez le fichier et placez-le vous-même dans ce dossier :",
     "example": "Le bloc affiché ressemble à ceci, avec vos propres chemins :",
-    "claudeCode": "Pour Claude Code, la même chose en une seule commande :",
-    "cliTitle": "2c. La ligne de commande : petty",
+    "claudeCode": "Pour Claude Code, utilisez la ligne de commande (2b). Ne mettez pas de jeton dans une commande `claude mcp add` : l’historique de votre shell garde la ligne, et d’autres programmes peuvent la lire dans la liste des processus pendant qu’elle s’exécute.",
+    "cliTitle": "2b. La ligne de commande : petty",
     "cliIntro": "Un programme pour votre terminal, vos scripts et les agents d’IA qui lancent des commandes (Claude Code, Codex). Il se connecte via une page de ce Petty dans votre navigateur, comme `gh auth login` : aucun jeton à copier.",
     "cliSteps": [
       "Installez Node 20 ou une version plus récente.",
@@ -1403,6 +1440,7 @@
     "cliDownload": "Télécharger petty.mjs",
     "cliPath": "Si le terminal affiche « command not found: petty », `~/.local/bin` n’est pas dans votre PATH. Ajoutez `export PATH=\"$HOME/.local/bin:$PATH\"` à `~/.zshrc` (Mac) ou `~/.bashrc` (Linux), puis ouvrez un nouveau terminal.",
     "cliClaude": "Ensuite, pour Claude Code, ajoutez-le pour tous les projets :",
+    "cliOther": "Pour Cursor, VS Code, Windsurf et les autres applications MCP, `petty mcp --print-config` affiche le bloc de réglages à coller. Il ne contient aucun jeton.",
     "askTitle": "3. Demander",
     "ask": [
       "Qu’y a-t-il dans mon tiroir de la cuisine ?",

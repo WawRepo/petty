@@ -5,8 +5,9 @@
  *   node scripts/promo-video.ts <dir>
  *
  * Writes <dir>/petty-short.mp4 (about 20 s), <dir>/petty-long.mp4 (about 48 s), the feature tour
- * <dir>/petty-tour.mp4 (about 1:40) and its tall cut for phones <dir>/petty-tour-tall.mp4, and a poster;
- * PROMO_FILM=petty-short cuts only that one. Needs ffmpeg 7 or newer on the PATH.
+ * <dir>/petty-tour.mp4 (about 1:40) and its tall cut for phones <dir>/petty-tour-tall.mp4, a poster, and
+ * the YouTube Shorts <dir>/petty-shorts-<use>.mp4 (PETTY-467; filmed by promo.spec.ts's "film the Shorts").
+ * PROMO_FILM=petty-short cuts only that one (or a comma-separated list). Needs ffmpeg 7 or newer on the PATH.
  *
  * Each film is a list of scenes: a piece of one clip on the phone's screen, a background in the
  * example's colour and the words, laid over each other and cross-faded; the music
@@ -31,6 +32,25 @@ interface Film { readonly name: string; readonly fade: number; readonly scenes: 
 const cap = (key: string, short = false): Layer[] => [{ png: `cap-${key}${short ? "-short" : ""}` }];
 const AI: Layer[] = [{ png: "ai-head" }, { png: "ai-q", at: 0.9 }, { png: "ai-tool", at: 1.7 }, { png: "ai-a", at: 2.4 }];
 const tour = (key: string): Layer[] => [{ png: `cap-t-${key}` }];
+
+/**
+ * The YouTube Shorts (PETTY-467): one take each (clip s-<key>), cut at the marks b1, b2, … that
+ * promo.spec.ts sets as each beat starts. A beat's length here is the one the take holds for it there.
+ * Each starts just before its beat's first tap, so a Short opens on the app already moving.
+ */
+const AI_SHORT: Layer[] = [{ png: "ai-s-head" }, { png: "ai-s-q", at: 0.8 }, { png: "ai-s-tool", at: 2.0 }, { png: "ai-s-a", at: 3.2 }];
+const short = (key: string, beats: readonly (number | readonly [number, Layer[]])[]): Film => ({
+  name: `petty-shorts-${key}`, fade: 0.4, layers: "layers-short",
+  scenes: beats.map((b, i): Scene => {
+    const [dur, layers] = typeof b === "number" ? [b, i === beats.length - 1 ? [{ png: "cap-s-end" }] : [{ png: `cap-s-${key}-${i + 1}` }]] : b;
+    return { clip: `s-${key}`, from: [`b${i + 1}`, -0.15], dur, bg: `s-${key}`, layers };
+  }),
+});
+export const SHORTS: readonly Film[] = [
+  short("trip", [4.0, 4.4, 7.2, 5.0, 4.8, 4.2]),
+  short("cash", [4.2, 4.2, 6.4, 4.8, 5.6, 4.2]),
+  short("key", [4.8, 4.4, 4.4, [7.4, AI_SHORT], 5.0, 4.2]),
+];
 
 const TOUR_SCENES: readonly Scene[] = [
   { clip: "home", from: 0, dur: 4.0, bg: "intro", layers: cap("intro") },
@@ -80,6 +100,7 @@ export const FILMS: readonly Film[] = [
     { clip: "family", from: ["drawer", -0.5], dur: 2.5, bg: "family", layers: cap("family", true) },
     { clip: "all", from: ["all", -2.3], dur: 3.6, bg: "outro", layers: cap("outro", true) },
   ] },
+  ...SHORTS,
 ];
 
 const FPS = 30;
@@ -134,9 +155,18 @@ function cut(dir: string, film: Film, footage: ReadonlyMap<string, Footage>): vo
   const png = (name: string, secs: number) => ["-loop", "1", "-framerate", String(FPS), "-t", secs.toFixed(3), "-i", join(layers, `${name}.png`)];
 
   const lens = film.scenes.map((sc) => frames(sc.dur));
-  film.scenes.forEach((sc, i) => {
+  const starts = film.scenes.map((sc) => {
     const f = footage.get(sc.clip)!;
-    const from = typeof sc.from === "number" ? sc.from : (f.marks[sc.from[0]] ?? (() => { throw new Error(`no mark ${sc.from[0]} in ${sc.clip}`); })()) + sc.from[1];
+    return typeof sc.from === "number" ? sc.from : (f.marks[sc.from[0]] ?? (() => { throw new Error(`no mark ${sc.from[0]} in ${sc.clip}`); })()) + sc.from[1];
+  });
+  // PETTY-467: two pieces of one take in a row must not overlap past the cross-fade, or a moment shows twice
+  film.scenes.forEach((sc, i) => {
+    const next = film.scenes[i + 1];
+    if (next?.clip === sc.clip && starts[i + 1]! < starts[i]! + sc.dur - film.fade - 0.05)
+      throw new Error(`${film.name}: scene ${i + 1} (${sc.clip}) runs ${(starts[i]! + sc.dur - film.fade - starts[i + 1]!).toFixed(2)} s into the next one`);
+  });
+  film.scenes.forEach((sc, i) => {
+    const from = starts[i]!;
     const D = lens[i]! / FPS, last = i === N - 1;
     // the words are gone just after the next scene starts fading in; the last scene's stay
     const end = last ? D : (lens[i]! - X) / FPS + 0.05;
@@ -187,9 +217,13 @@ function cut(dir: string, film: Film, footage: ReadonlyMap<string, Footage>): vo
 if (import.meta.main) {
   const dir = process.argv[2];
   if (!dir) { console.error("usage: node scripts/promo-video.ts <footage dir>"); process.exit(2); }
+  // PROMO_FILM: one film's name, or several, comma-separated (only their clips need to be filmed)
+  const pick = process.env["PROMO_FILM"]?.split(",").map((s) => s.trim()).filter(Boolean);
+  const films = FILMS.filter((f) => !pick?.length || pick.includes(f.name));
+  if (pick?.length && films.length !== pick.length) throw new Error(`no film named ${pick.filter((p) => !FILMS.some((f) => f.name === p)).join(", ")}`);
   const footage = new Map<string, Footage>();
-  for (const name of new Set(FILMS.flatMap((f) => f.scenes.map((s) => s.clip)))) footage.set(name, encodeClip(dir, name));
-  for (const film of FILMS.filter((f) => !process.env["PROMO_FILM"] || f.name === process.env["PROMO_FILM"])) {
+  for (const name of new Set(films.flatMap((f) => f.scenes.map((s) => s.clip)))) footage.set(name, encodeClip(dir, name));
+  for (const film of films) {
     cut(dir, film, footage);
     process.stdout.write(`${film.name}.mp4  ${length(film).toFixed(1)} s\n`);
     // a poster: the long film's first scene, its words in place

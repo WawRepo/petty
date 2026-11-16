@@ -79,6 +79,8 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   the server only relays the sealed blob. The code is derived from that key (12 of 20 consonants), so
   the page and the command line both detect a swapped key. Only the login is stored
   (`~/.petty/hosts.json`, 600); Tab completion decrypts names per key press, never cached on disk.
+  *Since PETTY-451 (2026-11-10) the code has 20 of the 20 consonants and is derived from that key and
+  the instance's address; the 12-letter form is neither made nor accepted.*
 - **Drawer document history (PETTY-194, 2026-09-19).** Names, items, tags and places before each
   change are kept for 30 days and the drawer's owner can restore an earlier version. Entries and
   balances are unaffected. Refines "Deletion" above for the document only.

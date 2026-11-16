@@ -1,18 +1,18 @@
 import type { FastifyInstance } from "fastify";
-import { ForgotBody, JoinLinkBody, JoinLinkInfo, JoinLinkResponse, LoginBody, Me, ProvisionBody, ResetBody, SignupBody, type PasskeyVault, type VaultBlob } from "@petty/protocol";
+import { ForgotBody, JoinLinkBody, JoinLinkInfo, JoinLinkLookupBody, JoinLinkResponse, LoginBody, Me, ProvisionBody, ResetBody, SignupBody, type PasskeyVault, type VaultBlob } from "@petty/protocol";
 import { config } from "../config.js";
 import { termsVersion } from "../lib/legal.js";
 import { clerkProfile } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { iso, randomToken, sha256 } from "../lib/bytes.js";
-import { ApiError, badRequest, conflict, unauthorized } from "../lib/errors.js";
+import { ApiError, badRequest, conflict, forbidden, unauthorized } from "../lib/errors.js";
 import { DUMMY_HASH, LOGIN_LIMIT_PER_EMAIL, LOGIN_LIMIT_PER_IP, checkRate, failuresExceeded, hashPassword, recordFailure, verifyPassword } from "../lib/password.js";
 import { createSession, destroySession, requireUser } from "../lib/session.js";
 import { withTx, type Queryable } from "../lib/tx.js";
 import { endAllTokens } from "../lib/tokens.js";
 import { mails } from "../lib/mail.js";
 import { authEvents } from "../lib/metrics.js";
-import { clientIp } from "../lib/client-ip.js";
+import { clientNet } from "../lib/client-ip.js";
 import { loadMe } from "./me.js";
 
 const JOIN_LINK_DAYS = 7;
@@ -40,6 +40,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       const body = ProvisionBody.parse(req.body);
       checkVaultMaterial(body);
       const profile = await clerkProfile(id.sub);
+      // PETTY-421: the account takes its email from Clerk, and drawers are shared by email. An address Clerk
+      // has not verified may be someone else's, so no account is made for it. Checked before the address is
+      // looked up: the answer says nothing about whether it has an account.
+      if (!profile.emailVerified) throw forbidden("EmailNotVerified");
       const me = await withTx(apiPool, async (db) => {
         const exists = await db.query("select 1 from users where clerk_user_id = $1 or (lower(email) = lower($2) and deleted_at is null)", [id.sub, profile.email]);
         if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
@@ -56,10 +60,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       authEvents.inc({ event: "signup" });
       return reply.code(201).send(Me.parse(me));
     });
-    for (const path of ["/auth/signup", "/auth/login", "/auth/forgot", "/auth/reset", "/auth/logout", "/join-links"]) {
+    for (const path of ["/auth/signup", "/auth/login", "/auth/forgot", "/auth/reset", "/auth/logout", "/join-links", "/join-links/lookup"]) {
       app.post(path, async () => { throw new ApiError(404, "NotAvailable", "identity is managed by Clerk"); });
     }
-    app.get("/join-links/:token", async () => { throw new ApiError(404, "NotAvailable", "identity is managed by Clerk"); });
     return;
   }
 
@@ -69,7 +72,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-215: open signup (no join link) is allowed only when the operator turned it on; rate-limit it per IP.
     if (!body.join_token) {
       if (!config.openSignup) throw badRequest("JoinLinkRequired", "this instance is invite-only");
-      if (!(await checkRate(`signup:${clientIp(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
+      if (!(await checkRate(`signup:${clientNet(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     const me = await withTx(apiPool, async (db) => {
       const link = body.join_token ? (await db.query<{ id: string; email: string | null }>(
@@ -101,7 +104,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post("/auth/login", async (req, reply) => {
     const body = LoginBody.parse(req.body);
     const emailKey = `login:${body.email.toLowerCase()}`;
-    if (!(await checkRate(`login:${clientIp(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
+    if (!(await checkRate(`login:${clientNet(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
@@ -126,7 +129,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post("/auth/forgot", async (req, reply) => {
     const body = ForgotBody.parse(req.body);
-    if (!(await checkRate(`forgot:${clientIp(req)}`, LOGIN_LIMIT_PER_IP))) {
+    if (!(await checkRate(`forgot:${clientNet(req)}`, LOGIN_LIMIT_PER_IP))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
@@ -177,11 +180,17 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(201).send(JoinLinkResponse.parse({ token, expires_at: iso(expires) }));
   });
 
-  app.get<{ Params: { token: string } }>("/join-links/:token", async (req) => {
+  /**
+   * What a join link is for, before the sign-up form shows: whether it still works, who invited, and the
+   * address it is for. PETTY-457: the token is a secret, so it comes in the body. A URL (the former
+   * GET /join-links/<token>) stays in the access log of every proxy in front of the API.
+   */
+  app.post("/join-links/lookup", async (req) => {
+    const { token } = JoinLinkLookupBody.parse(req.body);
     const { rows } = await apiPool.query<{ email: string | null; inviter: string | null }>(
       `select l.email, u.display_name as inviter from join_links l left join users u on u.id = l.created_by
         where l.token_hash = $1 and l.used_at is null and l.expires_at > now()`,
-      [sha256(req.params.token)],
+      [sha256(token)],
     );
     const r = rows[0];
     return JoinLinkInfo.parse({ valid: !!r, inviter_name: r?.inviter ?? null, email: r?.email ?? null });

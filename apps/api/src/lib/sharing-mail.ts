@@ -1,5 +1,5 @@
 import { config } from "../config.js";
-import { mailsLimited } from "./metrics.js";
+import { mailsLimited, type SHARING_MAIL_KINDS } from "./metrics.js";
 import { checkRate } from "./password.js";
 
 const DAY_MS = 24 * 60 * 60_000;
@@ -12,7 +12,7 @@ const DAY_MS = 24 * 60 * 60_000;
  * Past any of them the email is skipped and nothing else changes: the other person still sees the
  * invitation or offer in the app. A skipped email does not count against the windows after it.
  */
-export async function maySendSharingMail(kind: "invitation" | "transfer", senderId: string, recipientId: string, drawerId: string): Promise<boolean> {
+export async function maySendSharingMail(kind: (typeof SHARING_MAIL_KINDS)[number], senderId: string, recipientId: string, drawerId: string): Promise<boolean> {
   const ok = (await checkRate(`sharing-mail:${kind}:${drawerId}:${recipientId}`, 1, DAY_MS))
     && (config.sharingMailPerRecipient === 0 || (await checkRate(`sharing-mail-to:${recipientId}`, config.sharingMailPerRecipient, DAY_MS)))
     && (config.sharingMailPerSender === 0 || (await checkRate(`sharing-mail-from:${senderId}`, config.sharingMailPerSender, DAY_MS)));

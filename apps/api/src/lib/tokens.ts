@@ -105,14 +105,39 @@ export function assertTokenMay(req: FastifyRequest, token: TokenAuth): void {
 }
 
 /**
+ * Revokes one token and drops what only a live token could use: its sealed bundle and its drawer-key
+ * wraps (PETTY-442). A revoked token never works again, so nothing reads them; with the limit on live
+ * tokens (MAX_ACCESS_TOKENS), what an account's tokens store is bounded. The row stays, so the public
+ * signing delegation still verifies entries the token wrote. False when there is no such live token.
+ */
+export async function revokeToken(db: Queryable, tokenId: string, userId: string): Promise<boolean> {
+  const { rowCount } = await db.query(
+    "update access_tokens set revoked_at = now(), bundle_nonce = '', bundle_ciphertext = '' where id = $1 and user_id = $2 and revoked_at is null", [tokenId, userId],
+  );
+  if (!rowCount) return false;
+  await db.query("delete from access_token_keys where token_id = $1", [tokenId]);
+  return true;
+}
+
+/**
+ * A token past its expiry never works again either, and its expiry cannot be moved. Its bundle and wraps
+ * are dropped when its owner makes the next token (PETTY-442); the row stays listed until it is revoked.
+ */
+export async function dropExpiredTokenData(db: Queryable, userId: string): Promise<void> {
+  await db.query("update access_tokens set bundle_nonce = '', bundle_ciphertext = '' where user_id = $1 and expires_at <= now() and bundle_ciphertext <> ''", [userId]);
+  await db.query("delete from access_token_keys where token_id in (select id from access_tokens where user_id = $1 and expires_at <= now())", [userId]);
+}
+
+/**
  * Ends every access token of a user (PETTY-188, review NR-8): on a login-password reset, an admin
- * "sign out everywhere", and account deletion. With `erase` (deletion) the sealed bundles and the
- * drawer-key wraps are wiped as well, because the spec says deletion erases private keys. The row
+ * "sign out everywhere", and account deletion. The sealed bundles and the drawer-key wraps go with
+ * them, as for one revoked token (PETTY-442). With `erase` (deletion) the token's public key and name
+ * are wiped as well, because the spec says deletion erases the account's keys. The row
  * itself stays, revoked, so the public signing delegation still verifies entries it wrote.
  */
 export async function endAllTokens(db: Queryable, userId: string, opts: { erase: boolean }): Promise<void> {
-  await db.query("update access_tokens set revoked_at = coalesce(revoked_at, now()) where user_id = $1", [userId]);
-  if (!opts.erase) return;
+  await db.query("update access_tokens set revoked_at = coalesce(revoked_at, now()), bundle_nonce = '', bundle_ciphertext = '' where user_id = $1", [userId]);
   await db.query("delete from access_token_keys where token_id in (select id from access_tokens where user_id = $1)", [userId]);
-  await db.query("update access_tokens set bundle_nonce = '', bundle_ciphertext = '', ecdh_pub = null, name = 'deleted' where user_id = $1", [userId]);
+  if (!opts.erase) return;
+  await db.query("update access_tokens set ecdh_pub = null, name = 'deleted' where user_id = $1", [userId]);
 }
