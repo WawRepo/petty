@@ -90,9 +90,10 @@ export const config = {
    * documents and their 30-day history, entries). 0 or unset = no limit (a household instance).
    */
   /**
-   * PETTY-407 (security review #9): drawer invitation and ownership-offer emails per 24 hours, per sender
-   * and per recipient; 0 = no limit. Past a limit the invitation or offer still exists in the app; only its
-   * email is skipped (lib/sharing-mail.ts). One email per drawer and recipient a day applies regardless.
+   * PETTY-407 (security review #9): drawer invitation, ownership-offer and (PETTY-423) join-link emails per
+   * 24 hours, per sender and per recipient; 0 = no limit. Past a limit the invitation or offer still exists in
+   * the app and only its email is skipped; an emailed join link is refused with 429 (lib/sharing-mail.ts).
+   * One email per drawer (join link: per sender) and recipient a day applies regardless.
    */
   sharingMailPerSender: limit("SHARING_MAIL_PER_SENDER", 20),
   sharingMailPerRecipient: limit("SHARING_MAIL_PER_RECIPIENT", 5),

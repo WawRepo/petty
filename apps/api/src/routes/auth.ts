@@ -12,6 +12,7 @@ import { withTx, type Queryable } from "../lib/tx.js";
 import { endAllTokens } from "../lib/tokens.js";
 import { mails } from "../lib/mail.js";
 import { authEvents } from "../lib/metrics.js";
+import { joinLinkRecipient, maySendSharingMail } from "../lib/sharing-mail.js";
 import { clientNet } from "../lib/client-ip.js";
 import { loadMe } from "./me.js";
 
@@ -173,6 +174,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // Five invites an hour per member: enough for a household, useless as a mail relay (SR-9).
     if (!(await checkRate(`joinlinks:${me.id}`, 5, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     const body = JoinLinkBody.parse(req.body ?? {});
+    // PETTY-423: an emailed join link counts against the daily sharing mail limits (lib/sharing-mail.ts).
+    // The email is the link's only way to the other person, so past a limit no link is made; the inviter
+    // can still make one without an address (Settings) and send it themselves.
+    if (body.email && !(await maySendSharingMail("join-link", me.id, joinLinkRecipient(body.email), me.id))) {
+      req.log.info({ kind: "join-link" }, "sharing mail skipped: limit reached");
+      throw new ApiError(429, "TooManyAttempts", "too many emails today; try again later");
+    }
     const token = randomToken(24);
     const expires = new Date(Date.now() + JOIN_LINK_DAYS * 86_400_000);
     await apiPool.query("insert into join_links (token_hash, created_by, email, expires_at) values ($1, $2, $3, $4)", [sha256(token), me.id, body.email ?? null, expires]);

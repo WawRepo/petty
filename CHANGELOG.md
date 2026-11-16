@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A join-link email (an invitation to an address that has no account yet) now counts against the same
+  daily limits as drawer invitations (`SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT`): one
+  email per sender and address a day, and the per-sender and per-address totals. Before, one member
+  could send up to 120 a day to any address. Past a limit the app says so and makes no link; you can
+  still create a join link in Settings and send it yourself. `petty_mail_limited_total` has a new
+  `kind="join-link"`.
+
 ## [1.5.41] — 2026-11-16
 
 ### Security

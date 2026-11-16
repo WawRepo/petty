@@ -302,6 +302,46 @@ describe("sharing mail limits and names in mail (PETTY-407)", () => {
     } finally { cfg.sharingMailPerRecipient = saved.to; cfg.sharingMailPerSender = saved.from; }
   });
 
+  it("an emailed join link counts against the same limits; past one it is refused and no link is made (PETTY-423)", async () => {
+    const saved = { to: config.sharingMailPerRecipient, from: config.sharingMailPerSender };
+    const cfg = config as { sharingMailPerRecipient: number; sharingMailPerSender: number };
+    const INVITED = "You are invited to Petty";
+    const sent = async (address: string) => (await import("../src/lib/mail.js")).sentMails.filter((m) => m.to.toLowerCase() === address.toLowerCase() && m.subject === INVITED);
+    const links = async (by: Client) => Number((await owner.query<{ n: string }>("select count(*) as n from join_links where created_by = $1", [by.id])).rows[0]!.n);
+    const joinLink = (by: Client, email?: string) => by.call("POST", "/join-links", email ? { email } : {});
+    try {
+      // the same sender and address: one email a day, also when the address is written in other letters
+      const J = await fresh("jola");
+      const friend = `friend-${crypto.randomUUID().slice(0, 8)}@test.local`;
+      expect((await joinLink(J, friend)).statusCode).toBe(201);
+      const again = await joinLink(J, friend.toUpperCase());
+      expect(again.statusCode).toBe(429);
+      expect(again.json().code).toBe("TooManyAttempts");
+      expect(await sent(friend)).toHaveLength(1);
+      expect(await links(J)).toBe(1);
+      expect((await joinLink(J)).statusCode).toBe(201); // a link with no address sends nothing and is never held back
+
+      // one address from many senders: SHARING_MAIL_PER_RECIPIENT
+      cfg.sharingMailPerRecipient = 2; cfg.sharingMailPerSender = 100;
+      const target = `target-${crypto.randomUUID().slice(0, 8)}@test.local`;
+      const senders = [await fresh("kai"), await fresh("lea"), await fresh("max")];
+      const codes = [];
+      for (const s of senders) codes.push((await joinLink(s, target)).statusCode);
+      expect(codes).toEqual([201, 201, 429]);
+      expect(await sent(target)).toHaveLength(2);
+      expect(await links(senders[2]!)).toBe(0);
+
+      // one sender: SHARING_MAIL_PER_SENDER, shared with drawer invitations
+      cfg.sharingMailPerRecipient = 100; cfg.sharingMailPerSender = 2;
+      const [S, X] = [await fresh("sol"), await fresh("xan")];
+      expect((await invite(S, await drawerOf(S), X)).json().mailed).toBe(true);
+      const [a1, a2] = [`a1-${crypto.randomUUID().slice(0, 8)}@test.local`, `a2-${crypto.randomUUID().slice(0, 8)}@test.local`];
+      expect((await joinLink(S, a1)).statusCode).toBe(201);
+      expect((await joinLink(S, a2)).statusCode).toBe(429);
+      expect(await sent(a2)).toHaveLength(0);
+    } finally { cfg.sharingMailPerRecipient = saved.to; cfg.sharingMailPerSender = saved.from; }
+  });
+
   it("an ownership offer made again and again emails once a day", async () => {
     const [O, W] = [await fresh("otto"), await fresh("wen")];
     const d = await drawerOf(O);

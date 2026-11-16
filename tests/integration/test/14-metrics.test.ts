@@ -23,7 +23,7 @@ describe("the scrape port", () => {
     const has = (series: string) => expect(lines.some((l) => l.startsWith(`${series} `) && /^\d+$/.test(l.slice(series.length + 1))), series).toBe(true);
     for (const code of ["CustodyProofInvalid", "WrapMismatch", "DeviceKeyInvalid", "ReadTokenCannotSign"]) has(`petty_security_refusals_total{code="${code}"}`);
     for (const result of ["ok", "failed"]) has(`petty_mail_total{result="${result}"}`);
-    for (const kind of ["invitation", "transfer"]) has(`petty_mail_limited_total{kind="${kind}"}`);
+    for (const kind of ["invitation", "transfer", "join-link"]) has(`petty_mail_limited_total{kind="${kind}"}`);
     for (const result of ["created", "duplicate"]) has(`petty_entries_total{result="${result}"}`);
     // the stack signs in locally, so the local-only events are there too
     for (const event of ["login_fail", "rate_limited", "signup", "device_denied"]) has(`petty_auth_events_total{event="${event}"}`);

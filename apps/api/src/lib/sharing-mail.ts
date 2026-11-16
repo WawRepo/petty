@@ -11,11 +11,18 @@ const DAY_MS = 24 * 60 * 60_000;
  * drawer and recipient, SHARING_MAIL_PER_RECIPIENT per recipient, SHARING_MAIL_PER_SENDER per sender.
  * Past any of them the email is skipped and nothing else changes: the other person still sees the
  * invitation or offer in the app. A skipped email does not count against the windows after it.
+ *
+ * PETTY-423: a join-link email (to an address with no account yet) counts too. Its recipient is
+ * `joinLinkRecipient(address)` and its `scope` is the sender, so its first window is one email per sender
+ * and address a day. The caller decides what a skipped join-link email means (routes/auth.ts).
  */
-export async function maySendSharingMail(kind: (typeof SHARING_MAIL_KINDS)[number], senderId: string, recipientId: string, drawerId: string): Promise<boolean> {
-  const ok = (await checkRate(`sharing-mail:${kind}:${drawerId}:${recipientId}`, 1, DAY_MS))
+export async function maySendSharingMail(kind: (typeof SHARING_MAIL_KINDS)[number], senderId: string, recipientId: string, scope: string): Promise<boolean> {
+  const ok = (await checkRate(`sharing-mail:${kind}:${scope}:${recipientId}`, 1, DAY_MS))
     && (config.sharingMailPerRecipient === 0 || (await checkRate(`sharing-mail-to:${recipientId}`, config.sharingMailPerRecipient, DAY_MS)))
     && (config.sharingMailPerSender === 0 || (await checkRate(`sharing-mail-from:${senderId}`, config.sharingMailPerSender, DAY_MS)));
   if (!ok) mailsLimited.inc({ kind });
   return ok;
 }
+
+/** The recipient key of a join-link email: the address in lower case, apart from account ids. Rate keys are stored hashed. */
+export const joinLinkRecipient = (address: string): string => `address:${address.trim().toLowerCase()}`;

@@ -648,6 +648,7 @@
     "joinLink": "Einladungslink senden",
     "joinLinkHint": "Für jemanden, der Petty noch nicht nutzt. Die Person bekommt eine E-Mail mit einem einmaligen Link.",
     "joinLinkSent": "Einladungslink an {email} gesendet",
+    "joinLinkTooMany": "Zu viele E-Mails in letzter Zeit. Versuch es später wieder oder erstelle in den Einstellungen einen Einladungslink und schick ihn selbst.",
     "alreadyMember": "Schon Mitglied."
   },
   "rotation": {
