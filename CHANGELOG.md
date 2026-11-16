@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The "something went wrong" screen names only the kind of error and its code, not its message, which
+  could quote what you wrote. A date the app cannot read shows a dash instead of breaking the screen.
+  Locking or signing out also clears the sync report, which names items and amounts.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
