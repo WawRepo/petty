@@ -1,6 +1,7 @@
+import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { deviceKeyPair, deviceUserCode } from "@petty/crypto";
-import { API, ORIGIN } from "../lib.js";
+import { API, ORIGIN, compose } from "../lib.js";
 
 /**
  * PETTY-290 (review S10): the image believes only proxies on private networks. The test reaches the app
@@ -73,5 +74,15 @@ describe("per-IP limits behind a proxy", () => {
     expect(mixed.slice(0, 10)).toEqual(Array(10).fill(201));
     expect(mixed[10]).toBe(429);
     expect(await ask(`::ffff:198.51.100.${5 + Math.floor(Math.random() * 4)}`)).toBe(201);
+  });
+
+  // PETTY-419: the image itself believes no proxy; the compose file names the private networks, so the
+  // requests above (through Docker's gateway, with X-Forwarded-For) were believed and raised no warning.
+  it("the image names no proxy, the compose file does, and the app sees its proxy as trusted", () => {
+    const env = JSON.parse(execFileSync("docker", ["image", "inspect", "--format", "{{json .Config.Env}}", process.env["PETTY_IMAGE"] ?? ""], { encoding: "utf8" })) as string[];
+    expect(env.filter((e) => e.startsWith("TRUST_PROXY="))).toEqual([]);
+    const app = (JSON.parse(compose("config --format json")) as { services: { app: { environment: Record<string, string> } } }).services.app;
+    expect(app.environment["TRUST_PROXY"]).toBe("loopback,linklocal,uniquelocal");
+    expect(compose("logs --no-color --no-log-prefix app")).not.toContain("proxy_untrusted");
   });
 });

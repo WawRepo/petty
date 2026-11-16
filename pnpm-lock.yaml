@@ -38,6 +38,9 @@ importers:
       '@fastify/cookie':
         specifier: ^11.1.5
         version: 11.1.5
+      '@fastify/proxy-addr':
+        specifier: ^5.1.1
+        version: 5.1.1
       '@fastify/static':
         specifier: ^10.1.9
         version: 10.1.9

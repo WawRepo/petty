@@ -17,13 +17,17 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 
 - The app listens on `127.0.0.1:3000`. Put Caddy, Traefik or nginx in front of it for HTTPS.
   Passkeys, secure cookies and the service worker need HTTPS.
-- The app takes the client's address from `X-Forwarded-For`, but believes only proxies on private
-  networks: `TRUST_PROXY=loopback,linklocal,uniquelocal`, the default (`true` means the same). Your
-  reverse proxy connects from such an address (the host through Docker, an ingress pod, a platform's
-  proxy), so the address it adds, the client's, counts; whatever the client wrote before it does not.
-  Behind a CDN or another proxy on a public address, add its addresses or ranges to the list;
-  `false` means no proxy. A client on your own private network looks like a proxy too, so it could
-  pick its own address. With a wrong value a client can dodge the per-IP limits on sign-in, sign-up,
+- The app takes the client's address from `X-Forwarded-For`, but only from the proxies named in
+  `TRUST_PROXY`. The image names none (PETTY-419). The compose file sets
+  `TRUST_PROXY=loopback,linklocal,uniquelocal`, proxies on private networks (`true` means the same):
+  there the app's port is open on `127.0.0.1` only, so only the host (through Docker) and the stack's
+  own containers connect. The address your proxy adds, the client's, counts; whatever the client wrote
+  before it does not. Behind a CDN or another proxy on a public address, add its addresses or ranges
+  to the list; `false` means no proxy. A machine on a trusted network looks like a proxy too, so it
+  could pick its own address. When you run the image another way (Kubernetes, your own `docker run`),
+  name your ingress's own addresses or range there, not all private networks. Behind a proxy with no
+  `TRUST_PROXY`, every visitor counts as the proxy's address and the per-address limits hit everyone
+  together; the app then logs one warning, `proxy_untrusted`. With a wrong value a client can dodge the per-IP limits on sign-in, sign-up,
   password reset and device codes (PETTY-290). The account lock does not depend on it: it is keyed
   by email (10 wrong passwords / 15 min), and password reset is capped per email.
 - Some platforms put their own addresses at the end of `X-Forwarded-For` and give the client's
@@ -81,7 +85,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail. The server must offer TLS: STARTTLS (usually port 587) or TLS on port 465. Only `localhost`, `127.0.0.1` and `mailpit` may be plain. Mail to a relay without TLS fails; the app logs it, and nobody else sees it. |
 | `CONTACT_EMAIL` | the operator's address, shown to everyone: the "Get an invite" buttons, the landing page, `/api/config`, and the security emails ("write to …"). Empty hides all of them. |
 | `LEGAL_DIR` | a folder with your own privacy notice and terms of service, see below. Empty (the default) = none. |
-| `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (the default: all three); `false` = none. See above. |
+| `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (`true` = all three); empty or `false` = none, the image's default. The compose file sets all three. See above. |
 | `RATE_LIMIT_PER_MINUTE` | API requests per client address per minute, for every route; `0` = off. The image's default is `600`. Over it, the API answers 429 with `Retry-After: 60`. The web app's own files and `/api/health*` do not count. Sign-in, sign-up, password reset and device codes keep their own, stricter limits. |
 | `SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT` | drawer invitation, ownership-offer and join-link emails per 24 hours that one person may send (default `20`) and one person or address may receive (default `5`); one email per drawer (join link: per sender) and recipient a day applies on top. `0` = no limit. Past a limit the invitation or offer is still made and shows in the app; only its email is skipped, and the inviter sees that. An emailed join link past a limit is refused (429) and no link is made; the inviter can still make a link in Settings and send it themselves. So nobody can use invite → revoke loops or join links to fill someone's inbox (PETTY-407, PETTY-423). |
 | `LOOKUP_LIMIT_PER_HOUR` | Email lookups (the Invite sheet's *Find*) per person per hour; a client address gets three times as many. Default `20`; `0` = off. Over it, the API answers 429 with `Retry-After: 3600`. The lookup must say whether an address has an account, so this limit is what stops someone from checking a list of addresses. |
