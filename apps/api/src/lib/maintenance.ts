@@ -2,10 +2,15 @@ import type { FastifyBaseLogger } from "fastify";
 import { bgPool, lastRequestUse } from "../db.js";
 import { dropExpiredTokenData } from "./tokens.js";
 
+/** How long a replaced drawer document stays restorable (PETTY-183, review NR-3). */
+export const HISTORY_DAYS = 30;
+
 /** Housekeeping, as petty_api: nothing here touches entries. On bgPool, so it is not counted as a request using the database. */
-export async function runMaintenance(): Promise<{ sessions: number; vault_history: number; device_requests: number; custody_challenges: number; rate_counters: number; password_resets: number; join_links: number; tokens: number; pending: boolean }> {
+export async function runMaintenance(): Promise<{ sessions: number; vault_history: number; document_history: number; device_requests: number; custody_challenges: number; rate_counters: number; password_resets: number; join_links: number; tokens: number; pending: boolean }> {
   const s = await bgPool.query("delete from sessions where expires_at < now()");
   const v = await bgPool.query("delete from vault_history where replaced_at < now() - interval '30 days'");
+  // PETTY-488: a write drops its own drawer's old copies, but a drawer nobody writes to again kept them for good
+  const h = await bgPool.query("delete from drawer_document_history where replaced_at < now() - make_interval(days => $1)", [HISTORY_DAYS]);
   // PETTY-274: a device login nobody finished (a picked-up one is deleted at once)
   const d = await bgPool.query("delete from device_requests where expires_at < now()");
   // PETTY-334: what several instances share instead of their memory; each row outlives its use by a window at most
@@ -21,7 +26,7 @@ export async function runMaintenance(): Promise<{ sessions: number; vault_histor
   const left = await bgPool.query<{ pending: boolean }>(
     "select exists(select 1 from rate_counters) or exists(select 1 from device_requests) or exists(select 1 from custody_challenges) or exists(select 1 from password_resets) as pending",
   );
-  return { sessions: s.rowCount ?? 0, vault_history: v.rowCount ?? 0, device_requests: d.rowCount ?? 0, custody_challenges: c.rowCount ?? 0, rate_counters: r.rowCount ?? 0, password_resets: p.rowCount ?? 0, join_links: j.rowCount ?? 0, tokens: t, pending: left.rows[0]!.pending };
+  return { sessions: s.rowCount ?? 0, vault_history: v.rowCount ?? 0, document_history: h.rowCount ?? 0, device_requests: d.rowCount ?? 0, custody_challenges: c.rowCount ?? 0, rate_counters: r.rowCount ?? 0, password_resets: p.rowCount ?? 0, join_links: j.rowCount ?? 0, tokens: t, pending: left.rows[0]!.pending };
 }
 
 const HOUR = 60 * 60_000;
