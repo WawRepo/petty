@@ -83,7 +83,7 @@ jobs:
           echo "version=$next" >> "$GITHUB_OUTPUT"
           echo "The latest tag is $latest, so this release is v$next."
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with: { node-version: 24 }
+        with: { node-version: 26 }
       # scripts/release.ts uses Node's own modules only: nothing from node_modules runs in this job.
       - name: Make the release commit and its tag (pushed only once the image is built)
         id: commit
@@ -133,7 +133,7 @@ jobs:
           git checkout -q --detach "$COMMIT"
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with: { node-version: 24 } # no cache: a release job neither reads nor writes one
+        with: { node-version: 26 } # no cache: a release job neither reads nor writes one
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @petty/mcp run pack
       # PETTY-274: the command line, one file, from the same release commit

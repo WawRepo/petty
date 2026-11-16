@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The image runs on Node.js 26 (LTS since 2026-10-28), up from Node.js 24. CI, `.node-version` and the
+  `engines` field for developing Petty move to 26 too. The `petty` command line and the AI add-on still
+  run on Node 20 or newer.
+
 ## [1.5.44] — 2026-11-16
 
 ### Fixed
