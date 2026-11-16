@@ -11,6 +11,7 @@ import { CliError, type Io } from "./io.js";
 import { itemLabel, placePaths, resolveDrawer, resolveItem, splitPlace } from "./items.js";
 import { apiOf, checkToken, deviceLogin, originOf } from "./login.js";
 import { forgetLogin, openToOthers, readStore, saveLogin, storePath } from "./store.js";
+import { cells, padCells } from "./width.js";
 
 /**
  * `petty`, Petty from the command line (PETTY-274). A thin layer over @petty/agent, the client the MCP
@@ -316,16 +317,17 @@ async function liveNames(io: Io, prior: readonly string[]): Promise<Names | null
 
 // ------------------------------------------------------------------------------------------- printing
 
-function drawersText(list: readonly AgentDrawer[]): string {
+export function drawersText(list: readonly AgentDrawer[]): string {
   if (!list.length) return "No drawers.\n";
-  const width = Math.max(8, ...list.flatMap((d) => d.lines.map((l) => [...l.name].length))) + 2;
+  // PETTY-495: in terminal cells, as the names are printed (an emoji or a CJK letter takes 2)
+  const width = Math.max(8, ...list.flatMap((d) => d.lines.map((l) => cells(clean(l.name))))) + 2;
   return list.map((d) => {
     const head = `${clean(d.name)}${d.place.length ? `  (${clean(d.place.join(" › "))})` : ""}${d.role === "read" ? "  read only" : ""}`;
     const lines = d.lines.map((l) => {
       const amount = l.kind === "single" ? "single item" : clean(l.amount);
       const tags = l.tags.length ? `  ${l.tags.map((t) => `#${clean(t)}`).join(" ")}` : "";
       const warn = l.unverified ? `  ! ${l.unverified} unverified entr${l.unverified === 1 ? "y" : "ies"} left out` : "";
-      return `  ${clean(l.name).padEnd(width)}${amount}${l.countedInTotal || l.kind === "single" ? "" : "  (not in total)"}${tags}${warn}`;
+      return `  ${padCells(clean(l.name), width)}${amount}${l.countedInTotal || l.kind === "single" ? "" : "  (not in total)"}${tags}${warn}`;
     });
     return [head, ...(lines.length ? lines : ["  (no items)"])].join("\n");
   }).join("\n\n") + "\n";

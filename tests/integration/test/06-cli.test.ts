@@ -142,7 +142,7 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     expect(await write.done).toBe(3); // read only
   });
 
-  it("shows text from a drawer with its control characters as ?, and escaped with --json (PETTY-453, PETTY-493)", async () => {
+  it("shows text from a drawer with its control characters as ?, and escaped with --json; amounts line up after emoji (PETTY-453, PETTY-493, PETTY-495)", async () => {
     // a drawer written past the app's checks, as a changed client could write it
     const ESC = "\u001b", RLO = "\u202e";
     const coins = crypto.randomUUID();
@@ -152,6 +152,8 @@ describe("petty, the shipped command line (PETTY-274)", () => {
         { id: coins, kind: "money" as const, name: "Coins", currency: `E${ESC}UR`, exponent: 2 }, { id: `old${ESC} id`, kind: "single" as const, name: "Key", text: "" },
         // PETTY-493: a direction override, which would turn the rest of the line around in a terminal
         { id: crypto.randomUUID(), kind: "single" as const, name: `Lid${RLO}`, text: "" },
+        // PETTY-495: 15 terminal cells (5 letters, 5 emoji of 2) in 15 UTF-16 units and 10 code points
+        { id: crypto.randomUUID(), kind: "single" as const, name: "Pets \u{1F408}\u{1F408}\u{1F408}\u{1F408}\u{1F408}", text: "" },
       ],
     };
     const made = await ann.createDrawer(odd.name, odd);
@@ -164,7 +166,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
 
     const list = petty(["drawers"]);
     expect(await list.done).toBe(0);
-    expect(list.out()).toBe("Odd?[2J box\n  Coins     5.00 E?UR\n  Key       single item\n  Lid?      single item\n");
+    // every amount starts in column 20: the widest name (15 cells) and 2 spaces; before PETTY-495 the
+    // emoji row was padded by code points and ran into its amount ("Pets 🐈🐈🐈🐈🐈single item")
+    const row = (name: string, cellsWide: number, amount: string) => `  ${name}${" ".repeat(17 - cellsWide)}${amount}\n`;
+    expect(list.out()).toBe(`Odd?[2J box\n${row("Coins", 5, "5.00 E?UR")}${row("Key", 3, "single item")}${row("Lid?", 4, "single item")}${row(odd.lines[3]!.name, 15, "single item")}`);
     const find = petty(["find", "odd", "key"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
@@ -173,6 +178,6 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there
     expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202e]/);
     expect(json.out()).toContain('"Lid\\u202e"');
-    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }, { name: `Lid${RLO}` }] }]);
+    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }, { name: `Lid${RLO}` }, { name: odd.lines[3]!.name }] }]);
   });
 });

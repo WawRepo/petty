@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- `petty drawers` lines the amounts up again when an item name has an emoji or Chinese, Japanese or
+  Korean letters. It counted characters, not the cells a terminal shows, so a long emoji name ran into
+  its amount.
+
 ## [1.5.45] — 2026-11-16
 
 ### Changed
