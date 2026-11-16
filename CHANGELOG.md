@@ -9,6 +9,9 @@ number, also when it adds features, and a new minor or major is started by hand 
 ## [Unreleased]
 
 ### Changed
+- The image runs on Node.js 26 (LTS since 2026-10-28), up from Node.js 24. CI, `.node-version` and the
+  `engines` field for developing Petty move to 26 too. The `petty` command line and the AI add-on still
+  run on Node 20 or newer.
 - What account deletion keeps (the person's id, language, dates and public keys, so the entries they
   wrote in drawers that others keep still verify) is now deleted once nothing needs it: when no entry,
   drawer document or photo, kept document version or drawer key they wrapped for someone names them

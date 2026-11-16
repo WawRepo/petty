@@ -8,7 +8,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "packageManager": "pnpm@11.28.8",
   "scripts": {
@@ -20,6 +20,7 @@
     "migrate": "pnpm --filter @petty/api run migrate",
     "seed": "pnpm --filter @petty/api run seed",
     "i18n:check": "pnpm --filter @petty/web i18n:check",
+    "licences:check": "node scripts/licence-check.ts",
     "e2e": "pnpm --filter @petty/web e2e"
   },
   "devDependencies": {

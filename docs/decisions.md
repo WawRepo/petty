@@ -129,7 +129,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   same steps (CLAUDE.md, "Releasing"); their provenance names no source revision. A release is started by hand from main and never waits for CI: it is refused
   while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
   version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
-  the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.
+  the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 26 LTS (since PETTY-346; Node 24 before).
   *Since PETTY-406 no job that runs dependency code holds a write token. Since PETTY-418 (2026-11-10)
   each release signs build attestations for the image and its files (`gh attestation verify`;
   [deploy.md](deploy.md), [cli.md](cli.md)), the app's setup and download links point at the GitHub

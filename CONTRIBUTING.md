@@ -50,6 +50,10 @@ git commit -s -m "Fix the thing"
 Forgot it? `git commit --amend -s` (last commit) or `git rebase --signoff main` (a whole branch).
 The `dco` check in CI fails a pull request with a commit that has no sign-off from its author.
 
+A new dependency must have a licence that can ship with AGPL-3.0 code. `pnpm licences:check` lists
+every installed package's licence and fails on one that is not allowed (`scripts/licence-check.ts`
+holds the list); CI runs it on every pull request.
+
 ## Tracking and decisions
 
 Ticket IDs such as `PETTY-123` refer to the maintainers' internal tracker; you do not need access to
