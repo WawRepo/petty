@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- For operators: the API no longer prints Fastify's deprecation warning FSTDEP023 when it starts. The
+  request log is unchanged: one "request" line per request, and none for health probes.
+
 ## [1.5.41] — 2026-11-16
 
 ### Security
