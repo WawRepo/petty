@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.46] — 2026-11-16
+
 ### Fixed
 - `petty drawers` lines the amounts up again when an item name has an emoji or Chinese, Japanese or
   Korean letters. It counted characters, not the cells a terminal shows, so a long emoji name ran into
@@ -1023,7 +1025,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.45...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.46...HEAD
+[1.5.46]: https://github.com/WawRepo/petty/releases/tag/v1.5.46
 [1.5.45]: https://github.com/WawRepo/petty/releases/tag/v1.5.45
 [1.5.44]: https://github.com/WawRepo/petty/releases/tag/v1.5.44
 [1.5.43]: https://github.com/WawRepo/petty/releases/tag/v1.5.43
