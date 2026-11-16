@@ -500,11 +500,12 @@ The app deletes some things by itself, hourly while it is in use and daily other
 sessions, device logins nobody finished, custody challenges and limit counts that ran out, a
 password-reset token after its hour, an unused join link when it ends, and vault blobs replaced more
 than 30 days ago. A used join link forgets the address it was for at once. A drawer keeps replaced
-documents for 30 days; each change of its document deletes the older ones, so an old copy stays in
-the database until the drawer's document next changes. Deleting an account erases its email, name,
+documents for 30 days, then housekeeping deletes them. Deleting an account erases its email, name,
 vault copies, user document, passkeys, sessions, unused join links and reset tokens, and the keys and
 names of its tokens. Its public keys and its entries in drawers that others keep stay, so those
-entries still verify.
+entries still verify. What is left of the account (its id, language, dates and public keys) goes in
+the first housekeeping run after nothing that others keep names it any more: no entry, drawer
+document or photo, kept document version, or drawer key it wrapped for someone.
 
 ## Operator responsibilities
 

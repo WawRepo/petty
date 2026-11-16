@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- What account deletion keeps (the person's id, language, dates and public keys, so the entries they
+  wrote in drawers that others keep still verify) is now deleted once nothing needs it: when no entry,
+  drawer document or photo, kept document version or drawer key they wrapped for someone names them
+  any more. Before, it stayed for good. Migration 019 adds the function `purge_tombstones()`, which
+  the hourly or daily housekeeping calls; the request role may call it but still cannot delete
+  accounts or keys itself. For operators: the "maintenance" log line has a new number, `tombstones`.
+
 ## [1.5.44] — 2026-11-16
 
 ### Fixed
