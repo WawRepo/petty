@@ -38,7 +38,7 @@ const at = (body: string, what: string): number => { const i = body.indexOf(what
 
 describe("release.yml", () => {
   it("has the jobs these checks know", () => {
-    assert.deepEqual([...jobs.keys()], ["prepare", "pack", "image", "attest", "publish", "registry"]);
+    assert.deepEqual([...jobs.keys()], ["prepare", "pack", "image", "attest", "publish", "verify", "registry"]);
   });
 
   it("gives a job that runs dependency code a read-only token", () => {
@@ -58,7 +58,7 @@ describe("release.yml", () => {
     assert.equal(runsDependencyCode(body), false);
     assert.doesNotMatch(body, /^\s+run:/m, "the attest job runs no script of its own");
     assert.doesNotMatch(body, /actions\/checkout@|docker\//);
-    for (const n of jobs.keys()) if (n !== "attest") assert.equal(permissions(n)["attestations"], undefined, `${n} must not write attestations`);
+    for (const n of jobs.keys()) if (n !== "attest") assert.notEqual(permissions(n)["attestations"], "write", `${n} must not write attestations`);
     // the only other job with id-token is the registry login, which calls mcp-registry.yml
     assert.deepEqual([...jobs.keys()].filter((n) => permissions(n)["id-token"]), ["attest", "registry"]);
   });
@@ -75,6 +75,32 @@ describe("release.yml", () => {
   it("publishes only after the attestations are signed", () => {
     assert.deepEqual(needs("publish"), ["prepare", "pack", "image", "attest"]);
     assert.deepEqual(needs("registry"), ["prepare", "publish"]);
+  });
+
+  // PETTY-499: the release checks its own attestations, the way docs/deploy.md and docs/cli.md tell a user to.
+  it("checks the attestations of what was published, in a read-only job", () => {
+    const body = job("verify");
+    assert.deepEqual(permissions("verify"), { contents: "read", attestations: "read" });
+    assert.ok(needs("verify").includes("publish"), "verify runs after publish");
+    assert.equal(runsDependencyCode(body), false);
+    assert.doesNotMatch(body, /actions\/checkout@|docker\/|secrets\./);
+    assert.match(body, /DIGEST: \$\{\{ needs\.image\.outputs\.digest \}\}/);
+    // the rules a user's check applies, and this run's own commit
+    for (const flag of [
+      '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"',
+      "--source-ref refs/heads/main",
+      '--source-digest "$GITHUB_SHA"',
+      "--deny-self-hosted-runners",
+    ]) at(body, flag);
+    // every file that SHA256SUMS lists, as the GitHub Release serves it
+    const files = /sha256sum ([^>]+)> SHA256SUMS/.exec(job("publish"))?.[1]?.trim().split(/\s+/) ?? [];
+    at(body, `gh release download "v$VERSION"`);
+    for (const f of files) at(body, `--pattern ${f} `);
+    at(body, "sha256sum --check --strict SHA256SUMS");
+    at(body, `for f in ${files.join(" ")}; do`);
+    // the image by the digest that was built, and both tags the publish job set
+    at(body, 'for ref in "@$DIGEST" ":v$VERSION" ":latest"; do');
+    at(body, 'verified "oci://ghcr.io/wawrepo/petty$ref"');
   });
 
   it("pushes the image by digest, with no tag", () => {
