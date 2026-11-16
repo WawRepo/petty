@@ -62,7 +62,7 @@ describe("metrics (Phase 15b)", () => {
       petty_auth_events_total: ["event", ["login_ok", "login_fail", "rate_limited", "signup", "forgot", "reset", "logout", "device_code", "device_approved", "device_denied"]],
       petty_security_refusals_total: ["code", [...SECURITY_REFUSALS]],
       petty_mail_total: ["result", ["ok", "failed"]],
-      petty_mail_limited_total: ["kind", ["invitation", "transfer"]],
+      petty_mail_limited_total: ["kind", ["invitation", "transfer", "join-link"]],
       petty_entries_total: ["result", ["created", "duplicate"]],
     } as const;
     for (const [name, [label, values]] of Object.entries(series)) {

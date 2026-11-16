@@ -648,6 +648,7 @@
     "joinLink": "Wyślij link z zaproszeniem",
     "joinLinkHint": "Dla kogoś, kto nie ma jeszcze konta w Petty. Dostanie e-mail z jednorazowym linkiem.",
     "joinLinkSent": "Link z zaproszeniem wysłany na {email}",
+    "joinLinkTooMany": "Za dużo e-maili w ostatnim czasie. Spróbuj później albo utwórz link z zaproszeniem w Ustawieniach i wyślij go samodzielnie.",
     "alreadyMember": "Już jest członkiem."
   },
   "rotation": {

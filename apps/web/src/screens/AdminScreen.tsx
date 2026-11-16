@@ -41,7 +41,8 @@ export function AdminScreen() {
     e.preventDefault();
     setBusy(true);
     try { await api("POST", "/join-links", { email: inviteEmail }); toast(t("invite.joinLinkSent", { email: inviteEmail })); setInviteEmail(""); }
-    catch { toast(t("errors.unknown")); } finally { setBusy(false); }
+    catch (err) { toast(t(err instanceof ApiError && err.status === 429 ? "invite.joinLinkTooMany" : "errors.unknown")); } // PETTY-423
+    finally { setBusy(false); }
   }
 
   return (

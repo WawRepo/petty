@@ -52,4 +52,17 @@ describe("mail (PETTY-281)", () => {
     expect(await countTo(ben.user.email, /^A drawer was shared with you$/)).toBe(1);
     expect((await ann.call("PATCH", "/me", { display_name: "Ann, see https://example.test" })).statusCode).toBe(400);
   });
+
+  it("a join-link email goes to one address once a day per sender: sending again is refused and mails nothing (PETTY-423)", async () => {
+    const cleo = await newUser("joiner");
+    const friend = `friend-${crypto.randomUUID().slice(0, 8)}@petty.test`;
+    expect((await cleo.call("POST", "/join-links", { email: friend })).statusCode).toBe(201);
+    expect(await mailTo(friend, /^You are invited to Petty$/)).toMatch(/\/join#[A-Za-z0-9_-]+/);
+    const again = await cleo.call("POST", "/join-links", { email: friend.toUpperCase() });
+    expect(again.statusCode).toBe(429);
+    expect(again.json().code).toBe("TooManyAttempts");
+    await new Promise((r) => setTimeout(r, 1_000)); // a second mail would have reached the catcher by now
+    expect(await countTo(friend, /^You are invited to Petty$/)).toBe(1);
+    expect((await cleo.call("POST", "/join-links", {})).statusCode).toBe(201); // a link with no address is not held back
+  });
 });

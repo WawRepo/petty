@@ -648,6 +648,7 @@
     "joinLink": "Send a join link",
     "joinLinkHint": "For someone who is not on Petty yet. They get an email with a one-time link.",
     "joinLinkSent": "Join link sent to {email}",
+    "joinLinkTooMany": "Too many emails sent recently. Try again later, or create a join link in Settings and send it yourself.",
     "alreadyMember": "Already a member."
   },
   "rotation": {
