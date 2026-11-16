@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- A tab opened on someone's first visit, before Petty's offline copy was ready, now also reloads onto a
+  new version when one is published. Before, it kept running the old version until it was reloaded by hand.
+
 ## [1.5.47] — 2026-11-16
 
 ### Added

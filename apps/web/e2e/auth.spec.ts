@@ -204,8 +204,10 @@ test("a session revoked on the server signs the client out on its next call, wit
   const c = new pg.Client({ connectionString: OWNER_DB });
   await c.connect();
   try { await c.query("delete from sessions where user_id = (select id from users where email = $1)", [user.email]); } finally { await c.end(); }
-  // cached screens may still render, but the first API call must end the local session
-  await page.getByRole("button", { name: "Create join link" }).click();
+  // cached screens may still render, but the first API call must end the local session.
+  // PETTY-503: a call the app makes by itself (a sync) can be that first call and sign out before this
+  // click lands; the button is then gone for good, and a plain click waited for it until the test timed out.
+  await page.getByRole("button", { name: "Create join link" }).click({ timeout: 10_000 }).catch(() => undefined);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   // and the vault cache is gone with it
   await page.reload();

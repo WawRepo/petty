@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -24,6 +25,21 @@ function petty(args: string[], dir: string) {
   const done = new Promise<number>((r) => child.on("close", (code) => r(code ?? -1)));
   return { done, out: () => out, err: () => err, stop: () => child.kill() };
 }
+/**
+ * PETTY-503: the API gives out 10 sign-in codes an hour per client address, and this file asks for 4, all
+ * from this machine (the dev server's proxy). Runs within the hour then failed from the third on. Before
+ * each `petty auth login`, the counter of this machine's address starts again; the limit itself is not
+ * changed (tests/integration/test/11-rate-limit.test.ts covers it). The counter is keyed by the SHA-256
+ * of `device-code:<address>` (apps/api/src/lib/password.ts); the address is 127.0.0.1 or the ::1 network.
+ */
+async function freshCodeLimit() {
+  const keys = ["127.0.0.1", "0:0:0:0::/64"].map((net) => createHash("sha256").update(`device-code:${net}`).digest("hex"));
+  await dbQuery("delete from rate_counters where key_hash = decode($1, 'hex') or key_hash = decode($2, 'hex')", keys);
+}
+async function startLogin(args: string[], dir: string) {
+  await freshCodeLimit();
+  return petty(["auth", "login", ...args], dir);
+}
 const configDir = () => { const d = mkdtempSync(join(tmpdir(), "petty-e2e-")); dirs.push(d); return d; };
 /** What `petty auth login` printed: its code and the page to open. */
 async function asked(login: ReturnType<typeof petty>) {
@@ -46,7 +62,7 @@ test("petty auth login: allowed on the /device page for one drawer, the command 
   const atticId = /\/drawers\/([0-9a-f-]+)/.exec(page.url())![1]!;
 
   const dir = configDir();
-  const login = petty(["auth", "login", "--host", origin, "--no-browser"], dir);
+  const login = await startLogin(["--host", origin, "--no-browser"], dir);
   const { url, code } = await asked(login);
   expect(url).toBe(`${origin}/device?code=${code}`);
   await page.goto(url);
@@ -108,7 +124,7 @@ test("Deny on the /device page: the command line stops and is not signed in", as
   const origin = test.info().project.use.baseURL!;
   const user = await signupWithKeys("cld");
   await loginAndUnlock(page, user);
-  const login = petty(["auth", "login", "--host", origin, "--no-browser", "--read-only"], configDir());
+  const login = await startLogin(["--host", origin, "--no-browser", "--read-only"], configDir());
   const { url } = await asked(login);
   await page.goto(url);
   await expect(page.getByText("It asks to read only. It cannot change anything.")).toBeVisible();
@@ -124,7 +140,7 @@ test("Deny on the /device page: the command line stops and is not signed in", as
 test("signed out, the /device link leads through sign-in and unlock back to the request", async ({ page }) => {
   const origin = test.info().project.use.baseURL!;
   const user = await signupWithKeys("clr");
-  const login = petty(["auth", "login", "--host", origin, "--no-browser", "--read-only"], configDir());
+  const login = await startLogin(["--host", origin, "--no-browser", "--read-only"], configDir());
   const { url, code } = await asked(login);
   await page.goto(url);
   await expect(page).toHaveURL(/\/login$/);
@@ -171,7 +187,7 @@ test("a request whose key is not the one its code was made from cannot be allowe
   const origin = test.info().project.use.baseURL!;
   const user = await signupWithKeys("clk");
   await loginAndUnlock(page, user);
-  const login = petty(["auth", "login", "--host", origin, "--no-browser", "--read-only"], configDir());
+  const login = await startLogin(["--host", origin, "--no-browser", "--read-only"], configDir());
   try {
     const { url, code } = await asked(login);
     // the row now holds another key than the command line's

@@ -12,9 +12,23 @@ async function mailTo(email: string, subject: RegExp): Promise<string> {
   }
   throw new Error(`no mail matching ${String(subject)} to ${email}`);
 }
-async function countTo(email: string, subject: RegExp): Promise<number> {
-  const list = (await (await fetch(`${MAILPIT}/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json()) as { messages: { Subject: string }[] };
-  return list.messages.filter((x) => subject.test(x.Subject)).length;
+/** The text of every mail to `email` with this subject. */
+async function textsTo(email: string, subject: RegExp): Promise<string[]> {
+  const list = (await (await fetch(`${MAILPIT}/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json()) as { messages: { ID: string; Subject: string }[] };
+  return Promise.all(list.messages.filter((x) => subject.test(x.Subject)).map(async (m) => ((await (await fetch(`${MAILPIT}/message/${m.ID}`)).json()) as { Text: string }).Text));
+}
+/**
+ * PETTY-503: "and no second mail" used to wait one fixed second, which proves little when the stack is busy.
+ * Instead a later mail to the same address (one that says `marker`) must arrive first: a mail the server
+ * had sent before it has had at least as long to reach the catcher.
+ */
+async function afterLaterMail(email: string, subject: RegExp, marker: string): Promise<string[]> {
+  for (let i = 0; i < 50; i++) {
+    const texts = await textsTo(email, subject);
+    if (texts.some((t) => t.includes(marker))) return texts;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error(`no mail saying ${JSON.stringify(marker)} to ${email}`);
 }
 const post = (path: string, body: unknown) => fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
@@ -48,8 +62,13 @@ describe("mail (PETTY-281)", () => {
     const again = await invite();
     expect(again.statusCode).toBe(201);
     expect(again.json().mailed).toBe(false);
-    await new Promise((r) => setTimeout(r, 1_000)); // a second mail would have reached the catcher by now
-    expect(await countTo(ben.user.email, /^A drawer was shared with you$/)).toBe(1);
+    // a later invitation to another drawer (as a writer) is mailed; once it is in, still one mail for the first
+    const other = await ann.createDrawer("Attic");
+    const otherKey = await ann.unwrap((await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === other.id), ann.user.pub.ecdh, true);
+    const later = await ann.call("POST", `/drawers/${other.id}/invitations`, { invitee_id: ben.id, role: "write", wrap: await ann.wrapFor(otherKey, ben.user.pub.ecdh, other.id, 1) });
+    expect(later.json().mailed).toBe(true);
+    const shared = await afterLaterMail(ben.user.email, /^A drawer was shared with you$/, "as a writer");
+    expect(shared.filter((t) => t.includes("as a reader"))).toHaveLength(1);
     expect((await ann.call("PATCH", "/me", { display_name: "Ann, see https://example.test" })).statusCode).toBe(400);
   });
 
@@ -61,8 +80,11 @@ describe("mail (PETTY-281)", () => {
     const again = await cleo.call("POST", "/join-links", { email: friend.toUpperCase() });
     expect(again.statusCode).toBe(429);
     expect(again.json().code).toBe("TooManyAttempts");
-    await new Promise((r) => setTimeout(r, 1_000)); // a second mail would have reached the catcher by now
-    expect(await countTo(friend, /^You are invited to Petty$/)).toBe(1);
+    // someone else's join link to the same address is mailed; once it is in, still one mail from cleo
+    const dana = await newUser("other-joiner");
+    expect((await dana.call("POST", "/join-links", { email: friend })).statusCode).toBe(201);
+    const invited = await afterLaterMail(friend, /^You are invited to Petty$/, `${dana.user.display_name} invited you`);
+    expect(invited.filter((t) => t.startsWith(`${cleo.user.display_name} invited you`))).toHaveLength(1);
     expect((await cleo.call("POST", "/join-links", {})).statusCode).toBe(201); // a link with no address is not held back
   });
 });

@@ -59,8 +59,13 @@ test("the language pill is as wide as the chosen name, its icon and name in the 
   await page.goto("/");
   const pick = page.getByTestId("landing-language");
   const face = page.getByTestId("landing-language-face");
-  for (const l of ["en", "fr", "de", "es", "pl"]) {
+  const names = { en: "English", fr: "Français", de: "Deutsch", es: "Español", pl: "Polski" } as const;
+  for (const l of ["en", "fr", "de", "es", "pl"] as const) {
     await pick.selectOption(l);
+    // PETTY-503: the pill shows the new name only once that language's words have loaded; measured before,
+    // the pill still had the old name's width (CI flake). Measure after it shows the new one.
+    await expect(face).toHaveText(names[l]);
+    await expect(page.locator("html")).toHaveAttribute("lang", l);
     const gaps = await face.evaluate((el) => {
       const box = el.getBoundingClientRect();
       const range = document.createRange();
@@ -69,8 +74,12 @@ test("the language pill is as wide as the chosen name, its icon and name in the 
       return { left: inner.left - box.left, right: box.right - inner.right };
     });
     expect(Math.abs(gaps.left - gaps.right), `${l}: ${JSON.stringify(gaps)}`).toBeLessThanOrEqual(1.5);
-    // the unseen select covers the pill exactly, so a tap anywhere on it opens the list
-    const [a, b] = [await pick.boundingBox(), await face.boundingBox()];
-    expect(a).toEqual(b);
+    // the unseen select covers the pill exactly, so a tap anywhere on it opens the list; both boxes come
+    // from one layout, never from two moments around a re-render
+    const [a, b] = await face.evaluate((el) => {
+      const select = el.parentElement!.querySelector("select")!;
+      return [select, el].map((n) => { const r = n.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    });
+    expect(a, l).toEqual(b);
   }
 });

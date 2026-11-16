@@ -55,13 +55,18 @@ test("invite, decline, invite again the same day: the invitation stands, the sec
   expect((await bobApi.call("POST", `/invitations/${first.invitations[0]!.id}/decline`)).status).toBe(204);
   await inviteViaUi(pageA, id, bob, "write", "Invitation sent. No email this time (too many recently). They will see it when they open Petty.");
   expect(((await bobApi.call("GET", "/invitations")).json as { invitations: unknown[] }).invitations).toHaveLength(1); // bob still sees it in the app
+  const MAILPIT = `${process.env["MAILPIT_URL"] ?? "http://localhost:8025"}/api/v1`;
   const shared = async () => {
-    const r = await fetch(`${process.env["MAILPIT_URL"] ?? "http://localhost:8025"}/api/v1/search?query=${encodeURIComponent(`to:${bob.email}`)}`);
-    return ((await r.json()) as { messages: Array<{ Subject: string }> }).messages.filter((m) => m.Subject === "A drawer was shared with you").length;
+    const r = await fetch(`${MAILPIT}/search?query=${encodeURIComponent(`to:${bob.email}`)}`);
+    const ids = ((await r.json()) as { messages: Array<{ ID: string; Subject: string }> }).messages.filter((m) => m.Subject === "A drawer was shared with you").map((m) => m.ID);
+    return Promise.all(ids.map(async (id) => ((await (await fetch(`${MAILPIT}/message/${id}`)).json()) as { Text: string }).Text));
   };
-  await expect.poll(shared).toBe(1);
-  await pageA.waitForTimeout(1_000); // a second mail would be on its way by now
-  expect(await shared()).toBe(1);
+  // PETTY-503: not a fixed wait for "no second mail": a later invitation to another drawer (as a reader) is
+  // mailed, and once it is in, a second mail about Kitchen would have had at least as long to arrive
+  await pageA.goto("/");
+  await inviteViaUi(pageA, await makeDrawer(pageA, "Garage"), bob, "read");
+  await expect.poll(async () => (await shared()).filter((t) => t.includes("as a reader")).length).toBe(1);
+  expect((await shared()).filter((t) => t.includes("as a writer"))).toHaveLength(1);
   await ctxA.close();
 });
 

@@ -29,13 +29,18 @@ if (tt) {
 /**
  * PETTY-144: after a deploy the new service worker takes control of this page (clientsClaim). The page
  * still runs the old code, so reload once onto the new shell — but never under an open sheet (an entry
- * being typed), and never on the very first install, when there was no worker before.
+ * being typed), and never when the first worker takes the page (a first visit), when there was no worker before.
+ * PETTY-503: "before" is the worker that controlled the page just before this change, not the one at load: a
+ * page that loaded before the first worker was active is taken over by it later, and must still reload on
+ * the next deploy.
  */
 if ("serviceWorker" in navigator) {
-  const hadController = !!navigator.serviceWorker.controller;
+  let controller = navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading) return;
+    const before = controller;
+    controller = navigator.serviceWorker.controller;
+    if (!before || reloading) return;
     reloading = true;
     const go = () => { if (document.querySelector('[role="dialog"]')) { window.setTimeout(go, 1000); return; } location.reload(); };
     go();
