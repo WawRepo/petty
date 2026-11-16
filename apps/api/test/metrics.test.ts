@@ -86,6 +86,9 @@ describe("what may appear in a log line (SR-1)", () => {
     expect(safeUrl(fake("/drawers/abc"))).toBe("/drawers/…");
     expect(safeUrl(fake("/join-links/SECRET", "/join-links/:token"))).toBe("/join-links/:token");
     expect(safeUrl(fake("/drawers/0d1/entries", "/drawers/:id/entries"))).toBe("/drawers/0d1/entries");
+    // PETTY-461: the device-login code is a secret while it waits for approval
+    expect(safeUrl(fake("/api/device/BCDF-GHJK-LMNP-QRST-VWXZ", "/api/device/:code"))).toBe("/api/device/:code");
+    expect(safeUrl(fake("/api/device/BCDF-GHJK-LMNP-QRST-VWXZ/approve", "/api/device/:code/approve"))).toBe("/api/device/:code/approve");
   });
 
   it("never reports a query string (PETTY-408: GET /users/lookup?email= put an address in every request line)", async () => {

@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The request log and the traces no longer show the device-login code (the one `petty auth login`
+  prints) in the address of the `/device/<code>` calls. They show `/device/:code`. Before, anyone who
+  could read the logs saw each code while it waited for approval.
+
 ## [1.5.43] — 2026-11-16
 
 ### Added
