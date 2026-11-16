@@ -29,7 +29,7 @@ const identity: RecordIdentity = { record_type: "document", record_id: USER, dra
 let key: CryptoKey;
 
 interface Row { version: number; schema_version: number; nonce: string; ciphertext: string }
-const server = { row: null as Row | null, puts: 0, down: false, refusePut: false };
+const server = { row: null as Row | null, puts: 0, down: false, refusePut: false, alwaysNewer: false };
 /** The sealed row as the user's own key makes it. */
 async function sealedRow(doc: unknown, version: number): Promise<Row> {
   const s = await seal(key, identity, utf8(canonicalJson(doc)));
@@ -58,7 +58,7 @@ beforeAll(async () => {
   key = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(USER), "AES-GCM", ["encrypt", "decrypt"]);
 });
 beforeEach(() => {
-  server.row = null; server.puts = 0; server.down = false; server.refusePut = false;
+  server.row = null; server.puts = 0; server.down = false; server.refusePut = false; server.alwaysNewer = false;
   newBrowser();
   vi.stubGlobal("fetch", async (url: string, init?: { method?: string; body?: string }) => {
     if (server.down) throw new TypeError("fetch failed");
@@ -67,7 +67,7 @@ beforeEach(() => {
     server.puts += 1;
     if (server.refusePut) return new Response(JSON.stringify({ code: "Internal", message: "internal error" }), { status: 500 });
     const body = JSON.parse(init!.body!) as { base_version: number; schema_version: number; nonce: string; ciphertext: string };
-    if (body.base_version !== (server.row?.version ?? 0)) return new Response(JSON.stringify({ code: "VersionConflict", message: "user document changed" }), { status: 409 });
+    if (server.alwaysNewer || body.base_version !== (server.row?.version ?? 0)) return new Response(JSON.stringify({ code: "VersionConflict", message: "user document changed" }), { status: 409 });
     server.row = { version: body.base_version + 1, schema_version: body.schema_version, nonce: body.nonce, ciphertext: body.ciphertext };
     return new Response(JSON.stringify({ version: server.row.version, updated_at: "2026-11-10T10:00:00.000Z" }), { status: 200 });
   });
@@ -209,6 +209,16 @@ describe("the user document against a server that kept older copies", () => {
     expect(await onServer()).toEqual({ version: 4, doc: { v: 2, rev: 4, pins: {}, hide_places: true, hide_totals: true, drawer_revs: { [DRAWER]: 5 } } });
     expect(seen()).toEqual({ version: 4, rev: 4 });
     expect(acceptedDocRev(DRAWER)).toBe(5);
+  });
+
+  it("a save that meets a newer copy three times in a row fails out loud, and nothing is saved (PETTY-461)", async () => {
+    await startUserDoc();
+    const before = await onServer();
+    const puts = server.puts;
+    server.alwaysNewer = true;
+    await expect(setTotalsShown(false)).rejects.toThrow("PinsConflict");
+    expect(server.puts - puts).toBe(3);
+    expect(await onServer()).toEqual(before);
   });
 
   it("a browser new to the account has nothing to compare with and takes the copy it is given", async () => {

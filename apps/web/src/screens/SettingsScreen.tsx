@@ -86,7 +86,7 @@ export function SettingsScreen() {
       toast(t("settings.recovery.saved"));
       closeRc();
     } catch (err) {
-      setRcErr(err instanceof ApiError && err.status === 401 ? { lp: t("auth.login.failed") } : { typed: t("errors.unknown") });
+      setRcErr(err instanceof ApiError && err.status === 401 ? { lp: t("auth.login.failed") } : err instanceof ApiError && err.status === 429 ? { lp: t("auth.login.tooMany") } : { typed: t("errors.unknown") });
     } finally { setRcBusy(false); }
   }
   useEffect(() => { void passkeyPrfSupported().then(setPkAvail); }, []);
@@ -94,6 +94,7 @@ export function SettingsScreen() {
     if (err instanceof ApiError && err.code === "PasskeyLimit") return { lp: t("settings.passkey.limit", { max: MAX_PASSKEYS }) }; // PETTY-461
     if (err instanceof WrongPassphrase) return { pass: t("auth.unlock.wrong") };
     if (err instanceof ApiError && err.status === 401) return { lp: t("auth.login.failed") };
+    if (err instanceof ApiError && err.status === 429) return { lp: t("auth.login.tooMany") }; // PETTY-411
     if (err instanceof ApiError && err.code === "LastDoor") return { lp: t("settings.passkey.lastDoor") };
     if (err instanceof PasskeyError) return { lp: t(err.code === "cancelled" ? "settings.passkey.cancelled" : err.code === "exists" ? "settings.passkey.exists" : err.code === "no_prf" ? "settings.passkey.noPrf" : "settings.passkey.unsupported") };
     return { lp: t("errors.unknown") };
@@ -141,6 +142,7 @@ export function SettingsScreen() {
       setSp(false); setNp(""); setNp2(""); setLp("");
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) setCErr({ lp: t("auth.login.failed") });
+      else if (err instanceof ApiError && err.status === 429) setCErr({ lp: t("auth.login.tooMany") }); // PETTY-411
       else if (err instanceof PasskeyError) setCErr({ np: t(err.code === "cancelled" ? "settings.passkey.cancelled" : "settings.passkey.unsupported") });
       else setCErr({ np: t("errors.unknown") });
     } finally { setCBusy(false); }
@@ -164,6 +166,7 @@ export function SettingsScreen() {
     } catch (err) {
       if (err instanceof WrongPassphrase) setCErr({ cur: t("auth.unlock.wrong") });
       else if (err instanceof ApiError && err.status === 401) setCErr({ lp: t("auth.login.failed") });
+      else if (err instanceof ApiError && err.status === 429) setCErr({ lp: t("auth.login.tooMany") }); // PETTY-411
       else setCErr({ cur: t("errors.unknown") });
     } finally { setCBusy(false); }
   }

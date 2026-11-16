@@ -123,7 +123,8 @@ says `Signed in`.
   at an older Petty stops with `runs an older Petty than this command line`. Install the `petty` that
   goes with your Petty (the page *Use Petty with AI* has the commands). A login you already have
   keeps working.
-- `petty auth status` checks the token still works. `petty auth logout` ends it on the server and
+- `petty auth status` checks the token still works and names the drawers it opens: every drawer
+  (also ones made later) or only the chosen ones. `petty auth logout` ends it on the server and
   forgets it here.
 - A token you made by hand: `petty auth login --host … --with-token < token.txt`.
 - **Scripts and CI:** set `PETTY_TOKEN` and `PETTY_API_URL` (`https://<your petty>/api`). They win

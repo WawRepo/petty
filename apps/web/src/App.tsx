@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense, useEffect, useLayoutEffect, type ErrorInfo, type ReactNode } from "react";
+import { crashLabel } from "./lib/crash.js";
 import { useTranslation } from "react-i18next";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router";
 import { ToastProvider } from "./components/Toast.js";
@@ -49,12 +50,13 @@ const DeviceScreen = screen(() => import("./screens/DeviceScreen.js"), (m) => m.
 
 /**
  * Never a blank page (PETTY-60): a render error or a screen that could not load shows what went wrong
- * (the error's class and message — never content, CLAUDE.md rule 2) and a Reload button.
+ * and a Reload button. PETTY-461: only the error's class and code (`crashLabel`), never its message,
+ * which can quote content (CLAUDE.md rule 2).
  */
 class Crash extends Component<{ children: ReactNode }, { error: Error | null }> {
   override state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
-  override componentDidCatch(error: Error, info: ErrorInfo) { console.error("render failed", error.name, error.message, info.componentStack); }
+  override componentDidCatch(error: Error, info: ErrorInfo) { console.error("render failed", crashLabel(error), info.componentStack); }
   override render() {
     if (!this.state.error) return this.props.children;
     return <CrashScreen error={this.state.error} />;
@@ -65,7 +67,7 @@ function CrashScreen({ error }: { error: Error }) {
   return (
     <main className="stack" data-testid="crash-screen">
       <p className="error" role="alert">{t("app.crashed")}</p>
-      <p className="hint m0"><code>{error.name}: {error.message}</code></p>
+      <p className="hint m0"><code>{crashLabel(error)}</code></p>
       <button type="button" className="btn btn-primary" onClick={() => location.reload()}>{t("app.reload")}</button>
     </main>
   );

@@ -4,7 +4,7 @@ import { patSecret, patToken, sealPatBundle, sha256, signDelegation, type Signed
 import { custodyProof } from "./custody.js";
 import { trustedTokens, updateTrustedTokens } from "./pins.js";
 import { api } from "./api.js";
-import { getDrawers, openWrap, type DrawerView, loadIfIdle } from "./drawers.js";
+import { getDrawers, openWrap, type DrawerError, type DrawerView, loadIfIdle } from "./drawers.js";
 import { getAuth } from "./session.js";
 import { openVaultAgain } from "./custody.js";
 
@@ -34,13 +34,22 @@ const WRAP_BATCH = 100;
 const tokenId = (): string => toB64(crypto.getRandomValues(new Uint8Array(24))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 /** Drawer keys, extractable, for the drawers in scope. A drawer this device cannot open is skipped. */
+/**
+ * PETTY-461: a drawer whose key this app does not trust right now gives no key to a token: a key rolled
+ * back or replaced, one from a sender not confirmed, or one that did not open. A damaged document is not
+ * such a problem: the key is fine. The token gets the key later (syncTokenWraps) once the drawer is right.
+ */
+const KEY_PROBLEMS: ReadonlySet<DrawerError> = new Set<DrawerError>(["no_key", "sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced", "key_rolled_back", "unwrap_failed"]);
+
 async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId: string; keyVersion: number; key: CryptoKey }[]> {
   const me = getAuth();
   if (me.status !== "unlocked") throw new Error("vault locked");
   const out: { drawerId: string; keyVersion: number; key: CryptoKey }[] = [];
   for (const v of getDrawers().drawers.values() as Iterable<DrawerView>) {
     if (scope && !scope.includes(v.summary.id)) continue;
-    const wrap = [...v.wraps].sort((a, b) => b.key_version - a.key_version)[0];
+    if (v.error && KEY_PROBLEMS.has(v.error)) continue;
+    // the drawer's current key only: not the highest wrap the server happens to list
+    const wrap = v.wraps.find((w) => w.drawer_id === v.summary.id && w.key_version === v.summary.key_version);
     if (!wrap) continue;
     // a drawer whose wrap this device cannot open, or does not take (PETTY-438), simply stays out of the bundle
     const opened = await openWrap(v.summary.id, wrap.key_version, wrap, v.members, { extractable: true });
