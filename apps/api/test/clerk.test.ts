@@ -20,11 +20,13 @@ vi.mock("../src/lib/clerk.js", async (importOriginal) => {
     ...orig,
     clerkProfile: async (id: string) => ({ email: profileEmail(id), emailVerified: !id.endsWith("UNVERIFIED"), name: `Clerk ${id}` }),
     deleteClerkUser: async () => { deleted.push("x"); },
-    revokeClerkSessions: async () => 0,
+    revokeClerkSessions: async (id: string) => { revoked.push(id); return 1; },
     clerkUserExists: async (id: string) => !gone.has(id),
   };
 });
 const deleted: string[] = [];
+/** Test hook: the Clerk users whose sessions the API asked Clerk to end. */
+const revoked: string[] = [];
 /** Test hook: Clerk users that no longer exist (PETTY-187). */
 const gone = new Set<string>();
 /** Test hook: which email Clerk reports for an id (default: derived from the id). */
@@ -120,6 +122,27 @@ describe("clerk mode", () => {
     expect((await U.call("POST", "/me/delete", { proof: await U.proof(), decisions: [] })).statusCode).toBe(204);
     expect(deleted.length).toBe(1);
     expect((await U.call("GET", "/me")).statusCode).toBe(404);
+  }, 60_000);
+
+  it("an admin's block and revoke end the person's Clerk sessions too", async () => {
+    const provisioned = async (name: string, sub: string) => {
+      const c = new Client(app, await userMaterial(name));
+      c.bearer = await token(sub);
+      const sb = c.user.signupBody;
+      const made = await c.call("POST", "/auth/provision", { display_name: sb["display_name"], keys: sb["keys"], vault: sb["vault"], recovery_vault: sb["recovery_vault"] });
+      expect(made.statusCode).toBe(201);
+      c.id = made.json().id;
+      return c;
+    };
+    const A = await provisioned("adam", `user_${run}ADM`);
+    const V = await provisioned("vera", `user_${run}VER`);
+    await owner.query("update users set is_admin = true where id = $1", [A.id]);
+    revoked.length = 0;
+    expect((await A.call("POST", `/admin/users/${V.id}/revoke-sessions`)).statusCode).toBe(204);
+    expect(revoked).toEqual([`user_${run}VER`]);
+    expect((await A.call("POST", `/admin/users/${V.id}/block`)).statusCode).toBe(204);
+    expect(revoked).toEqual([`user_${run}VER`, `user_${run}VER`]);
+    expect((await A.call("POST", `/admin/users/${V.id}/unblock`)).statusCode).toBe(204);
   }, 60_000);
 
   it("PETTY-104: a new Clerk identity with the same VERIFIED email relinks the existing account (vault kept); an unverified email does not", async () => {

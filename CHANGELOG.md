@@ -47,6 +47,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 - A new access token, and the keys Petty later passes to tokens, get only a drawer's current key, and
   none while the app does not trust that drawer's key (for example a key rolled back, replaced, or from
   someone not confirmed). Before, a token could get the highest key the server listed.
+- Clerk mode: an admin's "Revoke sessions" now also ends the person's Clerk sessions. Before, it ended
+  only Petty's own sessions, which Clerk mode does not use, so the person stayed signed in.
 
 ## [1.5.42] — 2026-11-16
 

@@ -38,14 +38,22 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     return id;
   }
 
+  /**
+   * Every sign-in of this person ends now: the local sessions, and in Clerk mode their Clerk sessions too.
+   * Revoke used to end only the local ones, which Clerk mode does not use (docs/auth-clerk.md says both).
+   */
+  async function endSessions(id: string): Promise<void> {
+    await apiPool.query("delete from sessions where user_id = $1", [id]);
+    const cu = (await apiPool.query<{ clerk_user_id: string | null }>("select clerk_user_id from users where id = $1", [id])).rows[0];
+    if (cu?.clerk_user_id) await revokeClerkSessions(cu.clerk_user_id);
+  }
+
   /** Block: no login, and every existing session dies now. Data stays; unblock restores everything. */
   app.post<{ Params: { id: string } }>("/admin/users/:id/block", async (req, reply) => {
     const me = requireAdmin(req);
     const id = await target(req, me.id);
     await apiPool.query("update users set blocked_at = coalesce(blocked_at, now()) where id = $1", [id]);
-    await apiPool.query("delete from sessions where user_id = $1", [id]);
-    const cu = (await apiPool.query<{ clerk_user_id: string | null }>("select clerk_user_id from users where id = $1", [id])).rows[0];
-    if (cu?.clerk_user_id) await revokeClerkSessions(cu.clerk_user_id);
+    await endSessions(id);
     return reply.code(204).send();
   });
   app.post<{ Params: { id: string } }>("/admin/users/:id/unblock", async (req, reply) => {
@@ -57,7 +65,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string } }>("/admin/users/:id/revoke-sessions", async (req, reply) => {
     const me = requireAdmin(req);
     const id = await target(req, me.id);
-    await apiPool.query("delete from sessions where user_id = $1", [id]);
+    await endSessions(id);
     await endAllTokens(apiPool, id, { erase: false });
     return reply.code(204).send();
   });
