@@ -25,6 +25,10 @@ number, also when it adds features, and a new minor or major is started by hand 
   could send up to 120 a day to any address. Past a limit the app says so and makes no link; you can
   still create a join link in Settings and send it yourself. `petty_mail_limited_total` has a new
   `kind="join-link"`.
+- The AI add-on's server (`petty-mcp.mjs`) now stops with a message when `PETTY_API_URL` is not set.
+  Before, it used `http://localhost:3000`, so a missing setting sent the token in plain text to whatever
+  listened there. Set `PETTY_API_URL` in the server's `env` block (docs/agent.md). The Claude Desktop
+  extension always sets it.
 
 ## [1.5.41] — 2026-11-16
 

@@ -239,6 +239,10 @@ Restart Claude Desktop after either change.
 
 **"… (ENOTFOUND)"**: the name does not resolve from this machine; check `PETTY_API_URL`.
 
+**"set PETTY_API_URL …"** and the server stops: the `env` block has no `PETTY_API_URL`, or it does not
+start with `https://` (or `http://`). Add your Petty's API address, as in the config above. The server has no default
+address, so a missing setting never sends your token somewhere else.
+
 **A certificate error**: Node does not read the macOS keychain. If your server uses a private
 certificate authority, point `NODE_EXTRA_CA_CERTS` at its certificate in the same `env` block.
 

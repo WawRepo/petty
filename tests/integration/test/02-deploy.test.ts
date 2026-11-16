@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
@@ -73,8 +75,20 @@ describe("deployment", () => {
     // PETTY-173: the program for other AI apps, and the page that explains it (an app route)
     const mjs = await fetch(`${ORIGIN}/downloads/petty-mcp.mjs`);
     expect(mjs.status).toBe(200);
-    expect((await mjs.text()).length).toBeGreaterThan(100_000);
+    const program = await mjs.text();
+    expect(program.length).toBeGreaterThan(100_000);
     expect((await fetch(`${ORIGIN}/ai`)).status).toBe(200);
+    // PETTY-416: the shipped program refuses to start without PETTY_API_URL (it used to use http://localhost:3000)
+    const dir = mkdtempSync(join(tmpdir(), "petty-mcp-"));
+    try {
+      writeFileSync(join(dir, "petty-mcp.mjs"), program);
+      const env: Record<string, string | undefined> = { ...process.env, PETTY_TOKEN: "petty_pat_test" };
+      delete env["PETTY_API_URL"];
+      const r = spawnSync(process.execPath, [join(dir, "petty-mcp.mjs")], { encoding: "utf8", input: "", timeout: 20_000, env });
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain("set PETTY_API_URL");
+      expect(r.stdout).toBe("");
+    } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
   it("a file of its own is that file, also once the service worker answers navigations (PETTY-279)", async () => {
