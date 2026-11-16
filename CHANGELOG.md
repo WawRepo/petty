@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The AI add-on's server (`petty-mcp.mjs`) now stops with a message when `PETTY_API_URL` is not set.
+  Before, it used `http://localhost:3000`, so a missing setting sent the token in plain text to whatever
+  listened there. Set `PETTY_API_URL` in the server's `env` block (docs/agent.md). The Claude Desktop
+  extension always sets it.
+
 ## [1.5.41] — 2026-11-16
 
 ### Security

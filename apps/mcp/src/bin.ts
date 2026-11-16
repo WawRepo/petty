@@ -42,9 +42,23 @@ function printConfig(apiArg: string | undefined): void {
   process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
 }
 
+/**
+ * PETTY-416 (security review #18): the address must be given. It used to fall back to
+ * http://localhost:3000, so a missing setting sent the token in plain text to whatever listens there.
+ */
+function apiUrl(): string {
+  const url = (process.env["PETTY_API_URL"] ?? "").trim().replace(/\/$/, "");
+  if (!/^https?:\/\/[^/]/.test(url)) {
+    process.stderr.write("petty-mcp: set PETTY_API_URL to your Petty's API address, for example https://petty.example.com/api\n");
+    process.exit(2);
+  }
+  return url;
+}
+
 async function main() {
   if (process.argv[2] === "--print-config") return printConfig(process.argv[3]);
-  const server = await buildServer({ token: token(), apiUrl: (process.env["PETTY_API_URL"] ?? "http://localhost:3000").replace(/\/$/, "") });
+  const url = apiUrl(); // before the token: no address, no token read
+  const server = await buildServer({ token: token(), apiUrl: url });
   await server.connect(new StdioServerTransport());
 }
 

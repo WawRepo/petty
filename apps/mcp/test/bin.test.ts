@@ -23,3 +23,26 @@ describe("petty-mcp --print-config", () => {
     expect(r.stdout).toBe("");
   });
 });
+
+describe("petty-mcp without an address (PETTY-416)", () => {
+  const start = (env: Record<string, string | undefined>) => {
+    const base: Record<string, string | undefined> = { ...process.env, PETTY_TOKEN: "petty_pat_test" };
+    delete base["PETTY_API_URL"];
+    return spawnSync(process.execPath, [tsx, bin], { encoding: "utf8", input: "", timeout: 20_000, env: { ...base, ...env } });
+  };
+
+  it("refuses to start, and never falls back to http://localhost:3000", () => {
+    for (const address of [undefined, "", "  ", "localhost:3000", "petty.example.com/api", "ftp://petty.example.com/api", "https://"]) {
+      const r = start(address === undefined ? {} : { PETTY_API_URL: address });
+      expect(r.status, `PETTY_API_URL=${String(address)}`).toBe(2);
+      expect(r.stderr).toContain("set PETTY_API_URL");
+      expect(r.stdout).toBe(""); // stdout carries the protocol
+    }
+  });
+
+  it("starts with an address", () => {
+    const r = start({ PETTY_API_URL: "https://petty.example.com/api/" });
+    expect(r.stderr).not.toContain("set PETTY_API_URL");
+    expect(r.status).not.toBe(2);
+  });
+});
