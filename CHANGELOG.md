@@ -33,6 +33,9 @@ number, also when it adds features, and a new minor or major is started by hand 
 - Petty no longer writes your last-used currency to the browser's storage, and no longer puts a tag's
   name in the page address when Manage tags opens a drawer. Both stay in memory until you lock or sign
   out; the browser kept them on disk before. An old saved currency is removed on the next start.
+- A new access token, and the keys Petty later passes to tokens, get only a drawer's current key, and
+  none while the app does not trust that drawer's key (for example a key rolled back, replaced, or from
+  someone not confirmed). Before, a token could get the highest key the server listed.
 
 ## [1.5.42] — 2026-11-16
 
