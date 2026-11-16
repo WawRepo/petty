@@ -4,5 +4,6 @@
 # changes and monthly (.github/workflows/backup-image.yml, PETTY-365); to build your own:
 #   make backup-image     (linux/amd64 and linux/arm64: an arm64-only image once stopped the backup, PETTY-61)
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
-RUN apk add --no-cache postgresql16-client age
+# apk upgrade: Alpine can fix a package before the pinned base image has it, as with zlib 1.4 (PETTY-433).
+RUN apk upgrade --no-cache && apk add --no-cache postgresql16-client age
 USER 70:70

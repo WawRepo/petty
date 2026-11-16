@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The Petty image and the backup image now install Alpine's package fixes when they are built, also
+  when the base image does not have them yet. The Petty image now holds zlib 1.4, which closes
+  CVE-2026-4738 for image scanners; the affected code was not built into Alpine's zlib. The backup image
+  built with this change also holds postgresql16-client 16.16 and libpq 18.7. Its `pg_dump` links both,
+  so test a restore after you move to the new backup image.
+
 ## [1.5.40] — 2026-11-14
 
 ### Changed
