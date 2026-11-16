@@ -249,7 +249,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   A used join link forgets its email; housekeeping (`apps/api/src/lib/maintenance.ts`) deletes unused
   join links that ended, reset tokens that expired, and drawer documents replaced more than 30 days ago
   (PETTY-488; before, only the drawer's next write dropped them); deleting an account deletes its
-  unused join links and reset tokens.
+  unused join links and reset tokens. What deletion keeps (the account's id, language, dates and
+  public keys, so others' records still verify) goes in the first housekeeping run after nothing
+  needs it (PETTY-349, `purge_tombstones()` in migration 019): no entry, drawer document or photo,
+  kept document version or drawer-key wrap names the person, and no membership, owned drawer,
+  transfer or pending invitation is left. Its answered invitations, rotations, used join links and
+  revoked tokens go with it.
 - **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only
   while its inviter still owns the drawer, and a change of owner ends every pending one. The owner
   lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`.
