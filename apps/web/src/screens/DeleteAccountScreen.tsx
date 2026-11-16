@@ -49,6 +49,7 @@ export function DeleteAccountScreen() {
       nav("/login", { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) setError(t("delete.wrongPassword"));
+      else if (err instanceof ApiError && err.status === 429) setError(t("auth.login.tooMany")); // PETTY-411
       else if (err instanceof ApiError && err.code === "DecisionsRequired") setError(t("delete.decide"));
       else setError(t("errors.unknown"));
     } finally { setBusy(false); }
