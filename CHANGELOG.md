@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.44] — 2026-11-16
+
 ### Fixed
 - Accepting an invitation made before the drawer's key changed (for example after the owner removed a
   member) now says so: "the invitation is out of date, ask … to invite you again", and the invitation
@@ -984,7 +986,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.43...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.44...HEAD
+[1.5.44]: https://github.com/WawRepo/petty/releases/tag/v1.5.44
 [1.5.43]: https://github.com/WawRepo/petty/releases/tag/v1.5.43
 [1.5.42]: https://github.com/WawRepo/petty/releases/tag/v1.5.42
 [1.5.41]: https://github.com/WawRepo/petty/releases/tag/v1.5.41
