@@ -121,11 +121,17 @@ export async function revokeToken(db: Queryable, tokenId: string, userId: string
 
 /**
  * A token past its expiry never works again either, and its expiry cannot be moved. Its bundle and wraps
- * are dropped when its owner makes the next token (PETTY-442); the row stays listed until it is revoked.
+ * are dropped for one account when its owner makes the next token (PETTY-442), and for every account
+ * (`userId` null) in the maintenance run (PETTY-410, security review #12), so an owner who never makes
+ * another token does not keep them. The run also clears tokens revoked before PETTY-442, which kept
+ * theirs. The row stays, listed until it is revoked. Returns how many tokens lost their bundle.
  */
-export async function dropExpiredTokenData(db: Queryable, userId: string): Promise<void> {
-  await db.query("update access_tokens set bundle_nonce = '', bundle_ciphertext = '' where user_id = $1 and expires_at <= now() and bundle_ciphertext <> ''", [userId]);
-  await db.query("delete from access_token_keys where token_id in (select id from access_tokens where user_id = $1 and expires_at <= now())", [userId]);
+export async function dropExpiredTokenData(db: Queryable, userId: string | null): Promise<number> {
+  const dead = "(expires_at <= now() or revoked_at is not null)";
+  const [who, args] = userId === null ? ["", []] : [" and user_id = $1", [userId]];
+  const bundles = await db.query(`update access_tokens set bundle_nonce = '', bundle_ciphertext = '' where ${dead} and (bundle_ciphertext <> '' or bundle_nonce <> '')${who}`, args);
+  await db.query(`delete from access_token_keys where token_id in (select id from access_tokens where ${dead}${who})`, args);
+  return bundles.rowCount ?? 0;
 }
 
 /**

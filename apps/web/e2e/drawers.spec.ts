@@ -777,6 +777,13 @@ test("add line (PETTY-124): the currency starts filled and quick chips set it; t
   await page.getByRole("button", { name: "Add item" }).click();
   await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("GBP");
   await expect(page.getByTestId("currency-quick").getByRole("button").first()).toHaveText("GBP");
+  await page.keyboard.press("Escape");
+  // PETTY-417: a new drawer proposes the currency used last, kept in memory only: nothing in localStorage
+  await page.getByRole("button", { name: "Back" }).click();
+  await addDrawer(page, "Box");
+  await page.getByRole("button", { name: "Add item" }).click();
+  await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("GBP");
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /currency/i.test(k) || /GBP/.test(localStorage.getItem(k) ?? "")))).toEqual([]);
 });
 
 test("keyboard reorder (PETTY-130): the drag handle moves a line with the arrow keys and announces the new position; the places editor too", async ({ page }) => {
@@ -808,6 +815,9 @@ test("keyboard reorder (PETTY-130): the drag handle moves a line with the arrow 
 });
 
 test("tags (PETTY-147): the picker toggles and adds, the limit shows, Manage tags renames (and merges) and removes a tag on every line", async ({ page }) => {
+  // PETTY-417: every address the page shows, also the ones only in history; a tag name must be in none
+  const visited: string[] = [];
+  page.on("framenavigated", (f) => { if (f === page.mainFrame()) visited.push(f.url()); });
   const user = await signupViaApi("tagm");
   await loginAndUnlock(page, user);
   await page.getByTestId("passkey-nudge").getByRole("button", { name: "Not now" }).click().catch(() => undefined);
@@ -911,6 +921,7 @@ test("tags (PETTY-147): the picker toggles and adds, the limit shows, Manage tag
   await expect(page.getByTestId("line-tag-bar").getByRole("button", { name: "spare cash" })).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => lineNames(page)).toEqual(["Cash"]);
   await expect(page).not.toHaveURL(/tag=/);
+  expect(visited.filter((u) => /tag=|spare/i.test(decodeURIComponent(u)))).toEqual([]);
   await expect(tagsOf("Cash")).toHaveText("spare cash");
 });
 
