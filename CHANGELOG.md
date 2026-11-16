@@ -28,6 +28,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   "Something went wrong".
 - Self-hosting: a `VITE_SOURCE_URL` written the way `git clone` takes it (ending in `.git`, or with a
   trailing slash) now gives working source and download links.
+- The command line and the AI add-on no longer show a wrong number for an item whose entries add up
+  past what can be counted exactly. They show "too large to show", warn, and take only a count for it,
+  as the app does. In `--json` its `balance` is `null`.
 
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
