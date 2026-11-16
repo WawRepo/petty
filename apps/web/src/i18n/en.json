@@ -352,6 +352,12 @@
     "deleteConfirm": "Delete “{name}” with all its items and their history? This cannot be undone.",
     "deleteBtn": "Delete",
     "deleteType": "Type the drawer's name to confirm",
+    "damaged": {
+      "countElsewhere": "To fix it, find the item with the wrong amount, count it and adjust it with the command line (“petty adjust”) or the AI add-on. They open this drawer where this app cannot, and show each item’s amount. An adjustment starts the item’s sum over.",
+      "askWriter": "Someone who can make changes in this drawer can fix it: they count the item and adjust it with the command line or the AI add-on.",
+      "askOperator": "Putting back an earlier version of the drawer does not help, because the entries themselves are wrong. Ask whoever runs this Petty server to check this drawer’s entries.",
+      "tools": "Command line and AI add-on"
+    },
     "deleteDamagedConfirm": "Delete this drawer with all its items and their history? This cannot be undone.",
     "deleteDamagedType": "Type this word to confirm",
     "photoAdd": "Add photo",

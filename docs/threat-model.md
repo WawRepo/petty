@@ -94,8 +94,10 @@ Users should be told these plainly.
   Removal stops future access, never past access. A member who may write can also store content the
   app cannot show, such as amounts that no longer add up to an exact number. The web app then lists
   that drawer as damaged, with the reason, and shows no number for it; the other drawers and the rest
-  of the app keep working. The damaged drawer's screen offers its owner the 30-day history and
-  deleting it, and every other member a way to leave.
+  of the app keep working. The damaged drawer's screen offers its owner deleting it, and every other
+  member a way to leave. Where the drawer's document is at fault it also offers the owner the 30-day
+  history; amounts that no longer add up are set right by counting the item again, which the command
+  line and the AI add-on can do for a drawer the web app does not show (PETTY-504).
 - **Text in a shared drawer that steers an AI assistant.** Anyone who may write to a drawer can put a
   sentence that reads like an instruction into a name, a tag, a note or a comment. The AI add-on hands
   all such text to the model as quoted values, and the command line shows its control characters as

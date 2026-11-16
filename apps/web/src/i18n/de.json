@@ -352,6 +352,12 @@
     "deleteConfirm": "„{name}“ mit allen Posten und ihrem Verlauf löschen? Das lässt sich nicht rückgängig machen.",
     "deleteBtn": "Löschen",
     "deleteType": "Gib zur Bestätigung den Namen der Schublade ein",
+    "damaged": {
+      "countElsewhere": "Zum Beheben such den Posten mit dem falschen Betrag, zähl ihn und korrigiere ihn mit der Kommandozeile („petty adjust“) oder der KI-Erweiterung. Sie öffnen diese Schublade, wo diese App es nicht kann, und zeigen den Betrag jedes Postens. Eine Korrektur beginnt die Summe des Postens neu.",
+      "askWriter": "Jemand, der in dieser Schublade Änderungen machen darf, kann es beheben: den Posten zählen und mit der Kommandozeile oder der KI-Erweiterung korrigieren.",
+      "askOperator": "Eine frühere Version der Schublade zurückzuholen hilft nicht, weil die Buchungen selbst falsch sind. Bitte die Person, die diesen Petty-Server betreibt, die Buchungen dieser Schublade zu prüfen.",
+      "tools": "Kommandozeile und KI-Erweiterung"
+    },
     "deleteDamagedConfirm": "Diese Schublade mit allen Posten und ihrem Verlauf löschen? Das lässt sich nicht rückgängig machen.",
     "deleteDamagedType": "Gib zur Bestätigung dieses Wort ein",
     "photoAdd": "Foto hinzufügen",

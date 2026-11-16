@@ -135,7 +135,7 @@ test("a document that does not pass the check makes its drawer a damaged one; th
   await context.close();
 });
 
-test("entries that add up past the exact integers make their drawer a damaged one, with the reason; each role gets its own ways out", async ({ browser }) => {
+test("entries that add up past the exact integers make their drawer a damaged one, with the reason; each role gets the ways out that help", async ({ browser }) => {
   const { page, shared, bobs, bob, context } = await household(browser);
   const cash = (await bobs.document()).lines[0]!.id;
   await bobs.addEntry(cash, Number.MAX_SAFE_INTEGER);
@@ -149,27 +149,33 @@ test("entries that add up past the exact integers make their drawer a damaged on
   await expect(page.getByTestId("home-totals")).toContainText("100.00");
   await expect(page.getByTestId("totals-incomplete")).toBeVisible();
 
-  // the owner: the reason, Earlier versions, Delete
+  // the owner: the reason, what fixes it (a count, made with the command line or the AI add-on), Delete. An earlier
+  // version of the document leaves the entries as they are, so it is not offered (PETTY-504).
   await row.click();
   const damaged = page.getByTestId("drawer-damaged");
   await expect(damaged.getByRole("alert")).toContainText("too large to show");
   await expect(page.getByRole("heading", { name: "Shared" })).toBeVisible();
+  await expect(damaged.getByTestId("damaged-hint")).toContainText("find the item with the wrong amount, count it and adjust it with the command line");
+  await expect(damaged.getByRole("button", { name: "Earlier versions" })).toHaveCount(0);
   await expect(damaged.getByRole("button", { name: "Leave drawer" })).toHaveCount(0);
-  await damaged.getByRole("button", { name: "Earlier versions" }).click();
-  await expect(page.getByTestId("history-row").first()).toBeVisible();
-  await page.keyboard.press("Escape");
+  await damaged.getByRole("button", { name: "Command line and AI add-on" }).click();
+  await expect(page).toHaveURL(/\/ai$/);
+  await page.goBack();
+  await expect(page.getByTestId("drawer-damaged")).toBeVisible();
   // an item's own address leads to the same view, not to an endless wait
   await page.goto(`/drawers/${shared}/lines/${cash}`);
   await expect(page.getByTestId("drawer-damaged")).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/drawers/${shared}$`));
 
-  // bob, a member: the same reason; he may leave, and nothing else
+  // bob, a member who may write: the same reason and the same fix; he may leave, but not delete
   const bobContext = await browser.newContext();
   const bobPage = await bobContext.newPage();
   await loginAndUnlock(bobPage, bob);
   await bobPage.getByTestId("drawer-row").filter({ hasText: "Shared" }).click();
   const bobDamaged = bobPage.getByTestId("drawer-damaged");
   await expect(bobDamaged.getByRole("alert")).toContainText("too large to show");
+  await expect(bobDamaged.getByTestId("damaged-hint")).toContainText("adjust it with the command line");
+  await expect(bobDamaged.getByRole("button", { name: "Command line and AI add-on" })).toBeVisible();
   await expect(bobDamaged.getByRole("button", { name: "Earlier versions" })).toHaveCount(0);
   await expect(bobDamaged.getByRole("button", { name: "Delete drawer" })).toHaveCount(0);
   await bobDamaged.getByRole("button", { name: "Leave drawer" }).click();
@@ -186,6 +192,32 @@ test("entries that add up past the exact integers make their drawer a damaged on
   await expect(page.getByTestId("home")).toHaveAttribute("data-status", "ready");
   await expect(page.getByTestId("drawer-row")).toHaveCount(1);
   await expect(rowNamed(page, "Kitchen")).toBeVisible();
+  await context.close();
+});
+
+test("PETTY-504: an item's rows served out of order or twice: no earlier version is offered, and the reason says who can fix it", async ({ browser }) => {
+  const { page, shared, context } = await household(browser);
+  // the server's answer carries the item's only row a second time, under the next number
+  await page.route("**/api/bootstrap", async (route) => {
+    const res = await route.fetch();
+    const boot = (await res.json()) as Boot;
+    const row = boot.entries.find((e) => e.drawer_id === shared)!;
+    boot.entries.push({ ...row, seq: row.seq + 1 });
+    await route.fulfill({ response: res, json: boot });
+  });
+
+  await homeWorks(page);
+  const row = page.getByTestId("drawer-row").filter({ hasText: "out of order or repeated" });
+  await expect(row).toHaveCount(1);
+  await row.click();
+  const damaged = page.getByTestId("drawer-damaged");
+  await expect(damaged.getByRole("alert")).toContainText("out of order or repeated");
+  await expect(damaged.getByTestId("damaged-hint")).toHaveText("Putting back an earlier version of the drawer does not help, because the entries themselves are wrong. Ask whoever runs this Petty server to check this drawer’s entries.");
+  // the document is not at fault: no earlier version, and no count elsewhere either
+  await expect(damaged.getByRole("button", { name: "Earlier versions" })).toHaveCount(0);
+  await expect(damaged.getByRole("button", { name: "Command line and AI add-on" })).toHaveCount(0);
+  await expect(damaged.getByRole("button", { name: "Members" })).toBeVisible();
+  await expect(damaged.getByRole("button", { name: "Delete drawer" })).toBeVisible();
   await context.close();
 });
 

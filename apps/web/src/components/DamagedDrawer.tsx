@@ -6,14 +6,16 @@ import { ConfirmSheet } from "./ConfirmSheet.js";
 import { DocumentHistorySheet } from "./DocumentHistorySheet.js";
 import { DrawerBoundary } from "./DrawerBoundary.js";
 import { TopBar } from "./TopBar.js";
+import { damageWays } from "../lib/damage.js";
 import { deleteDrawer, leaveDrawer, useDrawers } from "../lib/drawers.js";
 import { useBack } from "../lib/nav.js";
 
 /**
  * A drawer that cannot be shown (PETTY-443): the reason, and the ways out that this person's role allows.
- * The owner can put back an earlier version (the server keeps them 30 days) or delete the drawer; anyone
- * else can leave it. A drawer's own screens show this when the drawer did not open or failed to draw, so
- * a damaged drawer is never a dead end.
+ * The owner can put back an earlier version (the server keeps them 30 days) where the document is at fault,
+ * or delete the drawer; anyone else can leave it. Where no button here can help, a hint says who or what can
+ * (PETTY-504). A drawer's own screens show this when the drawer did not open or failed to draw, so a damaged
+ * drawer is never a dead end.
  */
 export function DamagedDrawer({ id }: { id: string }) {
   const { t } = useTranslation();
@@ -24,17 +26,20 @@ export function DamagedDrawer({ id }: { id: string }) {
   const reason = view?.error ?? "bad_document";
   const name = view?.doc?.name ?? view?.name ?? null;
   const isOwner = view?.summary.role === "owner";
-  // an earlier version is opened with the drawer key; a document from a newer Petty is not damage to undo
-  const canRestore = isOwner && !!view?.key && reason !== "unknown_schema";
+  // an earlier version is opened with the drawer key, and helps only where the document is at fault (PETTY-504)
+  const ways = damageWays(reason, view?.summary.role, !!view?.key);
+  const canRestore = ways.restore;
   return (
     <>
       <TopBar title={name ?? t("app.name")} onBack={back} />
       <main data-testid="drawer-damaged">
         <p className="error" role="alert">{t(`home.degradedReason.${reason}`)}</p>
+        {ways.hint ? <p className="hint" data-testid="damaged-hint">{t(`drawer.damaged.${ways.hint}`)}</p> : null}
         {view ? (
           <div className="actions">
             {/* who is in the drawer: where a safety number is compared, and where the owner removes a member */}
             <Button variant="secondary" onClick={() => nav(`/drawers/${id}/members`)}>{t("members.open")}</Button>
+            {ways.tools ? <Button variant="secondary" onClick={() => nav("/ai")} data-testid="damaged-tools">{t("drawer.damaged.tools")}</Button> : null}
             {canRestore ? <Button variant="secondary" onClick={() => setSheet("history")} data-testid="drawer-history">{t("drawer.history.title")}</Button> : null}
             {/* the one that takes something away comes last (PETTY-279) */}
             {isOwner ? <Button variant="danger-ghost" onClick={() => setSheet("delete")} data-testid="damaged-delete">{t("drawer.delete")}</Button>
