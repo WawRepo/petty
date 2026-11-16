@@ -2,7 +2,7 @@ import { AuthConfig, LegalText } from "@petty/protocol";
 import path from "node:path";
 import cookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { LogController, type FastifyInstance } from "fastify";
 import { config } from "./config.js";
 import type { HealthResponse } from "@petty/protocol";
 import { z, ZodError } from "zod";
@@ -49,7 +49,8 @@ export function buildApp() {
       formatters: { level: (label) => ({ level: label }) },
     },
     // One "request" line per request from lib/metrics.ts instead of Fastify's incoming/completed pair.
-    disableRequestLogging: true,
+    // Through logController: the top-level disableRequestLogging is deprecated (FSTDEP023, PETTY-378).
+    logController: new LogController({ disableRequestLogging: true }),
     bodyLimit: 2 * 1024 * 1024,
     trustProxy: config.trustProxy,
   });

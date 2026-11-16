@@ -11,7 +11,10 @@ import { API, ORIGIN } from "../lib.js";
  */
 describe("per-IP limits behind a proxy", () => {
   it("count the address the proxy added, not the one the client wrote", async () => {
-    const proxySaw = `203.0.113.${10 + Math.floor(Math.random() * 200)}`;
+    // PETTY-468: every draw that counts device codes has addresses of its own, so two draws never add
+    // up past the limit of 10 on one address: this test 203.0.113.10-109, the next 203.0.113.110-209,
+    // the IPv4 client of the third 198.51.100.10-209 and ::ffff:198.51.100.5-8, 06-cli 198.51.100.210-254.
+    const proxySaw = `203.0.113.${10 + Math.floor(Math.random() * 100)}`;
     const statuses: number[] = [];
     for (let i = 0; i < 11; i++) {
       const key = await deviceKeyPair();
@@ -29,7 +32,7 @@ describe("per-IP limits behind a proxy", () => {
   // PETTY-301: behind Fly.io the X-Forwarded-For chain ends in the platform's own addresses; the platform's
   // own header (here x-test-client-ip, CLIENT_IP_HEADER in compose.test.yml) names the client instead.
   it("count the address in the platform's header when one is named, each client on its own", async () => {
-    const client = `203.0.113.${10 + Math.floor(Math.random() * 200)}`;
+    const client = `203.0.113.${110 + Math.floor(Math.random() * 100)}`; // PETTY-468: 110-209
     const ask = async (who: string, i: number) => {
       const key = await deviceKeyPair();
       return (await fetch(`${API}/device/code`, {

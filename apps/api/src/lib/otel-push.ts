@@ -16,6 +16,21 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
  */
 const base = (endpoint: string, signal: string): string => `${endpoint.replace(/\/$/, "")}/v1/${signal}`;
 
+/**
+ * PETTY-420 (security review #22): the endpoint as the startup log line may show it, scheme, host and
+ * port only. An endpoint can carry a secret (`https://user:token@…`, a path or query with a key), and
+ * logs travel further than settings.
+ */
+export function endpointForLog(endpoint: string): string | null {
+  if (!endpoint) return null;
+  try {
+    const { origin } = new URL(endpoint);
+    return origin === "null" ? "(not a web address)" : origin;
+  } catch {
+    return "(not a web address)";
+  }
+}
+
 let meterProvider: MeterProvider | null = null;
 let loggerProvider: LoggerProvider | null = null;
 
