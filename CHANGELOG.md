@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The command line and the AI add-on no longer change a drawer's names, items or tags while the drawer
+  has a newer key than the token holds (during or after a key change). They say so and ask you to open
+  Petty, which passes the new key on. Before, such a change was saved under the old key with the new
+  key's number, and nobody could open that version of the drawer again.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
