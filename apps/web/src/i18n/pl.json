@@ -286,6 +286,7 @@
       "addedOn": "Dodano {date}",
       "addHintPasskey": "Najpierw potwierdzi to Twój obecny klucz dostępu (jeśli jest w telefonie, zeskanuj kod QR). Potem to urządzenie poprosi o Face ID, Touch ID, PIN lub klucz sprzętowy.",
       "lastDoor": "To Twój ostatni klucz dostępu, a nie ma hasła sejfu. Najpierw ustaw zapasowe hasło sejfu.",
+      "limit": "Masz {max} kluczy dostępu, więcej się nie da. Usuń jeden, którego już nie używasz, a potem dodaj ten.",
       "exists": "Ten klucz dostępu jest już na tym urządzeniu. Mógł się zsynchronizować z innego urządzenia, na przykład przez pęk kluczy iCloud albo Menedżera haseł Google. Użyj „Odblokuj kluczem dostępu”."
     },
     "setPassphrase": "Ustaw zapasowe hasło sejfu",
@@ -1361,6 +1362,7 @@
     "scopePick": "Szuflady dla tego tokenu",
     "scopeNone": "Nie masz jeszcze szuflady do wybrania.",
     "scopeNeeded": "Wybierz, których szuflad ten token może używać.",
+    "limit": "Masz {max} tokenów, więcej się nie da. Unieważnij jeden, którego już nie używasz, a potem utwórz ten.",
     "scopeAllShort": "wszystkie szuflady",
     "scopeCount": "{count, plural, one {# szuflada} few {# szuflady} many {# szuflad} other {# szuflady}}",
     "confirm": "Token zawiera klucze szuflad. Dlatego przy jego tworzeniu Petty jeszcze raz prosi o hasło sejfu lub klucz dostępu, także gdy sejf jest otwarty.",

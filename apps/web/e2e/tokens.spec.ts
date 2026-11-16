@@ -237,6 +237,15 @@ test("PETTY-452: a token is made for the drawers the person picks, after the vau
   await expect(sheet.getByRole("alert")).toHaveText("That passphrase did not open the vault.");
   expect(await tokens()).toHaveLength(0);
   await page.getByTestId("token-passphrase").fill(user.passphrase);
+  // PETTY-461: at the limit the server answers TokenLimit, and the sheet says what to do (the answer is staged here)
+  const atLimit = (route: import("@playwright/test").Route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ code: "TokenLimit", message: "revoke a token before making another", context: { max: 50 } }) })
+    : route.fallback();
+  await page.route("**/api/me/tokens", atLimit);
+  await page.getByTestId("token-create").click();
+  await expect(sheet.getByRole("alert")).toHaveText("You have 50 tokens, the most allowed. Revoke one you no longer use, then make this one.");
+  await page.unroute("**/api/me/tokens", atLimit);
+  expect(await tokens()).toHaveLength(0);
   await page.getByTestId("token-create").click();
   const token = (await page.getByTestId("token-value").innerText()).trim();
   await page.getByTestId("token-done").click();

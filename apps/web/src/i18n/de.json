@@ -286,6 +286,7 @@
       "addedOn": "Hinzugefügt am {date}",
       "addHintPasskey": "Zuerst bestätigt das dein vorhandener Passkey (liegt er auf deinem Handy, scanne den QR-Code). Dann fragt dieses Gerät nach Face ID, Touch ID, einer PIN oder einem Sicherheitsschlüssel.",
       "lastDoor": "Das ist dein letzter Passkey, und es gibt keine Passphrase. Lege zuerst eine Ersatz-Passphrase fest.",
+      "limit": "Du hast {max} Passkeys, mehr sind nicht möglich. Entferne einen, den du nicht mehr brauchst, und füge dann diesen hinzu.",
       "exists": "Dieser Passkey ist schon auf diesem Gerät. Er wurde vielleicht von einem anderen Gerät synchronisiert, zum Beispiel über den iCloud-Schlüsselbund oder den Google Passwortmanager. Nutze „Mit Passkey entsperren“."
     },
     "setPassphrase": "Ersatz-Passphrase festlegen",
@@ -1361,6 +1362,7 @@
     "scopePick": "Schubladen für dieses Token",
     "scopeNone": "Du hast noch keine Schublade zur Auswahl.",
     "scopeNeeded": "Wähle, welche Schubladen dieses Token nutzen darf.",
+    "limit": "Du hast {max} Tokens, mehr sind nicht möglich. Widerrufe eines, das du nicht mehr brauchst, und erstelle dann dieses.",
     "scopeAllShort": "alle Schubladen",
     "scopeCount": "{count, plural, one {# Schublade} other {# Schubladen}}",
     "confirm": "Ein Token enthält Schubladenschlüssel. Deshalb fragt Petty beim Erstellen noch einmal nach deiner Tresor-Passphrase oder deinem Passkey, auch wenn der Tresor offen ist.",

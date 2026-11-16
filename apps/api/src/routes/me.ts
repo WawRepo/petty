@@ -6,7 +6,7 @@ import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
 import { deleteClerkUser } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { badRequest, conflict, notFound, unauthorized, ApiError } from "../lib/errors.js";
-import { checkRate, verifyPassword } from "../lib/password.js";
+import { LOGIN_LIMIT_PER_EMAIL, checkRate, failuresExceeded, recordFailure, verifyPassword } from "../lib/password.js";
 import { clientNet } from "../lib/client-ip.js";
 import { maintPool } from "../db.js";
 import { mails } from "../lib/mail.js";
@@ -17,6 +17,24 @@ import { endAllTokens } from "../lib/tokens.js";
 import { userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import type { Queryable } from "../lib/tx.js";
+import type { CustodyProof } from "@petty/protocol";
+
+/**
+ * PETTY-411 (security review #13): the calls that ask for the login password again. The custody proof is
+ * checked first, so a stolen session without the vault key never reaches the password check and cannot use
+ * these calls to guess the password. Wrong passwords then count per account like failed sign-ins
+ * (LOGIN_LIMIT_PER_EMAIL in 15 minutes, then 429), so not even a holder of the vault key guesses freely.
+ */
+async function reauthenticate(req: FastifyRequest, userId: string, body: { password?: string | undefined; proof: CustodyProof }, passwordHash: string | null | undefined): Promise<void> {
+  await consumeCustodyProof(req, userId, body.proof);
+  if (!hasLoginPassword()) return;
+  const key = `reauth:${userId}`;
+  if (await failuresExceeded(key, LOGIN_LIMIT_PER_EMAIL)) throw new ApiError(429, "TooManyAttempts", "try again later");
+  if (!(await verifyPassword(body.password ?? "", passwordHash ?? ""))) {
+    await recordFailure(key);
+    throw unauthorized();
+  }
+}
 
 const HOUR_MS = 60 * 60_000;
 
@@ -107,8 +125,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = PutVaultBody.parse(req.body);
     const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown; email: string; locale: string }>("select u.password_hash, u.vault, u.recovery_vault, u.email, u.locale, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
-    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
-    await consumeCustodyProof(req, me.id, body.proof);
+    if (!u) throw unauthorized();
+    await reauthenticate(req, me.id, body, u.password_hash);
     const same = (v: { pub: { ecdh: string; ecdsa: string } }) => v.pub.ecdh === u.ecdh_pub && v.pub.ecdsa === u.ecdsa_pub;
     if (body.vault.kind !== "passphrase" || !same(body.vault) || (body.recovery_vault && (body.recovery_vault.kind !== "recovery" || !same(body.recovery_vault)))) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
     await withTx(apiPool, async (db) => {
@@ -129,8 +147,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = PutRecoveryVaultBody.parse(req.body);
     const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown; email: string; locale: string }>("select u.password_hash, u.vault, u.recovery_vault, u.email, u.locale, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
-    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
-    await consumeCustodyProof(req, me.id, body.proof);
+    if (!u) throw unauthorized();
+    await reauthenticate(req, me.id, body, u.password_hash);
     const v = body.recovery_vault;
     if (v.kind !== "recovery" || v.pub.ecdh !== u.ecdh_pub || v.pub.ecdsa !== u.ecdsa_pub) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
     await withTx(apiPool, async (db) => {
@@ -152,8 +170,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = AddPasskeyBody.parse(req.body);
     const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string }>("select u.password_hash, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
-    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
-    await consumeCustodyProof(req, me.id, body.proof);
+    if (!u) throw unauthorized();
+    await reauthenticate(req, me.id, body, u.password_hash);
     const v = body.passkey.vault;
     if (v.kind !== "passkey" || v.pub.ecdh !== u.ecdh_pub || v.pub.ecdsa !== u.ecdsa_pub) throw badRequest("KeysMismatch", "vault public keys do not match the published keys");
     const pk = PasskeyVault.parse(body.passkey);
@@ -172,8 +190,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = RemovePasskeyBody.parse(req.body ?? {});
     const u = (await apiPool.query<{ password_hash: string; vault: unknown }>("select password_hash, vault from users where id = $1", [me.id])).rows[0];
-    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
-    await consumeCustodyProof(req, me.id, body.proof);
+    if (!u) throw unauthorized();
+    await reauthenticate(req, me.id, body, u.password_hash);
     await withTx(apiPool, async (db) => {
       const mine = await db.query<{ id: string }>("select id from passkey_vaults where user_id = $1 for update", [me.id]);
       if (!mine.rows.some((r) => r.id === req.params.id)) throw notFound("PasskeyNotFound");
@@ -242,8 +260,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     const body = DeleteAccountBody.parse(req.body);
     const u = (await apiPool.query<{ password_hash: string | null; clerk_user_id: string | null }>("select password_hash, clerk_user_id from users where id = $1", [me.id])).rows[0];
-    if (!u || (hasLoginPassword() && !(await verifyPassword(body.password ?? "", u.password_hash ?? "")))) throw unauthorized();
-    await consumeCustodyProof(req, me.id, body.proof);
+    if (!u) throw unauthorized();
+    await reauthenticate(req, me.id, body, u.password_hash);
     const p = await preview(me.id);
     const decisions = new Map(body.decisions.map((d) => [d.drawer_id, d]));
     const missing = p.shared.filter((s) => !decisions.has(s.drawer_id)).map((s) => s.drawer_id);

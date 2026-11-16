@@ -286,6 +286,7 @@
       "addedOn": "Added {date}",
       "addHintPasskey": "Your existing passkey confirms this first (if it lives on your phone, scan the QR code). Then this device asks for Face ID, Touch ID, a PIN or a security key.",
       "lastDoor": "This is your last passkey and there is no passphrase. Set a backup passphrase first.",
+      "limit": "You have {max} passkeys, the most allowed. Remove one you no longer use, then add this one.",
       "exists": "This passkey is already on this device. It may have synced from another device, for example through iCloud Keychain or Google Password Manager. Use “Unlock with passkey”."
     },
     "setPassphrase": "Set a backup passphrase",
@@ -1361,6 +1362,7 @@
     "scopePick": "Drawers for this token",
     "scopeNone": "You have no drawer to pick yet.",
     "scopeNeeded": "Choose which drawers this token can use.",
+    "limit": "You have {max} tokens, the most allowed. Revoke one you no longer use, then make this one.",
     "scopeAllShort": "all drawers",
     "scopeCount": "{count, plural, one {# drawer} other {# drawers}}",
     "confirm": "A token carries drawer keys. So making one asks for your vault passphrase or passkey again, also while the vault is open.",
