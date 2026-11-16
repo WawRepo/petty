@@ -19,11 +19,15 @@ describe("personal data is not kept longer than needed", () => {
     expect(sql("delete from password_resets where expires_at < now() - interval '100 years'")).toBe("DELETE 0");
   });
 
-  it("the maintenance run at start also clears dead tokens' data, as the request role, without an error (PETTY-410)", () => {
+  // PETTY-488: and old drawer history, which before went only with the drawer's next write
+  it("the maintenance run at start also clears dead tokens' data and old drawer history, as the request role, without an error (PETTY-410)", () => {
     const lines = compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"maintenance'));
     expect(lines.filter((l) => l.includes('"msg":"maintenance failed"'))).toEqual([]);
-    const runs = lines.map((l) => JSON.parse(l.slice(l.indexOf("{"))) as { msg: string; tokens?: unknown }).filter((l) => l.msg === "maintenance");
+    const runs = lines.map((l) => JSON.parse(l.slice(l.indexOf("{"))) as { msg: string; tokens?: unknown; document_history?: unknown }).filter((l) => l.msg === "maintenance");
     expect(runs.length).toBeGreaterThan(0);
-    for (const r of runs) expect(typeof r.tokens).toBe("number");
+    for (const r of runs) {
+      expect(typeof r.tokens).toBe("number");
+      expect(typeof r.document_history).toBe("number");
+    }
   });
 });

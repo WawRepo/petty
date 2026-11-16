@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A drawer's replaced documents (its 30-day history) are now deleted after 30 days even when nobody
+  changes that drawer again. Before, only the drawer's next save deleted them, so an unchanged drawer
+  kept its old encrypted copies, and they counted against its owner's storage. For operators: the
+  "maintenance" log line has a new number, `document_history`.
+
 ## [1.5.43] — 2026-11-16
 
 ### Added
