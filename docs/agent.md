@@ -219,7 +219,8 @@ AI app that it opens only those drawers. Make a new token to change the choice.
 - The tool checks what it reads: every entry must open and carry a valid signature, and the hash
   links between an item's entries must hold. What fails is left out of the balance, and the answer
   ends with `warning:` lines that say so (an entry or a drawer that could not be opened, a signature
-  that did not check, history links that do not match). Open Petty in the browser when you see one.
+  that did not check, history links that do not match, an item whose entries add up past what can be
+counted exactly). Open Petty in the browser when you see one.
   The tool remembers nothing between two runs, so it cannot notice a history that got shorter or a
   drawer put back to an older state; the web app can
   ([threat model](threat-model.md#integrity)).

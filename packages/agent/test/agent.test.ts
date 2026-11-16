@@ -575,4 +575,33 @@ describe("headless client (PETTY-165)", () => {
       await expect(c.drawers()).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("duplicate_entry") });
     });
   });
+
+  it("an item whose entries add up past the largest exact number shows no amount, warns, and takes only a count (PETTY-461)", async () => {
+    const jar = crypto.randomUUID();
+    const big = await owner.createDrawer("Big", applyOp(newDocument("Big"), { type: "add_line", line: { id: jar, kind: "money", name: "Jar", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false }));
+    expect(big.res.statusCode).toBe(201);
+    // the server cannot see amounts: two adds of 2^52 each, linked, make 2^53, one past the largest exact number
+    const first = await owner.postEntry(big.id, big.key, jar, "add", 2 ** 52);
+    expect(first.res.statusCode).toBe(201);
+    expect((await owner.postEntry(big.id, big.key, jar, "add", 2 ** 52, { prev_hash: await hashEntry(first.signed) })).res.statusCode).toBe(201);
+    const made = await tokenAndId("write");
+    const wrap = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === big.id);
+    const k = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
+    expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: big.id, key_version: 1, wrap: await wrapDrawerKey(k, owner.sender, made.pub, big.id, 1) }] })).statusCode).toBe(204);
+
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    const line = (await c.drawers()).find((d) => d.id === big.id)!.lines[0]!;
+    expect(line).toMatchObject({ balance: null, amount: "too large to show" });
+    const warned = c.warnings.find((w) => w.code === "sum_too_large");
+    expect(warned).toMatchObject({ drawerId: big.id, lineId: jar, item: "Jar" });
+    expect(warningText(warned!)).toContain("no amount is shown until it is counted again");
+    await expect(c.add(big.id, jar, "1")).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("count it again") });
+    await expect(c.undo(big.id, jar, first.id)).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("count it again") });
+
+    // a count sets it right
+    await c.adjust(big.id, jar, "10.00");
+    const after = (await c.drawers()).find((d) => d.id === big.id)!.lines[0]!;
+    expect(after).toMatchObject({ balance: 1000 });
+    expect(c.warnings.some((w) => w.code === "sum_too_large")).toBe(false);
+  }, 60_000);
 });

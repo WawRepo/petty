@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The command line and the AI add-on no longer show a wrong number for an item whose entries add up
+  past what can be counted exactly. They show "too large to show", warn, and take only a count for it,
+  as the app does. In `--json` its `balance` is `null`.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
