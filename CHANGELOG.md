@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.43] — 2026-11-16
+
 ### Added
 - `petty auth status` says which drawers the token opens: every drawer (also new ones) or only the
   chosen ones, with their names. `--json` adds `scope` and `drawers`.
@@ -960,7 +962,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.42...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.43...HEAD
+[1.5.43]: https://github.com/WawRepo/petty/releases/tag/v1.5.43
 [1.5.42]: https://github.com/WawRepo/petty/releases/tag/v1.5.42
 [1.5.41]: https://github.com/WawRepo/petty/releases/tag/v1.5.41
 [1.5.40]: https://github.com/WawRepo/petty/releases/tag/v1.5.40
