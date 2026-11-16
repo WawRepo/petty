@@ -601,7 +601,8 @@
     "transferAccept": "Aceptar la propiedad",
     "transferDecline": "Rechazar",
     "transferWaiting": "Esperando a que {name} acepte la propiedad de «{drawer}».",
-    "cancel": "Cancelar oferta"
+    "cancel": "Cancelar oferta",
+      "stale": "La invitación de {name} está desactualizada: la clave del cajón cambió desde entonces. Pide a {name} que te invite de nuevo."
   },
   "members": {
     "title": "Miembros",

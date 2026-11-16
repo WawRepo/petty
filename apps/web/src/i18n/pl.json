@@ -601,7 +601,8 @@
     "transferAccept": "Przejmij własność",
     "transferDecline": "Odrzuć",
     "transferWaiting": "Czekamy, aż {name} przejmie szufladę „{drawer}”.",
-    "cancel": "Wycofaj ofertę"
+    "cancel": "Wycofaj ofertę",
+      "stale": "Zaproszenie od {name} jest nieaktualne: klucz szuflady zmienił się od tego czasu. Poproś {name} o nowe zaproszenie."
   },
   "members": {
     "title": "Członkowie",

@@ -601,7 +601,8 @@
     "transferAccept": "Devenir propriétaire",
     "transferDecline": "Refuser",
     "transferWaiting": "En attente de l’accord de {name} pour devenir propriétaire de « {drawer} ».",
-    "cancel": "Annuler l’offre"
+    "cancel": "Annuler l’offre",
+      "stale": "L’invitation de {name} n’est plus valable : la clé du tiroir a changé depuis. Demandez à {name} de vous inviter à nouveau."
   },
   "members": {
     "title": "Membres",

@@ -121,4 +121,20 @@ describe("invitations and the drawer's owner (PETTY-446)", () => {
     expect(await stateOf(left)).toBe("revoked");
     expect((await B.call("GET", `/drawers/${id}/invitations`)).json()).toEqual({ invitations: [] });
   }, 60_000);
+
+  it("an invitation made before the drawer's key changed is refused once, and revoked for good (PETTY-461)", async () => {
+    const { id, invite } = await sharedDrawer(A, B);
+    const inv = await invite(A, D);
+    expect(inv.statusCode).toBe(201);
+    // the key turned since: the wrap in the invitation is for a key nobody uses now
+    await owner.query("update drawers set key_version = key_version + 1 where id = $1", [id]);
+    const first = await D.call("POST", `/invitations/${inv.json().id}/accept`);
+    expect(first.statusCode).toBe(409);
+    expect(first.json().code).toBe("InvitationStale");
+    // before, the refusal rolled the revoke back: the invitation stayed pending and failed on every tap
+    expect(await stateOf(inv.json().id)).toBe("revoked");
+    expect(await pendingFor(D)).not.toContain(inv.json().id);
+    expect((await D.call("POST", `/invitations/${inv.json().id}/accept`)).statusCode).toBe(404);
+    expect((await D.call("GET", `/drawers/${id}`)).statusCode).toBe(404);
+  });
 });

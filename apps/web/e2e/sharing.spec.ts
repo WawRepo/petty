@@ -264,3 +264,29 @@ test("a 401 or a sign-out keeps the trusted-keys document's version, so a docume
   await expect(pageA.getByTestId("pins-rolled-back")).toHaveCount(0);
   await ctxA.close(); await ctxB.close();
 });
+
+test("an invitation made before the drawer's key changed is refused once, says why, and goes away (PETTY-461)", async ({ browser }) => {
+  const alice = await signupWithKeys("alice");
+  const bob = await signupWithKeys("bob");
+  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
+  const ctxB = await browser.newContext(); const pageB = await ctxB.newPage();
+  await loginAndUnlock(pageA, alice);
+  const id = await makeDrawer(pageA, "Pantry");
+  await inviteViaUi(pageA, id, bob, "write");
+  await ctxA.close();
+  // the drawer's key turns before bob answers (as when the owner removes a member): the invitation's wrap is for the old key
+  await dbQuery("update drawers set key_version = key_version + 1 where id = $1", [id]);
+  await loginAndUnlock(pageB, bob);
+  await pageB.goto("/");
+  const card = pageB.getByTestId("pending-invitation").first();
+  await expect(card).toBeVisible();
+  await card.getByLabel(/I compared this number/).check();
+  await card.getByRole("button", { name: "Accept" }).click();
+  await expect(pageB.locator(".toast")).toContainText("invitation is out of date");
+  await expect(pageB.getByTestId("pending-invitation")).toHaveCount(0);
+  // before, the server's refusal undid its own revoke: the card came back on every load
+  await pageB.reload();
+  await expect(pageB.getByTestId("drawer-row").or(pageB.getByRole("button", { name: "Add drawer" })).first()).toBeVisible();
+  await expect(pageB.getByTestId("pending-invitation")).toHaveCount(0);
+  await ctxB.close();
+});

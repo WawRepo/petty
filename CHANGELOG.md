@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Accepting an invitation made before the drawer's key changed (for example after the owner removed a
+  member) now says so: "the invitation is out of date, ask … to invite you again", and the invitation
+  goes away. Before, the app said only "something went wrong", and the invitation came back on every
+  load, because the server undid its own revoke when it refused.
+
 ### Security
 - A drawer's replaced documents (its 30-day history) are now deleted after 30 days even when nobody
   changes that drawer again. Before, only the drawer's next save deleted them, so an unchanged drawer
