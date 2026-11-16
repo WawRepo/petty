@@ -20,6 +20,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 - The "something went wrong" screen names only the kind of error and its code, not its message, which
   could quote what you wrote. A date the app cannot read shows a dash instead of breaking the screen.
   Locking or signing out also clears the sync report, which names items and amounts.
+- A change to your own settings list (confirmed people, tags, places, totals) that kept meeting a newer
+  copy from another device now says it was not saved. Before, it gave up without a word.
+- Accept, Decline and "Accept new key" on an invitation, and the offers to pass a drawer on, say so on
+  the card when they fail. Confirm on the Members screen says so too.
 
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
