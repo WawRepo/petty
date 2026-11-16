@@ -14,6 +14,16 @@ number, also when it adds features, and a new minor or major is started by hand 
   Petty, which passes the new key on. Before, such a change was saved under the old key with the new
   key's number, and nobody could open that version of the drawer again.
 
+### Security
+- An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
+  keys on the server, also when its owner never makes another token: the hourly or daily clean-up now
+  removes them. It also removes what tokens revoked before v1.5.33 still kept. The token stays in the
+  list, and entries it signed still verify.
+- The calls that ask for your login password again (change passphrase, new recovery code, add or
+  remove a passkey, delete the account) now check the proof of your keys first. Someone with a stolen
+  sign-in but without your vault cannot use them to guess your password. Wrong passwords there also
+  count per account, like wrong sign-ins: after 10 in 15 minutes the app asks you to wait.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
