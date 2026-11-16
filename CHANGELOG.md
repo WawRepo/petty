@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Self-hosting: a `VITE_SOURCE_URL` written the way `git clone` takes it (ending in `.git`, or with a
+  trailing slash) now gives working source and download links.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
