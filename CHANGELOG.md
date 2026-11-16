@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.47] — 2026-11-16
+
 ### Added
 - A drawer's owner sees, under Members, who was invited and has not answered yet, with the role and
   when, and can withdraw an invitation. An invitation made before the drawer got a new key is marked
@@ -1052,7 +1054,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.46...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.47...HEAD
+[1.5.47]: https://github.com/WawRepo/petty/releases/tag/v1.5.47
 [1.5.46]: https://github.com/WawRepo/petty/releases/tag/v1.5.46
 [1.5.45]: https://github.com/WawRepo/petty/releases/tag/v1.5.45
 [1.5.44]: https://github.com/WawRepo/petty/releases/tag/v1.5.44
