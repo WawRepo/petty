@@ -8,7 +8,7 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { logs, metrics } from "@opentelemetry/api";
 import { otelResource } from "../src/lib/otel-resource.js";
-import { startOtlpMetrics, startOtlpLogs, flushOtlpPush, stopOtlpPush } from "../src/lib/otel-push.js";
+import { endpointForLog, startOtlpMetrics, startOtlpLogs, flushOtlpPush, stopOtlpPush } from "../src/lib/otel-push.js";
 
 const hits = new Map<string, number>();
 let server: http.Server;
@@ -46,5 +46,19 @@ describe("otlp push", () => {
     await new Promise((r) => setTimeout(r, 200));
     expect(hits.get("/v1/metrics") ?? 0).toBeGreaterThan(0);
     expect(hits.get("/v1/logs") ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("the endpoint in the startup log (PETTY-420)", () => {
+  it("shows scheme, host and port only: never a user, a token, a path or a query", () => {
+    expect(endpointForLog("https://user:s3cret-token@otlp.example.com:4318/otlp/v1?key=k3y#x")).toBe("https://otlp.example.com:4318");
+    expect(endpointForLog("http://otlp:4318")).toBe("http://otlp:4318");
+    expect(endpointForLog("https://otlp.example.com/")).toBe("https://otlp.example.com");
+    expect(endpointForLog("")).toBeNull();
+    for (const bad of ["otlp:4318", "not a url", "s3cret-token@otlp"]) {
+      const shown = endpointForLog(bad) ?? "";
+      expect(shown).toBe("(not a web address)");
+      expect(shown).not.toContain("s3cret");
+    }
   });
 });
