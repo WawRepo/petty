@@ -20,6 +20,18 @@ number, also when it adds features, and a new minor or major is started by hand 
   time. These calls each prove you hold your keys with a one-time challenge; a rotation running in the
   background could take that challenge first. Now they wait for each other, and a call whose challenge
   another tab or device took is sent again with a fresh one.
+- An entry saved on a screen that did not yet show another member's latest count no longer makes the
+  item say "The history links do not match" until the next count. Such an entry links to a row before
+  that count. The web app, the command line and the AI add-on now read the rows before the count and
+  accept the link when that row is there and the count had seen it. A link to a row that is not there,
+  or to a row put before the count after it was made, is still reported. The web app keeps what it
+  found, so it gives no false warning offline either.
+- "Accept as is" shows only where it helps: when the newest entry you saw is gone or has another
+  number. A link problem stays until the item is counted, and the warning now says so to people who
+  can write.
+- A drawer whose server sends the same entry twice now says that its entries are out of order or
+  repeated. It said that the drawer's data was damaged and that its owner could put back an earlier
+  version, which does not help here.
 
 ## [1.5.46] — 2026-11-16
 

@@ -208,6 +208,9 @@ test("PETTY-448: an entry sent with the count flag does not reset the balance, a
   await expect(page.getByTestId("line-balance")).toHaveText("121.00");
   await expect(page.getByTestId("entry-row")).toHaveCount(3);
   await expect(page.getByTestId("warn-chain-broken")).toContainText("The history links do not match");
+  // PETTY-500: accepting the newest entry does not mend a link, so there is no button that does nothing; a count does
+  await expect(page.getByTestId("warn-chain-count")).toContainText("Count this item and adjust it to clear this warning");
+  await expect(page.getByRole("button", { name: "Accept as is" })).toHaveCount(0);
   await page.goto("/");
   await expect(page.getByTestId("drawer-attention")).toBeVisible();
   // a real count starts a new window, and the item is clean again
@@ -217,6 +220,47 @@ test("PETTY-448: an entry sent with the count flag does not reset the balance, a
   await page.reload();
   await expect(page.getByTestId("line-balance")).toHaveText("50.00");
   await noHistoryWarning(page);
+});
+
+test("PETTY-500: an entry written from a view older than another member's count raises no history warning, for either of them", async ({ browser }) => {
+  const alice = await signupWithKeys("stale");
+  const bob = await signupWithKeys("counter");
+  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
+  const ctxB = await browser.newContext(); const pageB = await ctxB.newPage();
+  await loginAndUnlock(pageA, alice);
+  const drawerId = await makeDrawer(pageA, "Till");
+  const lineId = await openLine(pageA, drawerId);
+  await entry(pageA, "Add", "20");
+  await expect(pageA.getByTestId("line-balance")).toHaveText("120.00");
+  await shareViaApi(alice, drawerId, bob, "write");
+  await loginAndUnlock(pageB, bob);
+  await pageB.goto(`/drawers/${drawerId}/lines/${lineId}`);
+  await entry(pageB, "Add", "1");
+  await entry(pageB, "Adjust", "80");
+  await expect(pageB.getByTestId("line-balance")).toHaveText("80.00");
+  // alice's screen still shows the item as it was before bob's count: her entry links to her own last one
+  await entry(pageA, "Withdraw", "5");
+  await expect(pageA.getByTestId("line-balance")).toHaveText("115.00");
+  const { rows } = await asMember(alice, drawerId, lineId);
+  expect(rows.map((r) => r.entry.op).slice(1)).toEqual(["add", "add", "adjust", "withdraw"]); // after the starting entry
+  expect(rows.at(-1)!.entry.prev_hash).toBe(await hashEntry(rows[1]!.entry));
+  // loaded again, both see bob's count with alice's entry after it, and no warning
+  await pageA.reload();
+  await expect(pageA.getByTestId("line-balance")).toHaveText("75.00");
+  await noHistoryWarning(pageA);
+  await pageB.reload();
+  await expect(pageB.getByTestId("line-balance")).toHaveText("75.00");
+  await noHistoryWarning(pageB);
+  await pageB.goto("/");
+  await expect(rowNamed(pageB, "Till")).toBeVisible();
+  await expect(pageB.getByTestId("drawer-attention")).toHaveCount(0);
+  // with no server, the same rows are checked against the row found before the count the last time: no false warning offline
+  await pageA.route("**/api/**", (r) => r.abort("internetdisconnected"));
+  await pageA.reload();
+  await expect(pageA.getByTestId("offline-banner")).toBeVisible();
+  await expect(pageA.getByTestId("line-balance")).toHaveText("75.00");
+  await noHistoryWarning(pageA);
+  await ctxA.close(); await ctxB.close();
 });
 
 test("PETTY-448: the same entry served twice is not counted twice: the drawer shows as damaged", async ({ page }) => {
@@ -234,6 +278,7 @@ test("PETTY-448: the same entry served twice is not counted twice: the drawer sh
     await route.fulfill({ response: res, json: boot });
   });
   await page.reload();
-  await expect(page.locator(".degraded")).toContainText("This drawer's data is damaged");
+  // PETTY-500: the entries are at fault, not the drawer's document, so no earlier version of it is the way out
+  await expect(page.locator(".degraded")).toContainText("out of order or repeated");
   await expect(page.getByTestId("row-amount")).toHaveCount(0);
 });
