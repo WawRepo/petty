@@ -405,6 +405,18 @@ export const Invitation = z.object({
 });
 export type Invitation = z.infer<typeof Invitation>;
 
+/** PETTY-498: a pending invitation as the drawer's owner sees it (`GET /drawers/:id/invitations`, PETTY-446). */
+export const DrawerInvitation = z.object({
+  id: uuid,
+  drawer_id: uuid,
+  role: Role,
+  key_version: z.number().int(),
+  created_at: z.string(),
+  inviter_id: uuid,
+  invitee: z.object({ id: uuid, display_name: z.string() }),
+});
+export type DrawerInvitation = z.infer<typeof DrawerInvitation>;
+
 export const Bootstrap = z.object({
   me: Me,
   drawers: z.array(DrawerSummary),

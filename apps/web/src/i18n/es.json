@@ -630,7 +630,17 @@
     "leaveConfirm": "¿Salir de este cajón? Necesitarás una nueva invitación para volver.",
     "invite": "Invitar a alguien",
     "transferPending": "Propiedad ofrecida a {name}",
-    "honest": "Cualquier persona que invites puede leer y copiar todo lo que hay en este cajón. Quitarla después solo le impide el acceso futuro."
+    "honest": "Cualquier persona que invites puede leer y copiar todo lo que hay en este cajón. Quitarla después solo le impide el acceso futuro.",
+    "waiting": {
+      "title": "Esperando respuesta",
+      "since": "Invitación enviada: {when}",
+      "stale": "Desactualizada: la clave del cajón cambió desde entonces, así que {name} no puede aceptarla. Retírala e invita de nuevo a {name}.",
+      "withdraw": "Retirar invitación",
+      "withdrawConfirm": "¿Retirar la invitación para {name}? Ya no podrá aceptarla. Puedes volver a invitar a {name} más tarde.",
+      "withdrawn": "Invitación retirada",
+      "gone": "Esa invitación ya fue aceptada, rechazada o retirada.",
+      "loadFailed": "No se pudieron cargar las invitaciones pendientes. Inténtalo de nuevo más tarde."
+    }
   },
   "invite": {
     "title": "Invitar a este cajón",
@@ -651,7 +661,8 @@
     "joinLinkHint": "Para alguien que aún no usa Petty. Recibirá un correo con un enlace de un solo uso.",
     "joinLinkSent": "Enlace de invitación enviado a {email}",
     "joinLinkTooMany": "Demasiados correos enviados últimamente. Inténtalo más tarde o crea un enlace de invitación en Ajustes y envíalo tú.",
-    "alreadyMember": "Ya es miembro."
+    "alreadyMember": "Ya es miembro.",
+    "alreadyInvited": "{name} ya tiene una invitación a este cajón y aún no ha respondido. Para cambiar el rol, primero retira esa invitación."
   },
   "rotation": {
     "running": "Sustituyendo la clave del cajón… {done} de {total} movimientos cifrados de nuevo.",
