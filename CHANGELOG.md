@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.42] — 2026-11-16
+
 ### Changed
 - For operators: the API no longer prints Fastify's deprecation warning FSTDEP023 when it starts. The
   request log is unchanged: one "request" line per request, and none for health probes.
@@ -916,7 +918,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.41...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.42...HEAD
+[1.5.42]: https://github.com/WawRepo/petty/releases/tag/v1.5.42
 [1.5.41]: https://github.com/WawRepo/petty/releases/tag/v1.5.41
 [1.5.40]: https://github.com/WawRepo/petty/releases/tag/v1.5.40
 [1.5.39]: https://github.com/WawRepo/petty/releases/tag/v1.5.39
