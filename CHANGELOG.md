@@ -8,6 +8,17 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- The image runs on Node.js 26 (LTS since 2026-10-28), up from Node.js 24. CI, `.node-version` and the
+  `engines` field for developing Petty move to 26 too. The `petty` command line and the AI add-on still
+  run on Node 20 or newer.
+- What account deletion keeps (the person's id, language, dates and public keys, so the entries they
+  wrote in drawers that others keep still verify) is now deleted once nothing needs it: when no entry,
+  drawer document or photo, kept document version or drawer key they wrapped for someone names them
+  any more. Before, it stayed for good. Migration 019 adds the function `purge_tombstones()`, which
+  the hourly or daily housekeeping calls; the request role may call it but still cannot delete
+  accounts or keys itself. For operators: the "maintenance" log line has a new number, `tombstones`.
+
 ### Fixed
 - On a small phone, a field that you reach with Tab (or that gets focus) in a long sheet is no longer
   hidden under the sheet's buttons at the bottom. The sheet now scrolls the field up until it is clear

@@ -129,7 +129,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   same steps (CLAUDE.md, "Releasing"); their provenance names no source revision. A release is started by hand from main and never waits for CI: it is refused
   while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
   version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
-  the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.
+  the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 26 LTS (since PETTY-346; Node 24 before).
   *Since PETTY-406 no job that runs dependency code holds a write token. Since PETTY-418 (2026-11-10)
   each release signs build attestations for the image and its files (`gh attestation verify`;
   [deploy.md](deploy.md), [cli.md](cli.md)), the app's setup and download links point at the GitHub
@@ -249,7 +249,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   A used join link forgets its email; housekeeping (`apps/api/src/lib/maintenance.ts`) deletes unused
   join links that ended, reset tokens that expired, and drawer documents replaced more than 30 days ago
   (PETTY-488; before, only the drawer's next write dropped them); deleting an account deletes its
-  unused join links and reset tokens.
+  unused join links and reset tokens. What deletion keeps (the account's id, language, dates and
+  public keys, so others' records still verify) goes in the first housekeeping run after nothing
+  needs it (PETTY-349, `purge_tombstones()` in migration 019): no entry, drawer document or photo,
+  kept document version or drawer-key wrap names the person, and no membership, owned drawer,
+  transfer or pending invitation is left. Its answered invitations, rotations, used join links and
+  revoked tokens go with it.
 - **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only
   while its inviter still owns the drawer, and a change of owner ends every pending one. The owner
   lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`.

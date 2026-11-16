@@ -42,7 +42,7 @@ services:
       DEPLOYMENT_ENV: "it"
   # PETTY-401: a stand-in OTLP receiver (tests/integration/otlp/capture.mjs) for 19-otlp.
   otlp:
-    image: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+    image: node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
     command: ["node", "/capture.mjs"]
     volumes:
       - ../../tests/integration/otlp/capture.mjs:/capture.mjs:ro
