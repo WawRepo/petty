@@ -26,6 +26,8 @@ number, also when it adds features, and a new minor or major is started by hand 
   the card when they fail. Confirm on the Members screen says so too.
 - At the most access tokens (50) or passkeys (20), Petty now says so and what to do, instead of
   "Something went wrong".
+- Self-hosting: a `VITE_SOURCE_URL` written the way `git clone` takes it (ending in `.git`, or with a
+  trailing slash) now gives working source and download links.
 
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
