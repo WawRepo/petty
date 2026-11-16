@@ -21,7 +21,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `03-household` | login/logout, drawers, entries, an Adjust, finding the second person by email (a POST body, no address in the request log), a join link looked up by a POST body (no token in the log; the former URL forms answer 404), a changing request refused unless the browser marks it same-origin, sharing with them, the owner's list of pending invitations and their end when the drawer changes owner, a stranger kept out, an earlier document version put back by the owner's client (the server's own restore route refuses), a new drawer key and a deleted line (each needs a custody proof; a request without one changes nothing), an access token and the agent (signatures verified), revoke, a token's drawer keys sent in several requests |
 | `04-open-signup` | open sign-up without a join link, and the invite path still works |
 | `05-storage` | the per-person storage quota fills and refuses; a stored field of the wrong size (a nonce, an entry, a wrapped key) is refused and takes no space |
-| `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes; its entry links to the one before it, and a history that checks out brings no warning |
+| `06-cli` | downloads `petty.mjs` from the image, signs in through device login (the request log names `/device/:code`, never the code), reads and writes; its entry links to the one before it, and a history that checks out brings no warning |
 | `07-mail` | a password reset through the image, both emails read from the mail catcher, the contact address in them |
 | `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`); an IPv6 client counts by its /64, IPv4 written as IPv6 as that address; the image sets no `TRUST_PROXY`, the compose file does, and the app logs no `proxy_untrusted` |
 | `09-upgrade` | after an app restart (and the upgrade), the seeded data still logs in, opens and folds to the same balance; the seeded drawer document, from before the counter, takes its first counter at the next save and cannot go back to the older format |
@@ -32,7 +32,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `14-metrics` | the security refusal counter and the memory gauge, a series for every label value, the background pool and the start-up housekeeping, the count of active people |
 | `15-tour-film` | the landing page's films in byte ranges (206, `video/mp4`) and both posters, served by the image itself |
 | `16-two-instances` | a second app on the same database takes a custody challenge the first one gave, once; wrong passwords sent to both add up to one lockout |
-| `17-retention` | personal data kept no longer than needed: a used join link forgets the email; the request role may clear dead reset tokens |
+| `17-retention` | personal data kept no longer than needed: a used join link forgets the email; the request role may clear dead reset tokens; the start-up maintenance run clears dead tokens' data and drawer history older than 30 days, with no error |
 | `18-legal` | the operator's legal texts from `LEGAL_DIR`, in the asked language or the nearest one; a sign-up records the terms version; `/terms` is a page of the app |
 | `19-otlp` | traces, metrics and logs pushed over OTLP/HTTP with the names the alerts read, a trace linked to its log lines |
 | `20-stop` | the API runs as `node` itself and stops at once, and cleanly, when told to (the last file: nothing else runs while it is down) |

@@ -137,7 +137,8 @@ function patchPg(): void {
   };
 }
 
-const TOKEN_ROUTE = /:token\b/;
+/** Route parameters that are secrets: a link token, and the device-login code (PETTY-461: /device/:code). */
+const SECRET_ROUTE = /:(token|code)\b/;
 /**
  * The URL as it may be logged or traced: the path, never the query string (PETTY-408: GET
  * /users/lookup?email= put an address in every log line and span). A route that carries a secret in its
@@ -146,7 +147,7 @@ const TOKEN_ROUTE = /:token\b/;
 export function safeUrl(req: FastifyRequest): string {
   const tpl = req.routeOptions.url;
   const path = req.url.split("?")[0] ?? "";
-  if (tpl) return TOKEN_ROUTE.test(tpl) ? tpl : path;
+  if (tpl) return SECRET_ROUTE.test(tpl) ? tpl : path;
   // No template: the SPA shell or a 404. /join/<token> and /reset/<token> live here (SR-1),
   // so only the first path segment is reported.
   const segments = path.split("/").filter(Boolean);

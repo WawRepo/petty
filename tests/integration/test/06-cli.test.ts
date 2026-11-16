@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { deviceUserCode, fromB64, hashEntry, openEntryUnverified, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, ORIGIN, newUser } from "../lib.js";
+import { API, ORIGIN, compose, newUser } from "../lib.js";
 
 /**
  * PETTY-274: the command line as it ships. The image serves /downloads/petty.mjs; this test downloads
@@ -67,6 +67,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const sealed = await sealDeviceToken(view.cli_pub, tok.token, { requestId: view.id, userCode: code, origin: ORIGIN });
     expect((await ann.call("POST", `/device/${code}/approve`, { sealed })).statusCode).toBe(204);
     expect(await login.done).toBe(0);
+    // PETTY-461: the request log names the route, never the code that was waiting for approval
+    const log = () => compose("logs --no-color --no-log-prefix app");
+    await expect.poll(log, { timeout: 10_000 }).toContain('"url":"/api/device/:code/approve"');
+    expect(log()).not.toContain(code);
     expect(login.err()).toContain(`Signed in to ${ORIGIN}`);
     expect(statSync(join(dir, "hosts.json")).mode & 0o777).toBe(0o600);
 
