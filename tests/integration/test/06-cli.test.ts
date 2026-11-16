@@ -120,6 +120,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const find = petty(["find", "loft", "coins"]);
     expect(await find.done).toBe(4);
     expect(find.err()).toContain("(this token opens only the 1 drawer chosen for it)");
+    // PETTY-461: status names what the token opens, and nothing else
+    const status = petty(["auth", "status", "--json"]);
+    expect(await status.done).toBe(0);
+    expect(JSON.parse(status.out())).toMatchObject([{ works: true, scope: "chosen", drawers: ["Garage box"] }]);
     expect((await fetch(`${API}/drawers/${other.id}`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(403);
   });
 

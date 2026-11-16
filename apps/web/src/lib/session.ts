@@ -7,6 +7,7 @@ import { idb } from "./idb.js";
 import { onBackOnline } from "./net.js";
 import { resetDrawers } from "./drawers.js";
 import { forgetSelfKey } from "./pins.js";
+import { forgetScreenMemory } from "./screenMemory.js";
 
 /** The vault stays unlocked this long after a passphrase entry (spec "Session lock: once a day"). */
 export const UNLOCK_HOURS = 24;
@@ -249,7 +250,19 @@ async function lockHere(): Promise<void> {
   if (s.status === "unlocked") set({ status: "locked", me: s.me });
   resetDrawers();
   forgetSelfKey();
+  forgetScreenMemory();
+  forgetAll();
   await idb.del(K_UNLOCKED);
+}
+
+/**
+ * PETTY-461: a module that keeps something from the unlocked session (the sync report) registers here;
+ * lock and sign-out call it. Returns the way to stop.
+ */
+const forgetters = new Set<() => void>();
+export function onForget(fn: () => void): () => void { forgetters.add(fn); return () => { forgetters.delete(fn); }; }
+function forgetAll(): void {
+  for (const fn of [...forgetters]) { try { fn(); } catch { /* one failing must not keep the rest */ } }
 }
 
 let signOutHandler: (() => Promise<void>) | null = null;
@@ -292,6 +305,8 @@ async function clearAll(): Promise<void> {
   markSignedIn(false);
   resetDrawers();
   forgetSelfKey();
+  forgetScreenMemory();
+  forgetAll();
   for (const k of await idb.keys()) if (!KEPT.some((p) => k.startsWith(p))) await idb.del(k);
 }
 

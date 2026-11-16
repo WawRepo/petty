@@ -9,7 +9,9 @@ export const dateLocale = (lang: string): string => (lang === "en" ? "en-GB" : l
  * minute is a dictionary key; over ~30 days it is a date.
  */
 export function relativeTime(iso: string, locale: string, t: TFunction, now = Date.now()): string {
-  const diff = Math.max(0, now - Date.parse(iso));
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return "—"; // PETTY-461: a bad timestamp shows a dash; it used to throw and take the screen down
+  const diff = Math.max(0, now - at);
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return t("time.justNow");
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always" });
@@ -18,5 +20,5 @@ export function relativeTime(iso: string, locale: string, t: TFunction, now = Da
   if (hours < 24) return rtf.format(-hours, "hour");
   const days = Math.floor(hours / 24);
   if (days < 30) return rtf.format(-days, "day");
-  return new Intl.DateTimeFormat(dateLocale(locale), { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(dateLocale(locale), { month: "short", day: "numeric", year: "numeric" }).format(new Date(at));
 }
