@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- A drawer that cannot be shown offers only the ways out that help. "Earlier versions" (put back an
+  older copy of the drawer) now shows only where the drawer's own data is at fault, not where its
+  entries are: putting back a copy leaves every entry as it is. For entries out of order or repeated,
+  the drawer now says to ask whoever runs the Petty server to check them. For amounts too large to
+  show, it says to count the wrong item again with the command line or the AI add-on, and links to
+  their setup; a member who may only read is told to ask someone who can write.
+
 ## [1.5.47] — 2026-11-16
 
 ### Added

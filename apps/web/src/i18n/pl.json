@@ -352,6 +352,12 @@
     "deleteConfirm": "Usunąć „{name}” ze wszystkimi pozycjami i ich historią? Tego nie można cofnąć.",
     "deleteBtn": "Usuń",
     "deleteType": "Wpisz nazwę szuflady, aby potwierdzić",
+    "damaged": {
+      "countElsewhere": "Aby to naprawić, znajdź pozycję z błędną kwotą, policz ją i skoryguj w wierszu poleceń („petty adjust”) albo w dodatku AI. One otwierają tę szufladę, choć ta aplikacja nie może, i pokazują kwotę każdej pozycji. Korekta zaczyna sumę pozycji od nowa.",
+      "askWriter": "Naprawić to może osoba, która może wprowadzać zmiany w tej szufladzie: policzy pozycję i ją skoryguje w wierszu poleceń albo w dodatku AI.",
+      "askOperator": "Przywrócenie wcześniejszej wersji szuflady nie pomoże, bo błędne są same wpisy. Poproś osobę, która prowadzi ten serwer Petty, aby sprawdziła wpisy tej szuflady.",
+      "tools": "Wiersz poleceń i dodatek AI"
+    },
     "deleteDamagedConfirm": "Usunąć tę szufladę ze wszystkimi pozycjami i ich historią? Tego nie można cofnąć.",
     "deleteDamagedType": "Wpisz to słowo, aby potwierdzić",
     "photoAdd": "Dodaj zdjęcie",
