@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Changing the passphrase, storing a new recovery code, adding or removing a passkey, making an access
+  token, and deleting a drawer or the account no longer fail once when a key rotation runs at the same
+  time. These calls each prove you hold your keys with a one-time challenge; a rotation running in the
+  background could take that challenge first. Now they wait for each other, and a call whose challenge
+  another tab or device took is sent again with a fresh one.
+
 ## [1.5.46] — 2026-11-16
 
 ### Fixed

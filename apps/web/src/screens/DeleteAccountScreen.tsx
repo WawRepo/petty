@@ -9,7 +9,7 @@ import { TextField } from "../components/TextField.js";
 import { TopBar } from "../components/TopBar.js";
 import { useToast } from "../components/Toast.js";
 import { api, ApiError } from "../lib/api.js";
-import { custodyProof } from "../lib/custody.js";
+import { withCustodyProof } from "../lib/custody.js";
 import { useDrawers, loadIfIdle } from "../lib/drawers.js";
 import { forgetUserDocVersion } from "../lib/pins.js";
 import { getAuth, signOut } from "../lib/session.js";
@@ -42,7 +42,7 @@ export function DeleteAccountScreen() {
       const decisions = preview.shared.map((s) => { const c = choices[s.drawer_id]!; return c.action === "transfer" ? { drawer_id: s.drawer_id, action: "transfer", to_user_id: c.to_user_id } : { drawer_id: s.drawer_id, action: "delete" }; });
       const a = getAuth();
       if (a.status !== "unlocked") throw new Error("locked");
-      await api("POST", "/me/delete", { ...(isClerk() ? {} : { password }), proof: await custodyProof(a.keys.ecdsaPrivate), decisions });
+      await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("POST", "/me/delete", { ...(isClerk() ? {} : { password }), proof, decisions }));
       await forgetUserDocVersion(a.me.id);
       await signOut();
       toast(t("delete.done"));

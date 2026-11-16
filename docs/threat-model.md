@@ -420,7 +420,11 @@ require a server-issued challenge **signed with the account key**, in addition t
 Replacing the vault or the recovery code, changing passkeys and deleting the account also ask for the
 login password in local mode. There is one challenge per person (`POST /me/custody-challenge`); it is
 valid five minutes and works once. It lives in the database, so it works the same when several
-instances of the API share it. A web app from before PETTY-440 and PETTY-441 sends no proof for a key
+instances of the API share it. Because there is only one, the web app sends all these calls one after
+another, each with a fresh proof, and sends a call again when the server answers 403
+`CustodyProofRequired` because another tab or device asked for a challenge in between (PETTY-497). The
+server checks the proof before the password and before it writes anything, so a call sent again never
+counts as a second password try. A web app from before PETTY-440 and PETTY-441 sends no proof for a key
 change or a line deletion: the server answers 403 `CustodyProofRequired` and changes nothing. The
 login password can be reset from an email link; the vault key cannot be reset by anyone. Replaced
 vault blobs are kept 30 days (an admin can put one back), and the owner is emailed on a password reset
