@@ -51,14 +51,18 @@ describe("Tab completion in real shells (PETTY-274)", () => {
     expect(sh("fish", ["--no-execute", join(dir, "petty.fish")]).status).toBe(0);
   });
 
+  // PETTY-503: one PowerShell for the three Tab rounds. Three of them, each loading the script through
+  // `petty completion`, took most of the 30 s budget on a busy CI runner and once ran past it.
   it.skipIf(!has("pwsh"))("PowerShell: the script loads, and Tab offers the commands", () => {
-    const tab = (line: string) =>
-      sh("pwsh", ["-NoProfile", "-NonInteractive", "-Command",
-        `petty completion -s powershell | Out-String | Invoke-Expression; (TabExpansion2 -inputScript '${line}' -cursorColumn ${line.length}).CompletionMatches | ForEach-Object CompletionText`]).stdout.trim().split(/\r?\n/);
-    expect(tab("petty au")).toEqual(["auth"]);
-    expect(tab("petty auth ")).toEqual(["login", "status", "logout", "token"]);
-    expect(tab("petty completion -s p")).toEqual(["powershell"]);
-  });
+    const lines = ["petty au", "petty auth ", "petty completion -s p"];
+    const r = sh("pwsh", ["-NoProfile", "-NonInteractive", "-Command",
+      `petty completion -s powershell | Out-String | Invoke-Expression; ${lines.map((l) => `(TabExpansion2 -inputScript '${l}' -cursorColumn ${l.length}).CompletionMatches | ForEach-Object CompletionText; '--'`).join("; ")}`]);
+    expect(r.stderr).toBe("");
+    // each round's candidates, then a "--" line
+    const rounds: string[][] = [[]];
+    for (const l of r.stdout.split(/\r?\n/)) if (l === "--") rounds.push([]); else if (l) rounds.at(-1)!.push(l);
+    expect(rounds).toEqual([["auth"], ["login", "status", "logout", "token"], ["powershell"], []]);
+  }, 90_000);
 
   it.skipIf(!has("pwsh") || process.platform === "win32")("PowerShell: after a quoted word, petty gets that word's value, not its quotes (PETTY-493)", () => {
     // A stand-in `petty` writes down the words it is asked to complete after, and the word being typed.
