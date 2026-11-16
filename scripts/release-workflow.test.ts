@@ -112,4 +112,29 @@ describe("every workflow", () => {
       }
     }
   });
+
+  // PETTY-492: actions/checkout leaves the job's token in .git/config unless told not to, and every later
+  // step (and the dependency code it runs) can read it there. Only release.yml's publish job pushes.
+  it("leaves no token behind a checkout, except in the one job that pushes", () => {
+    const keeps: string[] = [];
+    let checkouts = 0;
+    for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml"))) {
+      const lines = readFileSync(join(dir, file), "utf8").split("\n");
+      let jobName = "";
+      let inJobs = false;
+      lines.forEach((line, i) => {
+        if (line === "jobs:") inJobs = true;
+        const start = inJobs ? /^ {2}([a-z][a-z0-9_-]*):\s*$/.exec(line) : null;
+        if (start) jobName = start[1]!;
+        if (!/^\s*- uses: actions\/checkout@/.test(line)) return;
+        checkouts++;
+        // the step's own lines: up to the next step or the next job
+        const end = lines.findIndex((l, j) => j > i && /^\s*- |^ {2}\S/.test(l));
+        const step = lines.slice(i + 1, end < 0 ? undefined : end).join("\n");
+        if (!/persist-credentials: false\b/.test(step)) keeps.push(`${file}:${jobName}`);
+      });
+    }
+    assert.ok(checkouts >= 10, `found only ${checkouts} checkouts: the parser no longer reads the workflows`);
+    assert.deepEqual(keeps, ["release.yml:publish"]);
+  });
 });
