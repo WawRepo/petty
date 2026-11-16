@@ -202,7 +202,7 @@
       "decrypt_failed": "Ce tiroir n’a pas pu être ouvert. Demandez à son propriétaire de le partager à nouveau.",
       "bad_document": "Les données de ce tiroir sont endommagées. Son propriétaire peut rétablir une version précédente.",
       "unknown_schema": "Ce tiroir a été enregistré par une version plus récente de Petty. Rechargez la page pour mettre Petty à jour.",
-      "bad_entries": "Les opérations d’un élément de ce tiroir ne sont pas dans l’ordre, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
+      "bad_entries": "Les opérations d’un élément de ce tiroir ne sont pas dans l’ordre ou sont en double, donc Petty ne l’a pas ouvert. Quelqu’un a peut-être modifié le serveur.",
       "sum_too_large": "Les montants de ce tiroir donnent ensemble un nombre trop grand pour être affiché, donc Petty n’en affiche aucun. Quelqu’un a peut-être ajouté une opération avec un montant erroné."
     },
     "otherDrawers": "{count, plural, one {Autre tiroir} other {Autres tiroirs}}",
@@ -541,6 +541,7 @@
     "warn": {
       "problems": "{count, plural, one {# opération n’a pas pu être lue ou vérifiée. Son montant n’est pas compté dans le solde.} other {# opérations n’ont pas pu être lues ou vérifiées. Leurs montants ne sont pas comptés dans le solde.}}",
       "broken": "Les liens de l’historique ne correspondent pas. Des opérations ont peut-être été supprimées ou modifiées.",
+      "brokenCount": "Comptez cet élément et ajustez-le pour retirer cet avertissement. La vérification reprend alors à partir de votre comptage.",
       "truncated": "L’historique est plus court que lors de votre dernière consultation. Des opérations ont peut-être été supprimées.",
       "acknowledge": "Accepter tel quel",
       "skipped": "{count, plural, one {# opération n’est pas prise en compte dans le solde, car elle enfreint les règles.} other {# opérations ne sont pas prises en compte dans le solde, car elles enfreignent les règles.}}",

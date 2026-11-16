@@ -226,6 +226,8 @@ function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
   // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
   if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
+  // PETTY-500: rows of a line out of order or repeated are the entries' fault, not the document's: an earlier version does not help
+  if (e instanceof LedgerError && ["bad_seq", "duplicate_seq", "duplicate_entry", "line_mismatch"].includes(e.code)) return "bad_entries";
   if (e instanceof LedgerError) return "bad_document";
   return "decrypt_failed";
 }

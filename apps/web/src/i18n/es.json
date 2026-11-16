@@ -202,7 +202,7 @@
       "decrypt_failed": "No se pudo abrir este cajón. Pide a su propietario que vuelva a compartirlo.",
       "bad_document": "Los datos de este cajón están dañados. Su propietario puede restaurar una versión anterior.",
       "unknown_schema": "Este cajón lo guardó una versión más reciente de Petty. Recarga para actualizar Petty.",
-      "bad_entries": "Los movimientos de un elemento de este cajón no están en orden, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
+      "bad_entries": "Los movimientos de un elemento de este cajón no están en orden o están repetidos, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
       "sum_too_large": "Las cantidades de este cajón suman un número demasiado grande para mostrarlo, así que Petty no muestra ninguna. Puede que alguien haya añadido un movimiento con una cantidad incorrecta."
     },
     "otherDrawers": "{count, plural, one {Otro cajón} other {Otros cajones}}",
@@ -541,6 +541,7 @@
     "warn": {
       "problems": "{count, plural, one {No se pudo leer o verificar # movimiento. Su cantidad no está en el saldo.} other {No se pudieron leer o verificar # movimientos. Sus cantidades no están en el saldo.}}",
       "broken": "Los enlaces del historial no coinciden. Puede que se hayan eliminado o cambiado algunos movimientos.",
+      "brokenCount": "Cuenta este elemento y ajústalo para quitar este aviso. La comprobación empieza entonces de nuevo en tu recuento.",
       "truncated": "El historial es más corto que la última vez que lo viste. Puede que se hayan eliminado movimientos.",
       "acknowledge": "Aceptar tal cual",
       "skipped": "{count, plural, one {# movimiento queda fuera del saldo porque incumple las reglas.} other {# movimientos quedan fuera del saldo porque incumplen las reglas.}}",

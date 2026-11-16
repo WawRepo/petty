@@ -4,7 +4,7 @@ import { Navigate, useParams } from "react-router";
 import { useMorphBack } from "../lib/nav.js";
 import { KIND_CLASS, PIcon, lineIcon } from "../lib/icons.js";
 import { vtName } from "../components/DrawerArt.js";
-import { decimalSeparator, formatAmount, formatCount, negativeWarning, newEntryAmount, parseAmount, LedgerError, type LedgerEntry, type Line } from "@petty/ledger";
+import { decimalSeparator, formatAmount, formatCount, isHeadProblem, negativeWarning, newEntryAmount, parseAmount, LedgerError, type LedgerEntry, type Line } from "@petty/ledger";
 import type { EntryOp } from "@petty/crypto";
 import { Button } from "../components/Button.js";
 import { ConfirmSheet } from "../components/ConfirmSheet.js";
@@ -261,7 +261,10 @@ export function LineScreen() {
         {chain && chain.status !== "ok" ? (
           <div className="warn-box danger" role="alert" data-testid={`warn-chain-${chain.status}`}>
             {t(`line.warn.${chain.status}`)}
-            <div className="mt8"><Button variant="secondary" onClick={() => void acknowledgeChain(id, lineId)}>{t("line.warn.acknowledge")}</Button></div>
+            {/* PETTY-500: "Accept as is" pins the newest entry as it is now, which clears only a missing, changed or renumbered one.
+                A link problem stays until a count starts the check again: a writer is told so, instead of a button that does nothing. */}
+            {canWrite && chain.problems.some((p) => !isHeadProblem(p)) ? <p className="mt8" data-testid="warn-chain-count">{t("line.warn.brokenCount")}</p> : null}
+            {chain.problems.some(isHeadProblem) ? <div className="mt8"><Button variant="secondary" onClick={() => void acknowledgeChain(id, lineId)}>{t("line.warn.acknowledge")}</Button></div> : null}
           </div>
         ) : null}
         {canWrite ? (

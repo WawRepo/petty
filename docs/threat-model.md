@@ -234,7 +234,14 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   roles are enforced by the server alone.
 - **Hash-linked history.** Each entry carries the hash of the newest entry its author had seen on
   that line (concurrent writers make it a tree). The client pins the last head it saw and warns if
-  the server returns a shorter log, also an empty one for a line the drawer still lists.
+  the server returns a shorter log, also an empty one for a line the drawer still lists. An entry
+  saved on a screen that did not yet show the latest count links to a row before that count
+  (PETTY-500). The web app and the tools then read the rows before the count and accept the link only
+  when that row is there, at or before the row the count links to (so the count saw it), and does not
+  itself link to a later row. A row moved from after the count to before it is caught by that last
+  rule, and the web app remembers the rows it found for the same count, so it checks the link offline
+  too. The server still orders an entry that was written before a count but arrives after it, as with
+  any two entries written at the same moment.
 - **Drawer versions.** The server's version number of a drawer's document is not inside the encryption,
   so each document also carries a counter that is (PETTY-422): every write stores the counter it loaded
   plus one. Your sealed user document remembers, for each drawer, the newest version number and the
@@ -278,7 +285,8 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   line's first entry. The same entry sent twice is refused, not counted twice.
 - **The command line and the AI add-on check less than the web app.** They check that every row opens
   in its own row, line, drawer and key version, every signature, the hash links between the rows since
-  the latest count, and the count rules above. They name what did not open or verify (on the command
+  the latest count (and to a row before it, for an entry written from an older view; PETTY-500), and
+  the count rules above. They name what did not open or verify (on the command
   line's error output, and at the end of the add-on's answers) and leave it out of the balance. Since
   PETTY-445 an entry they write carries the hash of the newest entry they checked, as the web app's
   do. They do **not** remember anything between two runs: no pinned head, no drawer version and no

@@ -202,7 +202,7 @@
       "decrypt_failed": "Nie udało się otworzyć tej szuflady. Poproś jej właściciela o ponowne udostępnienie.",
       "bad_document": "Dane tej szuflady są uszkodzone. Jej właściciel może przywrócić wcześniejszą wersję.",
       "unknown_schema": "Tę szufladę zapisała nowsza wersja Petty. Odśwież stronę, aby zaktualizować Petty.",
-      "bad_entries": "Wpisy jednej z pozycji w tej szufladzie są w złej kolejności, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
+      "bad_entries": "Wpisy jednej z pozycji w tej szufladzie są w złej kolejności lub powtórzone, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
       "sum_too_large": "Kwoty w tej szufladzie dają razem liczbę zbyt dużą, aby ją pokazać, więc Petty nie pokazuje żadnej z nich. Ktoś mógł dodać wpis z błędną kwotą."
     },
     "otherDrawers": "{count, plural, one {Inna szuflada} few {Inne szuflady} many {Inne szuflady} other {Inne szuflady}}",
@@ -541,6 +541,7 @@
     "warn": {
       "problems": "{count, plural, one {Nie udało się odczytać lub zweryfikować # wpisu. Jego kwota nie jest wliczona do salda.} few {Nie udało się odczytać lub zweryfikować # wpisów. Ich kwoty nie są wliczone do salda.} many {Nie udało się odczytać lub zweryfikować # wpisów. Ich kwoty nie są wliczone do salda.} other {Nie udało się odczytać lub zweryfikować # wpisu. Ich kwoty nie są wliczone do salda.}}",
       "broken": "Powiązania historii nie zgadzają się. Część wpisów mogła zostać usunięta lub zmieniona.",
+      "brokenCount": "Policz tę pozycję i ją skoryguj, aby usunąć to ostrzeżenie. Sprawdzanie zacznie się wtedy od nowa od twojego liczenia.",
       "truncated": "Historia jest krótsza niż ostatnio. Wpisy mogły zostać usunięte.",
       "acknowledge": "Zaakceptuj mimo to",
       "skipped": "{count, plural, one {# wpis nie jest wliczony do salda, bo łamie zasady.} few {# wpisy nie są wliczone do salda, bo łamią zasady.} many {# wpisów nie jest wliczonych do salda, bo łamią zasady.} other {# wpisu nie jest wliczone do salda, bo łamią zasady.}}",

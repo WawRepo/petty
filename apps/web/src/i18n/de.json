@@ -202,7 +202,7 @@
       "decrypt_failed": "Diese Schublade konnte nicht geöffnet werden. Bitte den Eigentümer, sie noch einmal mit dir zu teilen.",
       "bad_document": "Die Daten dieser Schublade sind beschädigt. Der Eigentümer kann eine frühere Version wiederherstellen.",
       "unknown_schema": "Diese Schublade wurde mit einer neueren Version von Petty gespeichert. Lade die Seite neu, um Petty zu aktualisieren.",
-      "bad_entries": "Die Buchungen eines Postens in dieser Schublade sind nicht in der richtigen Reihenfolge, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
+      "bad_entries": "Die Buchungen eines Postens in dieser Schublade sind nicht in der richtigen Reihenfolge oder doppelt, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
       "sum_too_large": "Die Beträge in dieser Schublade ergeben zusammen eine Zahl, die zu groß zum Anzeigen ist, deshalb zeigt Petty keinen davon. Vielleicht hat jemand eine Buchung mit einem falschen Betrag hinzugefügt."
     },
     "otherDrawers": "{count, plural, one {Weitere Schublade} other {Weitere Schubladen}}",
@@ -541,6 +541,7 @@
     "warn": {
       "problems": "{count, plural, one {# Buchung konnte nicht gelesen oder geprüft werden. Ihr Betrag ist nicht im Saldo enthalten.} other {# Buchungen konnten nicht gelesen oder geprüft werden. Ihre Beträge sind nicht im Saldo enthalten.}}",
       "broken": "Die Verknüpfungen im Verlauf passen nicht zusammen. Vielleicht wurden Buchungen entfernt oder geändert.",
+      "brokenCount": "Zähl diesen Posten nach und korrigiere ihn, damit diese Warnung verschwindet. Die Prüfung beginnt dann neu bei deiner Zählung.",
       "truncated": "Der Verlauf ist kürzer als beim letzten Mal. Vielleicht wurden Buchungen entfernt.",
       "acknowledge": "So akzeptieren",
       "skipped": "{count, plural, one {# Buchung fließt nicht in den Saldo ein, weil sie gegen die Regeln verstößt.} other {# Buchungen fließen nicht in den Saldo ein, weil sie gegen die Regeln verstoßen.}}",

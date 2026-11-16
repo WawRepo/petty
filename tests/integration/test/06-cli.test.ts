@@ -180,4 +180,30 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     expect(json.out()).toContain('"Lid\\u202e"');
     expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }, { name: `Lid${RLO}` }, { name: odd.lines[3]!.name }] }]);
   });
+
+  it("says nothing about an entry written from a view older than the latest count, and still reports a link to nothing (PETTY-500)", async () => {
+    const float = crypto.randomUUID();
+    const doc = applyOp(newDocument("Till"), { type: "add_line", line: { id: float, kind: "money", name: "Float", currency: "EUR", exponent: 2 } }, { lineHasEntries: () => false });
+    const made = await ann.createDrawer("Till", doc);
+    expect(made.res.statusCode).toBe(201);
+    const first = await ann.postEntry(made.id, made.key, float, "add", 1000);
+    const second = await ann.postEntry(made.id, made.key, float, "add", 200, { prev_hash: await hashEntry(first.signed) });
+    expect((await ann.postEntry(made.id, made.key, float, "adjust", 1100, { prev_hash: await hashEntry(second.signed), expected_head_seq: 2, delta_hint: -100 })).res.statusCode).toBe(201);
+    // written on a screen that still showed only the first entry: its link points before the count
+    expect((await ann.postEntry(made.id, made.key, float, "withdraw", -300, { prev_hash: await hashEntry(first.signed) })).res.statusCode).toBe(201);
+    const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === made.id);
+    const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
+    const tok = await ann.makeAccessToken("read", [{ drawer_id: made.id, key_version: 1, key: raw }]);
+    expect(await petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`).done).toBe(0);
+    const list = petty(["drawers"]);
+    expect(await list.done).toBe(0);
+    expect(list.out()).toContain(" 8.00 EUR\n");
+    expect(list.err()).not.toContain("warning");
+    // an entry whose link points at no row at all is still reported
+    expect((await ann.postEntry(made.id, made.key, float, "add", 100, { prev_hash: "0".repeat(64) })).res.statusCode).toBe(201);
+    const again = petty(["drawers"]);
+    expect(await again.done).toBe(0);
+    expect(again.out()).toContain(" 9.00 EUR\n");
+    expect(again.err()).toContain("the history links do not match");
+  });
 });
