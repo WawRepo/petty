@@ -352,6 +352,12 @@
     "deleteConfirm": "¿Eliminar «{name}» con todos sus elementos y su historial? Esto no se puede deshacer.",
     "deleteBtn": "Eliminar",
     "deleteType": "Escribe el nombre del cajón para confirmar",
+    "damaged": {
+      "countElsewhere": "Para arreglarlo, busca el elemento con la cantidad incorrecta, cuéntalo y ajústalo con la línea de comandos («petty adjust») o el complemento de IA. Ellos abren este cajón donde esta aplicación no puede y muestran la cantidad de cada elemento. Un ajuste empieza de nuevo la suma del elemento.",
+      "askWriter": "Alguien que pueda hacer cambios en este cajón puede arreglarlo: cuenta el elemento y lo ajusta con la línea de comandos o el complemento de IA.",
+      "askOperator": "Restaurar una versión anterior del cajón no ayuda, porque los propios movimientos están mal. Pide a quien gestiona este servidor de Petty que revise los movimientos de este cajón.",
+      "tools": "Línea de comandos y complemento de IA"
+    },
     "deleteDamagedConfirm": "¿Eliminar este cajón con todos sus elementos y su historial? Esto no se puede deshacer.",
     "deleteDamagedType": "Escribe esta palabra para confirmar",
     "photoAdd": "Añadir foto",

@@ -352,6 +352,12 @@
     "deleteConfirm": "Supprimer « {name} » avec tous ses éléments et leur historique ? Cette action est irréversible.",
     "deleteBtn": "Supprimer",
     "deleteType": "Saisissez le nom du tiroir pour confirmer",
+    "damaged": {
+      "countElsewhere": "Pour corriger, trouvez l’élément au montant erroné, comptez-le et ajustez-le avec la ligne de commande (« petty adjust ») ou l’extension IA. Elles ouvrent ce tiroir là où cette application ne le peut pas, et affichent le montant de chaque élément. Un ajustement fait repartir la somme de l’élément de zéro.",
+      "askWriter": "Une personne qui peut modifier ce tiroir peut corriger cela : elle compte l’élément et l’ajuste avec la ligne de commande ou l’extension IA.",
+      "askOperator": "Restaurer une version antérieure du tiroir n’aide pas, car ce sont les opérations elles-mêmes qui sont fausses. Demandez à la personne qui gère ce serveur Petty de vérifier les opérations de ce tiroir.",
+      "tools": "Ligne de commande et extension IA"
+    },
     "deleteDamagedConfirm": "Supprimer ce tiroir avec tous ses éléments et leur historique ? Cette action est irréversible.",
     "deleteDamagedType": "Saisissez ce mot pour confirmer",
     "photoAdd": "Ajouter une photo",
