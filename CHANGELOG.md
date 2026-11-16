@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The command line and the AI add-on no longer change a drawer's names, items or tags while the drawer
+  has a newer key than the token holds (during or after a key change). They say so and ask you to open
+  Petty, which passes the new key on. Before, such a change was saved under the old key with the new
+  key's number, and nobody could open that version of the drawer again.
+
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
   keys on the server, also when its owner never makes another token: the hourly or daily clean-up now
