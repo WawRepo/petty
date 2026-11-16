@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- Petty no longer writes your last-used currency to the browser's storage, and no longer puts a tag's
+  name in the page address when Manage tags opens a drawer. Both stay in memory until you lock or sign
+  out; the browser kept them on disk before. An old saved currency is removed on the next start.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
