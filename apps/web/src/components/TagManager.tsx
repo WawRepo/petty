@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { foldText } from "@petty/ledger";
+import { filterNextDrawer } from "../lib/screenMemory.js";
 import { cleanTag, removeTag, renameTag, tagHolders, useTagIndex, type RewriteResult, type TagHolder } from "../lib/lineTags.js";
 import { Button } from "./Button.js";
 import { ConfirmSheet } from "./ConfirmSheet.js";
@@ -71,7 +72,7 @@ export function TagManager({ open, onClose, drawerId }: Props) {
         </div>
       </Sheet>
       <TagDetailSheet open={open && step === "detail"} tag={tag} holders={holders} onClose={() => { setStep(null); setKey(null); }}
-        onOpenItem={(id) => { setStep(null); onClose(); nav(`/drawers/${id}?tag=${encodeURIComponent(tag?.label ?? "")}`); }}
+        onOpenItem={(id) => { setStep(null); onClose(); filterNextDrawer(id, tag?.key ?? ""); nav(`/drawers/${id}`); }}
         onChoose={() => setStep("choose")} onRename={() => setStep("rename")} onRemove={() => setStep("remove")} />
       <TagItemsSheet open={open && (step === "choose" || step === "new")} tag={step === "choose" ? tag : null} items={items}
         onClose={() => (step === "new" ? setStep(null) : back())} onSaved={report} />

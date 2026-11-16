@@ -123,7 +123,8 @@ says `Signed in`.
   at an older Petty stops with `runs an older Petty than this command line`. Install the `petty` that
   goes with your Petty (the page *Use Petty with AI* has the commands). A login you already have
   keeps working.
-- `petty auth status` checks the token still works. `petty auth logout` ends it on the server and
+- `petty auth status` checks the token still works and names the drawers it opens: every drawer
+  (also ones made later) or only the chosen ones. `petty auth logout` ends it on the server and
   forgets it here.
 - A token you made by hand: `petty auth login --host … --with-token < token.txt`.
 - **Scripts and CI:** set `PETTY_TOKEN` and `PETTY_API_URL` (`https://<your petty>/api`). They win
@@ -157,8 +158,10 @@ For scripts and agents, `--json` prints JSON. Exit codes: **0** done, **1** erro
 out of the balance, and the hash links between an item's entries must hold. Whatever the command,
 each such finding is one line on the error output: `petty: warning: drawer "Kitchen" / item "Cash":
 1 entry could not be opened; left out of the balance`. In `--json`, an item carries `unreadable`,
-`unverified` and `chain` (`"ok"` or `"broken"`), and a drawer `unreadable`. Open Petty in the browser
-when you see a warning. `petty` remembers nothing about your drawers between two runs, so it cannot
+`unverified` and `chain` (`"ok"` or `"broken"`), and a drawer `unreadable`. An item whose entries add
+up past what can be counted exactly shows "too large to show" (`balance` is `null` in `--json`) and
+takes only a count (`petty adjust`). Open Petty in the browser when you see a warning. `petty`
+remembers nothing about your drawers between two runs, so it cannot
 notice a history that got shorter; the web app can ([threat model](threat-model.md#integrity)).
 
 ## Tab completion

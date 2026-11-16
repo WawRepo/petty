@@ -54,6 +54,9 @@ export const quote = (text: string): string => jsonText(text);
  * The codes the server refuses a tool with that a person may be shown (PETTY-414). The server's own text
  * goes no further than this list: any other code is the one word "UnknownCode".
  */
+/** PETTY-461: an item whose entries add up past the largest exact number shows this instead of an amount. */
+const TOO_LARGE = "too large to show";
+const TOO_LARGE_REFUSED = "this item's entries add up to more than can be counted exactly; count it again (adjust) to set it right";
 const SERVER_CODES = ["KeyVersionMismatch", "EntryIdReused", "ReverseRefused", "DeviceKeyInvalid", "DeviceCodeTaken", "ValidationError", "BadRequest", "NotFound", "Internal"] as const;
 export const serverCode = (code: unknown): string => SERVER_CODES.find((c) => c === code) ?? "UnknownCode";
 
@@ -95,9 +98,12 @@ export interface AgentLine {
   /** A single item's note, such as "blue box"; null for money and countable items (PETTY-339). */
   readonly note: string | null;
   readonly tags: readonly string[];
-  /** Minor units for money, a count for countable things, and 0 for a single item. */
-  readonly balance: number;
-  /** The balance as a person reads it, for example "1,209.50 EUR". */
+  /**
+   * Minor units for money, a count for countable things, and 0 for a single item. PETTY-461: null when the
+   * entries add up past the largest number that is exact; the app shows such an item as damaged, with no number.
+   */
+  readonly balance: number | null;
+  /** The balance as a person reads it, for example "1,209.50 EUR"; "too large to show" when `balance` is null. */
   readonly amount: string;
   readonly countedInTotal: boolean;
   /** Entries left out of the balance because their signature did not check out (PETTY-191). */
@@ -123,7 +129,7 @@ export interface AgentDrawer {
  * named here is left out of the balances, or may have been changed on the server.
  */
 export interface AgentWarning {
-  readonly code: "drawer_unreadable" | "entries_unreadable" | "entries_unverified" | "history_broken";
+  readonly code: "drawer_unreadable" | "entries_unreadable" | "entries_unverified" | "history_broken" | "sum_too_large";
   readonly drawerId: string;
   /** null when the drawer itself did not open */
   readonly drawer: string | null;
@@ -143,6 +149,7 @@ export function warningText(w: AgentWarning, quote: (s: string) => string = quot
   const rows = `${w.count} entr${w.count === 1 ? "y" : "ies"}`;
   if (w.code === "entries_unreadable") return `${where}: ${rows} could not be opened${w.item === null ? " and belong to no item" : ""}; left out of the balance`;
   if (w.code === "entries_unverified") return `${where}: ${rows} left out of the balance, signature did not check`;
+  if (w.code === "sum_too_large") return `${where}: the entries add up to more than can be counted exactly; no amount is shown until it is counted again`;
   return `${where}: the history links do not match; entries may have been removed or changed`;
 }
 
@@ -424,6 +431,7 @@ export class AgentClient {
         if (unreadable.get(l.id)) warnings.push({ code: "entries_unreadable", ...at, count: unreadable.get(l.id)! });
         if (unverified.get(l.id)) warnings.push({ code: "entries_unverified", ...at, count: unverified.get(l.id)! });
         if (chain !== "ok") warnings.push({ code: "history_broken", ...at, count: 1 });
+        if (lines[lines.length - 1]?.balance === null) warnings.push({ code: "sum_too_large", ...at, count: 1 });
       }
       const listed = new Set(doc.lines.map((l) => l.id));
       const stray = [...unreadable].reduce((n, [lineId, c]) => (listed.has(lineId) ? n : n + c), 0);
@@ -474,7 +482,8 @@ export class AgentClient {
   }
 
   private line(l: Line, entries: readonly LedgerEntry[], unverified = 0, unreadable = 0, chain: AgentLine["chain"] = "ok"): AgentLine {
-    const balance = l.kind === "single" ? 0 : fold(entries).balance;
+    const folded = l.kind === "single" ? null : fold(entries);
+    const balance = folded === null ? 0 : folded.overflow ? null : folded.balance;
     const exponent = l.kind === "money" ? l.exponent : 0;
     const currency = l.kind === "money" ? l.currency : null;
     return {
@@ -487,7 +496,7 @@ export class AgentClient {
       note: l.kind === "single" ? l.text : null,
       tags: lineTagsOf(l),
       balance,
-      amount: l.kind === "single" ? "" : `${formatAmount(balance, exponent, LOCALE)}${currency ? ` ${currency}` : ""}`,
+      amount: l.kind === "single" ? "" : balance === null ? TOO_LARGE : `${formatAmount(balance, exponent, LOCALE)}${currency ? ` ${currency}` : ""}`,
       countedInTotal: l.kind === "single" ? false : l.counted !== false,
       unverified,
       unreadable,
@@ -563,6 +572,8 @@ export class AgentClient {
     const line = await this.writableLine(drawerId, lineId);
     // The sign lives in the amount: a withdrawal is negative, so the fold just adds every entry up.
     const magnitude = Math.abs(parseAmount(amount, line.exponent));
+    // PETTY-461: no add or take on a sum that is not exact, and none that would make it so; a count sets it right
+    if (op !== "adjust" && (line.balance === null || !Number.isSafeInteger(line.balance + (op === "withdraw" ? -magnitude : magnitude)))) throw new TokenError("Refused", TOO_LARGE_REFUSED);
     return this.post(drawerId, line, op, op === "withdraw" ? -magnitude : magnitude, comment, null);
   }
 
@@ -586,6 +597,7 @@ export class AgentClient {
   async undo(drawerId: string, lineId: string, entryId: string, comment = ""): Promise<AgentEntry & { readonly undone: AgentEntry }> {
     const line = await this.writableLine(drawerId, lineId);
     const entries = this.lineEntries.get(`${drawerId}:${lineId}`) ?? [];
+    if (line.balance === null) throw new TokenError("Refused", TOO_LARGE_REFUSED);
     const target = entries.find((e) => e.entry.id === entryId.trim());
     if (!target) throw new TokenError("Refused", "that entry is not among this item's entries since its latest count; older entries are settled by that count and cannot be undone");
     const r = reverseOf(target, fold(entries));
@@ -614,7 +626,7 @@ export class AgentClient {
       logged_at: new Date().toISOString(),
       reverses,
       prev_hash: newest ? await hashEntry(newest.entry) : null,
-      delta_hint: op === "adjust" ? minor - line.balance : null,
+      delta_hint: op === "adjust" && line.balance !== null && Number.isSafeInteger(minor - line.balance) ? minor - line.balance : null,
       author_id: this.identity.userId,
       sig_key_id: await this.sigKeyId(),
     };
@@ -632,7 +644,7 @@ export class AgentClient {
       nonce: toB64(sealedEntry.nonce),
       ciphertext: toB64(sealedEntry.ciphertext),
     });
-    const after = op === "adjust" ? minor : line.balance + minor;
+    const after = op === "adjust" ? minor : (line.balance ?? 0) + minor; // append and undo refuse a null balance
     const fmt = (n: number) => `${formatAmount(n, line.exponent, LOCALE)}${line.currency ? ` ${line.currency}` : ""}`;
     return {
       id,
@@ -711,15 +723,21 @@ export class AgentClient {
     if (!held) throw new TokenError("OutOfScope", "this token cannot open that drawer");
     for (let attempt = 0; attempt < 4; attempt++) {
       const got = (await this.call("GET", `/drawers/${drawerId}`)) as { drawer: { version: number; key_version: number }; document: { key_version: number; schema_version: number; nonce: string; ciphertext: string; author_id: string } };
+      // PETTY-412 (security review #14): the document is sealed with the key this token holds and labelled
+      // with that key's own version. After a key rotation began, the drawer is at a newer version than the
+      // token's key; sealing with the old key under the new label made a document nobody could open again.
+      if (got.drawer.key_version !== held.keyVersion) {
+        throw new TokenError("Refused", "this drawer has a new key that this token does not hold yet; open Petty on a signed-in device so it can pass the new key on, then start this tool again");
+      }
       const opened = await openDocument(held.key, this.identityFor(drawerId, null, got.document.key_version, got.document.schema_version, "document", drawerId, got.document.author_id), sealed(got.document));
       const read = readDocument(opened, { schema_version: got.document.schema_version, version: got.drawer.version });
       const changed = applyOps(read, ops, { lineHasEntries: () => true });
       const next = read.rev === undefined ? changed : nextRev(changed);
-      const out = await sealDocument(held.key, this.identityFor(drawerId, null, got.drawer.key_version, got.document.schema_version, "document", drawerId), next);
+      const out = await sealDocument(held.key, this.identityFor(drawerId, null, held.keyVersion, got.document.schema_version, "document", drawerId), next);
       try {
         await this.call("PUT", `/drawers/${drawerId}/document`, {
           base_version: got.drawer.version,
-          key_version: got.drawer.key_version,
+          key_version: held.keyVersion, // the server refuses it if the drawer moved on meanwhile (KeyVersionMismatch)
           schema_version: got.document.schema_version,
           nonce: toB64(out.nonce),
           ciphertext: toB64(out.ciphertext),

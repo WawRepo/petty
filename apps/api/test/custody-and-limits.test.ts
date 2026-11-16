@@ -424,10 +424,10 @@ describe("every stored field has a size (PETTY-442)", () => {
       "select revoked_at is not null as revoked, bundle_nonce, bundle_ciphertext, (select count(*)::int from access_token_keys k where k.token_id = t.id) as keys from access_tokens t where id = $1", [tokenRowId],
     )).rows[0]!;
 
-    // a token that has expired can never be used again: it gives its place back, takes no more keys, and the next token made drops what it stored
+    // a token that has expired can never be used again: it gives its place back, takes no more keys, and the next token made drops what it
+    // stored (if the maintenance run of another test file has not already: PETTY-410)
     await owner.query("update access_tokens set expires_at = now() - interval '1 minute' where id = $1", [second.res.json().id]);
     expect((await U.call("POST", `/me/tokens/${second.res.json().id}/keys`, { keys: [{ drawer_id: id, key_version: 1, wrap: await U.wrapFor(exKey, pub, id, 1) }] })).json().code).toBe("TokenNotFound");
-    expect((await row(second.res.json().id)).keys).toBe(1);
     expect((await make()).res.statusCode).toBe(201);
     expect(await row(second.res.json().id)).toEqual({ revoked: false, bundle_nonce: "", bundle_ciphertext: "", keys: 0 });
     expect((await U.call("GET", "/me/tokens")).json().tokens.map((t: { id: string }) => t.id)).toContain(second.res.json().id); // still listed, as expired

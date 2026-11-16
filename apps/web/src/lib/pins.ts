@@ -198,6 +198,8 @@ async function save(mutate: (doc: UserDocT) => UserDocT): Promise<void> {
       throw e;
     }
   }
+  // PETTY-461: three newer copies in a row. Nothing was saved, and the caller must know: it used to return as if it had.
+  throw new Error("PinsConflict");
 }
 
 export function getPin(userId: string): Pin | null { return state.doc.pins[userId] ?? null; }

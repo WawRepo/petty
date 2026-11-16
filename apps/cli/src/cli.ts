@@ -181,31 +181,46 @@ async function status(io: Io, host: string | undefined, asJson: boolean): Promis
   const store = readStore(io.env);
   const origins = host ? [originOf(host)] : Object.keys(store.hosts);
   if (!origins.length && !io.env["PETTY_TOKEN"]) throw new CliError(3, "not signed in: run petty auth login --host https://<your Petty>");
-  const rows: { host: string; token: string | null; role: string | null; default: boolean; works: boolean; problem: string | null; notice: string | null; from: string }[] = [];
+  const rows: ({ host: string; default: boolean; from: string } & Probe)[] = [];
   if (io.env["PETTY_TOKEN"]) {
     const c = credentials(io, host);
     rows.push({ host: c.origin, ...(await probe(io, c.origin, c.token)), default: true, from: "PETTY_TOKEN" });
   }
   for (const o of origins) {
     const login = store.hosts[o];
-    if (!login) { rows.push({ host: o, token: null, role: null, default: false, works: false, problem: "not signed in", notice: null, from: storePath(io.env) }); continue; }
+    if (!login) { rows.push({ host: o, token: null, role: null, scope: null, drawers: null, default: false, works: false, problem: "not signed in", notice: null, from: storePath(io.env) }); continue; }
     rows.push({ host: o, ...(await probe(io, o, login.token)), default: store.default === o, from: storePath(io.env) });
   }
   if (asJson) json(io, rows);
   else for (const r of rows) {
-    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${clean(r.problem ?? "")}`}\n${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
+    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${clean(r.problem ?? "")}`}\n${r.works ? `  ${opens(r)}\n` : ""}${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
   }
   if (openToOthers(storePath(io.env))) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
   if (rows.some((r) => !r.works)) throw new CliError(3, "a login does not work: run petty auth login again");
 }
 
-async function probe(io: Io, origin: string, token: string): Promise<{ token: string | null; role: string | null; works: boolean; problem: string | null; notice: string | null }> {
+/**
+ * PETTY-461: status also says which drawers the token opens. `scope` is what the token was made for:
+ * "all" (every drawer, also ones made later) or "chosen". `drawers` are the names it actually opens
+ * now, or null when they could not be read.
+ */
+interface Probe { token: string | null; role: string | null; scope: "all" | "chosen" | null; drawers: string[] | null; works: boolean; problem: string | null; notice: string | null }
+
+async function probe(io: Io, origin: string, token: string): Promise<Probe> {
   try {
     const c = await checkToken(io, origin, token);
-    return { token: c.identity.name, role: c.identity.role, works: true, problem: null, notice: c.notice };
+    const drawers = await c.drawers().then((list) => list.map((d) => d.name), () => null);
+    return { token: c.identity.name, role: c.identity.role, scope: c.identity.scope === null ? "all" : "chosen", drawers, works: true, problem: null, notice: c.notice };
   } catch (e) {
-    return { token: null, role: null, works: false, problem: e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message, notice: null };
+    return { token: null, role: null, scope: null, drawers: null, works: false, problem: e instanceof TokenError ? `${e.code}: ${e.message}` : (e as Error).message, notice: null };
   }
+}
+
+function opens(r: Probe): string {
+  const which = r.scope === "all" ? "every drawer, also new ones" : "chosen drawers only";
+  if (r.drawers === null) return `opens ${which}`;
+  if (r.drawers.length === 0) return `opens ${which}: none yet`;
+  return `opens ${which}: ${r.drawers.map((n) => `“${clean(n)}”`).join(", ")}`;
 }
 
 async function logout(io: Io, host: string | undefined): Promise<void> {

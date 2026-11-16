@@ -49,13 +49,19 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 
 - **Passkey unlock (Phase 14, 2026-08-29)**, then **passkey first (PETTY-102, 2026-09-16)** — a vault
   is created with a passkey as its first door (a passphrase on request or later); one passkey vault per
-  device (`passkey_vaults`); the recovery code stays mandatory; adding/removing a passkey takes the
-  custody proof; the last passkey cannot go while there is no passphrase (`LastDoor`). The server never
-  verifies assertions — a passkey is a key holder, not a login. A plaintext storage mode was rejected:
+  device (`passkey_vaults`), at most 20 per account (`MAX_PASSKEYS`, 409 `PasskeyLimit`, PETTY-442);
+  the recovery code stays mandatory; adding/removing a passkey takes the custody proof; the last
+  passkey cannot go while there is no passphrase (`LastDoor`). The server never verifies assertions —
+  a passkey is a key holder, not a login. A plaintext storage mode was rejected:
   it breaks the product's one promise.
-- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-201).** Replacing the vault,
-  deleting the account, deleting a drawer and creating an access token require a server-issued
-  challenge signed with the account key. Replaced vault blobs are kept 30 days in `vault_history`; an
+- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-200/201, PETTY-440/441).**
+  Replacing the vault or its recovery-code copy, adding or removing a passkey, deleting the account,
+  deleting a drawer, deleting a line (`POST /drawers/:id/lines/:lineId/delete`), creating an access
+  token, and publishing a new drawer key (`POST /drawers/:id/rotation`) and every re-encryption batch
+  after it (`PUT /drawers/:id/rotation/batch`) require a server-issued challenge signed with the
+  account key. `POST /me/custody-challenge` gives one per person: 32 random bytes, five minutes, one
+  use (`apps/api/src/lib/custody.ts`). Any write member's app may finish a rotation another began,
+  with its own proof for each step. Replaced vault blobs are kept 30 days in `vault_history`; an
   admin can restore one; the owner is emailed on a password reset and a vault change. Reason: the
   login password is resettable by email; the vault key is not.
 - **Identity provider (PETTY-88).** `AUTH_PROVIDER=local` (Petty's own login, the self-host default)
@@ -70,8 +76,16 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `make-admin`.
 - **Access tokens (PETTY-164/169/181/184).** A token carries a sealed key bundle opened only on the
   tool's machine, its own delegated signing key, and a scope (all drawers or listed ones, read or
-  write). The server keeps an allow-list; every route not on it is refused to tokens. Revocation is
-  immediate. Diagram in [README.md](README.md).
+  write). The server keeps an allow-list (`apps/api/src/lib/tokens.ts`); every route not on it is
+  refused to tokens. Revocation is immediate. Diagram in [README.md](README.md).
+  *Since PETTY-397 (2026-10-28) the bundle also carries the owner's ECDH public key, and a tool opens a
+  drawer key that arrives later only if that key wrapped it. Since PETTY-452 (2026-11-10) the owner
+  picks the drawers (all, later ones included, or the ticked ones, at most 200), nothing is
+  preselected, and every new token opens the vault again. Since PETTY-442 an account holds at most 50
+  live tokens (`MAX_ACCESS_TOKENS`, 409 `TokenLimit`); revoking erases the bundle and the wraps at
+  once, an expired token's go when its owner next makes one; `POST /me/tokens/:id/keys` takes at most
+  500 wraps, each for a drawer in scope at a key version the owner holds. A login-password reset, an
+  admin's "sign out everywhere" and account deletion end every token (`endAllTokens`).*
 - **The command line and device login (PETTY-274, 2026-09-28).** `petty` is one file (`petty.mjs`,
   Node 20+) on `@petty/agent`, shipped with each release and served at `/downloads/petty.mjs`; it
   also runs the MCP server (`petty mcp`). It signs in like `gh auth login` (RFC 8628): the web app's
@@ -80,10 +94,15 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   the page and the command line both detect a swapped key. Only the login is stored
   (`~/.petty/hosts.json`, 600); Tab completion decrypts names per key press, never cached on disk.
   *Since PETTY-451 (2026-11-10) the code has 20 of the 20 consonants and is derived from that key and
-  the instance's address; the 12-letter form is neither made nor accepted.*
+  the instance's address; the 12-letter form is neither made nor accepted. The command line makes the
+  code and sends it with `POST /device/code`; one that sends none is refused by name (400
+  `CommandLineTooOld`).*
 - **Drawer document history (PETTY-194, 2026-09-19).** Names, items, tags and places before each
   change are kept for 30 days and the drawer's owner can restore an earlier version. Entries and
-  balances are unaffected. Refines "Deletion" above for the document only.
+  balances are unaffected. Refines "Deletion" above for the document only. *Since PETTY-422
+  (2026-11-10) the owner's app puts a version back itself, as a normal `PUT /drawers/:id/document`
+  with the next counter (see "Drawer format 2"); `POST /drawers/:id/document/restore` answers 410
+  `RestoreByApp`.*
 - **Open sign-up (PETTY-215).** Local mode only: `OPEN_SIGNUP=true` lets anyone create an account
   without a join link (a public self-hosted instance). Default stays invite-only; the first account of
   an installation is minted with the `join-link` script.
@@ -97,6 +116,9 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
 - **Telemetry (PETTY-92).** Metrics, logs and traces never carry content. All three can push over
   OTLP to one endpoint (`OTEL_PUSH`), alongside the Prometheus scrape and stdout logs;
   `DEPLOYMENT_ENV` tags every signal so instances don't merge. See [monitoring.md](monitoring.md).
+  *Since PETTY-341 traces drop the client's address and user agent; since PETTY-408 logs and traces
+  keep a URL's path without its query string (`safeUrl` in `apps/api/src/lib/tracing.ts`); since
+  PETTY-420 the start-up log names only the scheme, host and port of `OTEL_EXPORTER_OTLP_ENDPOINT`.*
 - **Version stamped at build (PETTY-218).** The image knows its release (`PETTY_VERSION` from the git
   tag); `/api/config`, Settings and the landing footer show it.
 - **Releases (2026-09-23/24; PETTY-254).** Images built by CI with provenance and an SBOM, pinned by
@@ -108,6 +130,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   while `ci.yml` runs on main, or when its latest run there did not pass on main's newest commit. The
   version is the highest `vX.Y.Z` tag plus one patch (a tag pushed by hand starts a new minor or major);
   the workflow makes the release commit, the tag and the GitHub Release. Runtime is Node 24 LTS.
+  *Since PETTY-406 no job that runs dependency code holds a write token. Since PETTY-418 (2026-11-10)
+  each release signs build attestations for the image and its files (`gh attestation verify`;
+  [deploy.md](deploy.md), [cli.md](cli.md)), the app's setup and download links point at the GitHub
+  release of the running version, and the image build checks pnpm against a pinned SHA-512
+  (`PNPM_SHA512` in the `Dockerfile`). Since PETTY-456 the image takes its version tag only after the
+  release commit and its tag are on main.*
 - **Agent skill and MCP Registry (PETTY-310/311, 2026-10-04).** The "petty" Agent Skill
   (`apps/mcp/skills/petty/SKILL.md`) is instructions only, no code or secret; it is served at
   `/downloads/petty-skill.zip` and carried by each release. The add-on is listed in the official MCP
@@ -129,7 +157,13 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   off by default) covers photos, documents with their 30-day history and entries in the drawers a
   person owns: a member's writes to a shared drawer count against its owner, who is the one able to
   free space. Writes that free space (a smaller photo, removing a photo, deleting a line or drawer)
-  always pass. The check is soft: writes racing at the limit may overshoot by one record.
+  always pass. The check is soft: writes racing at the limit may overshoot by one record. *Since
+  PETTY-442 (2026-11-10) every field a request carries has a size (`FIELD_BYTES` in
+  `packages/protocol/src/index.ts`), and an entry (at least 272 bytes) or a document (at least
+  16 KiB + 16) cannot be smaller than a client writes it, so every row costs quota. A person's own
+  document is at most 256 KiB + 16 and a token bundle 256 KiB. A rotation batch may not grow a row
+  past its limit, and what it adds counts against the quota. The table is in [deploy.md](deploy.md),
+  "Limits".*
 - **The app's look (PETTY-248/250, 2026-09-27).** A line's colour is its kind: money green, counted
   things blue, single items amber (`--k-money/--k-things/--k-notes`), on the landing page and in the
   app alike. Pictures — the landing examples, a drawer's header, the home beside the total — are
@@ -172,6 +206,70 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   the app shows them on `/privacy` and `/terms` and links them at sign-up. Petty's own explanation of
   what the server sees stays on `/privacy` for everyone. The files are rendered from a small Markdown
   subset into elements, never as HTML.
+- **The web app trusts what its sealed user document says (PETTY-396 to PETTY-449, 2026-10-28 to
+  2026-11-10).** Your own public keys come from your vault, never from `GET /me`. The user document
+  (`apps/web/src/lib/pins.ts`) keeps the pins and the keys confirmed before a key change; per drawer,
+  the newest key version accepted, a fingerprint of each accepted key, the newest document version and
+  counter opened, who was a member and who left; and its own counter inside the encryption (`v` 2). A
+  drawer key that someone else wrapped is taken only when that person is confirmed, and not when they
+  left and the key is newer than the last one they held. While the document is missing or older than
+  this browser saw, the app opens only keys you wrapped and wraps or replaces none. After a removal,
+  the owner's app replaces the drawer key at once. Details: [threat-model.md](threat-model.md), "Key
+  verification" and "Key rotation".
+- **Drawer format 2 (PETTY-422, 2026-11-10).** A drawer's document carries a counter inside the
+  encryption and has `schema_version` 2, which the AAD binds; its fixtures are in
+  `packages/crypto/corpus/v2`. Only the web app starts the counter; a tool keeps the format it finds.
+  The server refuses a document in an older format than the stored one (409 `DocumentFormatOlder`).
+  Going back to an image from before v1.5.34 after people used it is not supported (CHANGELOG,
+  1.5.34).
+- **Same-origin writes (PETTY-409, 2026-11-10).** A request that changes something and carries a
+  `Sec-Fetch-Site` other than `same-origin` gets 403 `CrossSiteRequest`, before the session is looked
+  up (`apps/api/src/lib/session.ts`). A request without the header (the command line, the add-on, an
+  old browser) is left to the JSON-only body rule and the `SameSite=Lax` cookie.
+- **Limits per address and per person (security review SR-7; PETTY-303, PETTY-408, PETTY-458).** The
+  counts live in `rate_counters`, keyed by a hash. Local sign-in: 10 wrong passwords per email and 100
+  tries per address in 15 minutes; a reset email 5 an hour per address it goes to. Every API request:
+  `RATE_LIMIT_PER_MINUTE` per address (600 in the image). Stricter: open sign-up 10 an hour per
+  address, device codes 10 an hour per address and polls 600 per 15 minutes, device-request looks 60
+  per 15 minutes per person, join links 5 an hour per member, email lookups (`POST /users/lookup`)
+  `LOOKUP_LIMIT_PER_HOUR` (20) per person and three times that per address. An address is an IPv4
+  address or an IPv6 /64 (`clientNet` in `apps/api/src/lib/client-ip.ts`), from `CLIENT_IP_HEADER`
+  or else `X-Forwarded-For` as far as `TRUST_PROXY` believes it.
+- **Sharing mail limits (PETTY-407, PETTY-423).** Invitation, ownership-offer and join-link emails
+  count against three 24-hour windows: one per drawer (a join link: per sender) and recipient,
+  `SHARING_MAIL_PER_RECIPIENT` (5) and `SHARING_MAIL_PER_SENDER` (20)
+  (`apps/api/src/lib/sharing-mail.ts`). Past one, an invitation or offer still stands and only its
+  email is skipped; an emailed join link is refused (429). A new display name is one plain line with
+  nothing a mail program turns into a link (`DisplayName` in `packages/protocol`); every email shows
+  a name through `mailSafeName`.
+- **No email address or link token in a URL; keep less about people (PETTY-341, PETTY-408,
+  PETTY-457).** The email lookup is `POST /users/lookup` and the join-link check
+  `POST /join-links/lookup`, with the value in the body; join and reset links carry their token after
+  `#`. The `GET` forms are gone (404).
+  A used join link forgets its email; housekeeping (`apps/api/src/lib/maintenance.ts`) deletes unused
+  join links that ended and reset tokens that expired; deleting an account deletes its unused join
+  links and reset tokens.
+- **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only
+  while its inviter still owns the drawer, and a change of owner ends every pending one. The owner
+  lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`.
+- **Clerk accounts need a verified email (PETTY-421).** Drawers are shared by email, so
+  `POST /auth/provision` answers 403 `EmailNotVerified` and stores nothing for an address Clerk has
+  not verified.
+- **The bot check stays on the sign-in pages (PETTY-404); the unlock may stay in memory
+  (PETTY-405).** In Clerk mode only `/login` and `/join` allow Cloudflare Turnstile (`AUTH_CSP` in
+  `apps/api/src/lib/headers.ts`), and the app leaves them with a full page load, so vault setup and
+  unlock never share a page with it. The unlock screen's "Keep the vault open on this device for 24
+  hours" is on by default; turned off, the vault lives in page memory only.
+- **Where a tool sends its token (PETTY-191, PETTY-416).** `@petty/agent` takes an `https:` address
+  only, or `http:` to the same machine (`checkApiUrl`), and `petty-mcp.mjs` stops when
+  `PETTY_API_URL` is not set instead of guessing one. `petty auth login` opens only an `http:` or
+  `https:` address, never through a shell (PETTY-453). Text that a member or the server wrote reaches
+  a model quoted and a terminal with its control characters as `?` (PETTY-414, PETTY-453).
+- **Hardened containers (PETTY-420, PETTY-433).** The Compose file runs `app` and `migrate` with a
+  read-only file system (only `/tmp`, in memory, is writable), every Linux capability dropped,
+  `no-new-privileges`, at most 256 processes and a memory cap (`APP_MEMORY_LIMIT`, 1 GB by default).
+  The image runs as `node`, without npm, corepack or yarn, and installs Alpine's package fixes when
+  it is built.
 
 ## Non-goals
 
