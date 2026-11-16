@@ -23,6 +23,9 @@ number, also when it adds features, and a new minor or major is started by hand 
   remove a passkey, delete the account) now check the proof of your keys first. Someone with a stolen
   sign-in but without your vault cannot use them to guess your password. Wrong passwords there also
   count per account, like wrong sign-ins: after 10 in 15 minutes the app asks you to wait.
+- Petty no longer writes your last-used currency to the browser's storage, and no longer puts a tag's
+  name in the page address when Manage tags opens a drawer. Both stay in memory until you lock or sign
+  out; the browser kept them on disk before. An old saved currency is removed on the next start.
 
 ## [1.5.42] — 2026-11-16
 
