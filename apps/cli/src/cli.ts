@@ -1,12 +1,12 @@
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { jsonText, TokenError, type AgentClient, type AgentDrawer, type AgentEntry, type AgentPlace, type AgentTag } from "@petty/agent";
+import { jsonText, markInvisible, TokenError, type AgentClient, type AgentDrawer, type AgentEntry, type AgentPlace, type AgentTag } from "@petty/agent";
 import { foldText } from "@petty/ledger";
 import { buildServer } from "@petty/mcp/server";
 import pkg from "../package.json" with { type: "json" };
 import { COMMANDS, EXPIRES, SHELLS, commandOf, type CommandSpec } from "./commands.js";
-import { candidates, forShell, script, unquote, type Names, type Shell } from "./complete.js";
+import { candidates, forShell, script, unquote, unquotePowerShell, type Names, type Shell } from "./complete.js";
 import { CliError, type Io } from "./io.js";
 import { itemLabel, placePaths, resolveDrawer, resolveItem, splitPlace } from "./items.js";
 import { apiOf, checkToken, deviceLogin, originOf } from "./login.js";
@@ -47,9 +47,11 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
  * Names come from other people too: control characters would reach the terminal, so they are shown as "?".
  * PETTY-453: so is everything else printed that a drawer or the server sent: an item's id, a currency
  * code inside an amount, a date, the text of an error.
+ * PETTY-493: and so is each character that shows nothing (`markInvisible`): a direction control would
+ * turn the line around in the terminal, and tag characters spell out text that only an AI agent reads.
  */
 // eslint-disable-next-line no-control-regex -- control characters are exactly what this replaces
-const clean = (s: string): string => s.replace(/[\u0000-\u001f\u007f-\u009f]/g, "?");
+const clean = (s: string): string => markInvisible(s.replace(/[\u0000-\u001f\u007f-\u009f]/g, "?"), () => "?");
 /** --json keeps every value as it is; the control characters JSON.stringify leaves raw are escaped (jsonText). */
 const json = (io: Io, v: unknown) => io.out(`${jsonText(v, 2)}\n`);
 
@@ -279,8 +281,12 @@ async function mcp(io: Io, host: string | undefined, printConfig: boolean): Prom
 
 async function complete(args: readonly string[], io: Io): Promise<void> {
   const fromEnv = io.env["PETTY_COMPLETE_CURRENT"];
-  const cur = unquote(fromEnv !== undefined ? fromEnv.replace(/^=/, "") : (args.at(-1) ?? ""));
-  const prior = (fromEnv !== undefined ? args : args.slice(0, -1)).map(unquote);
+  const typed = fromEnv !== undefined ? fromEnv.replace(/^=/, "") : (args.at(-1) ?? "");
+  const before = fromEnv !== undefined ? args : args.slice(0, -1);
+  // PETTY-493: PowerShell sends the words before as their values; only the word being typed keeps its quotes
+  const powershell = io.env["PETTY_COMPLETE_SHELL"] === "powershell";
+  const cur = powershell ? unquotePowerShell(typed) : unquote(typed);
+  const prior = powershell ? [...before] : before.map(unquote);
   const hosts = Object.keys(readStore(io.env).hosts);
   let cached: Promise<Names | null> | null = null;
   const names = () => (cached ??= liveNames(io, prior));

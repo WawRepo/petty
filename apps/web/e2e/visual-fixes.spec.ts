@@ -199,3 +199,31 @@ test("PETTY-283: hovering a bubble that shows its name does not draw the name ag
   await expect(item.locator(".uc-bub-name")).toBeVisible();
   await expect(item.locator(".uc-bub-tip")).toBeHidden();
 });
+
+test("PETTY-493: on a small phone, each field of a long sheet that Tab reaches is clear of the sheet's buttons", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 540 });
+  await loginAndUnlock(page, await signupWithKeys("sheetbar"));
+  await page.getByRole("button", { name: "Add drawer" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Tin");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("heading", { name: "Tin" })).toBeVisible();
+  await page.getByRole("button", { name: "Add item" }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByLabel("Name", { exact: true })).toBeVisible();
+  expect(await sheet.evaluate((s) => s.scrollHeight > s.clientHeight), "the sheet must be longer than the screen").toBe(true);
+  await sheet.getByLabel("Name", { exact: true }).focus();
+  let checked = 0;
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press("Tab");
+    await page.waitForTimeout(80); // the sheet scrolls in the next frame
+    const where = await sheet.evaluate((s) => {
+      const el = document.activeElement!;
+      const bar = s.querySelector(":scope > form > .actions:last-child, :scope > .actions:last-child")!;
+      return { inBar: bar.contains(el), name: el.getAttribute("aria-label") ?? el.id ?? el.tagName, bottom: el.getBoundingClientRect().bottom, barTop: bar.getBoundingClientRect().top };
+    });
+    if (where.inBar) break;
+    expect(where.bottom, `${where.name} is under the sheet's buttons`).toBeLessThanOrEqual(where.barTop + 0.5);
+    checked++;
+  }
+  expect(checked).toBeGreaterThan(2);
+});

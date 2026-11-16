@@ -142,13 +142,17 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     expect(await write.done).toBe(3); // read only
   });
 
-  it("shows text from a drawer with its control characters as ?, and escaped with --json (PETTY-453)", async () => {
+  it("shows text from a drawer with its control characters as ?, and escaped with --json (PETTY-453, PETTY-493)", async () => {
     // a drawer written past the app's checks, as a changed client could write it
-    const ESC = "\u001b";
+    const ESC = "\u001b", RLO = "\u202e";
     const coins = crypto.randomUUID();
     const odd = {
       v: 1 as const, name: `Odd${ESC}[2J box`, has_photo: false, verifications: [],
-      lines: [{ id: coins, kind: "money" as const, name: "Coins", currency: `E${ESC}UR`, exponent: 2 }, { id: `old${ESC} id`, kind: "single" as const, name: "Key", text: "" }],
+      lines: [
+        { id: coins, kind: "money" as const, name: "Coins", currency: `E${ESC}UR`, exponent: 2 }, { id: `old${ESC} id`, kind: "single" as const, name: "Key", text: "" },
+        // PETTY-493: a direction override, which would turn the rest of the line around in a terminal
+        { id: crypto.randomUUID(), kind: "single" as const, name: `Lid${RLO}`, text: "" },
+      ],
     };
     const made = await ann.createDrawer(odd.name, odd);
     expect(made.res.statusCode).toBe(201);
@@ -160,14 +164,15 @@ describe("petty, the shipped command line (PETTY-274)", () => {
 
     const list = petty(["drawers"]);
     expect(await list.done).toBe(0);
-    expect(list.out()).toBe("Odd?[2J box\n  Coins     5.00 E?UR\n  Key       single item\n");
+    expect(list.out()).toBe("Odd?[2J box\n  Coins     5.00 E?UR\n  Key       single item\n  Lid?      single item\n");
     const find = petty(["find", "odd", "key"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
     const json = petty(["drawers", "--json"]);
     expect(await json.done).toBe(0);
     // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there
-    expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+    expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202e]/);
+    expect(json.out()).toContain('"Lid\\u202e"');
     expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }] }]);
   });
 });

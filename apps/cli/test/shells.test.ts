@@ -60,6 +60,36 @@ describe("Tab completion in real shells (PETTY-274)", () => {
     expect(tab("petty completion -s p")).toEqual(["powershell"]);
   });
 
+  it.skipIf(!has("pwsh") || process.platform === "win32")("PowerShell: after a quoted word, petty gets that word's value, not its quotes (PETTY-493)", () => {
+    // A stand-in `petty` writes down the words it is asked to complete after, and the word being typed.
+    const fake = mkdtempSync(join(tmpdir(), "petty-pwsh-"));
+    try {
+      const lines = ["petty untag 'Kitchen tin \u203a Cash' ", "petty untag 'a''b' ga", 'petty untag "Shed `"box" ', "petty untag \u2018x\u2019\u2019y\u2019 ", "petty untag Kitchen ", "petty untag 'Kit"];
+      writeFileSync(join(fake, "lines"), `${lines.join("\n")}\n`);
+      writeFileSync(join(fake, "petty.ps1"), script("powershell"));
+      writeFileSync(join(fake, "petty"), `#!/bin/sh\nif [ "$1" = "__complete" ]; then shift; printf '%s|' "$@" "$PETTY_COMPLETE_CURRENT" >> "$PETTY_ARGS"; printf '\\n' >> "$PETTY_ARGS"; fi\n`);
+      chmodSync(join(fake, "petty"), 0o755);
+      const r = spawnSync("pwsh", ["-NoProfile", "-NonInteractive", "-Command", `
+        Get-Content -Raw -LiteralPath $env:PETTY_SCRIPT | Invoke-Expression
+        foreach ($line in (Get-Content -Encoding utf8 -LiteralPath $env:PETTY_LINES)) { $null = TabExpansion2 -inputScript $line -cursorColumn $line.Length }`], {
+        env: { ...process.env, PATH: `${fake}:${process.env["PATH"]}`, PETTY_SCRIPT: join(fake, "petty.ps1"), PETTY_LINES: join(fake, "lines"), PETTY_ARGS: join(fake, "args") },
+        encoding: "utf8", timeout: 60_000,
+      });
+      expect(r.stderr).toBe("");
+      expect(readFileSync(join(fake, "args"), "utf8").trimEnd().split("\n")).toEqual([
+        "untag|Kitchen tin \u203a Cash|=|",
+        "untag|a'b|=ga|",
+        'untag|Shed "box|=|',
+        "untag|x\u2019y|=|",
+        "untag|Kitchen|=|",
+        // the word being typed comes as PowerShell has it; petty reads its quotes (unquotePowerShell)
+        "untag|='Kit'|",
+      ]);
+    } finally {
+      rmSync(fake, { recursive: true, force: true });
+    }
+  });
+
   it("PowerShell quotes every candidate but a plain word, with its own rule for the quote characters (PETTY-415)", () => {
     const ps = script("powershell");
     expect(ps).toContain("$text = if ($_ -cmatch '\\A[A-Za-z0-9_-]+\\z') { $_ } else { \"'\" + [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($_) + \"'\" }");

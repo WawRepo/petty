@@ -27,6 +27,8 @@ async function main() {
     const r = await c.signup(await makeJoinLink());
     if (r.statusCode !== 201) throw new Error(`signup failed: ${r.body}`);
   }
+  // PETTY-493: the user document the app saves before a first drawer; without it the app warns that the server has no list of trusted keys
+  await A.editUserDoc();
 
   const pln = crypto.randomUUID(), balls = crypto.randomUUID(), passport = crypto.randomUUID();
   const doc = applyOps(newDocument("Kitchen"), [
@@ -44,6 +46,8 @@ async function main() {
   for (const r of [e1, e2, e3]) if (r.res.statusCode !== 201) throw new Error(`entry failed: ${r.res.body}`);
 
   const invite = async (to: Client, role: "write" | "read") => {
+    await A.confirm(to); // the safety numbers each side compares in the invite and accept steps
+    await to.confirm(A);
     const wrap = await A.wrapFor(await A.unwrap((await A.call("GET", "/bootstrap")).json().wraps[0], alice.pub.ecdh, true), to.user.pub.ecdh, drawerId, 1);
     const r = await A.call("POST", `/drawers/${drawerId}/invitations`, { invitee_id: to.id, role, wrap });
     if (r.statusCode !== 201) throw new Error(`invite failed: ${r.body}`);
