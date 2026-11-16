@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer
+  keys on the server, also when its owner never makes another token: the hourly or daily clean-up now
+  removes them. It also removes what tokens revoked before v1.5.33 still kept. The token stays in the
+  list, and entries it signed still verify.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
