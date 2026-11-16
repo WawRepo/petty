@@ -631,7 +631,17 @@
     "leaveConfirm": "Diese Schublade verlassen? Um zurückzukommen, brauchst du eine neue Einladung.",
     "invite": "Jemanden einladen",
     "transferPending": "Eigentum an {name} angeboten",
-    "honest": "Alle, die du einlädst, können alles in dieser Schublade lesen und kopieren. Entfernst du sie später, endet nur der künftige Zugriff."
+    "honest": "Alle, die du einlädst, können alles in dieser Schublade lesen und kopieren. Entfernst du sie später, endet nur der künftige Zugriff.",
+    "waiting": {
+      "title": "Wartet auf Antwort",
+      "since": "Eingeladen: {when}",
+      "stale": "Veraltet: Der Schlüssel der Schublade hat sich seitdem geändert, deshalb kann {name} sie nicht annehmen. Zieh sie zurück und lade {name} neu ein.",
+      "withdraw": "Einladung zurückziehen",
+      "withdrawConfirm": "Die Einladung für {name} zurückziehen? Die Person kann sie dann nicht mehr annehmen. Du kannst sie später erneut einladen.",
+      "withdrawn": "Einladung zurückgezogen",
+      "gone": "Diese Einladung wurde schon angenommen, abgelehnt oder zurückgezogen.",
+      "loadFailed": "Die offenen Einladungen konnten nicht geladen werden. Versuch es später noch einmal."
+    }
   },
   "invite": {
     "title": "In diese Schublade einladen",
@@ -652,7 +662,8 @@
     "joinLinkHint": "Für jemanden, der Petty noch nicht nutzt. Die Person bekommt eine E-Mail mit einem einmaligen Link.",
     "joinLinkSent": "Einladungslink an {email} gesendet",
     "joinLinkTooMany": "Zu viele E-Mails in letzter Zeit. Versuch es später wieder oder erstelle in den Einstellungen einen Einladungslink und schick ihn selbst.",
-    "alreadyMember": "Schon Mitglied."
+    "alreadyMember": "Schon Mitglied.",
+    "alreadyInvited": "{name} ist schon eingeladen und hat noch nicht geantwortet. Um die Rolle zu ändern, zieh diese Einladung zuerst zurück."
   },
   "rotation": {
     "running": "Schlüssel der Schublade wird ersetzt… {done} von {total} Buchungen neu verschlüsselt.",

@@ -631,7 +631,17 @@
     "leaveConfirm": "Quitter ce tiroir ? Il vous faudra une nouvelle invitation pour revenir.",
     "invite": "Inviter quelqu’un",
     "transferPending": "Propriété proposée à {name}",
-    "honest": "Toute personne que vous invitez peut lire et copier tout ce que contient ce tiroir. La retirer plus tard ne coupe que l’accès futur."
+    "honest": "Toute personne que vous invitez peut lire et copier tout ce que contient ce tiroir. La retirer plus tard ne coupe que l’accès futur.",
+    "waiting": {
+      "title": "En attente de réponse",
+      "since": "Invitation envoyée : {when}",
+      "stale": "Périmée : la clé du tiroir a changé depuis, {name} ne peut donc pas l’accepter. Retirez-la et invitez {name} à nouveau.",
+      "withdraw": "Retirer l’invitation",
+      "withdrawConfirm": "Retirer l’invitation de {name} ? Cette personne ne pourra plus l’accepter. Vous pourrez l’inviter à nouveau plus tard.",
+      "withdrawn": "Invitation retirée",
+      "gone": "Cette invitation a déjà été acceptée, refusée ou retirée.",
+      "loadFailed": "Impossible de charger les invitations en attente. Réessayez plus tard."
+    }
   },
   "invite": {
     "title": "Inviter dans ce tiroir",
@@ -652,7 +662,8 @@
     "joinLinkHint": "Pour quelqu’un qui n’est pas encore sur Petty. La personne reçoit un e-mail avec un lien à usage unique.",
     "joinLinkSent": "Lien d’invitation envoyé à {email}",
     "joinLinkTooMany": "Trop d’e-mails envoyés récemment. Réessayez plus tard, ou créez un lien d’invitation dans Réglages et envoyez-le vous-même.",
-    "alreadyMember": "Déjà membre."
+    "alreadyMember": "Déjà membre.",
+    "alreadyInvited": "{name} a déjà une invitation à ce tiroir et n’a pas encore répondu. Pour changer le rôle, retirez d’abord cette invitation."
   },
   "rotation": {
     "running": "Remplacement de la clé du tiroir… Opérations rechiffrées : {done} sur {total}.",

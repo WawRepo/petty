@@ -631,7 +631,17 @@
     "leaveConfirm": "Leave this drawer? You will need a new invitation to come back.",
     "invite": "Invite someone",
     "transferPending": "Ownership offered to {name}",
-    "honest": "Anyone you invite can read and copy everything in this drawer. Removing them later stops future access only."
+    "honest": "Anyone you invite can read and copy everything in this drawer. Removing them later stops future access only.",
+    "waiting": {
+      "title": "Waiting for an answer",
+      "since": "Invited {when}",
+      "stale": "Out of date: the drawer's key changed since, so {name} cannot accept it. Withdraw it and invite {name} again.",
+      "withdraw": "Withdraw invitation",
+      "withdrawConfirm": "Withdraw the invitation for {name}? They can no longer accept it. You can invite them again later.",
+      "withdrawn": "Invitation withdrawn",
+      "gone": "That invitation was already accepted, declined or withdrawn.",
+      "loadFailed": "Could not load the invitations that wait for an answer. Try again later."
+    }
   },
   "invite": {
     "title": "Invite to this drawer",
@@ -652,7 +662,8 @@
     "joinLinkHint": "For someone who is not on Petty yet. They get an email with a one-time link.",
     "joinLinkSent": "Join link sent to {email}",
     "joinLinkTooMany": "Too many emails sent recently. Try again later, or create a join link in Settings and send it yourself.",
-    "alreadyMember": "Already a member."
+    "alreadyMember": "Already a member.",
+    "alreadyInvited": "{name} is already invited and has not answered yet. To change the role, withdraw that invitation first."
   },
   "rotation": {
     "running": "Replacing the drawer key… {done} of {total} entries re-encrypted.",

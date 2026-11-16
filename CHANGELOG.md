@@ -8,7 +8,18 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- A drawer's owner sees, under Members, who was invited and has not answered yet, with the role and
+  when, and can withdraw an invitation. An invitation made before the drawer got a new key is marked
+  out of date, because it can no longer be accepted. Inviting someone who has not answered yet says so,
+  instead of "Something went wrong".
+
 ### Fixed
+- Changing the passphrase, storing a new recovery code, adding or removing a passkey, making an access
+  token, and deleting a drawer or the account no longer fail once when a key rotation runs at the same
+  time. These calls each prove you hold your keys with a one-time challenge; a rotation running in the
+  background could take that challenge first. Now they wait for each other, and a call whose challenge
+  another tab or device took is sent again with a fresh one.
 - An entry saved on a screen that did not yet show another member's latest count no longer makes the
   item say "The history links do not match" until the next count. Such an entry links to a row before
   that count. The web app, the command line and the AI add-on now read the rows before the count and
