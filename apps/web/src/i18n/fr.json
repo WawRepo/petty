@@ -286,6 +286,7 @@
       "addedOn": "Ajoutée le {date}",
       "addHintPasskey": "Votre clé d’accès actuelle doit d’abord le confirmer (si elle est sur votre téléphone, scannez le QR code). Ensuite, cet appareil demande Face ID, Touch ID, un code PIN ou une clé de sécurité.",
       "lastDoor": "C’est votre dernière clé d’accès et il n’y a pas de phrase secrète. Définissez d’abord une phrase secrète de secours.",
+      "limit": "Vous avez {max} clés d’accès, le maximum autorisé. Supprimez-en une que vous n’utilisez plus, puis ajoutez celle-ci.",
       "exists": "Cette clé d’accès est déjà sur cet appareil. Elle a peut-être été synchronisée depuis un autre appareil, par exemple via le trousseau iCloud ou le Gestionnaire de mots de passe de Google. Utilisez « Déverrouiller avec une clé d’accès »."
     },
     "setPassphrase": "Définir une phrase secrète de secours",
@@ -1361,6 +1362,7 @@
     "scopePick": "Tiroirs pour ce jeton",
     "scopeNone": "Vous n’avez pas encore de tiroir à choisir.",
     "scopeNeeded": "Choisissez les tiroirs que ce jeton peut utiliser.",
+    "limit": "Vous avez {max} jetons, le maximum autorisé. Révoquez-en un que vous n’utilisez plus, puis créez celui-ci.",
     "scopeAllShort": "tous les tiroirs",
     "scopeCount": "{count, plural, one {# tiroir} other {# tiroirs}}",
     "confirm": "Un jeton contient des clés de tiroir. C’est pourquoi sa création redemande votre phrase secrète du coffre ou votre clé d’accès, même si le coffre est ouvert.",

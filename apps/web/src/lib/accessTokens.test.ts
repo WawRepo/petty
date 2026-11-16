@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createPasskeyVault, createVault, generateUserKeys, randomBytes, sessionKeysFrom, toB64, verifyCustodyProof, verifyDelegation, WrongPassphrase, type UnlockedKeys, type UserKeyPairs } from "@petty/crypto";
+import { createPasskeyVault, createVault, generateUserKeys, openPatBundle, randomBytes, sessionKeysFrom, splitPatToken, toB64, verifyCustodyProof, verifyDelegation, WrongPassphrase, type UnlockedKeys, type UserKeyPairs } from "@petty/crypto";
 import type { Me } from "@petty/protocol";
 
 /**
@@ -24,7 +24,18 @@ vi.mock("./api.js", () => ({
   }),
 }));
 vi.mock("./session.js", () => ({ getAuth: () => auth.current }));
-vi.mock("./drawers.js", () => ({ getDrawers: () => ({ drawers: new Map() }), expectedSender: vi.fn(), loadIfIdle: vi.fn() }));
+// PETTY-461: the drawers a token may get keys of. openWrap hands back a key named after the version it opened.
+const views: { current: Map<string, unknown> } = { current: new Map() };
+const opened: { drawer: string; version: number }[] = [];
+vi.mock("./drawers.js", () => ({
+  getDrawers: () => ({ drawers: views.current }),
+  expectedSender: vi.fn(),
+  loadIfIdle: vi.fn(),
+  openWrap: vi.fn(async (drawer: string, version: number) => {
+    opened.push({ drawer, version });
+    return { key: await crypto.subtle.importKey("raw", new Uint8Array(32).fill(version), { name: "AES-GCM" }, true, ["encrypt", "decrypt"]), fp: "fp" };
+  }),
+}));
 vi.mock("./pins.js", () => ({ trustedTokens: () => [], updateTrustedTokens: vi.fn(async () => undefined) }));
 vi.mock("./passkey.js", async (original) => {
   const real = await original<typeof import("./passkey.js")>();
@@ -64,6 +75,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
   calls.length = 0;
+  views.current = new Map();
+  opened.length = 0;
   auth.current = { status: "unlocked", me, keys: session, expiresAt: Date.now() + 3_600_000 };
 });
 
@@ -125,4 +138,27 @@ describe("createAccessToken opens the vault again (PETTY-452)", () => {
     await expect(ask({ passphrase: PASSPHRASE })).rejects.toThrow("vault locked");
     expect(calls).toEqual([]);
   });
+});
+
+describe("which drawer keys a new token gets (PETTY-461)", () => {
+  const wrapAt = (drawer_id: string, key_version: number) => ({ drawer_id, key_version, sender_id: USER_ID });
+  const view = (id: string, keyVersion: number, wraps: number[], error: string | null = null) =>
+    [id, { summary: { id, key_version: keyVersion }, members: [], wraps: wraps.map((v) => wrapAt(id, v)), error }] as const;
+
+  it("takes each drawer's current key, and none from a drawer whose key the app does not trust", async () => {
+    views.current = new Map<string, unknown>([
+      view("rotated", 2, [1, 2, 3]), // a wrap above the drawer's version: not taken
+      view("rolled-back", 2, [2], "key_rolled_back"),
+      view("stranger", 1, [1], "sender_unconfirmed"),
+      view("damaged-doc", 1, [1], "bad_document"), // the key is fine
+      view("no-current", 3, [1, 2]), // the wrap for version 3 is not here yet
+    ]);
+    const out = await ask({ passphrase: PASSPHRASE });
+    const body = made()[0]!.body as { token_id: string; bundle: Parameters<typeof openPatBundle>[3] };
+    const { secret } = splitPatToken(out.token);
+    const bundle = await openPatBundle(secret, body.token_id, USER_ID, body.bundle);
+    expect(bundle.drawers.map((d) => [d.drawer_id, d.key_version]).sort()).toEqual([["damaged-doc", 1], ["rotated", 2]]);
+    expect(bundle.drawers.find((d) => d.drawer_id === "rotated")!.key).toBe(toB64(new Uint8Array(32).fill(2)));
+    expect(opened).toEqual(expect.not.arrayContaining([{ drawer: "rolled-back", version: 2 }, { drawer: "stranger", version: 1 }]));
+  }, 60_000);
 });

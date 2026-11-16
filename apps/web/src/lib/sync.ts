@@ -10,7 +10,7 @@ import { api, ApiError, NetworkError } from "./api.js";
 import { getDrawers, loadAll, lineFold, mutateDocument, OpsNoLongerApply, refreshPending } from "./drawers.js";
 import { isOnline, onBackOnline } from "./net.js";
 import { outboxList, outboxRemove, type OutboxItem } from "./outbox.js";
-import { getAuth } from "./session.js";
+import { getAuth, onForget } from "./session.js";
 import { storageErrorKey } from "./storage.js";
 
 export type ReportItem =
@@ -29,6 +29,8 @@ export function useSyncReport(): SyncReport | null {
   return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => report);
 }
 export function dismissReport(): void { setReport(null); }
+// PETTY-461: the report names items and amounts; lock and sign-out drop it.
+onForget(dismissReport);
 
 let running: Promise<void> | null = null;
 export function syncOutbox(): Promise<void> {

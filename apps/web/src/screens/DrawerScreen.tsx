@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import { lastUsedCurrency, onTagFilter, rememberCurrency, takeTagFilter } from "../lib/screenMemory.js";
 import { useMorph, useMorphBack } from "../lib/nav.js";
 import { ISO_4217, assertCurrencyCode, newEntryAmount, parseAmount, seedExponent, staleness, LedgerError, type Line, type Verification, placeLabel, tagsOf, foldText, formatAmount, iconOf, colorOf, lineCounted, lineTagsOf, normalizeCurrencyCode, totals as ledgerTotals, type Totals } from "@petty/ledger";
 import { ConfirmStateSheet } from "../components/ConfirmStateSheet.js";
@@ -39,13 +40,13 @@ import { DrawerSkeleton } from "../components/Skeleton.js";
 type Kind = Line["kind"];
 
 /** Add-line sheet: kind, name, and the fields that kind needs. A starting amount becomes the first entry. */
-const LAST_CURRENCY = "petty.lastCurrency";
 const COMMON_CURRENCIES = ["PLN", "EUR", "USD", "GBP", "CHF"];
-/** PETTY-124 (audit F17): the currency starts filled — the drawer's own, else the last one used on this device, else the locale's. */
+/** PETTY-124 (audit F17): the currency starts filled — the drawer's own, else the last one used since unlock (PETTY-417: memory only), else the locale's. */
 function defaultCurrency(view: DrawerView, locale: string): string {
   const inDrawer = view.doc?.lines.find((l) => l.kind === "money");
   if (inDrawer && inDrawer.kind === "money") return inDrawer.currency;
-  try { const last = localStorage.getItem(LAST_CURRENCY); if (last) return last; } catch { /* ignore */ }
+  const last = lastUsedCurrency();
+  if (last) return last;
   return locale === "pl" ? "PLN" : "EUR";
 }
 
@@ -72,7 +73,7 @@ function AddLineSheet({ open, onClose, view }: { open: boolean; onClose: () => v
     try {
       if (kind === "money") {
         const code = assertCurrencyCode(currency);
-        try { localStorage.setItem(LAST_CURRENCY, code); } catch { /* ignore */ }
+        rememberCurrency(code);
         const exponent = seedExponent(code);
         line = { id, kind: "money", name: name.trim(), currency: code, exponent };
         if (start.trim()) starting = parseAmount(start, exponent);
@@ -162,7 +163,13 @@ export function DrawerScreen() {
   // Line filters (PETTY-64): by "part of the total" and by one line tag.
   const [status, setStatus] = useState<"all" | "in" | "out">("all");
   const [lineTag, setLineTag] = useState<string | null>(null);
-  // PETTY-155: Manage tags opens a drawer filtered by a tag (?tag=); the link is read once, then dropped
+  // PETTY-155: Manage tags opens a drawer filtered by a tag. PETTY-417: the tag comes over in memory, also
+  // to the drawer already on screen; an address with ?tag= from an older version is read once, then dropped.
+  useEffect(() => {
+    const take = () => { const key = takeTagFilter(id); if (key !== null) setLineTag(key || null); };
+    take();
+    return onTagFilter(take);
+  }, [id]);
   const [params, setParams] = useSearchParams();
   const tagParam = params.get("tag");
   useEffect(() => {

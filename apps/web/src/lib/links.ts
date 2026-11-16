@@ -5,7 +5,15 @@
  * VITE_SOURCE_URL at build time (the image takes it as a build argument) to point at its own
  * source, as the licence expects; the default is the upstream repo.
  */
-export const SOURCE_URL = (import.meta.env.VITE_SOURCE_URL as string | undefined)?.trim() || "https://github.com/WawRepo/petty";
+export const SOURCE_URL = repoUrl(import.meta.env.VITE_SOURCE_URL as string | undefined);
+
+/**
+ * PETTY-461: the address as `git clone` takes it ("…/petty.git") and one with a trailing slash name the same
+ * repository; both become its web address, so the version links and the downloads find their way.
+ */
+export function repoUrl(raw: string | undefined): string {
+  return raw?.trim().replace(/\/+$/, "").replace(/\.git$/, "").replace(/\/+$/, "") || "https://github.com/WawRepo/petty";
+}
 
 /**
  * The source of the version that runs here (PETTY-292, review S4): for a release (v1.2.3) on GitHub,

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { fromB64, hashEntry, openEntryUnverified, patSecret, patToken, sealEntry, sealPatBundle, signEntry, toB64, wrapDrawerKey, type EntryPayloadV1, type SignedEntryV1 } from "@petty/crypto";
+import { createDrawerKey, fromB64, hashEntry, openDocument, openEntryUnverified, patSecret, patToken, sealEntry, sealPatBundle, signEntry, toB64, unwrapDrawerKey, wrapDrawerKey, type EntryPayloadV1, type SignedEntryV1 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { EntryRow, TokenBootstrap } from "@petty/protocol";
 import { buildApp } from "../../../apps/api/src/app.js";
@@ -603,5 +603,46 @@ describe("headless client (PETTY-165)", () => {
     const after = (await c.drawers()).find((d) => d.id === big.id)!.lines[0]!;
     expect(after).toMatchObject({ balance: 1000 });
     expect(c.warnings.some((w) => w.code === "sum_too_large")).toBe(false);
+  }, 60_000);
+
+  it("a token whose key is older than the drawer's refuses to change the document, so it never seals one nobody can open (PETTY-412)", async () => {
+    // a drawer of its own, so the rotation below touches no other test
+    const shedLine = crypto.randomUUID();
+    const shed = await owner.createDrawer("Shed", applyOp(newDocument("Shed"), { type: "add_line", line: { id: shedLine, kind: "money", name: "Jar", currency: "PLN", exponent: 2 } }, { lineHasEntries: () => false }));
+    expect(shed.res.statusCode).toBe(201);
+    const made = await tokenAndId("write");
+    const wrap1 = (await owner.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === shed.id);
+    const key1 = await owner.unwrap(wrap1, owner.user.pub.ecdh, true);
+    const forToken = async (key: CryptoKey, version: number) => wrapDrawerKey(key, owner.sender, made.pub, shed.id, version);
+    expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: shed.id, key_version: 1, wrap: await forToken(key1, 1) }] })).statusCode).toBe(204);
+    const c = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    expect((await c.drawers()).map((d) => d.name)).toContain("Shed");
+
+    // the owner's app begins a key rotation: the drawer moves to version 2, the document is still sealed under 1
+    const { selfWrap } = await createDrawerKey(owner.sender, shed.id, 2);
+    const key2 = await unwrapDrawerKey(selfWrap, owner.user.keys.ecdh.privateKey, { drawer_id: shed.id, key_version: 2, senderEcdhPublicB64: owner.user.pub.ecdh }, { extractable: true });
+    const started = await owner.call("POST", `/drawers/${shed.id}/rotation`, { to_version: 2, wraps: [{ user_id: owner.id, wrap: await owner.wrapFor(key2, owner.user.pub.ecdh, shed.id, 2) }], proof: await owner.proof() });
+    expect(started.statusCode).toBe(201);
+    const before = (await owner.call("GET", `/drawers/${shed.id}`)).json();
+    expect(before.drawer.key_version).toBe(2);
+
+    await expect(c.tagItem(shed.id, shedLine, "garden")).rejects.toMatchObject({ code: "Refused", message: expect.stringContaining("new key") });
+    const after = (await owner.call("GET", `/drawers/${shed.id}`)).json();
+    expect(after.drawer.version).toBe(before.drawer.version); // nothing was written
+    expect(after.document.ciphertext).toBe(before.document.ciphertext);
+
+    // the owner's app finishes: the document under key 2, and the token gets key 2 (syncTokenWraps)
+    const doc = await openDocument(key1, { record_type: "document", record_id: shed.id, drawer_id: shed.id, line_id: null, author_id: before.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(before.document.nonce), ciphertext: fromB64(before.document.ciphertext) });
+    const resealed = await owner.sealDoc(shed.id, key2, doc as never, 2);
+    expect((await owner.call("PUT", `/drawers/${shed.id}/document`, { base_version: before.drawer.version, key_version: 2, schema_version: 1, nonce: toB64(resealed.nonce), ciphertext: toB64(resealed.ciphertext), verification: false })).statusCode).toBe(200);
+    expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: shed.id, key_version: 2, wrap: await forToken(key2, 2) }] })).statusCode).toBe(204);
+
+    // started again, the tool holds key 2, and what it writes the owner opens under key 2
+    const again = await connect({ token: made.token, apiUrl: "https://petty.test", fetch: inject });
+    await again.tagItem(shed.id, shedLine, "garden");
+    const final = (await owner.call("GET", `/drawers/${shed.id}`)).json();
+    expect(final.document.key_version).toBe(2);
+    const opened = await openDocument(key2, { record_type: "document", record_id: shed.id, drawer_id: shed.id, line_id: null, author_id: final.document.author_id, key_version: 2, schema_version: final.document.schema_version }, { nonce: fromB64(final.document.nonce), ciphertext: fromB64(final.document.ciphertext) });
+    expect(JSON.stringify(opened)).toContain("garden");
   }, 60_000);
 });
