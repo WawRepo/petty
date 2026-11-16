@@ -28,8 +28,8 @@ async function add(page: Page, digits: string, op: "Add" | "Adjust" = "Add") {
 async function pair(browser: import("@playwright/test").Browser) {
   const alice = await signupWithKeys("alice");
   const bob = await signupWithKeys("bob");
-  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
-  const ctxB = await browser.newContext(); const pageB = await ctxB.newPage();
+  const ctxA = await browser.newContext(); const pageA = watched(await ctxA.newPage());
+  const ctxB = await browser.newContext(); const pageB = watched(await ctxB.newPage());
   await loginAndUnlock(pageA, alice);
   const { drawerId, lineId } = await makeLine(pageA, "Shared");
   await shareViaApi(alice, drawerId, bob, "write");
@@ -38,6 +38,20 @@ async function pair(browser: import("@playwright/test").Browser) {
   await expect(pageB.getByTestId("line-balance")).toHaveText("100.00");
   return { alice, bob, ctxA, pageA, ctxB, pageB, drawerId, lineId };
 }
+/**
+ * PETTY-376: React's "two children with the same key" warning means one row was shown twice (or dropped) for a
+ * moment. Every page of this file reports it, with React's component stack, and the test fails.
+ */
+const keyWarnings: string[] = [];
+function watched(page: Page): Page {
+  page.on("console", (m) => { if (m.type() === "error" && m.text().includes("two children with the same key")) keyWarnings.push(m.text()); });
+  return page;
+}
+test.afterEach(() => {
+  const found = keyWarnings.splice(0);
+  expect(found, found.join("\n\n")).toEqual([]);
+});
+
 const entryCount = async (drawerId: string, lineId: string) => (await dbQuery("select count(*)::int as n from entries where drawer_id = $1 and line_id = $2", [drawerId, lineId]) as { n: number }[])[0]!.n;
 
 test("offline entries queue as pending; on reconnect they interleave with another user's entry and the report says what changed", async ({ browser }) => {
@@ -83,7 +97,7 @@ test("an offline Adjust made against a line that changed meanwhile is refused on
 
 test("a page reloaded in the middle of sending drains the outbox exactly once", async ({ browser }) => {
   const alice = await signupWithKeys("alice");
-  const ctx = await browser.newContext(); const page = await ctx.newPage();
+  const ctx = await browser.newContext(); const page = watched(await ctx.newPage());
   await loginAndUnlock(page, alice);
   const { drawerId, lineId } = await makeLine(page, "Solo");
   await ctx.setOffline(true);
@@ -110,7 +124,7 @@ function pageCount(page: Page) { return page.getByTestId("pending-count"); }
 
 test("offline reload: unlock works with no network, drawers come from the ciphertext cache, and an old outbox is flagged", async ({ browser }) => {
   const alice = await signupWithKeys("alice");
-  const ctx: BrowserContext = await browser.newContext(); const page = await ctx.newPage();
+  const ctx: BrowserContext = await browser.newContext(); const page = watched(await ctx.newPage());
   await loginAndUnlock(page, alice);
   await makeLine(page, "Basement");
   await page.goto("/");
