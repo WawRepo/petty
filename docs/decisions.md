@@ -247,8 +247,9 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `POST /join-links/lookup`, with the value in the body; join and reset links carry their token after
   `#`. The `GET` forms are gone (404).
   A used join link forgets its email; housekeeping (`apps/api/src/lib/maintenance.ts`) deletes unused
-  join links that ended and reset tokens that expired; deleting an account deletes its unused join
-  links and reset tokens.
+  join links that ended, reset tokens that expired, and drawer documents replaced more than 30 days ago
+  (PETTY-488; before, only the drawer's next write dropped them); deleting an account deletes its
+  unused join links and reset tokens.
 - **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only
   while its inviter still owns the drawer, and a change of owner ends every pending one. The owner
   lists them with `GET /drawers/:id/invitations` and revokes any with `DELETE /invitations/:id`.

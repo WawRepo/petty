@@ -3,6 +3,7 @@ import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DOCUMENT
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
 import { badRequest, conflict, forbidden, gone, notFound, tooLarge } from "../lib/errors.js";
+import { HISTORY_DAYS } from "../lib/maintenance.js";
 import { assertQuota } from "../lib/quota.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
 import { consumeCustodyProof, requireProofField } from "../lib/custody.js";
@@ -43,9 +44,6 @@ async function lockDrawer(db: Queryable, drawerId: string): Promise<DrawerRow> {
   if (!d) throw notFound("DrawerNotFound", { drawer_id: drawerId });
   return d;
 }
-
-/** How long a replaced document stays restorable (PETTY-183, review NR-3). */
-const HISTORY_DAYS = 30;
 
 /** Keeps the current sealed document before it is replaced, and drops history older than HISTORY_DAYS. */
 async function keepHistory(db: Queryable, drawerId: string, version: number, userId: string, tokenId: string | null) {

@@ -89,4 +89,26 @@ describe("personal data is not kept longer than needed (PETTY-341)", () => {
     // the rows stay: the token list shows them, and a writing token's delegation still verifies what it signed
     expect((await owner.query("select 1 from access_tokens where id = any($1)", [[expired, revokedEarly]])).rowCount).toBe(2);
   });
+
+  it("maintenance drops drawer documents replaced more than 30 days ago, also in a drawer nobody writes to again (PETTY-488)", async () => {
+    const u = new Client(app, await userMaterial("ret-hist", { email: `hist-${run}@test.local` }));
+    expect((await u.signup(await makeJoinLink())).statusCode).toBe(201);
+    const { id: drawerId, res } = await u.createDrawer("Attic");
+    expect(res.statusCode).toBe(201);
+    // two kept copies of the current document, as two writes would leave them: one 31 days old, one a day old
+    const keep = (days: number) => owner.query(
+      `insert into drawer_document_history (drawer_id, version, author_id, key_version, schema_version, nonce, ciphertext, written_at, replaced_by, replaced_at)
+       select drawer_id, 1, author_id, key_version, schema_version, nonce, ciphertext, updated_at, author_id, now() - make_interval(days => $2) from drawer_documents where drawer_id = $1`,
+      [drawerId, days],
+    );
+    await keep(31);
+    await keep(1);
+    const old = async () => (await owner.query<{ n: number }>("select count(*)::int as n from drawer_document_history where drawer_id = $1 and replaced_at < now() - interval '30 days'", [drawerId])).rows[0]!.n;
+    const all = async () => (await owner.query<{ n: number }>("select count(*)::int as n from drawer_document_history where drawer_id = $1", [drawerId])).rows[0]!.n;
+    expect([await old(), await all()]).toEqual([1, 2]);
+
+    const r = await runMaintenance();
+    expect(r.document_history).toBeGreaterThanOrEqual(1);
+    expect([await old(), await all()]).toEqual([0, 1]); // the day-old copy stays restorable
+  });
 });
