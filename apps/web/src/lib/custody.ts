@@ -15,16 +15,20 @@ import { evaluatePrf, registerPasskey, rememberPasskey } from "./passkey.js";
  * PUT /me/vault, /me/passkeys and POST /me/delete without it, so a reset login
  * password alone cannot destroy anyone's keys.
  */
-export async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProof> {
+async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProof> {
   const c = CustodyChallenge.parse(await api<unknown>("POST", "/me/custody-challenge"));
   return { challenge: c.challenge, signature: await signCustodyChallenge(ecdsaPrivate, c.challenge) };
 }
 
 /**
- * One call that needs a custody proof, for work the app does by itself and in steps: a key rotation
- * (PETTY-440) and deleting a line (PETTY-441). The server keeps one challenge per person and each proof
- * works once, so these calls go one after another, each with a fresh proof. When another tab or device
- * asked for a challenge in between, the server answers 403 CustodyProofRequired and the call is made again.
+ * One call that needs a custody proof. Every such call goes through here (PETTY-497): the steps of a key
+ * rotation (PETTY-440), deleting a line (PETTY-441), and the vault, passkey, token, drawer-delete and
+ * account-delete calls. The server keeps one challenge per person and each proof works once, so these
+ * calls go one after another, each with a fresh proof; a rotation running in the background cannot take
+ * the challenge of a call the person made. When another tab or device asked for a challenge in between,
+ * the server answers 403 CustodyProofRequired before it reads the password or writes anything, and the
+ * call is made again with the same body. `call` must only send the request: a call that waited for
+ * another withCustodyProof inside it would wait for itself.
  */
 let proved: Promise<unknown> = Promise.resolve();
 export function withCustodyProof<T>(ecdsaPrivate: CryptoKey, call: (proof: CustodyProof) => Promise<T>): Promise<T> {
@@ -79,7 +83,7 @@ export async function openWithRecoveryCode(recoveryCode: string): Promise<Unlock
 /** (Re)wrap the keys under a passphrase and store that copy: change, recovery, or a first backup passphrase. */
 export async function setPassphrase(unlocked: UnlockedKeys, newPassphrase: string, loginPassword?: string): Promise<VaultBlobV1> {
   const vault = await createVault(newPassphrase, await keyPairsOf(unlocked));
-  await api("PUT", "/me/vault", { ...pw(loginPassword), proof: await custodyProof(unlocked.ecdsaPrivate), vault });
+  await withCustodyProof(unlocked.ecdsaPrivate, (proof) => api("PUT", "/me/vault", { ...pw(loginPassword), proof, vault }));
   return vault;
 }
 
@@ -94,7 +98,7 @@ export async function makeRecoveryCode(unlocked: UnlockedKeys): Promise<{ code: 
 
 /** Step two: store the new recovery copy; from now on only the new code opens it. */
 export async function storeRecoveryCode(unlocked: UnlockedKeys, vault: VaultBlobV1, loginPassword?: string): Promise<void> {
-  await api("PUT", "/me/recovery-vault", { ...pw(loginPassword), proof: await custodyProof(unlocked.ecdsaPrivate), recovery_vault: vault });
+  await withCustodyProof(unlocked.ecdsaPrivate, (proof) => api("PUT", "/me/recovery-vault", { ...pw(loginPassword), proof, recovery_vault: vault }));
 }
 
 /** Recovery: open the recovery-code copy, wrap under the new passphrase, store. */
@@ -117,12 +121,12 @@ export async function addPasskey(me: Me, unlocked: UnlockedKeys, label: string, 
   let vault: VaultBlobV1;
   try { vault = await createPasskeyVault(reg.prf, await keyPairsOf(unlocked)); } finally { zero(reg.prf); }
   const passkey = { credential_id: reg.credential_id, prf_salt: reg.prf_salt, vault, label: label.trim().slice(0, 60), transports: reg.transports };
-  const entry = PasskeyEntry.parse(await api<unknown>("POST", "/me/passkeys", { ...pw(loginPassword), proof: await custodyProof(unlocked.ecdsaPrivate), passkey }));
+  const entry = PasskeyEntry.parse(await withCustodyProof(unlocked.ecdsaPrivate, (proof) => api<unknown>("POST", "/me/passkeys", { ...pw(loginPassword), proof, passkey })));
   rememberPasskey(entry.credential_id);
   return entry;
 }
 
 /** Removes one passkey's copy of the keys. The keys were never exposed, so nothing needs rotating. */
 export async function removePasskey(id: string, ecdsaPrivate: CryptoKey, loginPassword?: string): Promise<void> {
-  await api("DELETE", `/me/passkeys/${encodeURIComponent(id)}`, { ...pw(loginPassword), proof: await custodyProof(ecdsaPrivate) });
+  await withCustodyProof(ecdsaPrivate, (proof) => api("DELETE", `/me/passkeys/${encodeURIComponent(id)}`, { ...pw(loginPassword), proof }));
 }

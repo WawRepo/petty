@@ -20,7 +20,7 @@ import {
   type PatBundleV1,
   type RecordIdentity,
 } from "@petty/crypto";
-import { applyOps, assertCurrencyCode, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, nextRev, normalizeTags, parseAmount, readDocument, reverseOf, seedExponent, tagsOf, verifyChain, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
+import { applyOps, assertCurrencyCode, fold, formatAmount, foldText, LedgerError, lineTagsOf, MAX_TAGS, nextRev, normalizeTags, parseAmount, readDocument, reverseOf, seedExponent, tagsOf, verifyChain, type ChainResult, type ReverseRefusal, type DocumentOp, type DrawerDocument, type LedgerEntry, type Line } from "@petty/ledger";
 import { EntriesPage, EntryRow, TokenBootstrap, type AccessTokenSelf, type EntryAuthor } from "@petty/protocol";
 
 /**
@@ -464,7 +464,7 @@ export class AgentClient {
         this.lineEntries.set(`${d.id}:${l.id}`, entries);
         let chain: AgentLine["chain"];
         try {
-          chain = (await verifyChain(entries)).status === "ok" ? "ok" : "broken";
+          chain = (await this.verifyLine(held.key, d.id, l.id, entries)).status === "ok" ? "ok" : "broken";
           lines.push(this.line(l, entries, unverified.get(l.id) ?? 0, unreadable.get(l.id) ?? 0, chain));
         } catch (e) {
           // one entry under two numbers, or two under one: no balance can be told from that
@@ -523,6 +523,33 @@ export class AgentClient {
       if (!got.has_more || !got.entries.length) break;
     }
     return out;
+  }
+
+  /**
+   * The hash links of one item's rows since its latest count (PETTY-500). An entry written from a view older than that
+   * count links to a row before it: those rows are fetched, at most 20 pages, until verifyChain finds it. Rows that
+   * cannot be fetched leave the link unresolved, which verifyChain reports.
+   */
+  private async verifyLine(key: CryptoKey, drawerId: string, lineId: string, entries: readonly LedgerEntry[]): Promise<ChainResult> {
+    let r = await verifyChain(entries);
+    const older: LedgerEntry[] = [];
+    let before = entries.reduce((m, e) => Math.min(m, e.seq), Number.POSITIVE_INFINITY);
+    for (let page = 0; r.searchOlder && before > 1 && page < 20; page++) {
+      let got: ReturnType<typeof EntriesPage.parse>;
+      try { got = EntriesPage.parse(await this.call("GET", `/drawers/${drawerId}/lines/${lineId}/entries?limit=200&before=${before}`)); } catch { break; }
+      const rows = got.entries.filter((row) => row.drawer_id === drawerId && row.line_id === lineId && row.seq < before);
+      if (!rows.length) break;
+      for (const row of rows) {
+        const opened = await this.openRow(key, row);
+        // looked at only for a link and not reported here: the item's history still reports it
+        if (opened === "unreadable") this.unopened.delete(row.id);
+        else if (opened !== "unverified") older.push(opened);
+      }
+      before = Math.min(...rows.map((row) => row.seq));
+      r = await verifyChain(entries, null, older);
+      if (!got.has_more) break;
+    }
+    return r;
   }
 
   private line(l: Line, entries: readonly LedgerEntry[], unverified = 0, unreadable = 0, chain: AgentLine["chain"] = "ok"): AgentLine {

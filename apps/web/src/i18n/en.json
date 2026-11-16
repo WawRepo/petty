@@ -202,7 +202,7 @@
       "decrypt_failed": "This drawer could not be opened. Ask its owner to share it again.",
       "bad_document": "This drawer's data is damaged. Its owner can put back an earlier version.",
       "unknown_schema": "This drawer was saved by a newer version of Petty. Reload to update Petty.",
-      "bad_entries": "The entries of an item in this drawer are out of order, so Petty did not open it. The server may have been tampered with.",
+      "bad_entries": "The entries of an item in this drawer are out of order or repeated, so Petty did not open it. The server may have been tampered with.",
       "sum_too_large": "The amounts in this drawer add up to a number too large to show, so Petty shows none of them. Someone may have added an entry with a wrong amount."
     },
     "otherDrawers": "{count, plural, one {Other drawer} other {Other drawers}}",
@@ -541,6 +541,7 @@
     "warn": {
       "problems": "{count, plural, one {# entry could not be read or verified. Its amount is not in the balance.} other {# entries could not be read or verified. Their amounts are not in the balance.}}",
       "broken": "The history links do not match. Some entries may have been removed or changed.",
+      "brokenCount": "Count this item and adjust it to clear this warning. The check then starts again at your count.",
       "truncated": "The history is shorter than the last time you saw it. Entries may have been removed.",
       "acknowledge": "Accept as is",
       "skipped": "{count, plural, one {# entry is left out of the balance because it breaks the rules.} other {# entries are left out of the balance because they break the rules.}}",
@@ -630,7 +631,17 @@
     "leaveConfirm": "Leave this drawer? You will need a new invitation to come back.",
     "invite": "Invite someone",
     "transferPending": "Ownership offered to {name}",
-    "honest": "Anyone you invite can read and copy everything in this drawer. Removing them later stops future access only."
+    "honest": "Anyone you invite can read and copy everything in this drawer. Removing them later stops future access only.",
+    "waiting": {
+      "title": "Waiting for an answer",
+      "since": "Invited {when}",
+      "stale": "Out of date: the drawer's key changed since, so {name} cannot accept it. Withdraw it and invite {name} again.",
+      "withdraw": "Withdraw invitation",
+      "withdrawConfirm": "Withdraw the invitation for {name}? They can no longer accept it. You can invite them again later.",
+      "withdrawn": "Invitation withdrawn",
+      "gone": "That invitation was already accepted, declined or withdrawn.",
+      "loadFailed": "Could not load the invitations that wait for an answer. Try again later."
+    }
   },
   "invite": {
     "title": "Invite to this drawer",
@@ -651,7 +662,8 @@
     "joinLinkHint": "For someone who is not on Petty yet. They get an email with a one-time link.",
     "joinLinkSent": "Join link sent to {email}",
     "joinLinkTooMany": "Too many emails sent recently. Try again later, or create a join link in Settings and send it yourself.",
-    "alreadyMember": "Already a member."
+    "alreadyMember": "Already a member.",
+    "alreadyInvited": "{name} is already invited and has not answered yet. To change the role, withdraw that invitation first."
   },
   "rotation": {
     "running": "Replacing the drawer key… {done} of {total} entries re-encrypted.",

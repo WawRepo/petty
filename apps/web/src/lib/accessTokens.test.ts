@@ -10,19 +10,22 @@ import type { Me } from "@petty/protocol";
 const calls: { method: string; path: string; body: unknown }[] = [];
 const auth: { current: unknown } = { current: { status: "loading" } };
 const prf: { current: Uint8Array | null } = { current: null };
+/** PETTY-497: how many POST /me/tokens to refuse with CustodyProofRequired, as when a key rotation took the challenge. */
+const refuse = { tokens: 0 };
 
-vi.mock("./api.js", () => ({
-  ApiError: class ApiError extends Error {},
-  api: vi.fn(async (method: string, path: string, body?: unknown) => {
+vi.mock("./api.js", () => {
+  class ApiError extends Error { constructor(readonly status: number, readonly code: string) { super(code); } }
+  return { ApiError, api: vi.fn(async (method: string, path: string, body?: unknown) => {
     calls.push({ method, path, body });
     if (path === "/me/custody-challenge") return { challenge: toB64(randomBytes(32)), expires_at: new Date(Date.now() + 60_000).toISOString() };
+    if (method === "POST" && path === "/me/tokens" && refuse.tokens > 0) { refuse.tokens--; throw new ApiError(403, "CustodyProofRequired"); }
     if (method === "POST" && path === "/me/tokens") {
       const b = body as { name: string; role: "read" | "write"; scope: string[] | null; expires_at: string | null; ecdh_pub: string };
       return { id: crypto.randomUUID(), name: b.name, ecdh_pub: b.ecdh_pub, role: b.role, scope: b.scope, created_at: new Date().toISOString(), last_used_at: null, expires_at: b.expires_at };
     }
     return undefined;
-  }),
-}));
+  }) };
+});
 vi.mock("./session.js", () => ({ getAuth: () => auth.current }));
 // PETTY-461: the drawers a token may get keys of. openWrap hands back a key named after the version it opened.
 const views: { current: Map<string, unknown> } = { current: new Map() };
@@ -75,6 +78,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   calls.length = 0;
+  refuse.tokens = 0;
   views.current = new Map();
   opened.length = 0;
   auth.current = { status: "unlocked", me, keys: session, expiresAt: Date.now() + 3_600_000 };
@@ -132,6 +136,17 @@ describe("createAccessToken opens the vault again (PETTY-452)", () => {
     const checked = await verifyDelegation(body.signing.delegation, { user_id: USER_ID, sig_key_id: me.keys.sig_key_id, ecdsa_pub: session.pub.ecdsa });
     expect(checked.token_ecdsa_pub).toBe(body.signing.ecdsa_pub);
   });
+
+  it("makes the token on the next try when a key rotation took the challenge first (PETTY-497)", async () => {
+    refuse.tokens = 1;
+    const out = await ask({ passphrase: PASSPHRASE });
+    expect(out.token).toMatch(/^petty_pat_/);
+    expect(calls.map((c) => `${c.method} ${c.path}`).slice(0, 4)).toEqual(["POST /me/custody-challenge", "POST /me/tokens", "POST /me/custody-challenge", "POST /me/tokens"]);
+    const [first, second] = made().map((c) => c.body as { token_id: string; proof: { challenge: string; signature: string } });
+    expect(second!.token_id).toBe(first!.token_id); // the same token, only a fresh proof
+    expect(second!.proof.challenge).not.toBe(first!.proof.challenge);
+    await expect(verifyCustodyProof(session.pub.ecdsa, second!.proof.challenge, second!.proof.signature)).resolves.toBe(true);
+  }, 60_000);
 
   it("makes no token while the vault is locked", async () => {
     auth.current = { status: "locked", me };

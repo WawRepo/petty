@@ -172,6 +172,85 @@ describe("verifyChain", () => {
     });
   });
 
+  describe("an entry written from a view older than the latest count (PETTY-500)", () => {
+    /** alice adds; bob adds and counts; alice, who never saw bob's rows, adds again: her link points before bob's count. */
+    async function staleWrite() {
+      const a = await actor("alice");
+      const b = await actor("bob");
+      const [first] = await log(a, [["add", 100]]);
+      const h1 = await hashEntry(first!.entry);
+      const fromB = { seq: 2, received_at: "", entry: await b.sign({ ...first!.entry, id: "b2", prev_hash: h1, amount: 30, author_id: b.id, sig_key_id: b.sigKeyId }) };
+      const count = { seq: 3, received_at: "", entry: await b.sign({ ...first!.entry, id: "b3", op: "adjust" as const, prev_hash: await hashEntry(fromB.entry), amount: 130, author_id: b.id, sig_key_id: b.sigKeyId }) };
+      const late = { seq: 4, received_at: "", entry: await a.sign({ ...first!.entry, id: "a4", prev_hash: h1, amount: 5 }) };
+      return { a, b, first: first!, fromB, count, late };
+    }
+
+    it("is ok once the row it links to is found before the count; until then the rows before are asked for", async () => {
+      const { a, first, fromB, count, late } = await staleWrite();
+      const window = [count, late];
+      const asked = await verifyChain(window);
+      expect(asked).toMatchObject({ status: "broken", problems: [{ entry_id: "a4", code: "prev_unresolved" }], searchOlder: true });
+      expect(await verifyChain(window, null, [fromB])).toMatchObject({ status: "broken", searchOlder: true }); // not on this page: ask for more
+      const r = await verifyChain(window, null, [first, fromB]);
+      expect(r).toMatchObject({ status: "ok", problems: [], searchOlder: false });
+      // the head remembers the row found before the window, so the next check of the same window needs no rows before it
+      expect(r.head?.before).toEqual([await hashEntry(first.entry)]);
+      expect(await verifyChain(window, r.head)).toMatchObject({ status: "ok", problems: [], searchOlder: false });
+      // …and the entries after it link to it as to any other
+      const next = { seq: 5, received_at: "", entry: await a.sign({ ...late.entry, id: "a5", prev_hash: await hashEntry(late.entry) }) };
+      expect((await verifyChain([...window, next], null, [first, fromB])).status).toBe("ok");
+    });
+
+    it("a remembered row before the window counts only for the same window", async () => {
+      const { a, first, fromB, count, late } = await staleWrite();
+      const pinned = (await verifyChain([count, late], null, [first, fromB])).head!;
+      // a new count starts a new window; an entry in it that links before that count is checked again
+      const count2 = { seq: 5, received_at: "", entry: await a.sign({ ...count.entry, id: "a5", prev_hash: await hashEntry(late.entry), author_id: a.id, sig_key_id: a.sigKeyId }) };
+      const late2 = { seq: 6, received_at: "", entry: await a.sign({ ...late.entry, id: "a6", prev_hash: await hashEntry(first.entry) }) };
+      const r = await verifyChain([count2, late2], pinned); // the count was made on top of the pinned head: that part is fine
+      expect(r).toMatchObject({ status: "broken", problems: [{ entry_id: "a6", code: "prev_unresolved" }], searchOlder: true });
+      expect(await verifyChain([count2, late2], pinned, [first, fromB, count, late])).toMatchObject({ status: "ok", problems: [] });
+    });
+
+    it("a link to nothing before the window stays reported when the rows before run out", async () => {
+      const { a, first, fromB, count } = await staleWrite();
+      const lost = { seq: 4, received_at: "", entry: await a.sign({ ...first.entry, id: "a4", prev_hash: "0".repeat(64) }) };
+      expect(await verifyChain([count, lost], null, [first, fromB])).toMatchObject({ status: "broken", problems: [{ entry_id: "a4", code: "prev_unresolved" }], searchOlder: true });
+    });
+
+    it("a window that does not start at a count holds the whole line: a link it does not resolve is not looked for before it", async () => {
+      const { first, fromB, late } = await staleWrite();
+      const r = await verifyChain([fromB, { ...late, seq: 3 }], null, [first]);
+      expect(r.searchOlder).toBe(false);
+      expect(r.problems).toContainEqual({ entry_id: "a4", code: "prev_unresolved" });
+    });
+
+    it("an entry moved from after the count to before it is caught by its own link (N-08)", async () => {
+      const { a, first, fromB, count, late } = await staleWrite();
+      // alice writes on top of bob's count, and again on top of that; the server then numbers her first entry before
+      // bob's last row, out of the window, so that the count covers it
+      const onTop = await a.sign({ ...first.entry, id: "a5", prev_hash: await hashEntry(count.entry) });
+      const after = { seq: 6, received_at: "", entry: await a.sign({ ...first.entry, id: "a6", prev_hash: await hashEntry(onTop) }) };
+      const r = await verifyChain([{ ...count, seq: 4 }, { ...late, seq: 5 }, after], null, [first, { seq: 2, received_at: "", entry: onTop }, { ...fromB, seq: 3 }]);
+      expect(r).toMatchObject({ status: "broken", problems: [{ entry_id: "a5", code: "prev_not_older" }] });
+    });
+
+    it("an entry that links to a row the count did not see is reported: it was put before the count", async () => {
+      const { a, first, fromB, count } = await staleWrite();
+      // alice writes from a view without bob's count, then again on top of that; the server numbers her first entry
+      // between bob's last row and his count, where the count never saw it
+      const mine = await a.sign({ ...first.entry, id: "a9", prev_hash: await hashEntry(fromB.entry) });
+      const moved = { seq: 3, received_at: "", entry: mine };
+      const after = { seq: 5, received_at: "", entry: await a.sign({ ...first.entry, id: "a10", prev_hash: await hashEntry(mine) }) };
+      const r = await verifyChain([{ ...count, seq: 4 }, after], null, [first, fromB, moved]);
+      expect(r).toMatchObject({ status: "broken", problems: [{ entry_id: "a10", code: "prev_not_counted" }] });
+      // a count with no link saw nothing before it
+      const genesisCount = { ...count, entry: await a.sign({ ...count.entry, id: "g3", prev_hash: null, author_id: a.id, sig_key_id: a.sigKeyId }) };
+      const stale = { seq: 4, received_at: "", entry: await a.sign({ ...first.entry, id: "a11", prev_hash: await hashEntry(first.entry) }) };
+      expect((await verifyChain([genesisCount, stale], null, [first, fromB])).problems).toEqual([{ entry_id: "a11", code: "prev_not_counted" }]);
+    });
+  });
+
   it("a genesis (null prev) from the same author twice is broken; from two authors it is a fork", async () => {
     const a = await actor("alice");
     const b = await actor("bob");

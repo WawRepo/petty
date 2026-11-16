@@ -18,7 +18,7 @@ import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
 import { acceptedDocRev, acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, confirmedFor, drawersNeedUserDoc, getPin, leftDrawerAt, loadPins, noteMembers, pinMembers, pinStatus, pinnedSigningKeys, pinsBlocked, pinsReady, recordDrawerVersions, recordLeft, rotationOwed, startUserDoc, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
-import { custodyProof, withCustodyProof } from "./custody.js";
+import { withCustodyProof } from "./custody.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
 import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, signingKeyId, toHex, zero } from "@petty/crypto";
@@ -226,6 +226,8 @@ function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
   // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
   if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
+  // PETTY-500: rows of a line out of order or repeated are the entries' fault, not the document's: an earlier version does not help
+  if (e instanceof LedgerError && ["bad_seq", "duplicate_seq", "duplicate_entry", "line_mismatch"].includes(e.code)) return "bad_entries";
   if (e instanceof LedgerError) return "bad_document";
   return "decrypt_failed";
 }
@@ -791,7 +793,7 @@ export async function deleteDrawer(id: string): Promise<void> {
   // PETTY-201 (red-team INFO-1): a permanent delete proves key custody, like vault/account changes.
   const a = getAuth();
   if (a.status !== "unlocked") throw new Error("vault locked");
-  await api("DELETE", `/drawers/${id}`, { proof: await custodyProof(a.keys.ecdsaPrivate) });
+  await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("DELETE", `/drawers/${id}`, { proof }));
   const drawers = new Map(state.drawers);
   const v = drawers.get(id);
   if (v?.photo) URL.revokeObjectURL(v.photo);

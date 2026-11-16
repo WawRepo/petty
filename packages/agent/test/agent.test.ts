@@ -566,6 +566,26 @@ describe("headless client (PETTY-165)", () => {
       expect(await lineOf(c, bare)).toMatchObject({ balance: 5100, chain: "broken" });
     });
 
+    it("PETTY-500: an entry written from a view older than the latest count is not reported: the rows before the count are read to check it", async () => {
+      const line = await item("Stale", "10");
+      const w = await client("write");
+      await w.add(drawerId, line, "1");
+      await w.adjust(drawerId, line, "20");
+      const rows = await rowsOf(line);
+      // a member whose screen still showed only the item's first entry writes on top of it, after the count
+      await post(line, { amount: 200, prev_hash: await hashEntry(rows[0]!.entry) }, { is_checkpoint: false });
+      const pages: number[] = [];
+      const c = await served("read", () => undefined, { page: (r) => { if (r.some((x) => x.line_id === line)) pages.push(r.length); } });
+      expect(await lineOf(c, line)).toMatchObject({ balance: 2200, chain: "ok" });
+      expect(about(c, line)).toEqual([]);
+      expect(pages).toEqual([2]); // the two rows before the count, read once
+      // a link to no row at all is still reported once the rows before the count run out
+      await post(line, { amount: 100, prev_hash: "0".repeat(64) }, { is_checkpoint: false });
+      const again = await client("read");
+      expect(await lineOf(again, line)).toMatchObject({ balance: 2300, chain: "broken" });
+      expect(about(again, line).map((x) => x.code)).toEqual(["history_broken"]);
+    });
+
     it("PETTY-448: the same row served twice is refused, not counted twice", async () => {
       const line = await item("Twice");
       const c = await served("read", (boot) => {
