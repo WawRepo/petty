@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Me } from "@petty/protocol";
+import { MAX_ACCESS_TOKENS, type Me } from "@petty/protocol";
+import { ApiError } from "../lib/api.js";
 import { WrongPassphrase } from "@petty/crypto";
 import { createAccessToken, revokeAccessToken, useAccessTokens } from "../lib/accessTokens.js";
 import { appVersion } from "../lib/authConfig.js";
@@ -67,7 +68,7 @@ export function AccessTokens({ me }: { me: Me }) {
       reload();
     } catch (e) {
       if (e instanceof WrongPassphrase) toPassphrase();
-      setError(e instanceof WrongPassphrase ? t("auth.unlock.wrong") : e instanceof PasskeyError ? t(e.code === "cancelled" ? "settings.passkey.cancelled" : "settings.passkey.unsupported") : t("errors.unknown"));
+      setError(e instanceof WrongPassphrase ? t("auth.unlock.wrong") : e instanceof PasskeyError ? t(e.code === "cancelled" ? "settings.passkey.cancelled" : "settings.passkey.unsupported") : e instanceof ApiError && e.code === "TokenLimit" ? t("tokens.limit", { max: MAX_ACCESS_TOKENS }) : t("errors.unknown"));
     } finally {
       setBusy(false);
     }

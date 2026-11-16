@@ -24,6 +24,8 @@ number, also when it adds features, and a new minor or major is started by hand 
   copy from another device now says it was not saved. Before, it gave up without a word.
 - Accept, Decline and "Accept new key" on an invitation, and the offers to pass a drawer on, say so on
   the card when they fail. Confirm on the Members screen says so too.
+- At the most access tokens (50) or passkeys (20), Petty now says so and what to do, instead of
+  "Something went wrong".
 
 ### Security
 - An access token that has expired or was revoked no longer keeps its sealed key bundle and its drawer

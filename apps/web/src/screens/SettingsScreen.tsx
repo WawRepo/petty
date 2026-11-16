@@ -19,7 +19,7 @@ import { SwitchRow } from "../components/SwitchRow.js";
 import { TextField } from "../components/TextField.js";
 import { addPasskey, changePassphrase, makeRecoveryCode, openWithPasskey, openWithPassphrase, removePasskey, setPassphrase, storeRecoveryCode } from "../lib/custody.js";
 import { deviceLabel, PasskeyError, passkeyPrfSupported } from "../lib/passkey.js";
-import type { PasskeyEntry, StorageUsage } from "@petty/protocol";
+import { MAX_PASSKEYS, type PasskeyEntry, type StorageUsage } from "@petty/protocol";
 import { fetchStorage, formatMegabytes } from "../lib/storage.js";
 import { updateMe } from "../lib/session.js";
 import { checkPassphrase } from "../lib/passphrase.js";
@@ -91,6 +91,7 @@ export function SettingsScreen() {
   }
   useEffect(() => { void passkeyPrfSupported().then(setPkAvail); }, []);
   function passkeyMessage(err: unknown): Record<string, string> {
+    if (err instanceof ApiError && err.code === "PasskeyLimit") return { lp: t("settings.passkey.limit", { max: MAX_PASSKEYS }) }; // PETTY-461
     if (err instanceof WrongPassphrase) return { pass: t("auth.unlock.wrong") };
     if (err instanceof ApiError && err.status === 401) return { lp: t("auth.login.failed") };
     if (err instanceof ApiError && err.status === 429) return { lp: t("auth.login.tooMany") }; // PETTY-411
