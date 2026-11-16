@@ -711,15 +711,21 @@ export class AgentClient {
     if (!held) throw new TokenError("OutOfScope", "this token cannot open that drawer");
     for (let attempt = 0; attempt < 4; attempt++) {
       const got = (await this.call("GET", `/drawers/${drawerId}`)) as { drawer: { version: number; key_version: number }; document: { key_version: number; schema_version: number; nonce: string; ciphertext: string; author_id: string } };
+      // PETTY-412 (security review #14): the document is sealed with the key this token holds and labelled
+      // with that key's own version. After a key rotation began, the drawer is at a newer version than the
+      // token's key; sealing with the old key under the new label made a document nobody could open again.
+      if (got.drawer.key_version !== held.keyVersion) {
+        throw new TokenError("Refused", "this drawer has a new key that this token does not hold yet; open Petty on a signed-in device so it can pass the new key on, then start this tool again");
+      }
       const opened = await openDocument(held.key, this.identityFor(drawerId, null, got.document.key_version, got.document.schema_version, "document", drawerId, got.document.author_id), sealed(got.document));
       const read = readDocument(opened, { schema_version: got.document.schema_version, version: got.drawer.version });
       const changed = applyOps(read, ops, { lineHasEntries: () => true });
       const next = read.rev === undefined ? changed : nextRev(changed);
-      const out = await sealDocument(held.key, this.identityFor(drawerId, null, got.drawer.key_version, got.document.schema_version, "document", drawerId), next);
+      const out = await sealDocument(held.key, this.identityFor(drawerId, null, held.keyVersion, got.document.schema_version, "document", drawerId), next);
       try {
         await this.call("PUT", `/drawers/${drawerId}/document`, {
           base_version: got.drawer.version,
-          key_version: got.drawer.key_version,
+          key_version: held.keyVersion, // the server refuses it if the drawer moved on meanwhile (KeyVersionMismatch)
           schema_version: got.document.schema_version,
           nonce: toB64(out.nonce),
           ciphertext: toB64(out.ciphertext),
