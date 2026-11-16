@@ -13,6 +13,7 @@ import { securityHeaders } from "./lib/headers.js";
 import { requestMetrics, securityRefusals } from "./lib/metrics.js";
 import { safeUrl, tracingHooks } from "./lib/tracing.js";
 import { apiRateLimit } from "./lib/rate-limit.js";
+import { warnUntrustedProxy } from "./lib/trust-proxy.js";
 import { LEGAL_DOCS, legalText, loadLegalTexts, serveLegalTexts } from "./lib/legal.js";
 import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
@@ -55,6 +56,7 @@ export function buildApp() {
     trustProxy: config.trustProxy,
   });
 
+  warnUntrustedProxy(app, { trustProxy: config.trustProxy, clientIpHeader: config.clientIpHeader }); // PETTY-419
   app.register(cookie);
   tracingHooks(app);
   app.register(sessionPlugin);

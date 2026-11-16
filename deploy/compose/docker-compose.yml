@@ -80,7 +80,9 @@ services:
       # A mounted folder with your own privacy notice and terms (docs/deploy.md); empty = none.
       LEGAL_DIR: ${LEGAL_DIR:-}
       # The image sets SECURE_COOKIES=true: keep the HTTPS reverse proxy. TRUST_PROXY = the proxies
-      # whose X-Forwarded-For the app believes; the default is those on private networks (docs/deploy.md).
+      # whose X-Forwarded-For the app believes (the image sets none). Here the default is those on private
+      # networks: the port above is open on 127.0.0.1 only, so only this host (through Docker's gateway)
+      # and this stack's own containers can connect (docs/deploy.md).
       TRUST_PROXY: ${TRUST_PROXY:-loopback,linklocal,uniquelocal}
       # A platform proxy's own client-address header (Fly-Client-IP, CF-Connecting-IP); empty = none.
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}

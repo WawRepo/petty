@@ -83,10 +83,12 @@ RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm instal
            /root/.npm /tmp/*
 # PETTY-218: the release version, passed in by release.yml from the git tag; "dev" for local builds.
 ARG PETTY_VERSION=dev
-# TRUST_PROXY: believe X-Forwarded-For only from proxies on private networks (PETTY-290, lib/trust-proxy.ts).
+# No TRUST_PROXY (PETTY-419): the app believes no proxy until the deployment names its own (deploy/compose
+# does; lib/trust-proxy.ts). Before, the image believed every private address, so any machine there could
+# pick its own client address.
 # pnpm_config_verify_deps_before_run=false: pnpm 11.28 otherwise runs "pnpm install" before every script
 # (start, migrate, join-link), which the partial production install always fails as the node user.
-ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist TRUST_PROXY=loopback,linklocal,uniquelocal SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION \
+ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=3000 API_PREFIX=/api WEB_DIST=/app/apps/web/dist SECURE_COOKIES=true TMPDIR=/tmp PETTY_VERSION=$PETTY_VERSION \
     RATE_LIMIT_PER_MINUTE=600 \
     pnpm_config_verify_deps_before_run=false
 WORKDIR /app

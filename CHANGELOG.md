@@ -8,6 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The Docker image no longer sets `TRUST_PROXY`. Before, it believed `X-Forwarded-For` from every
+  private address, so any machine on the app's private network could pick its own client address and
+  get around the per-address limits. The compose file still sets `loopback,linklocal,uniquelocal`, so
+  nothing changes there. **If you run the image another way behind a reverse proxy** (Kubernetes, your
+  own `docker run`), set `TRUST_PROXY` to your proxy's addresses or range before you upgrade. Without
+  it, every visitor counts as the proxy's address, and the per-address limits hit everyone together.
+  The app then logs one warning, `proxy_untrusted` (docs/deploy.md).
+
 ## [1.5.43] — 2026-11-16
 
 ### Added

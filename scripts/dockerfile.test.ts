@@ -44,4 +44,12 @@ describe("Dockerfile", () => {
     assert.match(index, /for \(const signal of \["SIGTERM", "SIGINT"\] as const\)/);
     assert.match(index, /app\.close\(\)[^\n]*process\.exit\(0\)/);
   });
+
+  it("names no proxy to trust: each deployment names its own (PETTY-419)", () => {
+    const env = dockerfile.split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n");
+    assert.doesNotMatch(env, /TRUST_PROXY/);
+    const compose = readFileSync(join(root, "deploy/compose/docker-compose.yml"), "utf8");
+    assert.match(compose, /^ {6}TRUST_PROXY: \$\{TRUST_PROXY:-loopback,linklocal,uniquelocal\}$/m);
+    assert.match(compose, /^ {6}- "127\.0\.0\.1:3000:3000"$/m, "the compose default is safe only while the port is open on loopback alone");
+  });
 });

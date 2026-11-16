@@ -23,7 +23,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `05-storage` | the per-person storage quota fills and refuses; a stored field of the wrong size (a nonce, an entry, a wrapped key) is refused and takes no space |
 | `06-cli` | downloads `petty.mjs` from the image, signs in through device login, reads and writes; its entry links to the one before it, and a history that checks out brings no warning |
 | `07-mail` | a password reset through the image, both emails read from the mail catcher, the contact address in them |
-| `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`); an IPv6 client counts by its /64, IPv4 written as IPv6 as that address |
+| `08-proxy` | per-IP limits count the address the proxy added, not one the client wrote (`TRUST_PROXY`); an IPv6 client counts by its /64, IPv4 written as IPv6 as that address; the image sets no `TRUST_PROXY`, the compose file does, and the app logs no `proxy_untrusted` |
 | `09-upgrade` | after an app restart (and the upgrade), the seeded data still logs in, opens and folds to the same balance; the seeded drawer document, from before the counter, takes its first counter at the next save and cannot go back to the older format |
 | `10-licences` | the served third-party notices and the licence header and notices of the downloadable files |
 | `11-rate-limit` | 429 after 600 API requests a minute from one client address, and only for that address |
