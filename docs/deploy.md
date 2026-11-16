@@ -36,6 +36,11 @@ docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.e
 - The database creates the two runtime roles (`petty_api`, `petty_maint`) on first start,
   with the passwords from the env file. A one-shot `migrate` service runs the migrations as
   the owner before the app starts; the app itself never gets the owner password (PETTY-190).
+- The `app` and `migrate` containers run with a read-only file system (only `/tmp` is writable, in
+  memory), with every Linux capability dropped, with `no-new-privileges` and with at most 256
+  processes (PETTY-420). The app may use 1 GB of memory; set `APP_MEMORY_LIMIT` (for example `2g`)
+  to change it. A service you add on the Petty image (a second app, a script) should get the same
+  settings: add `<<: *petty-hardening` to it, as `app` has.
 - Set `PETTY_IMAGE` to a tag and its digest ("Check the image" below says how to check a release's
   image). The Postgres image is pinned by digest too.
 - The compose file has no backup service. Add one (see "Backups") before you keep real data.
@@ -78,7 +83,7 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `LEGAL_DIR` | a folder with your own privacy notice and terms of service, see below. Empty (the default) = none. |
 | `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (the default: all three); `false` = none. See above. |
 | `RATE_LIMIT_PER_MINUTE` | API requests per client address per minute, for every route; `0` = off. The image's default is `600`. Over it, the API answers 429 with `Retry-After: 60`. The web app's own files and `/api/health*` do not count. Sign-in, sign-up, password reset and device codes keep their own, stricter limits. |
-| `SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT` | drawer invitation and ownership-offer emails per 24 hours that one person may send (default `20`) and receive (default `5`); one email per drawer and recipient a day applies on top. `0` = no limit. Past a limit the invitation or offer is still made and shows in the app; only its email is skipped, and the inviter sees that. So nobody can use invite → revoke loops to fill someone's inbox (PETTY-407). |
+| `SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT` | drawer invitation, ownership-offer and join-link emails per 24 hours that one person may send (default `20`) and one person or address may receive (default `5`); one email per drawer (join link: per sender) and recipient a day applies on top. `0` = no limit. Past a limit the invitation or offer is still made and shows in the app; only its email is skipped, and the inviter sees that. An emailed join link past a limit is refused (429) and no link is made; the inviter can still make a link in Settings and send it themselves. So nobody can use invite → revoke loops or join links to fill someone's inbox (PETTY-407, PETTY-423). |
 | `LOOKUP_LIMIT_PER_HOUR` | Email lookups (the Invite sheet's *Find*) per person per hour; a client address gets three times as many. Default `20`; `0` = off. Over it, the API answers 429 with `Retry-After: 3600`. The lookup must say whether an address has an account, so this limit is what stops someone from checking a list of addresses. |
 | `CLIENT_IP_HEADER` | a platform proxy's own client-address header, for example `Fly-Client-IP` or `CF-Connecting-IP`; it wins over `X-Forwarded-For`. Empty (the default) = none. See above. |
 | `AUTH_PROVIDER` | `local` (default) or `clerk`, see `auth-clerk.md` |

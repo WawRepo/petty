@@ -8,7 +8,23 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Changed
+- For operators: the API no longer prints Fastify's deprecation warning FSTDEP023 when it starts. The
+  request log is unchanged: one "request" line per request, and none for health probes.
+
 ### Security
+- The Docker Compose file now runs the `app` and `migrate` containers with a read-only file system
+  (only `/tmp` is writable, in memory), with no Linux capabilities, with `no-new-privileges`, and with
+  caps on processes and memory. The app may use 1 GB; set `APP_MEMORY_LIMIT` to change it. Postgres
+  gets `no-new-privileges` too. If you added your own service on the Petty image, see docs/deploy.md.
+- The startup log line shows only the scheme, host and port of `OTEL_EXPORTER_OTLP_ENDPOINT`. Before,
+  it showed the whole address, with any user name, token, path or query in it.
+- A join-link email (an invitation to an address that has no account yet) now counts against the same
+  daily limits as drawer invitations (`SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT`): one
+  email per sender and address a day, and the per-sender and per-address totals. Before, one member
+  could send up to 120 a day to any address. Past a limit the app says so and makes no link; you can
+  still create a join link in Settings and send it yourself. `petty_mail_limited_total` has a new
+  `kind="join-link"`.
 - The AI add-on's server (`petty-mcp.mjs`) now stops with a message when `PETTY_API_URL` is not set.
   Before, it used `http://localhost:3000`, so a missing setting sent the token in plain text to whatever
   listened there. Set `PETTY_API_URL` in the server's `env` block (docs/agent.md). The Claude Desktop

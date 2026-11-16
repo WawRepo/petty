@@ -55,7 +55,9 @@ function InviteSheet({ open, onClose, drawerId, members }: { open: boolean; onCl
   }
   async function sendJoinLink() {
     setBusy(true);
-    try { await api("POST", "/join-links", { email }); toast(t("invite.joinLinkSent", { email })); onClose(); } catch { setError(t("errors.unknown")); } finally { setBusy(false); }
+    try { await api("POST", "/join-links", { email }); toast(t("invite.joinLinkSent", { email })); onClose(); }
+    catch (err) { setError(t(err instanceof ApiError && err.status === 429 ? "invite.joinLinkTooMany" : "errors.unknown")); } // PETTY-423
+    finally { setBusy(false); }
   }
   async function invite() {
     if (!found?.keys || !asMember) return;
