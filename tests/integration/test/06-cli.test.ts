@@ -173,6 +173,6 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there
     expect(json.out()).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202e]/);
     expect(json.out()).toContain('"Lid\\u202e"');
-    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }] }]);
+    expect(JSON.parse(json.out())).toMatchObject([{ id: made.id, name: odd.name, lines: [{ id: coins, currency: `E${ESC}UR`, amount: `5.00 E${ESC}UR` }, { id: `old${ESC} id` }, { name: `Lid${RLO}` }] }]);
   });
 });

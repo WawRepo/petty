@@ -47,8 +47,21 @@ export class TokenError extends Error {
  * not stop a model from following what the text says.
  * PETTY-493: so are the characters that show nothing (see `markInvisible`), inside the quotes too.
  */
-export const jsonText = (value: unknown, indent?: number): string =>
-  JSON.stringify(value, null, indent).replace(/"(?:[^"\\]|\\.)*"/g, (literal) => jsonString(JSON.parse(literal) as string));
+export function jsonText(value: unknown, indent?: number): string {
+  // each string literal of JSON.stringify's text is written again by jsonString; the rest stays as it is
+  const json = JSON.stringify(value, null, indent);
+  let out = "";
+  let from = 0;
+  for (let i = 0; i < json.length; i++) {
+    if (json[i] !== '"') continue;
+    let end = i + 1;
+    while (end < json.length && json[end] !== '"') end += json[end] === "\\" ? 2 : 1;
+    out += json.slice(from, i) + jsonString(JSON.parse(json.slice(i, end + 1)) as string);
+    from = end + 1;
+    i = end;
+  }
+  return out + json.slice(from);
+}
 export const quote = (text: string): string => jsonText(text);
 
 /**
