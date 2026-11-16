@@ -8,6 +8,12 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The calls that ask for your login password again (change passphrase, new recovery code, add or
+  remove a passkey, delete the account) now check the proof of your keys first. Someone with a stolen
+  sign-in but without your vault cannot use them to guess your password. Wrong passwords there also
+  count per account, like wrong sign-ins: after 10 in 15 minutes the app asks you to wait.
+
 ## [1.5.42] — 2026-11-16
 
 ### Changed
