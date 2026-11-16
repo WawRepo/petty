@@ -1,6 +1,6 @@
 # Threat model
 
-**Current as of 2026-09-30 (after v1.5.6).** This is the maintained description of what Petty protects,
+**Current as of 2026-11-16 (after v1.5.42).** This is the maintained description of what Petty protects,
 from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
@@ -17,19 +17,31 @@ provider, if you use a hosted one. The same code runs in both cases.
   drawers or lines, re-attribute, or silently drop ledger entries without the client noticing (see
   "Integrity").
 - **A curious or compromised backend.** The API enforces permissions but never holds a key, so it
-  cannot read drawer content.
+  cannot read drawer content, as long as it serves the published web app. In the image, the same
+  process serves that app: a backend that changes it is the *malicious frontend build* below. The
+  image runs as an unprivileged user, without npm, corepack or yarn, and installs Alpine's package
+  fixes when it is built. The Compose file also gives it a read-only file system, no Linux
+  capabilities, `no-new-privileges` and caps on processes and memory (PETTY-420). That leaves a flaw
+  in the API less to work with; it does not stop one.
 - **The operator's staff and admins.** An admin can list, block and unblock accounts, revoke their
-  sessions, restore a replaced vault blob and grant admin — and can read no drawer content.
+  sessions and end their access tokens, restore a replaced vault blob and grant admin — and can read
+  no drawer content.
 - **A lost or stolen device.** Nothing readable is written to disk; the vault locks after 24 hours
   and on "Lock now" or sign-out, in every open tab of that browser. While it is open, the browser
   profile holds the key handles (see "Session lock"): someone who gets the device unlocked, or a
   copy of that profile, inside those 24 hours can use them in that browser.
 - **A stolen mailbox or login password.** They let an attacker sign in, not open the vault. Actions
   that could destroy a user's keys or data also require proof of the vault key (see "Custody proofs").
+  With local sign-in, a password reset ends every session and every access token of the account, and
+  emails the owner.
 - **A removed collaborator, going forward.** After removal the drawer key is replaced; they cannot
   read anything written under the new key. The app of the person who removes a member replaces the
   key at once and does not wait for the server to ask for it. What is written before the new key is
   there is still under the old one; "Key rotation" says when that takes longer.
+- **A former owner's invitations.** Only the owner invites, and the server accepts an invitation only
+  while its inviter still owns the drawer. A change of owner ends every pending invitation, and the
+  new owner decides who joins (PETTY-446). The owner can list and revoke every pending invitation of
+  the drawer (`GET /drawers/:id/invitations`, `DELETE /invitations/:id`).
 - **Another site open in your browser.** A page of another site cannot make your browser change
   anything with your sign-in, also not a page on another host under the same domain as the instance.
   A browser marks where a request comes from (`Sec-Fetch-Site`), and the API takes a request that
@@ -41,6 +53,8 @@ provider, if you use a hosted one. The same code runs in both cases.
   the write role it can also add entries and replace a drawer's sealed document: its name, items,
   tags and places (the drawer's 30-day history can restore them). Nothing else. Its owner sets that
   scope when they make it: the drawers they tick, or all of them if they choose so (see "Access tokens").
+- **Guessing, flooding and mail.** The API limits wrong passwords, requests per client address, email
+  lookups, and the emails one person can make Petty send to another (see "Limits").
 
 ## What Petty does not defend against
 
@@ -51,9 +65,11 @@ Users should be told these plainly.
   **with a hosted instance you trust its operator to serve the published code.** Mitigations are
   partial: a strict Content-Security-Policy with no inline script and no third-party script outside
   Clerk's sign-in pages (Clerk's code is bundled at a pinned version, not fetched at run time; see the
-  bot check below), subresource integrity, no analytics, pinned
-  dependencies, and release images published with build provenance and an SBOM (v1.5.1–v1.5.6 were
-  built by hand while CI could not run; their provenance names no source revision). Each release also
+  bot check below), subresource integrity, no analytics, pinned dependencies (a frozen lockfile; the
+  image build checks the pnpm it installs against a pinned SHA-512), a release workflow that gives no
+  write token to a job that runs dependency code, and release images published with build provenance
+  and an SBOM (v1.5.1–v1.5.8 were built by hand while CI could not run; their provenance names no
+  source revision). Each release also
   signs a build attestation for its image, so an operator can check that the release workflow built
   the digest they run ([deploy.md](deploy.md), "Check the image"). That check is the operator's: a
   person who uses the instance cannot see which image it runs. Self-hosting from a verified image removes
@@ -85,12 +101,17 @@ Users should be told these plainly.
   all such text to the model as quoted values, and the command line shows its control characters as
   `?`. That marks the text as data; it does not stop a model from following it. An assistant that also
   has other tools (the web, mail, a shell) could be talked into sending out what its token can read.
-  See [agent.md](agent.md), *What this does and does not protect*.
+  See [agent.md](agent.md), *What this does and does not protect*. Names also reach a shell through
+  the command line's Tab completion: it offers no name that holds a control character, and PowerShell
+  gets each name as one single-quoted word (PETTY-415). A new item's id must be a UUID, and a currency
+  code loses its control characters when it is saved (PETTY-414).
 - **Script injection (XSS) in the app itself.** Injected code in the page can reach keys held in
   memory. Countered by the strict CSP, Trusted Types in local mode, no raw HTML rendering, and
   non-extractable `CryptoKey`s — reduced, not eliminated.
 - **The identity provider, in Clerk mode.** Clerk can sign a user in, and so could anyone who
   controls the Clerk account. It still cannot open the vault — the vault key is Petty's alone.
+  Drawers are shared by email, so Petty makes an account only for an address that Clerk verified:
+  for any other the vault setup answers 403 `EmailNotVerified` and stores nothing (PETTY-421).
 - **Clerk's bot check, in Clerk mode.** While someone signs up, Clerk loads Cloudflare Turnstile from
   Cloudflare: the one third-party script, with no pinned version and no integrity check. Only the
   sign-in and sign-up pages (`/login`, `/join`) allow it (PETTY-404). The app leaves them with a full
@@ -100,9 +121,11 @@ Users should be told these plainly.
   open a Petty page and read it. Removing it fully means signing in on another origin (Clerk's hosted
   pages) or turning the bot check off. Local mode loads no third-party script.
 - **Metadata.** See below.
-- **Operator retention.** Backups, logs and telemetry are configured by the operator. The app ships
-  no backup job and no retention policy; how long a copy of your email, encrypted vault and
-  ciphertext survives — including after you delete your account — is the operator's choice.
+- **Operator retention.** Backups, logs and telemetry are configured by the operator. The repository
+  has an image for an encrypted dump (`deploy/backup`), but no backup schedule and no retention
+  policy; how long a copy of your email, encrypted vault and ciphertext survives — including after
+  you delete your account — is the operator's choice. What the app deletes by itself is listed under
+  "What the server still learns".
 - **A lost vault on an unshared drawer.** If every door to the vault is lost (passkeys, passphrase
   and recovery code) and nobody else holds that drawer, the content is unrecoverable by design.
 
@@ -117,7 +140,7 @@ Users should be told these plainly.
   authenticated data, so the server cannot swap a published key without the vault failing to open).
   It has several independent doors, each a separately wrapped copy:
   - **Passkeys** — the first door since PETTY-102: a key derived (HKDF) from the WebAuthn PRF output
-    of a passkey; one copy per device. The server never sees the PRF output.
+    of a passkey; one copy per device, at most 20 per account. The server never sees the PRF output.
   - **Vault passphrase** — optional or added later; Argon2id (m = 64 MiB, t = 3, p = 1, per-user
     salt, versioned parameters). It must differ from the login password; the app rejects reuse.
   - **Recovery code** — mandatory, shown once at sign-up, can be regenerated from Settings.
@@ -231,9 +254,10 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   - An earlier version is put back by the owner's app: it opens the kept copy and saves it as a normal
     write with a counter above every one it knows. The server no longer copies an old sealed document
     into place.
-  - A counter is not accepted further ahead of the version number than writes explain (each write
-    raises both by one). So nobody who holds the drawer key, a tool with a leaked token included, can
-    use the counter up, and an earlier version can always be put back.
+  - Each write raises the counter and the version number by one, so a counter is never ahead of the
+    number. The apps refuse, and never remember, a counter more than 64 ahead of it (the room is for a
+    write between two reads). So nobody who holds the drawer key, a tool with a leaked token included,
+    can use the counter up, and an earlier version can always be put back.
   - Tools remember no counters: a tool takes the document the server gives it.
 - **Append-only at the database.** `UPDATE` and `DELETE` on entries are revoked from the request role;
   mistakes are reversed by a new entry.
@@ -311,17 +335,24 @@ with the drawer key, which the removed person still holds. What remains of the w
 A token lets a tool on the owner's machine (for example the Claude Desktop add-on) read, and
 optionally write, the owner's drawers without breaking end-to-end encryption. The token string holds
 a secret that opens a key bundle on the tool's machine; the server stores only the bundle it cannot
-open and a hash of the token id. The bundle also holds the owner's public key, so the tool opens a drawer key
-sent later only if the owner wrapped it. A token has its own signing key, vouched for by the owner's account
-key. With the write role it may add entries and replace a drawer's document; the server cannot see
-what changed inside the sealed document, so such a token can rename, retag, move or drop items, and
-the owner can restore an earlier version from the drawer's 30-day history. The web app reaches that
-history also for a document it cannot show: the drawer is listed as damaged, and its screen offers
-"Earlier versions". It **can never** touch the
-vault, the account, sharing, admin or export, delete a line, rotate a drawer key, or create another
-token — the server refuses every route not on its allow-list. Creating one requires the custody proof.
-An account holds at most 50 live tokens; the sealed bundle and the wrapped drawer keys of a token
-that was revoked or has expired are erased on the server. Details and diagram: [README.md](README.md).
+open and a hash of the token id. The bundle also holds the owner's public key, so the tool opens a
+drawer key sent later only if the owner wrapped it (PETTY-397). A token made before v1.5.27 has no
+such key: it keeps the drawers it was made with and opens no drawer added or re-keyed later, and
+`petty auth status` and the add-on's log say so. A token has its own signing key, vouched for by the
+owner's account key. With the write role it may add entries and replace a drawer's document; the
+server cannot see what changed inside the sealed document, so such a token can rename, retag, move or
+drop items, and the owner can restore an earlier version from the drawer's 30-day history. The web
+app reaches that history also for a document it cannot show: the drawer is listed as damaged, and its
+screen offers "Earlier versions". It **can never** touch the vault, the account, sharing, admin or
+export, delete a line, rotate a drawer key, mark a drawer as checked, or create another token — the
+server refuses every route not on its allow-list (`apps/api/src/lib/tokens.ts`). Creating one
+requires the custody proof. The server takes a wrapped
+drawer key for a token only for a drawer in its scope, at a key version its owner holds. An account
+holds at most 50 live tokens. Revoking a token erases its sealed bundle and its wrapped drawer keys
+on the server at once; an expired token's go when its owner next makes a token. With local sign-in,
+a password reset ends every token; so do an admin's "sign out everywhere" and deleting the account,
+and a blocked account's tokens do not work while it is blocked. Details and diagram:
+[README.md](README.md).
 
 **Making a token (PETTY-452).** The owner says which drawers it may use: only the ones they tick, or
 all drawers, later ones included. Nothing is chosen for them. The server keeps that list and refuses
@@ -336,6 +367,13 @@ app's own rule, not the server's: the server sees a custody proof signed by the 
 tell whether the vault was just opened or the key came from the open session. Code that runs in the
 page (see *Script injection*), or someone who can run their own code in the unlocked browser, is not
 stopped by it.
+
+**On the tool's machine.** A tool sends its token only over HTTPS, or over plain HTTP to the same
+machine (`localhost`). The MCP program (`petty-mcp.mjs`) stops with a message when `PETTY_API_URL` is
+not set (PETTY-416); it used to fall back to `http://localhost:3000` and send the token in plain text
+to whatever listened there. The setup in the app and in [agent.md](agent.md) starts with `petty auth
+login`, so no command with the token in it lands in a shell's history or in the process list. A token
+set up by hand goes in `~/.petty/token`; the MCP program warns when other users can read that file.
 
 ## Device login
 
@@ -369,36 +407,112 @@ relays the sealed blob once and deletes the request; it never sees the token.
 - **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
   token file. What a person types (names, amounts, notes) stays in their shell's history, outside
   Petty's control; [cli.md](cli.md) says how to keep notes out of it.
+- **The page it opens.** The command line builds the address itself, from the Petty it signs in to
+  and its own code. It opens only an `http:` or `https:` address, and no shell reads it: on Windows it
+  goes to `rundll32`, never through `cmd` (PETTY-453).
 
 ## Custody proofs
 
-Calls that could destroy keys or data — replacing the vault, deleting the account, deleting a drawer,
-deleting a line (its entries go with it), publishing a new drawer key and every batch of the
-re-encryption that follows, adding or removing a passkey, creating a token — require a server-issued
-challenge **signed with the account key**, in addition to the session. Replacing the vault, changing
-passkeys and deleting the account also ask for the login password in local mode. There is one
-challenge per person; it is valid five minutes and works once. The login password
-can be reset from an email link; the vault key cannot be reset by anyone. Replaced vault blobs are kept
-30 days (an admin can put one back), and the owner is emailed on a password reset and a vault change.
+Calls that could destroy keys or data — replacing the vault or its recovery-code copy, deleting the
+account, deleting a drawer, deleting a line (its entries go with it), publishing a new drawer key and
+every batch of the re-encryption that follows, adding or removing a passkey, creating a token —
+require a server-issued challenge **signed with the account key**, in addition to the session.
+Replacing the vault or the recovery code, changing passkeys and deleting the account also ask for the
+login password in local mode. There is one challenge per person (`POST /me/custody-challenge`); it is
+valid five minutes and works once. It lives in the database, so it works the same when several
+instances of the API share it. A web app from before PETTY-440 and PETTY-441 sends no proof for a key
+change or a line deletion: the server answers 403 `CustodyProofRequired` and changes nothing. The
+login password can be reset from an email link; the vault key cannot be reset by anyone. Replaced
+vault blobs are kept 30 days (an admin can put one back), and the owner is emailed on a password reset
+and a vault change.
 
 A proof shows that the caller holds the account key, not that what they send is good. A member with
 the write role and an open vault can delete a line, as before, and the server cannot check a
 re-encryption: it is as good as the app that runs it.
 
+## Limits
+
+The server cannot read what it stores, and some of its calls are open to anyone who reaches it. So it
+counts. The counts live in the database, keyed by a hash, so every instance of the API shares them and
+a lockout holds on all of them.
+
+- **Guessing a login password** (local sign-in). One email gets 10 wrong passwords in 15 minutes;
+  after that, sign-in for it is refused until the 15 minutes are over. Right passwords do not count,
+  so nobody is locked out by signing in often. One client address gets 100 tries in 15 minutes. An
+  unknown email, a wrong password and a blocked account cost the same Argon2id check and get the same
+  answer. The lock is per email, so anyone who knows an address can keep its password sign-in
+  refused; sessions that are already open keep working. A reset email goes to one address at most 5
+  times an hour, its link works once for one hour, and the reset form answers the same whether or not
+  the address has an account. With Clerk sign-in, sign-in and reset are Clerk's.
+- **Flooding.** Every API request counts against its client address: `RATE_LIMIT_PER_MINUTE`, 600 a
+  minute in the image (`0` turns it off). The web app's own files and the health probes do not count.
+  Some calls have stricter limits: an open sign-up 10 an hour per address, a device-login code 10 an
+  hour per address and its polls 600 per 15 minutes, a look at a device request 60 per 15 minutes per
+  person, a join link 5 an hour per member.
+- **Which address counts.** An IPv6 client counts by its /64 network, because one home or phone
+  connection holds a whole /64; an IPv4 address written as IPv6 (`::ffff:a.b.c.d`) counts as that IPv4
+  address (PETTY-458). The app takes the address from the header the operator names in
+  `CLIENT_IP_HEADER`, or else from `X-Forwarded-For` as far as `TRUST_PROXY` believes it. With a wrong
+  setting a client can choose its own address and dodge every per-address limit; the per-email lock
+  does not depend on it.
+- **Checking a list of addresses.** To invite someone, the app must learn whether an address has an
+  account, so the email lookup (`POST /users/lookup`) cannot hide it. It is limited instead: 20 an hour
+  per person and 60 per client address (`LOOKUP_LIMIT_PER_HOUR`, PETTY-408). Sign-up also says when an
+  address is taken, so an instance with open sign-up has a second, slower way: 10 an hour per address.
+- **Filling someone's inbox.** An invitation, an ownership offer and a join link send an email with
+  the sender's name in it. Each such email counts against three windows of 24 hours: one per drawer
+  and recipient (a join link: per sender and address), 5 per recipient
+  (`SHARING_MAIL_PER_RECIPIENT`) and 20 per sender (`SHARING_MAIL_PER_SENDER`) (PETTY-407,
+  PETTY-423). Past a limit, an invitation or an offer is still made and shows in the app; only its
+  email is skipped, and the inviter is told. An emailed join link is refused instead (429), because
+  the email is its only way to the other person. A new display name may hold no line break, no
+  invisible or direction-changing character, no link and no email address. Every name is cleaned
+  where it enters an email: one line, or "Someone on Petty" when it still holds a link or an address.
+- **Filling the database.** Every field a request carries has a size, and an entry or a document
+  cannot be smaller than a client writes it, so every row counts against the storage quota
+  (`STORAGE_QUOTA_MB`, off by default) (PETTY-442). A key rotation may not grow a row past its limit,
+  and what it adds counts against the quota. An account holds at most 50 live access tokens and 20
+  passkeys. The sizes are listed in [deploy.md](deploy.md), "Limits". The quota check is soft: writes
+  that race at the limit may pass it by one record.
+
 ## What the server still learns
 
 The operator can see: emails and display names; how many drawers each user has and how many lines each
 holds; the full sharing graph and roles; who wrote each entry, when, on which line, and whether it was a
-count or a reversal; per-line write counts; and exact timestamps — a pattern of when cash moves. Entry
+count or a reversal; per-line write counts; and exact timestamps — a pattern of when cash moves. It also
+sees when each account was last active (written at most once every 5 minutes), which version of the
+operator's terms it accepted and when, the names of its passkeys and access tokens and when each token
+was last used, and the address a device login was asked from, kept until the request is used or
+expires. Entry
 ciphertext is padded to 256-byte buckets so amounts cannot be read from sizes; a long comment grows the
 row in 256-byte steps.
 
-Logs and traces carry route names, statuses, user ids and SQL shapes — never content. Treat them as
-personal data ([monitoring.md](monitoring.md)).
+Logs and traces carry route names, statuses, user ids and SQL shapes — never content. They keep a URL's
+path without its query string, and traces drop the client's address and user agent (PETTY-341,
+PETTY-408). Email addresses and the tokens of join and reset links stay out of URLs, which proxies
+log: the email lookup and the join-link check send theirs in the request body (`POST /users/lookup`,
+`POST /join-links/lookup`), and a join link or a reset link carries its token after `#`, which a
+browser never sends (PETTY-457). The device-login page still has its one-time code in the path
+(`/device/:code`), and the request log keeps that path. Treat logs and traces as personal data
+([monitoring.md](monitoring.md)).
+
+The app deletes some things by itself, hourly while it is in use and daily otherwise: expired
+sessions, device logins nobody finished, custody challenges and limit counts that ran out, a
+password-reset token after its hour, an unused join link when it ends, and vault blobs replaced more
+than 30 days ago. A used join link forgets the address it was for at once. A drawer keeps replaced
+documents for 30 days; each change of its document deletes the older ones, so an old copy stays in
+the database until the drawer's document next changes. Deleting an account erases its email, name,
+vault copies, user document, passkeys, sessions, unused join links and reset tokens, and the keys and
+names of its tokens. Its public keys and its entries in drawers that others keep stay, so those
+entries still verify.
 
 ## Operator responsibilities
 
-Running an instance, hosted or self-hosted, also means: serving the published code unmodified, TLS in
-front of the app, backups that are encrypted and actually restore-tested, a stated retention policy,
-access control on logs and telemetry, and a working security contact. [deploy.md](deploy.md) covers the
-mechanics.
+Running an instance, hosted or self-hosted, also means: serving the published code unmodified (run
+the image by its digest and check its attestation), TLS in front of the app, `TRUST_PROXY` and
+`CLIENT_IP_HEADER` set to match the proxies in front of it so that the per-address limits count real
+clients, the container settings of the Compose file or their equal (a read-only file system, no Linux
+capabilities, `no-new-privileges`), backups that are encrypted and actually restore-tested, a stated
+retention policy, access control on logs and telemetry, an alert on `petty_security_refusals_total`
+(refusals that normal use never causes, such as a forged custody proof), and a working security
+contact. [deploy.md](deploy.md) covers the mechanics; [monitoring.md](monitoring.md) the alerts.
