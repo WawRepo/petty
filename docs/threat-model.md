@@ -497,7 +497,8 @@ count or a reversal; per-line write counts; and exact timestamps — a pattern o
 sees when each account was last active (written at most once every 5 minutes), which version of the
 operator's terms it accepted and when, the names of its passkeys and access tokens and when each token
 was last used, and the address a device login was asked from, kept until the request is used or
-expires. With `EMAIL_KEY` set (PETTY-359), the database holds every email address sealed with that key
+expires. With Clerk sign-in it keeps a hash of each Clerk session id and when a request last carried it,
+with no link to an account, to count sign-ins (PETTY-285). With `EMAIL_KEY` set (PETTY-359), the database holds every email address sealed with that key
 and a keyed hash of it for lookups: a copy of the database alone (a backup, a disk, an SQL injection
 that reads tables) shows no address. The keyed hash is the same for the same address, so two copies
 still show which accounts kept theirs. The running app still reads every address with the key, to sign
@@ -516,7 +517,8 @@ browser never sends (PETTY-457). The device-login page still has its one-time co
 ([monitoring.md](monitoring.md)).
 
 The app deletes some things by itself, hourly while it is in use and daily otherwise: expired
-sessions, device logins nobody finished, custody challenges and limit counts that ran out, a
+sessions, device logins nobody finished, custody challenges and limit counts that ran out, Clerk
+sessions not used for 30 days, a
 password-reset token after its hour, an unused join link when it ends, and vault blobs replaced more
 than 30 days ago. A used join link forgets the address it was for at once. A drawer keeps replaced
 documents for 30 days, then housekeeping deletes them. Deleting an account erases its email, name,
