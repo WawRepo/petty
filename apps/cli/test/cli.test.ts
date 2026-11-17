@@ -186,15 +186,19 @@ describe("petty auth login through the page (PETTY-274)", () => {
     // what a Petty from before PETTY-451 does: it ignores the tool's code and answers with its own, shorter one
     expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: answering(201, started("BCDF-GHJK-LMNP")) })).toBe(1);
     expect(t.err).toContain("https://petty.test runs an older Petty than this command line");
-    expect(t.err).toContain("the commands are at https://petty.test/ai");
+    // PETTY-515: a Petty that says no release version (this one is "dev") gets its page with the commands
+    expect(t.err).toContain("the page https://petty.test/ai shows how to install it");
     expect(t.err).not.toContain("Your one-time code");
     expect(t.pages).toEqual([]);
   });
 
-  it("says so when the Petty finds this command line too old", async () => {
+  it("says so when the Petty finds this command line too old, and names the file of that Petty's release (PETTY-515)", async () => {
     const { t, io } = terminal();
-    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: answering(400, { code: "CommandLineTooOld", message: "this command line is older than this Petty" }) })).toBe(1);
-    expect(t.err).toContain("this petty is older than the Petty at https://petty.test");
+    const newer: typeof fetch = async (input, init) =>
+      String(input).endsWith("/api/config") ? new Response(JSON.stringify({ auth: "local", version: "v9.8.7" }), { status: 200 }) : answering(400, { code: "CommandLineTooOld", message: "this command line is older than this Petty" })(input, init);
+    expect(await run(["auth", "login", "--host", ORIGIN], { ...io, fetch: newer })).toBe(1);
+    expect(t.err).toMatch(/this petty \(v\d+\.\d+\.\d+\) is older than the Petty at https:\/\/petty\.test/);
+    expect(t.err).toContain("download the petty of v9.8.7: https://github.com/WawRepo/petty/releases/download/v9.8.7/petty.mjs (the page https://petty.test/ai shows how to install it)");
     expect(t.pages).toEqual([]);
   });
 
@@ -248,10 +252,15 @@ describe("petty auth login through the page (PETTY-274)", () => {
       expect(t.err, argv.join(" ")).toContain("NotFound");
       expect(t.err, argv.join(" ")).toContain(why);
     }
-    // what it does open still works
+    // what it does open still works, also named by its page in the app (PETTY-515)
     t.out = "";
     expect(await petty("find", "kitchen", "cash")).toBe(0);
     expect(t.out).toContain("Kitchen › Cash");
+    t.out = "";
+    expect(await petty("history", `${ORIGIN}/drawers/${drawerId}/lines/${lineId}`, "--json")).toBe(0);
+    expect(JSON.parse(t.out).length).toBeGreaterThan(0);
+    expect(await petty("history", `${ORIGIN}/drawers/${drawerId}`)).toBe(2);
+    expect(t.err).toContain("is a drawer's page");
   });
 });
 

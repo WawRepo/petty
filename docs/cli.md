@@ -121,8 +121,8 @@ says `Signed in`.
 - **`petty` and your Petty must match.** The sign-in code once had 12 letters and has 20 now. An older
   `petty` at a newer Petty stops with `did not start a sign-in (CommandLineTooOld)`; a newer `petty`
   at an older Petty stops with `runs an older Petty than this command line`. Install the `petty` that
-  goes with your Petty (the page *Use Petty with AI* has the commands). A login you already have
-  keeps working.
+  goes with your Petty: when your Petty says its version, the message names that release's `petty.mjs`
+  to download, and the page *Use Petty with AI* has the commands. A login you already have keeps working.
 - `petty auth status` checks the token still works, names the drawers it opens (every drawer, also
   ones made later, or only the chosen ones) and says where the token is kept. `petty auth logout` ends
   it on the server and forgets it here, in the keychain too.
@@ -147,9 +147,12 @@ says `Signed in`.
 | `petty completion -s <shell>` | the Tab completion script |
 | `petty auth login` · `status` · `logout` · `token` | see *Sign in* |
 
-Name an item as `"Drawer › Item"` (Tab completes it), by words (`kitchen cash`), or by the
-`drawerId/itemId` that `--json` prints. Amounts are in the item's own units:
-`petty add "Kitchen tin › Cash" 10.50`. `petty help <command>` tells more.
+Name an item as `"Drawer › Item"` (Tab completes it), by words (`kitchen cash`), by the
+`drawerId/itemId` that `--json` prints, or by its page in Petty, copied from the browser's address bar
+(`https://<your petty>/drawers/…/lines/…`). An item made before item ids had to be UUIDs may have another
+id: it works the same, as `--json` prints it or quoted as the AI add-on shows it. `petty move` takes a drawer's name,
+its id or its page. Amounts are in the item's own units: `petty add "Kitchen tin › Cash" 10.50`.
+`petty help <command>` tells more.
 
 For scripts and agents, `--json` prints JSON. Exit codes: **0** done, **1** error, **2** usage,
 **3** not signed in, the token ended, or it may only read, **4** nothing or more than one thing matches.
