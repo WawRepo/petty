@@ -46,6 +46,13 @@ afterAll(async () => {
 describe("the sealing (PETTY-359)", () => {
   const id = crypto.randomUUID();
 
+  it("with no key, a plain row is not counted as sealed with an unknown key", async () => {
+    // v1.5.49 counted every plain row as `unknown` here (null <> all('{}') is true) and warned each run
+    useKeys("");
+    const c = await person("plain");
+    expect(await rewriteEmails(apiPool, { only: [c.id] })).toEqual({ users: 0, join_links: 0, unknown: 0, unreadable: 0, conflicts: 0 });
+  });
+
   it("seals an address to its row: it opens there, and nowhere else", async () => {
     useKeys(K1);
     const c = await userEmailColumns(id, "Ann@Example.test");
