@@ -45,9 +45,11 @@ const TIMEOUT_MS = 15_000;
 /**
  * Printable ASCII without space, quotes or backslash. A token (`petty_pat_<id>.<base64>`) and an address
  * (URL.origin, with the host in punycode) are always in it; anything else is refused, so no quoting
- * rule of `security -i` or a line break on stdin can change what the tool is asked to do.
+ * rule of `security -i` or a line break on stdin can change what the tool is asked to do. The characters
+ * are listed one by one, not as wide ranges across letters and signs, so a reader (and CodeQL, alert #98)
+ * sees each one.
  */
-const PLAIN = /^[!#-&(-[\]-~]+$/;
+export const PLAIN = /^[A-Za-z0-9!#$%&()*+,\-./:;<=>?@[\]^_`{|}~]+$/;
 
 function plain(what: string, value: string): string {
   if (!PLAIN.test(value)) throw new KeychainError(false, `the ${what} has characters the keychain is not given`);
