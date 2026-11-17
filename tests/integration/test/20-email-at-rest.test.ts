@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Client, userMaterial } from "../../../apps/api/src/devtools/fixtures.js";
-import { API, compose, http, newUser, testEnv } from "../lib.js";
+import { API, ORIGIN, compose, http, newUser, testEnv } from "../lib.js";
 
 /**
  * PETTY-359: the image with EMAIL_KEY seals every stored email address, the ones written before the key
@@ -22,10 +22,25 @@ async function until(what: string, ok: () => boolean | Promise<boolean>, ms = 60
     await new Promise((r) => setTimeout(r, 500));
   }
 }
+const SECOND = "http://127.0.0.1:3402";
+/**
+ * Starts both app instances again with these keys. Node's fetch keeps connections open, and one to the
+ * container that was replaced fails the next request ("other side closed"): health checks use those up
+ * first, until each instance answers three times in a row.
+ */
+async function restart(keys: Partial<typeof NONE>) {
+  compose("up -d --wait --no-deps app app2", { ...NONE, ...keys });
+  for (const origin of [ORIGIN, SECOND]) {
+    for (let ok = 0, tries = 0; ok < 3; tries++) {
+      if (tries > 30) throw new Error(`${origin} does not answer after the restart`);
+      ok = await fetch(`${origin}/api/health/live`).then((r) => (r.ok ? ok + 1 : 0), () => 0);
+    }
+  }
+}
 const sealed = () => sql("select (select count(*) from users where email_sealed is not null) + (select count(*) from join_links where email_sealed is not null)");
 /** The way back: only the old key, and the housekeeping run at start writes every address in plain again. */
 async function plainAgain() {
-  compose("up -d --wait --no-deps app app2", { EMAIL_KEY: "", EMAIL_KEY_OLD: KEY });
+  await restart({ EMAIL_KEY_OLD: KEY });
   await until("every address plain", () => sealed() === "0");
 }
 async function mailTo(email: string, subject: RegExp): Promise<string> {
@@ -51,7 +66,7 @@ describe("email addresses sealed at rest (PETTY-359)", () => {
     expect(inDump()).toBeGreaterThan(0);
 
     try {
-      compose("up -d --wait --no-deps app app2", { EMAIL_KEY: KEY, EMAIL_KEY_OLD: "" });
+      await restart({ EMAIL_KEY: KEY });
       // the housekeeping run at start seals what was there
       await until("every address sealed", () => sql("select (select count(*) from users where email is not null) + (select count(*) from join_links where email is not null)") === "0");
       expect(inDump(), "an address in the database").toBe(0);
@@ -93,16 +108,16 @@ describe("email addresses sealed at rest (PETTY-359)", () => {
       expect(log).toContain("Set EMAIL_KEY, or EMAIL_KEY_OLD");
       expect(log).not.toContain("@petty.test");
       expect(log).not.toContain(KEY);
-      expect(await fetch("http://127.0.0.1:3402/api/health/live").then((r) => r.status, () => 0)).not.toBe(200);
+      expect(await fetch(`${SECOND}/api/health/live`).then((r) => r.status, () => 0)).not.toBe(200);
 
       await plainAgain();
       expect(sql(`select email from users where id = '${ann.id}'`)).toBe(ann.user.email);
       expect(inDump()).toBeGreaterThan(0);
     } finally {
       if (sealed() !== "0") await plainAgain(); // a failed step must not leave the next file a stack that cannot start
-      compose("up -d --wait --no-deps app app2", NONE); // as the other files found them
+      await restart(NONE); // as the other files found them
     }
     expect((await login(ann)).statusCode).toBe(200);
-    expect((await fetch("http://127.0.0.1:3402/api/health/live")).status).toBe(200);
+    expect((await fetch(`${SECOND}/api/health/live`)).status).toBe(200);
   }, 300_000);
 });
