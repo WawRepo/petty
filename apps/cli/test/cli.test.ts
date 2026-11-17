@@ -1,4 +1,4 @@
-import { closeSync, fstatSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } from "node:fs";
+import { closeSync, fstatSync, mkdtempSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -10,6 +10,7 @@ import { Client, makeJoinLink, userMaterial } from "../../api/src/devtools/fixtu
 import { run } from "../src/cli.js";
 import { unquotePowerShell } from "../src/complete.js";
 import type { Io } from "../src/io.js";
+import { fakeKeychain } from "./fake-keychain.js";
 
 /**
  * `petty`, driven the way a person drives it (PETTY-274): the real API runs in memory, `petty auth login`
@@ -39,11 +40,15 @@ const inject: typeof fetch = async (input, init) => {
   return new Response(res.statusCode === 204 ? null : res.body, { status: res.statusCode, headers: { "content-type": "application/json" } });
 };
 
-/** A made-up terminal: what the program printed, and a person who acts on the page it opened. */
-function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void>; env?: Record<string, string>; realTime?: boolean } = {}) {
+/**
+ * A made-up terminal: what the program printed, and a person who acts on the page it opened. The token
+ * stays in the file (PETTY_TOKEN_STORE=file) unless a test says otherwise: a test never reaches the
+ * keychain of the computer it runs on.
+ */
+function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void>; env?: Record<string, string>; realTime?: boolean; platform?: NodeJS.Platform } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "petty-cli-"));
   dirs.push(dir);
-  const t = { out: "", err: "", pages: [] as string[], env: { PETTY_CONFIG_DIR: dir, ...opts.env } as Record<string, string | undefined>, dir };
+  const t = { out: "", err: "", pages: [] as string[], env: { PETTY_CONFIG_DIR: dir, PETTY_TOKEN_STORE: "file", ...opts.env } as Record<string, string | undefined>, dir };
   const io: Io = {
     out: (s) => { t.out += s; },
     err: (s) => { t.err += s; },
@@ -58,6 +63,7 @@ function terminal(opts: { stdin?: string; onPage?: (url: string) => Promise<void
     sleep: (ms) => new Promise((r) => setTimeout(r, opts.realTime ? ms : Math.min(ms, 30))),
     now: () => Date.now(),
     hostname: "laptop",
+    platform: opts.platform ?? process.platform,
   };
   return { t, io, petty: (...argv: string[]) => run(argv, io) };
 }
@@ -246,6 +252,172 @@ describe("petty auth login through the page (PETTY-274)", () => {
     t.out = "";
     expect(await petty("find", "kitchen", "cash")).toBe(0);
     expect(t.out).toContain("Kitchen › Cash");
+  });
+});
+
+describe("the token in the system's keychain (PETTY-276)", () => {
+  const fake = fakeKeychain();
+  const empty = mkdtempSync(join(tmpdir(), "petty-nopath-"));
+  afterAll(() => { fake.remove(); rmSync(empty, { recursive: true, force: true }); });
+  const KEY = `petty ${ORIGIN}`;
+  const NAME = { darwin: "the macOS keychain", linux: "the keyring (Secret Service)" } as const;
+  /** A terminal on that system, with the stand-in keychain tools first on the PATH. */
+  const at = (platform: "darwin" | "linux", stdin?: string, env: Record<string, string> = {}) => terminal({ platform, ...(stdin ? { stdin } : {}), env: { PETTY_TOKEN_STORE: "", PATH: fake.path, ...env } });
+  const hosts = (dir: string) => JSON.parse(readFileSync(join(dir, "hosts.json"), "utf8")) as { default: string; hosts: Record<string, { token?: string; token_in?: string; name: string }> };
+  const notes = (err: string) => err.match(/petty: note: /g)?.length ?? 0;
+  const noTokenOnACommandLine = () => { for (const argv of fake.argv()) expect(argv.join(" ")).not.toContain("petty_pat_"); };
+
+  it.each(["darwin", "linux"] as const)("on %s: sign-in keeps the token there, the file only says so; status, commands and logout use it", async (platform) => {
+    fake.clear();
+    const token = await webToken("write");
+    const { t, petty } = at(platform, `${token}\n`);
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(t.err).toContain(`(may add entries). Kept in ${NAME[platform]}.\n`);
+    expect(notes(t.err)).toBe(0);
+    expect(fake.store()).toEqual({ [KEY]: token });
+    expect(readFileSync(join(t.dir, "hosts.json"), "utf8")).not.toContain("petty_pat_");
+    expect(hosts(t.dir).hosts[ORIGIN]).toEqual({ token_in: "keychain", name: "petty on laptop", role: "write", user_id: owner.id, added_at: expect.any(String) });
+
+    t.out = "";
+    expect(await petty("drawers", "--json")).toBe(0);
+    expect(JSON.parse(t.out)[0]).toMatchObject({ id: drawerId, name: "Kitchen" });
+    t.out = "";
+    expect(await petty("auth", "status")).toBe(0);
+    expect(t.out).toContain(`  token kept in ${NAME[platform]}\n`);
+    t.out = "";
+    expect(await petty("auth", "status", "--json")).toBe(0);
+    expect(JSON.parse(t.out)).toMatchObject([{ host: ORIGIN, works: true, from: "keychain" }]);
+    t.out = "";
+    expect(await petty("auth", "token")).toBe(0);
+    expect(t.out).toBe(`${token}\n`);
+    noTokenOnACommandLine();
+
+    expect(await petty("auth", "logout")).toBe(0);
+    expect(t.err).toContain("is ended there and forgotten here");
+    expect(fake.store()).toEqual({});
+    expect(hosts(t.dir).hosts).toEqual({});
+    expect((await app.inject({ method: "GET", url: "/me/token", headers: { authorization: `Bearer ${token.split(".")[0]}` } })).statusCode).toBe(401);
+  });
+
+  it("moves a token an older petty left in the file on its first read, not on a Tab press", async () => {
+    fake.clear();
+    const token = await webToken("read");
+    const { t, petty } = at("linux", undefined, { PETTY_COMPLETE_SHELL: "bash" });
+    writeFileSync(join(t.dir, "hosts.json"), JSON.stringify({ default: ORIGIN, hosts: { [ORIGIN]: { token, name: "petty on laptop", role: "read", user_id: owner.id, added_at: "2026-11-01T00:00:00.000Z" } } }), { mode: 0o600 });
+    // Tab completion reads the token from the file and leaves it there
+    expect(await petty("__complete", "add", "Ki")).toBe(0);
+    expect(fake.argv()).toEqual([]);
+    expect(hosts(t.dir).hosts[ORIGIN]!.token).toBe(token);
+
+    t.out = "";
+    expect(await petty("find", "kitchen", "cash")).toBe(0);
+    expect(t.out).toContain("Kitchen › Cash");
+    expect(t.err).toBe(`petty: the token for ${ORIGIN} moved from ${join(t.dir, "hosts.json")} to the keyring (Secret Service).\n`);
+    expect(fake.store()).toEqual({ [KEY]: token });
+    expect(hosts(t.dir).hosts[ORIGIN]).toEqual({ token_in: "keychain", name: "petty on laptop", role: "read", user_id: owner.id, added_at: "2026-11-01T00:00:00.000Z" });
+    t.err = "";
+    expect(await petty("find", "kitchen", "cash")).toBe(0);
+    expect(t.err).toBe("");
+    noTokenOnACommandLine();
+  });
+
+  it("a keychain that fails: the token stays in the file with one note; PETTY_TOKEN_STORE=file keeps it there quietly", async () => {
+    fake.clear();
+    fake.mode("broken");
+    const token = await webToken("read");
+    const { t, petty } = at("darwin", `${token}\n`);
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    const file = join(t.dir, "hosts.json");
+    expect(t.err).toContain(`petty: note: the macOS keychain did not take the token (SecKeychainSearchCopyNext: User interaction is not allowed.); it is kept in ${file} instead. PETTY_TOKEN_STORE=file keeps it there without this note.\n`);
+    expect(notes(t.err)).toBe(1);
+    expect(t.err).toContain(`Kept in ${file}.\n`);
+    expect(hosts(t.dir).hosts[ORIGIN]!.token).toBe(token);
+
+    // each read tries the move again, says so once, and works from the file
+    t.err = "";
+    expect(await petty("find", "kitchen", "cash")).toBe(0);
+    expect(notes(t.err)).toBe(1);
+    expect(t.err).toContain(`could not move to the macOS keychain`);
+    expect(hosts(t.dir).hosts[ORIGIN]!.token).toBe(token);
+
+    t.err = "";
+    t.env["PETTY_TOKEN_STORE"] = "file";
+    const calls = fake.argv().length;
+    expect(await petty("find", "kitchen", "cash")).toBe(0);
+    expect(t.err).toBe("");
+    expect(fake.argv()).toHaveLength(calls);
+  });
+
+  it("a keychain that takes the token but does not give it back: the file keeps it", async () => {
+    fake.clear();
+    fake.mode("lossy");
+    const token = await webToken("read");
+    const { t, petty } = at("linux", `${token}\n`);
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(t.err).toContain("did not take the token (it gave back another token)");
+    expect(hosts(t.dir).hosts[ORIGIN]!.token).toBe(token);
+  });
+
+  it("a token in a keychain that is locked, or lost its entry: exit 3 and what to do; the login stays for later", async () => {
+    fake.clear();
+    const token = await webToken("read");
+    const { t, petty } = at("linux", `${token}\n`);
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    fake.mode("broken");
+    t.err = "";
+    expect(await petty("drawers")).toBe(3);
+    expect(t.err).toBe(`petty: the keyring (Secret Service) did not give the token for ${ORIGIN} (Cannot autolaunch D-Bus without X11 $DISPLAY). Unlock it and try again, or run petty auth login --host ${ORIGIN}\n`);
+    t.out = "";
+    expect(await petty("auth", "status", "--json")).toBe(3);
+    expect(JSON.parse(t.out)).toMatchObject([{ host: ORIGIN, works: false, from: "keychain" }]);
+    expect(hosts(t.dir).hosts[ORIGIN]!.token_in).toBe("keychain");
+
+    fake.mode("ok"); // unlocked
+    expect(await petty("drawers")).toBe(0);
+
+    rmSync(join(fake.dir, "store.json")); // the entry deleted in the keyring's own app
+    t.err = "";
+    expect(await petty("drawers")).toBe(3);
+    expect(t.err).toContain(`the keyring (Secret Service) has no token for ${ORIGIN} any more: run petty auth login --host ${ORIGIN}`);
+  });
+
+  it("logout with a locked keychain forgets the login here and says what is left to do", async () => {
+    fake.clear();
+    const token = await webToken("read");
+    const { t, petty } = at("darwin", `${token}\n`);
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    fake.mode("broken");
+    t.err = "";
+    expect(await petty("auth", "logout")).toBe(0);
+    expect(t.err).toContain("Forgotten here, but the keychain did not give the token to end it at https://petty.test: revoke “petty on laptop” in Settings → Access tokens.");
+    expect(t.err).toContain(`petty: note: the macOS keychain did not remove the token (SecKeychainSearchCopyNext: User interaction is not allowed.): delete its entry for ${ORIGIN} there by hand`);
+    expect(hosts(t.dir).hosts).toEqual({});
+  });
+
+  it("PETTY_TOKEN_STORE=file: a new sign-in goes to the file and the keychain's earlier entry is removed; a wrong value stops before a sign-in", async () => {
+    fake.clear();
+    const first = at("linux", `${await webToken("read")}\n`);
+    expect(await first.petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(Object.keys(fake.store())).toEqual([KEY]);
+    const second = await webToken("read");
+    const { t, petty } = at("linux", `${second}\n`, { PETTY_CONFIG_DIR: first.t.dir, PETTY_TOKEN_STORE: "file" });
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(t.err).toContain(`Kept in ${join(first.t.dir, "hosts.json")}.`);
+    expect(hosts(first.t.dir).hosts[ORIGIN]!.token).toBe(second);
+    expect(fake.store()).toEqual({});
+
+    const typo = at("linux", undefined, { PETTY_TOKEN_STORE: "keyring" });
+    expect(await typo.petty("auth", "login", "--host", ORIGIN)).toBe(2);
+    expect(typo.t.err).toBe('petty: PETTY_TOKEN_STORE takes "file" or "auto", not "keyring"\n');
+    expect(typo.t.pages).toEqual([]);
+  });
+
+  it("no keychain tool on this computer: the file, without a note", async () => {
+    const { t, petty } = at("linux", `${await webToken("read")}\n`, { PATH: empty });
+    expect(await petty("auth", "login", "--host", ORIGIN, "--with-token")).toBe(0);
+    expect(notes(t.err)).toBe(0);
+    expect(t.err).toContain(`Kept in ${join(t.dir, "hosts.json")}.`);
+    expect(hosts(t.dir).hosts[ORIGIN]!.token).toMatch(/^petty_pat_/);
   });
 });
 

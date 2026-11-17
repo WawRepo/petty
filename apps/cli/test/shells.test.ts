@@ -15,7 +15,7 @@ const root = resolve(import.meta.dirname, "..");
 // `petty` on PATH: this checkout's CLI, run from source
 writeFileSync(join(dir, "petty"), `#!/bin/sh\nexec "${join(root, "node_modules/.bin/tsx")}" "${join(root, "src/bin.ts")}" "$@"\n`);
 chmodSync(join(dir, "petty"), 0o755);
-const env = { ...process.env, PATH: `${dir}:${process.env["PATH"]}`, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "" };
+const env = { ...process.env, PATH: `${dir}:${process.env["PATH"]}`, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "", PETTY_TOKEN_STORE: "file" };
 const has = (cmd: string) => spawnSync("sh", ["-c", `command -v ${cmd}`]).status === 0;
 const sh = (cmd: string, args: string[]) => spawnSync(cmd, args, { env, encoding: "utf8", timeout: 60_000 });
 

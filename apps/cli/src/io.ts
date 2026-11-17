@@ -22,6 +22,8 @@ export interface Io {
   readonly sleep: (ms: number) => Promise<void>;
   readonly now: () => number;
   readonly hostname: string;
+  /** Which keychain holds the token (PETTY-276): `security`, `secret-tool` or Credential Manager. */
+  readonly platform: NodeJS.Platform;
 }
 
 /** A failure with the exit code it ends the program with: 1 error, 2 usage, 3 login, 4 not found. */
@@ -87,5 +89,6 @@ export function realIo(): Io {
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     now: () => Date.now(),
     hostname: hostname(),
+    platform: process.platform,
   };
 }

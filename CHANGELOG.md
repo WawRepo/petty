@@ -8,6 +8,16 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The `petty` command line keeps its token in your system's keychain (PETTY-276): the macOS keychain,
+  the Secret Service on Linux (`secret-tool`), or Windows Credential Manager. `~/.petty/hosts.json`
+  then keeps only the token's name and `"token_in": "keychain"`. The token never goes on a command
+  line. A token an older `petty` left in the file moves to the keychain the first time a command uses
+  it. Without a keychain, or when it fails, the token stays in the file, with one note on stderr.
+  `PETTY_TOKEN_STORE=file` keeps it in the file always. `petty auth status` says where the token is,
+  and `petty auth logout` removes it from the keychain too. An older `petty` does not see a token in
+  the keychain: sign in again with it.
+
 ## [1.5.51] — 2026-11-17
 
 ### Changed
