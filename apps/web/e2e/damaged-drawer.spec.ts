@@ -36,7 +36,7 @@ async function member(bob: TestUserWithKeys, owner: TestUserWithKeys, drawerId: 
     const format = boot.documents[drawerId]!.schema_version;
     const next = format >= 2 ? { ...doc, rev: ((doc["rev"] as number | undefined) ?? 0) + 1 } : doc;
     const sealed = await sealDocument(key, docId(api.id, format), next);
-    const r = await api.call("PUT", `/drawers/${drawerId}/document`, { base_version: base, key_version: wrap.key_version, schema_version: format, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false });
+    const r = await api.call("PUT", `/drawers/${drawerId}/document`, { base_version: base, key_version: wrap.key_version, schema_version: format, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false, proof: await api.proof(bob.keys) });
     if (r.status !== 200) throw new Error(`document refused: ${r.status} ${JSON.stringify(r.json)}`);
   };
   /** Appends one signed entry to a line, linked to the line's newest entry. */

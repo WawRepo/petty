@@ -2,15 +2,16 @@ import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createDrawerKey, createPasskeyVault, createVault, fromB64, generateUserKeys, openDocument, patSecret, reseal, sealPatBundle, toB64, unwrapDrawerKey } from "@petty/crypto";
 import { applyOp, newDocument, type DrawerDocument } from "@petty/ledger";
-import { DOCUMENT_MIN_CIPHERTEXT, ENTRY_MAX_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, MAX_ACCESS_TOKENS, MAX_PASSKEYS, TOKEN_BUNDLE_MAX_CIPHERTEXT, USER_DOC_MAX_CIPHERTEXT } from "@petty/protocol";
+import { DOCUMENT_MIN_CIPHERTEXT, ENTRY_MAX_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, MAX_ACCESS_TOKENS, MAX_PASSKEYS, PHOTO_MAX_CIPHERTEXT, TOKEN_BUNDLE_MAX_CIPHERTEXT, USER_DOC_MAX_CIPHERTEXT } from "@petty/protocol";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
 import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, sealedBody, userMaterial } from "../src/devtools/fixtures.js";
 
 /**
- * PETTY-440, PETTY-441, PETTY-442: key rotation and deleting a line need a custody proof, and every
- * field a request stores has a size. Permission tests call the API directly.
+ * PETTY-440, PETTY-441, PETTY-442, PETTY-513: key rotation, deleting a line and writing a document, a photo
+ * or the user document need a custody proof, and every field a request stores has a size. Permission tests
+ * call the API directly.
  */
 const app = buildApp();
 const run = crypto.randomUUID().slice(0, 8);
@@ -216,6 +217,81 @@ describe("deleting a line needs a custody proof (PETTY-441)", () => {
   }, 60_000);
 });
 
+describe("writing a document, a photo or the user document needs a custody proof (PETTY-513)", () => {
+  const photoCount = async (id: string) => (await owner.query<{ n: number }>("select count(*)::int as n from drawer_photos where drawer_id = $1", [id])).rows[0]!.n;
+
+  it("a session without the vault key cannot replace a drawer's document; a member with the key can, and an access token needs no proof", async () => {
+    const { id, doc, key } = await drawer(A, [[B, "write"]]);
+    const before = await stored(id);
+    const S = await sessionOnly(B);
+    const junk = { key_version: 1, schema_version: 1, nonce: random(12), ciphertext: random(DOCUMENT_MIN_CIPHERTEXT), base_version: 1, verification: false };
+    const other = await generateUserKeys();
+    // as a web app from before sends it (no proof), with a made-up proof, and with one signed by another key
+    const old = await S.call("PUT", `/drawers/${id}/document`, junk);
+    expect(old.statusCode).toBe(403);
+    expect(old.json().code).toBe("CustodyProofRequired");
+    expect((await S.call("PUT", `/drawers/${id}/document`, { ...junk, proof: { challenge: random(32), signature: random(64) } })).json().code).toBe("CustodyProofRequired");
+    expect((await S.call("PUT", `/drawers/${id}/document`, { ...junk, proof: await S.proof(other.ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid");
+    expect(await stored(id)).toEqual(before);
+
+    const put = await B.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await B.sealDoc(id, key, { ...doc, name: "By Bob" }), 1), base_version: 1, proof: await B.proof() });
+    expect(put.statusCode).toBe(200);
+    expect(put.json().version).toBe(2);
+
+    // a writing token sends no proof: a custody proof made the token, and its writes are signed with its own key
+    const token = await A.makeAccessToken("write");
+    expect(token.res.statusCode).toBe(201);
+    const tool = await app.inject({ method: "PUT", url: `/drawers/${id}/document`, headers: { authorization: `Bearer ${token.bearer}`, "content-type": "application/json" }, payload: JSON.stringify({ ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "By a tool" }), 1), base_version: 2, verification: false }) });
+    expect(tool.statusCode).toBe(200);
+    expect(tool.json().version).toBe(3);
+  }, 60_000);
+
+  it("a session without the vault key can neither replace nor remove a drawer's photo; the proof comes before the size and the quota", async () => {
+    const { id } = await drawer(A, [[B, "write"]]);
+    const S = await sessionOnly(B);
+    const photo = (n: number) => ({ key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(n) });
+    const other = await generateUserKeys();
+    const old = await S.call("PUT", `/drawers/${id}/photo`, photo(40_000));
+    expect(old.statusCode).toBe(403);
+    expect(old.json().code).toBe("CustodyProofRequired");
+    expect((await S.call("PUT", `/drawers/${id}/photo`, photo(PHOTO_MAX_CIPHERTEXT + 1))).json().code).toBe("CustodyProofRequired"); // not PhotoTooLarge
+    expect((await S.call("PUT", `/drawers/${id}/photo`, { ...photo(40_000), proof: await S.proof(other.ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid");
+    expect(await photoCount(id)).toBe(0);
+
+    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(40_000), proof: await B.proof() })).statusCode).toBe(204);
+    expect(await photoCount(id)).toBe(1);
+
+    const remove = await S.call("DELETE", `/drawers/${id}/photo`);
+    expect(remove.statusCode).toBe(403);
+    expect(remove.json().code).toBe("CustodyProofRequired");
+    expect((await S.call("DELETE", `/drawers/${id}/photo`, { proof: await S.proof(other.ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid");
+    expect(await photoCount(id)).toBe(1);
+    expect((await B.call("DELETE", `/drawers/${id}/photo`, { proof: await B.proof() })).statusCode).toBe(204);
+    expect(await photoCount(id)).toBe(0);
+
+    // tokens cannot call either, with or without a proof
+    const token = await A.makeAccessToken("write");
+    const tool = (method: "PUT" | "DELETE", body: unknown) => app.inject({ method, url: `/drawers/${id}/photo`, headers: { authorization: `Bearer ${token.bearer}`, "content-type": "application/json" }, payload: JSON.stringify(body) });
+    for (const res of [await tool("PUT", { ...photo(40_000), proof: await A.proof() }), await tool("DELETE", { proof: await A.proof() })]) expect(res.json().code).toBe("TokenNotAllowed");
+  }, 60_000);
+
+  it("a session without the vault key cannot replace the user document; the person with the key can", async () => {
+    const S = await sessionOnly(D);
+    const body = (base: number) => ({ base_version: base, schema_version: 1, nonce: random(12), ciphertext: fake(DOCUMENT_MIN_CIPHERTEXT) });
+    const before = (await D.call("GET", "/me/doc")).body;
+    const old = await S.call("PUT", "/me/doc", body(0));
+    expect(old.statusCode).toBe(403);
+    expect(old.json().code).toBe("CustodyProofRequired");
+    expect((await S.call("PUT", "/me/doc", { ...body(0), proof: await S.proof((await generateUserKeys()).ecdsa.privateKey) })).json().code).toBe("CustodyProofInvalid");
+    expect((await D.call("GET", "/me/doc")).body).toBe(before);
+
+    const cur = (await D.call("GET", "/me/doc")).statusCode === 204 ? 0 : (await D.call("GET", "/me/doc")).json().version;
+    const put = await D.call("PUT", "/me/doc", { ...body(cur), proof: await D.proof() });
+    expect(put.statusCode).toBe(200);
+    expect(put.json().version).toBe(cur + 1);
+  }, 60_000);
+});
+
 describe("every stored field has a size (PETTY-442)", () => {
   const entryBody = (line: string, over: Record<string, unknown> = {}) => ({ id: crypto.randomUUID(), line_id: line, is_checkpoint: false, reverses_entry_id: null, key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(528), ...over });
   const refused = (res: { statusCode: number; json: () => { code: string; context?: { path?: string } } }, path: string) => {
@@ -246,8 +322,8 @@ describe("every stored field has a size (PETTY-442)", () => {
   it("what the storage page reports is what the rows hold: only ciphertext varies in size", async () => {
     const U = C;
     const { id, key, line, doc } = await drawer(U);
-    expect((await U.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await U.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1 })).statusCode).toBe(200);
-    expect((await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(40_000) })).statusCode).toBe(204);
+    expect((await U.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await U.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1, proof: await U.proof() })).statusCode).toBe(200);
+    expect((await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(40_000), proof: await U.proof() })).statusCode).toBe(204);
     expect((await U.postEntry(id, key, line, "add", 5)).res.statusCode).toBe(201);
     const { rows } = await owner.query<{ t: string; rows: number; nonce: number; ciphertext: number }>(
       `select t, count(*)::int as rows, sum(octet_length(nonce))::int as nonce, sum(octet_length(ciphertext))::int as ciphertext from (
@@ -270,7 +346,7 @@ describe("every stored field has a size (PETTY-442)", () => {
     const newId = crypto.randomUUID();
     const { selfWrap } = await createDrawerKey(U.sender, newId, 1);
     expect((await U.call("POST", "/drawers", { id: newId, document: small, self_wrap: selfWrap })).json()).toMatchObject({ code: "DocumentTooSmall", context: { min_bytes: DOCUMENT_MIN_CIPHERTEXT } });
-    expect((await U.call("PUT", `/drawers/${id}/document`, { ...small, base_version: 1 })).json().code).toBe("DocumentTooSmall");
+    expect((await U.call("PUT", `/drawers/${id}/document`, { ...small, base_version: 1, proof: await U.proof() })).json().code).toBe("DocumentTooSmall");
     expect((await U.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...small, base_version: 1 }, proof: await U.proof() })).json().code).toBe("DocumentTooSmall");
     expect((await owner.query("select 1 from drawers where id = $1", [newId])).rowCount).toBe(0);
     expect((await stored(id)).drawer.version).toBe(1);
@@ -280,7 +356,7 @@ describe("every stored field has a size (PETTY-442)", () => {
   it("a rotation batch keeps the entry and photo size limits and the quota; rows of the same size always pass", async () => {
     const U = C;
     const { id, key } = await drawer(U);
-    expect((await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(40_000) })).statusCode).toBe(204);
+    expect((await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: random(12), ciphertext: fake(40_000), proof: await U.proof() })).statusCode).toBe(204);
     const { key: key2, wraps } = await nextKey(U, id, 2, [U]);
     expect((await U.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps, proof: await U.proof() })).statusCode).toBe(201);
     const rows = (await U.call("GET", `/drawers/${id}/export`)).json().entries as Row[];
@@ -329,17 +405,17 @@ describe("every stored field has a size (PETTY-442)", () => {
     refused(await U.call("POST", "/drawers", { id: newId, document: doc, self_wrap: { ...selfWrap, sender_ecdh_pub: long } }), "self_wrap.sender_ecdh_pub");
     refused(await U.call("POST", "/drawers", { id: newId, document: { ...doc, nonce: fake(16) }, self_wrap: selfWrap }), "document.nonce");
     // a saved document and a photo
-    refused(await U.call("PUT", `/drawers/${id}/document`, { ...doc, nonce: long, base_version: 1 }), "nonce");
-    refused(await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: long, ciphertext: fake(40_000) }), "nonce");
+    refused(await U.call("PUT", `/drawers/${id}/document`, { ...doc, nonce: long, base_version: 1, proof: await U.proof() }), "nonce");
+    refused(await U.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: long, ciphertext: fake(40_000), proof: await U.proof() }), "nonce");
     // an invitation and a rotation
     refused(await U.call("POST", `/drawers/${id}/invitations`, { invitee_id: C.id, role: "read", wrap: { ...wrap, salt: long } }), "wrap.salt");
     refused(await U.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps: [{ user_id: U.id, wrap: { ...wrap, key_version: 2, wrapped: long } }], proof: await U.proof() }), "wraps.0.wrap.wrapped");
     refused(await U.call("POST", `/drawers/${id}/rotation`, { to_version: 2, wraps: [{ user_id: U.id, wrap: { ...wrap, key_version: 2 } }], proof: { challenge: long, signature: random(64) } }), "proof.challenge");
     refused(await U.call("DELETE", `/drawers/${id}`, { proof: { challenge: random(32), signature: long } }), "proof.signature");
     // the person's own document
-    refused(await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: random(12), ciphertext: fake(USER_DOC_MAX_CIPHERTEXT + 1) }), "ciphertext");
-    refused(await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: long, ciphertext: fake(DOCUMENT_MIN_CIPHERTEXT) }), "nonce");
-    expect((await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: random(12), ciphertext: fake(USER_DOC_MAX_CIPHERTEXT) })).statusCode).toBe(200);
+    refused(await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: random(12), ciphertext: fake(USER_DOC_MAX_CIPHERTEXT + 1), proof: await U.proof() }), "ciphertext");
+    refused(await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: long, ciphertext: fake(DOCUMENT_MIN_CIPHERTEXT), proof: await U.proof() }), "nonce");
+    expect((await U.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: random(12), ciphertext: fake(USER_DOC_MAX_CIPHERTEXT), proof: await U.proof() })).statusCode).toBe(200);
     // the vault copies and a passkey
     const vault = await createVault(U.user.passphrase, U.user.keys);
     const put = async (v: unknown) => U.call("PUT", "/me/vault", { password: U.user.password, proof: await U.proof(), vault: v });

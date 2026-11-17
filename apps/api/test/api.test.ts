@@ -100,7 +100,7 @@ describe("permissions (called directly, never through a UI)", () => {
     const readWrite = await C.postEntry(id, key, line, "add", 100);
     expect(readWrite.res.statusCode).toBe(403);
     expect(readWrite.res.json().code).toBe("InsufficientRole");
-    expect((await C.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await C.sealDoc(id, key, newDocument("x")), 1), base_version: 1 })).statusCode).toBe(403);
+    expect((await C.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await C.sealDoc(id, key, newDocument("x")), 1), base_version: 1, proof: await C.proof() })).statusCode).toBe(403);
     expect((await C.call("GET", `/drawers/${id}/export`)).statusCode).toBe(403);
     expect((await B.call("GET", `/drawers/${id}/export`)).statusCode).toBe(200);
     expect((await B.call("DELETE", `/drawers/${id}`, { proof: await B.proof() })).statusCode).toBe(403); // not the owner
@@ -117,13 +117,13 @@ describe("permissions (called directly, never through a UI)", () => {
 describe("document versioning", () => {
   it("stale base_version → 409 with the current version; verification flag stamps last_verified_at; a later entry makes it stale", async () => {
     const { id, key, doc, line } = await sharedDrawer();
-    const v2 = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Kitchen 2" }), 1), base_version: 1 });
+    const v2 = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Kitchen 2" }), 1), base_version: 1, proof: await A.proof() });
     expect(v2.statusCode).toBe(200);
     expect(v2.json().version).toBe(2);
-    const stale = await B.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await B.sealDoc(id, key, { ...doc, name: "Bob" }), 1), base_version: 1 });
+    const stale = await B.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await B.sealDoc(id, key, { ...doc, name: "Bob" }), 1), base_version: 1, proof: await B.proof() });
     expect(stale.statusCode).toBe(409);
     expect(stale.json()).toMatchObject({ code: "VersionConflict", context: { current_version: 2 } });
-    const ver = await B.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await B.sealDoc(id, key, doc), 1), base_version: 2, verification: true });
+    const ver = await B.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await B.sealDoc(id, key, doc), 1), base_version: 2, verification: true, proof: await B.proof() });
     expect(ver.statusCode).toBe(200);
     expect(ver.json().last_verified_at).toBe(ver.json().last_write_at);
     await A.postEntry(id, key, line, "add", 1);
@@ -428,11 +428,11 @@ describe("rotation (SPEC-ISSUES A7)", () => {
 describe("user document and wrap sender", () => {
   it("PUT /me/doc creates then version-checks; wraps carry the server-stamped sender_id", async () => {
     expect((await A.call("GET", "/me/doc")).statusCode).toBe(204);
-    const put = await A.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA" });
+    const put = await A.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", proof: await A.proof() });
     expect(put.statusCode).toBe(200);
     expect(put.json().version).toBe(1);
-    expect((await A.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA" })).statusCode).toBe(409);
-    expect((await A.call("PUT", "/me/doc", { base_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA" })).json().version).toBe(2);
+    expect((await A.call("PUT", "/me/doc", { base_version: 0, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", proof: await A.proof() })).statusCode).toBe(409);
+    expect((await A.call("PUT", "/me/doc", { base_version: 1, schema_version: 1, nonce: "AAAAAAAAAAAAAAAA", ciphertext: "AAAA", proof: await A.proof() })).json().version).toBe(2);
     expect((await A.call("GET", "/me/doc")).json().version).toBe(2);
     const { id } = await sharedDrawer();
     const wraps = (await B.call("GET", "/bootstrap")).json().wraps.filter((w: { drawer_id: string }) => w.drawer_id === id);
@@ -648,10 +648,10 @@ describe("storage limits (PETTY-243)", () => {
 
   it("refuses a photo or an entry over its size limit, from any client; a stored entry still replays", async () => {
     const { id, key, line } = await sharedDrawer();
-    const big = await B.call("PUT", `/drawers/${id}/photo`, photo(PHOTO_MAX_CIPHERTEXT + 1));
+    const big = await B.call("PUT", `/drawers/${id}/photo`, { ...photo(PHOTO_MAX_CIPHERTEXT + 1), proof: await B.proof() });
     expect(big.statusCode).toBe(413);
     expect(big.json()).toMatchObject({ code: "PhotoTooLarge", context: { max_bytes: PHOTO_MAX_CIPHERTEXT } });
-    expect((await B.call("PUT", `/drawers/${id}/photo`, photo(PHOTO_MAX_CIPHERTEXT))).statusCode).toBe(204);
+    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(PHOTO_MAX_CIPHERTEXT), proof: await B.proof() })).statusCode).toBe(204);
     const entry = { id: crypto.randomUUID(), line_id: line, is_checkpoint: false, reverses_entry_id: null, key_version: 1, schema_version: 1, nonce: fake(12), ciphertext: fake(ENTRY_MAX_CIPHERTEXT + 1) };
     const huge = await A.call("POST", `/drawers/${id}/entries`, entry);
     expect(huge.statusCode).toBe(413);
@@ -664,28 +664,28 @@ describe("storage limits (PETTY-243)", () => {
     const { id, key, line, doc } = await sharedDrawer();
     expect((await storage(A)).quota_bytes).toBeNull();
     const memberBefore = (await storage(B)).used_bytes;
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(100_000))).statusCode).toBe(204);
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(100_000), proof: await A.proof() })).statusCode).toBe(204);
     const used = (await storage(A)).used_bytes;
     expect(used).toBeGreaterThanOrEqual(100_000);
     setQuota(used + 50_000);
     expect(await storage(A)).toEqual({ used_bytes: used, quota_bytes: used + 50_000 });
 
     // B writes into A's drawer: the bytes are A's, so A's quota refuses the bigger photo
-    const over = await B.call("PUT", `/drawers/${id}/photo`, photo(200_000));
+    const over = await B.call("PUT", `/drawers/${id}/photo`, { ...photo(200_000), proof: await B.proof() });
     expect(over.statusCode).toBe(413);
     expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { owner_id: A.id, used_bytes: used, quota_bytes: used + 50_000 } });
-    expect((await B.call("PUT", `/drawers/${id}/photo`, photo(120_000))).statusCode).toBe(204); // +20 000 still fits
+    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(120_000), proof: await B.proof() })).statusCode).toBe(204); // +20 000 still fits
     expect((await B.postEntry(id, key, line, "add", 1)).res.statusCode).toBe(201);
     expect((await A.createDrawer("Small", newDocument("Small"))).res.statusCode).toBe(201);  // a new drawer (a 16 KiB padded document) fits
 
     setQuota((await storage(A)).used_bytes); // full
     expect((await B.postEntry(id, key, line, "add", 1)).res.json().code).toBe("StorageQuotaExceeded");
     expect((await A.createDrawer("None", newDocument("None"))).res.json().code).toBe("StorageQuotaExceeded");
-    const put = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1 });
+    const put = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1, proof: await A.proof() });
     expect(put.json().code).toBe("StorageQuotaExceeded");
     // what frees space passes: a smaller photo, removing the photo, deleting a line
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(10_000))).statusCode).toBe(204);
-    expect((await A.call("DELETE", `/drawers/${id}/photo`)).statusCode).toBe(204);
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(10_000), proof: await A.proof() })).statusCode).toBe(204);
+    expect((await A.call("DELETE", `/drawers/${id}/photo`, { proof: await A.proof() })).statusCode).toBe(204);
     const without = applyOp(doc, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
     setQuota((await storage(A)).used_bytes);
     expect((await A.call("POST", `/drawers/${id}/lines/${line}/delete`, { document: { ...sealedBody(await A.sealDoc(id, key, without), 1), base_version: 1 }, proof: await A.proof() })).statusCode).toBe(200);

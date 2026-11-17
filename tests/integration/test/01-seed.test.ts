@@ -20,7 +20,7 @@ describe("seed", () => {
     const raw = await owner.unwrap(wrap, owner.user.pub.ecdh, true);
     writeState({
       email: owner.user.email, password: owner.user.password, drawerId: d.id, drawerName: "Seed tin", lineId,
-      drawerKey: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", raw))), balance: 750, entries: 2,
+      drawerKey: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", raw))), balance: 750, entries: 2, passphrase: owner.user.passphrase,
     });
   });
 });

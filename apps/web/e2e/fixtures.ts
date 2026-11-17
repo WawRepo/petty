@@ -187,7 +187,7 @@ export async function editUserDoc(user: TestUserWithKeys, change: (doc: UserDocJ
     change(doc);
     if (opts.older) { doc.v = 1; delete doc.rev; } else { doc.v = 2; doc.rev = (doc.rev ?? 0) + 1; }
     const sealed = await seal(key, identity, utf8(canonicalJson(doc)));
-    const put = await api.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+    const put = await api.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), proof: await api.proof(user.keys) });
     if (put.status === 200) return;
     if (put.status !== 409) throw new Error(`user document not saved: ${put.status}`);
   }

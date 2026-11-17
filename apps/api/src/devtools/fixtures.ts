@@ -187,7 +187,7 @@ export class Client {
       doc.v = 2;
       doc.rev = (cur?.doc.rev ?? 0) + 1;
       const sealed = await seal(key, identity, utf8(canonicalJson(doc)));
-      const res = await this.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+      const res = await this.call("PUT", "/me/doc", { base_version: cur?.version ?? 0, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), proof: await this.proof() });
       if (res.statusCode === 200) return res.json().version as number;
       if (res.statusCode !== 409) throw new Error(`user document not saved: ${res.statusCode} ${res.body}`);
     }

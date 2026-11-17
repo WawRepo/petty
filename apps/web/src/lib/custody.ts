@@ -22,8 +22,9 @@ async function custodyProof(ecdsaPrivate: CryptoKey): Promise<CustodyProof> {
 
 /**
  * One call that needs a custody proof. Every such call goes through here (PETTY-497): the steps of a key
- * rotation (PETTY-440), deleting a line (PETTY-441), and the vault, passkey, token, drawer-delete and
- * account-delete calls. The server keeps one challenge per person and each proof works once, so these
+ * rotation (PETTY-440), deleting a line (PETTY-441), the vault, passkey, token, drawer-delete and
+ * account-delete calls, and since PETTY-513 every write of a drawer's document, its photo and the user
+ * document. The server keeps one challenge per person and each proof works once, so these
  * calls go one after another, each with a fresh proof; a rotation running in the background cannot take
  * the challenge of a call the person made. When another tab or device asked for a challenge in between,
  * the server answers 403 CustodyProofRequired before it reads the password or writes anything, and the

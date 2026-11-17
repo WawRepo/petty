@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DeletePhotoBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
 import { badRequest, conflict, forbidden, gone, notFound, tooLarge } from "../lib/errors.js";
@@ -161,12 +161,19 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     return { drawer: drawerSummary(drawer, role, photo > 0), document: sealedRow(doc) };
   });
 
+  /**
+   * PETTY-513: a person's session proves custody for every document write, so a session without the vault
+   * key (a reset login password, a stolen session) cannot put a document in place of the drawer's. An access
+   * token proves nothing here: a custody proof made it, and what it writes is signed with its own key.
+   */
   app.put<{ Params: { id: string } }>("/drawers/:id/document", async (req) => {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "write");
+    if (!req.token) requireProofField(req.body);
     const body = PutDocumentBody.parse(req.body);
     // PETTY-183 (NR-3): only a person who counted may mark the drawer as checked, never a tool
     if (req.token && body.verification) throw forbidden("TokenCannotVerify", { drawer_id: req.params.id });
+    if (!req.token) await consumeCustodyProof(req, me.id, body.proof!);
     return withTx(apiPool, (db) => writeDocument(db, req.params.id, me.id, body, req.token?.id ?? null));
   });
 
@@ -212,10 +219,13 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     return sealedRow(r);
   });
 
+  /** PETTY-513: replacing the photo needs a custody proof, checked before the size and the quota. Tokens cannot call it. */
   app.put<{ Params: { id: string } }>("/drawers/:id/photo", async (req, reply) => {
     const me = requireUser(req);
     const { drawer } = await requireRole(apiPool, req.params.id, me.id, "write");
+    requireProofField(req.body);
     const body = PutPhotoBody.parse(req.body);
+    await consumeCustodyProof(req, me.id, body.proof);
     if (body.key_version !== drawer.key_version) throw conflict("KeyVersionMismatch", "re-seal with the current key", { key_version: drawer.key_version });
     // PETTY-243: the client limit, enforced here too, so a script or token cannot store bigger photos.
     const ciphertext = fromB64(body.ciphertext);
@@ -231,9 +241,12 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(204).send();
   });
 
+  /** PETTY-513: removing the photo needs a custody proof too. */
   app.delete<{ Params: { id: string } }>("/drawers/:id/photo", async (req, reply) => {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "write");
+    requireProofField(req.body);
+    await consumeCustodyProof(req, me.id, DeletePhotoBody.parse(req.body).proof);
     await apiPool.query("delete from drawer_photos where drawer_id = $1", [req.params.id]);
     await apiPool.query("update drawers set last_write_at = now() where id = $1", [req.params.id]);
     return reply.code(204).send();
