@@ -18,6 +18,11 @@ number, also when it adds features, and a new minor or major is started by hand 
   and `petty auth logout` removes it from the keychain too. An older `petty` does not see a token in
   the keychain: sign in again with it.
 
+## [1.5.51] — 2026-11-17
+
+### Changed
+- Maintenance only: dependency and build updates.
+
 ## [1.5.50] — 2026-11-17
 
 ### Added
@@ -1107,7 +1112,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.50...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.51...HEAD
+[1.5.51]: https://github.com/WawRepo/petty/releases/tag/v1.5.51
 [1.5.50]: https://github.com/WawRepo/petty/releases/tag/v1.5.50
 [1.5.49]: https://github.com/WawRepo/petty/releases/tag/v1.5.49
 [1.5.48]: https://github.com/WawRepo/petty/releases/tag/v1.5.48
