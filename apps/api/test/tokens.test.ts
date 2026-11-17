@@ -138,7 +138,7 @@ describe("access tokens (PETTY-164)", () => {
     expect((await A.call("POST", `/drawers/${d.id}/document/restore`, { history_id: last!.id, base_version: broken.version })).statusCode).toBe(410);
     const h = last!.document;
     const kept = readDocument(await openDocument(d.key, { record_type: "document", record_id: d.id, drawer_id: d.id, line_id: null, author_id: h.author_id, key_version: h.key_version, schema_version: h.schema_version }, { nonce: fromB64(h.nonce), ciphertext: fromB64(h.ciphertext) }), { schema_version: h.schema_version, version: last!.version });
-    const restored = await A.call("PUT", `/drawers/${d.id}/document`, { ...sealedBody(await A.sealDoc(d.id, d.key, nextRev(kept), 1, 2), 1, 2), base_version: broken.version, verification: false });
+    const restored = await A.call("PUT", `/drawers/${d.id}/document`, { ...sealedBody(await A.sealDoc(d.id, d.key, nextRev(kept), 1, 2), 1, 2), base_version: broken.version, verification: false, proof: await A.proof() });
     expect(restored.statusCode).toBe(200);
     const after = await open();
     expect(after.doc).toEqual({ ...(before.doc as object), rev: 1 });

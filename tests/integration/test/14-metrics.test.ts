@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compose } from "../lib.js";
+import { compose, testEnv } from "../lib.js";
 
 /**
  * PETTY-266/267: the image reports what two alerts read. A refusal that normal use never triggers is
@@ -27,6 +27,17 @@ describe("the scrape port", () => {
     for (const result of ["created", "duplicate"]) has(`petty_entries_total{result="${result}"}`);
     // the stack signs in locally, so the local-only events are there too
     for (const event of ["login_fail", "rate_limited", "signup", "device_denied"]) has(`petty_auth_events_total{event="${event}"}`);
+  });
+
+  it("PETTY-285: the app may use its table of Clerk sessions, housekeeping clears it, and local sign-in lists no Clerk event", async () => {
+    const text = await (await fetch(METRICS)).text();
+    for (const event of ["clerk_signin", "clerk_token_expired", "clerk_token_invalid"]) expect(text).not.toContain(`event="${event}"`);
+    // as the app's own database user: the grants of migration 022 (an upgrade from an older image runs it too)
+    const sql = (q: string) => compose(`exec -T db psql "postgres://petty_api:${testEnv("API_DB_PASSWORD")}@localhost:5432/petty" -v ON_ERROR_STOP=1 -At -c "${q}"`).trim();
+    expect(sql("insert into clerk_sessions_seen (sid_hash, seen_at) values (sha256('petty-285-it'), now() - interval '40 days') on conflict do nothing")).toMatch(/^INSERT 0 [01]$/);
+    expect(sql("delete from clerk_sessions_seen where sid_hash = sha256('petty-285-it')")).toBe("DELETE 1");
+    const runs = compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"maintenance"'));
+    expect(runs[0]).toMatch(/"clerk_sessions":\d+/);
   });
 
   it("PETTY-355: background work has a pool of its own, and housekeeping ran at start", async () => {

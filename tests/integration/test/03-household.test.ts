@@ -162,7 +162,7 @@ describe("household", () => {
   it("a broken document can be put back by the owner: the client saves the kept copy with a counter inside (PETTY-183, PETTY-422)", async () => {
     const got = (await ann.call("GET", `/drawers/${drawerId}`)).json();
     const junk = { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT))), verification: false };
-    expect((await ben.call("PUT", `/drawers/${drawerId}/document`, junk)).statusCode).toBe(200);
+    expect((await ben.call("PUT", `/drawers/${drawerId}/document`, { ...junk, proof: await ben.proof() })).statusCode).toBe(200);
     expect(await documentName(ann)).toBeNull();
     const [last] = (await ann.call("GET", `/drawers/${drawerId}/document/history`)).json().history;
     const now = (await ann.call("GET", `/drawers/${drawerId}`)).json().drawer.version;
@@ -176,11 +176,11 @@ describe("household", () => {
     expect(h.schema_version).toBe(1);
     const kept = readDocument(await openDocument(key, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: h.author_id, key_version: h.key_version, schema_version: h.schema_version }, { nonce: fromB64(h.nonce), ciphertext: fromB64(h.ciphertext) }), { schema_version: h.schema_version, version: last.version });
     expect(kept.rev).toBeUndefined();
-    expect((await ann.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ann.sealDoc(drawerId, key, nextRev(kept), 1, 2), 1, 2), base_version: now, verification: false })).statusCode).toBe(200);
+    expect((await ann.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ann.sealDoc(drawerId, key, nextRev(kept), 1, 2), 1, 2), base_version: now, verification: false, proof: await ann.proof() })).statusCode).toBe(200);
     expect(await documentName(ann)).toBe("Kitchen tin");
     expect((await ann.call("GET", `/drawers/${drawerId}`)).json().document.schema_version).toBe(2);
     // a client from before the counter cannot put a document without one over it
-    const older = await ben.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ben.sealDoc(drawerId, key, kept, 1, 1), 1, 1), base_version: now + 1, verification: false });
+    const older = await ben.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await ben.sealDoc(drawerId, key, kept, 1, 1), 1, 1), base_version: now + 1, verification: false, proof: await ben.proof() });
     expect(older.statusCode).toBe(409);
     expect(older.json().code).toBe("DocumentFormatOlder");
     // PETTY-403: a restore is a new version, not the old number again: the web app refuses a drawer older than one it opened

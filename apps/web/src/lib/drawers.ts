@@ -772,10 +772,10 @@ export async function mutateDocument(id: string, ops: readonly DocumentOp[], opt
     // PETTY-422: the counter this copy was loaded with, plus one. After a VersionConflict the copy is the fresh one.
     try { next = nextRev(applyOps(view.doc!, ops, ctxFor(view))); } catch (e) { throw new OpsNoLongerApply(e instanceof LedgerError ? e.code : "unknown"); }
     const sealed = await sealDocument(key, docIdentity(view.summary, a.me.id), next);
+    const body = { base_version: view.summary.version, key_version: view.summary.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: opts.verification ?? false };
     try {
-      const r = await api<{ version: number; last_write_at: string; last_verified_at: string | null }>("PUT", `/drawers/${id}/document`, {
-        base_version: view.summary.version, key_version: view.summary.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: opts.verification ?? false,
-      });
+      // PETTY-513: every document write carries a custody proof, so a session without the vault key cannot make one
+      const r = await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api<{ version: number; last_write_at: string; last_verified_at: string | null }>("PUT", `/drawers/${id}/document`, { ...body, proof }));
       patch(id, { doc: next, docAuthor: a.me.id, summary: { ...view.summary, version: r.version, last_write_at: r.last_write_at, last_verified_at: r.last_verified_at } });
       return;
     } catch (e) {
@@ -947,7 +947,8 @@ export async function setPhoto(id: string, jpeg: Uint8Array): Promise<void> {
   const view = state.drawers.get(id);
   if (!view?.key) throw new Error("drawer not ready");
   const sealed = await sealPhoto(view.key, photoIdentity(view.summary, a.me.id), jpeg);
-  await api("PUT", `/drawers/${id}/photo`, { key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+  const body = { key_version: view.summary.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) };
+  await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("PUT", `/drawers/${id}/photo`, { ...body, proof })); // PETTY-513
   if (view.photo) URL.revokeObjectURL(view.photo);
   patch(id, { photo: photoUrl(jpeg), summary: { ...view.summary, has_photo: true, last_write_at: new Date().toISOString() } });
 }
@@ -977,8 +978,9 @@ export async function restorePhoto(id: string, versionId: string): Promise<void>
 }
 
 export async function removePhoto(id: string): Promise<void> {
+  const a = me();
   const view = state.drawers.get(id);
-  await api("DELETE", `/drawers/${id}/photo`);
+  await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("DELETE", `/drawers/${id}/photo`, { proof })); // PETTY-513
   if (view?.photo) URL.revokeObjectURL(view.photo);
   if (view) patch(id, { photo: null, summary: { ...view.summary, has_photo: false, last_write_at: new Date().toISOString() } });
 }
@@ -1050,6 +1052,7 @@ export async function restoreDocument(id: string, versionId: string): Promise<vo
   }
   if (!kept) throw new Error("version not readable");
   const sealed = await sealDocument(view.key, docIdentity(cur.drawer, a.me.id), nextRev({ ...kept, rev }));
-  await api("PUT", `/drawers/${id}/document`, { base_version: cur.drawer.version, key_version: cur.drawer.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false });
+  const body = { base_version: cur.drawer.version, key_version: cur.drawer.key_version, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), verification: false };
+  await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("PUT", `/drawers/${id}/document`, { ...body, proof }));
   await loadAll();
 }

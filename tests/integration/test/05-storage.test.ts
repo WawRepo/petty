@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { sealPhoto, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
-import { ENTRY_MIN_CIPHERTEXT, PHOTO_MAX_BYTES, PHOTO_MAX_CIPHERTEXT } from "@petty/protocol";
-import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
-import { newUser } from "../lib.js";
+import { DOCUMENT_MIN_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, PHOTO_MAX_BYTES, PHOTO_MAX_CIPHERTEXT } from "@petty/protocol";
+import { Client } from "../../../apps/api/src/devtools/fixtures.js";
+import { http, newUser } from "../lib.js";
 
 /**
  * PETTY-243: the image enforces the photo size limit and a per-user storage quota. compose.test.yml
@@ -11,7 +11,7 @@ import { newUser } from "../lib.js";
  */
 async function photoFor(c: Client, id: string, key: CryptoKey, bytes: Uint8Array) {
   const sealed = await sealPhoto(key, { record_type: "photo", record_id: id, drawer_id: id, line_id: null, author_id: c.id, key_version: 1, schema_version: 1 }, bytes);
-  return c.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+  return c.call("PUT", `/drawers/${id}/photo`, { key_version: 1, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), proof: await c.proof() });
 }
 
 describe("storage limits", () => {
@@ -29,7 +29,7 @@ describe("storage limits", () => {
     const [a, b, c, d] = drawers as [typeof drawers[0], typeof drawers[0], typeof drawers[0], typeof drawers[0]];
 
     // over the size limit: refused whatever the quota says (what a script or token could send)
-    const big = await dee.call("PUT", `/drawers/${a.id}/photo`, { key_version: 1, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(PHOTO_MAX_CIPHERTEXT + 1)) });
+    const big = await dee.call("PUT", `/drawers/${a.id}/photo`, { key_version: 1, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(PHOTO_MAX_CIPHERTEXT + 1)), proof: await dee.proof() });
     expect(big.statusCode).toBe(413);
     expect(big.json().code).toBe("PhotoTooLarge");
 
@@ -43,7 +43,7 @@ describe("storage limits", () => {
 
     // removing a photo is always allowed, but the removed photo is kept 30 days and still counts (PETTY-506);
     // deleting the drawer frees its space at once
-    expect((await dee.call("DELETE", `/drawers/${a.id}/photo`)).statusCode).toBe(204);
+    expect((await dee.call("DELETE", `/drawers/${a.id}/photo`, { proof: await dee.proof() })).statusCode).toBe(204);
     expect((await photoFor(dee, d.id, d.key, full)).json().code).toBe("StorageQuotaExceeded");
     expect((await dee.call("DELETE", `/drawers/${a.id}`, { proof: await dee.proof() })).statusCode).toBe(204);
     expect((await photoFor(dee, d.id, d.key, full)).statusCode).toBe(204);
@@ -83,5 +83,36 @@ describe("storage limits", () => {
     // what a client really writes still goes in
     expect((await eve.postEntry(d.id, d.key, line, "add", 1)).res.statusCode).toBe(201);
     expect(await used()).toBeGreaterThan(before);
+  }, 60_000);
+
+  it("a session without the vault key can change no document, photo or user document; nothing is stored (PETTY-513)", async () => {
+    const fay = await newUser("fay");
+    const d = await fay.createDrawer("Proofs", newDocument("Proofs"));
+    expect(d.res.statusCode).toBe(201);
+    expect((await photoFor(fay, d.id, d.key, new Uint8Array(1000))).statusCode).toBe(204);
+    const userDoc = { base_version: 0, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(64)) };
+    expect((await fay.call("PUT", "/me/doc", { ...userDoc, proof: await fay.proof() })).statusCode).toBe(200);
+    const state = async () => ({
+      drawer: (await fay.call("GET", `/drawers/${d.id}`)).json(),
+      photo: (await fay.call("GET", `/drawers/${d.id}/photo`)).json(),
+      doc: (await fay.call("GET", "/me/doc")).json(),
+      used: (await fay.call("GET", "/me/storage")).json(),
+    });
+    const before = await state();
+
+    // signed in with the login password alone: a session, and no key
+    const s = new Client(http, { ...fay.user, keys: undefined as never });
+    expect((await s.login()).statusCode).toBe(200);
+    const sealed = { key_version: 1, schema_version: 1, nonce: toB64(new Uint8Array(12)), ciphertext: toB64(new Uint8Array(DOCUMENT_MIN_CIPHERTEXT)) };
+    for (const res of [
+      await s.call("PUT", `/drawers/${d.id}/document`, { ...sealed, base_version: before.drawer.drawer.version, verification: false }),
+      await s.call("PUT", `/drawers/${d.id}/photo`, sealed),
+      await s.call("DELETE", `/drawers/${d.id}/photo`),
+      await s.call("PUT", "/me/doc", { ...userDoc, base_version: 1 }),
+    ]) {
+      expect(res.statusCode).toBe(403);
+      expect(res.json().code).toBe("CustodyProofRequired");
+    }
+    expect(await state()).toEqual(before);
   }, 60_000);
 });

@@ -1,6 +1,7 @@
 import { checkApiUrl, connect, serverCode, warningText, type AgentClient } from "@petty/agent";
 import { deviceKeyPair, deviceUserCode, openDeviceToken, splitPatToken } from "@petty/crypto";
 import { DeviceCodeResponse, DeviceTokenResponse } from "@petty/protocol";
+import pkg from "../package.json" with { type: "json" };
 import { CliError, type Io } from "./io.js";
 
 /**
@@ -21,6 +22,26 @@ export function originOf(host: string): string {
 }
 
 export const apiOf = (origin: string): string => `${origin}/api`;
+
+/** Where this program's releases are published; each release has its own petty.mjs (docs/cli.md, "Install"). */
+export const RELEASES = "https://github.com/WawRepo/petty/releases";
+
+/**
+ * PETTY-515: where to get the petty that goes with the Petty at `origin`. When that Petty says its version
+ * (`/api/config`, "v1.2.3"), the answer is that release's file, with the app's page that shows the commands
+ * for it; else only the page. A Petty built from a fork or locally has no such version, and only its page knows.
+ */
+export async function matchingPetty(io: Io, origin: string): Promise<string> {
+  const page = `${origin}/ai`;
+  let version: unknown = null;
+  try {
+    const res = await io.fetch(`${apiOf(origin)}/config`);
+    if (res.ok) version = ((await res.json()) as { version?: unknown }).version;
+  } catch { /* offline, or not JSON: the page */ }
+  return typeof version === "string" && /^v\d+\.\d+\.\d+$/.test(version)
+    ? `download the petty of ${version}: ${RELEASES}/download/${version}/petty.mjs (the page ${page} shows how to install it)`
+    : `the page ${page} shows how to install it`;
+}
 
 export interface LoginAsk {
   readonly origin: string;
@@ -56,8 +77,9 @@ export async function deviceLogin(io: Io, ask: LoginAsk): Promise<string> {
   }
   // PETTY-451: the two ends must be of one age. A newer Petty says so by name. An older one ignores the code
   // sent and answers with its own, of the earlier 12-letter form, which this program never uses.
-  if (started.json["code"] === "CommandLineTooOld") throw new CliError(1, `this petty is older than the Petty at ${ask.origin}: install the petty that goes with it (the commands are at ${ask.origin}/ai) and sign in again`);
-  if (started.status === 201 && /^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}$/.test(String(started.json["user_code"]))) throw new CliError(1, `${ask.origin} runs an older Petty than this command line: its sign-in code has the earlier, shorter form, which this petty does not use. Update that Petty, or install the petty that goes with it (the commands are at ${ask.origin}/ai), or make a token in Settings → Access tokens and use petty auth login --with-token`);
+  // PETTY-515: both say where the petty that goes with that Petty is downloaded
+  if (started.json["code"] === "CommandLineTooOld") throw new CliError(1, `this petty (v${pkg.version}) is older than the Petty at ${ask.origin}: install the petty that goes with it, then sign in again. To get it, ${await matchingPetty(io, ask.origin)}`);
+  if (started.status === 201 && /^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}$/.test(String(started.json["user_code"]))) throw new CliError(1, `${ask.origin} runs an older Petty than this command line (v${pkg.version}): its sign-in code has the earlier, shorter form, which this petty does not use. Update that Petty, or install the petty that goes with it (to get it, ${await matchingPetty(io, ask.origin)}), or make a token in Settings → Access tokens and use petty auth login --with-token`);
   if (started.status === 429) throw new CliError(1, "too many sign-ins from this address: wait a while and try again");
   if (started.status !== 201) throw new CliError(1, `${ask.origin} did not start a sign-in (${said(started)}). An older Petty has no browser sign-in: make a token in Settings → Access tokens and use petty auth login --with-token`);
   const code = DeviceCodeResponse.parse(started.json);

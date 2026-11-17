@@ -3,6 +3,7 @@
     "name": "Petty",
     "loading": "Wczytywanie…",
     "back": "Wstecz",
+    "backToList": "Wróć do listy",
     "cancel": "Anuluj",
     "save": "Zapisz",
     "close": "Zamknij",
@@ -162,6 +163,9 @@
     "totalsIn": "Łączna wartość · {tag}",
     "across": "{count, plural, one {W # szufladzie} few {W # szufladach} many {W # szufladach} other {W # szuflady}}",
     "drawersTitle": "Szuflady",
+    "pane": {
+      "hint": "Szuflada wybrana z listy otworzy się tutaj."
+    },
     "items": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
     "currencies": "{count, plural, one {# waluta} few {# waluty} many {# walut} other {# waluty}}",
     "tags": {
@@ -617,7 +621,7 @@
     "transferDecline": "Odrzuć",
     "transferWaiting": "Czekamy, aż {name} przejmie szufladę „{drawer}”.",
     "cancel": "Wycofaj ofertę",
-      "stale": "Zaproszenie od {name} jest nieaktualne: klucz szuflady zmienił się od tego czasu. Poproś {name} o nowe zaproszenie."
+    "stale": "Zaproszenie od {name} jest nieaktualne: klucz szuflady zmienił się od tego czasu. Poproś {name} o nowe zaproszenie."
   },
   "members": {
     "title": "Członkowie",
@@ -1261,7 +1265,7 @@
       },
       "phone": {
         "q": "Czy jest aplikacja na telefon?",
-        "a": "Petty instaluje się z przeglądarki (Dodaj do ekranu początkowego) i działa offline jak natywna aplikacja, na iPhonie i Androidzie."
+        "a": "Petty instaluje się z przeglądarki (Dodaj do ekranu początkowego) i działa offline jak natywna aplikacja, na iPhonie i Androidzie. Na komputerze lista szuflad zostaje po lewej, a otwarta szuflada pokazuje się obok."
       }
     },
     "footer": "© 2026 Petty · wszystko, co przechowujesz, z szyfrowaniem end-to-end",

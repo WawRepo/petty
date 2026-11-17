@@ -3,6 +3,7 @@
     "name": "Petty",
     "loading": "Cargando…",
     "back": "Atrás",
+    "backToList": "Volver a la lista",
     "cancel": "Cancelar",
     "save": "Guardar",
     "close": "Cerrar",
@@ -162,6 +163,9 @@
     "totalsIn": "Valor total · {tag}",
     "across": "{count, plural, one {En # cajón} other {En # cajones}}",
     "drawersTitle": "Cajones",
+    "pane": {
+      "hint": "El cajón que elijas en la lista se abre aquí."
+    },
     "items": "{count, plural, one {# elemento} other {# elementos}}",
     "currencies": "{count, plural, one {# divisa} other {# divisas}}",
     "tags": {
@@ -617,7 +621,7 @@
     "transferDecline": "Rechazar",
     "transferWaiting": "Esperando a que {name} acepte la propiedad de «{drawer}».",
     "cancel": "Cancelar oferta",
-      "stale": "La invitación de {name} está desactualizada: la clave del cajón cambió desde entonces. Pide a {name} que te invite de nuevo."
+    "stale": "La invitación de {name} está desactualizada: la clave del cajón cambió desde entonces. Pide a {name} que te invite de nuevo."
   },
   "members": {
     "title": "Miembros",
@@ -1261,7 +1265,7 @@
       },
       "phone": {
         "q": "¿Hay una aplicación para el teléfono?",
-        "a": "Petty se instala desde el navegador (Añadir a pantalla de inicio) y funciona sin conexión como una aplicación nativa, en iPhone y Android."
+        "a": "Petty se instala desde el navegador (Añadir a pantalla de inicio) y funciona sin conexión como una aplicación nativa, en iPhone y Android. En el ordenador, la lista de cajones se queda a la izquierda y el que abres aparece al lado."
       }
     },
     "footer": "© 2026 Petty · todo lo que guardas, cifrado de extremo a extremo",

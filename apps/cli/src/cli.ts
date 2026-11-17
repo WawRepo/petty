@@ -10,13 +10,15 @@ import { candidates, forShell, script, unquote, unquotePowerShell, type Names, t
 import { CliError, type Io } from "./io.js";
 import { itemLabel, placePaths, resolveDrawer, resolveItem, splitPlace } from "./items.js";
 import { apiOf, checkToken, deviceLogin, originOf } from "./login.js";
-import { forgetLogin, openToOthers, readStore, saveLogin, storePath } from "./store.js";
+import { forgetLogin, keepLogin, newTokensKeychain, openToOthers, readStore, storePath, tokenOf } from "./store.js";
+import { systemKeychain } from "./keychain.js";
 import { cells, padCells } from "./width.js";
 
 /**
  * `petty`, Petty from the command line (PETTY-274). A thin layer over @petty/agent, the client the MCP
  * server uses too: the token's keys are opened in this process and the drawers are decrypted here. Only
- * the login is stored (store.ts); nothing read from Petty is written to disk.
+ * the login is stored (store.ts; the token in the system's keychain since PETTY-276); nothing read from
+ * Petty is written to disk.
  *
  * Exit codes: 0 done, 1 error, 2 usage, 3 not signed in / token ended / read-only, 4 not found or unclear.
  */
@@ -83,7 +85,7 @@ async function main(argv: readonly string[], io: Io): Promise<void> {
     case "auth login": return login(io, flag("host"), on("read-only"), flag("expires"), on("with-token"), !on("no-browser"));
     case "auth status": return status(io, flag("host"), on("json"));
     case "auth logout": return logout(io, flag("host"));
-    case "auth token": return io.out(`${credentials(io, flag("host")).token}\n`);
+    case "auth token": return io.out(`${(await credentials(io, flag("host"))).token}\n`);
     case "completion": {
       const shell = positionals[0] ?? flag("shell");
       if (!shell || !(SHELLS as readonly string[]).includes(shell)) throw new CliError(2, "say which shell: petty completion -s bash|zsh|fish|powershell");
@@ -163,6 +165,7 @@ function expiresOf(value: string | undefined): 30 | 90 | 365 | null {
 }
 
 async function login(io: Io, host: string | undefined, readOnly: boolean, expires: string | undefined, withToken: boolean, browser: boolean): Promise<void> {
+  newTokensKeychain(io); // a mistyped PETTY_TOKEN_STORE stops here, before a token is made
   const store = readStore(io.env);
   let where = host ?? io.env["PETTY_HOST"] ?? (Object.keys(store.hosts).length === 1 ? store.default ?? undefined : undefined);
   if (!where) where = (await io.ask("Your Petty's address (like https://petty.example.com): ")) || undefined;
@@ -173,8 +176,8 @@ async function login(io: Io, host: string | undefined, readOnly: boolean, expire
     : await deviceLogin(io, { origin, role: readOnly ? "read" : "write", expiresDays: expiresOf(expires), browser });
   const client = await checkToken(io, origin, token);
   const id = client.identity;
-  saveLogin(io.env, origin, { token, name: id.name, role: id.role, user_id: id.userId, added_at: new Date(io.now()).toISOString() });
-  io.err(`Signed in to ${origin} with the token “${clean(id.name)}” (${id.role === "write" ? "may add entries" : "read only"}). Kept in ${storePath(io.env)}.\n`);
+  const kept = await keepLogin(io, origin, { token, name: id.name, role: id.role, user_id: id.userId, added_at: new Date(io.now()).toISOString() });
+  io.err(`Signed in to ${origin} with the token “${clean(id.name)}” (${id.role === "write" ? "may add entries" : "read only"}). Kept in ${kept}.\n`);
   if (client.notice) io.err(`petty: warning: ${client.notice}\n`);
   // PETTY-452: a token made for chosen drawers says so once, here; the other drawers are "not found" to it
   if (id.scope) io.err(`It opens only the ${id.scope.length} drawer${id.scope.length === 1 ? "" : "s"} chosen for it.\n`);
@@ -186,19 +189,30 @@ async function status(io: Io, host: string | undefined, asJson: boolean): Promis
   if (!origins.length && !io.env["PETTY_TOKEN"]) throw new CliError(3, "not signed in: run petty auth login --host https://<your Petty>");
   const rows: ({ host: string; default: boolean; from: string } & Probe)[] = [];
   if (io.env["PETTY_TOKEN"]) {
-    const c = credentials(io, host);
+    const c = await credentials(io, host);
     rows.push({ host: c.origin, ...(await probe(io, c.origin, c.token)), default: true, from: "PETTY_TOKEN" });
   }
+  const none = { token: null, role: null, scope: null, drawers: null, works: false, notice: null };
   for (const o of origins) {
     const login = store.hosts[o];
-    if (!login) { rows.push({ host: o, token: null, role: null, scope: null, drawers: null, default: false, works: false, problem: "not signed in", notice: null, from: storePath(io.env) }); continue; }
-    rows.push({ host: o, ...(await probe(io, o, login.token)), default: store.default === o, from: storePath(io.env) });
+    if (!login) { rows.push({ host: o, ...none, problem: "not signed in", default: false, from: storePath(io.env) }); continue; }
+    // PETTY-276: "from" is the file's path, or "keychain"
+    let got;
+    try {
+      got = await tokenOf(io, o, login, true);
+    } catch (e) {
+      if (!(e instanceof CliError)) throw e;
+      rows.push({ host: o, ...none, problem: e.message, default: store.default === o, from: login.token === undefined ? "keychain" : storePath(io.env) });
+      continue;
+    }
+    rows.push({ host: o, ...(await probe(io, o, got.token)), default: store.default === o, from: got.keychain ? "keychain" : got.where });
   }
   if (asJson) json(io, rows);
   else for (const r of rows) {
-    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${clean(r.problem ?? "")}`}\n${r.works ? `  ${opens(r)}\n` : ""}${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${r.from}\n`);
+    const kept = r.from === "keychain" ? systemKeychain(io.platform, io.env).name : r.from;
+    io.out(`${r.host}${r.default && rows.length > 1 ? "  (default)" : ""}\n  ${r.works ? `signed in with the token “${clean(r.token ?? "")}”, ${r.role === "write" ? "may add entries" : "read only"}` : `✗ ${clean(r.problem ?? "")}`}\n${r.works ? `  ${opens(r)}\n` : ""}${r.notice ? `  ! ${r.notice}\n` : ""}  token kept in ${kept}\n`);
   }
-  if (openToOthers(storePath(io.env))) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
+  if (fileHoldsToken(io)) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
   if (rows.some((r) => !r.works)) throw new CliError(3, "a login does not work: run petty auth login again");
 }
 
@@ -231,19 +245,33 @@ async function logout(io: Io, host: string | undefined): Promise<void> {
   const origin = host ? originOf(host) : store.default;
   const login = origin ? store.hosts[origin] : undefined;
   if (!origin || !login) throw new CliError(3, "not signed in there: nothing to sign out of");
+  // a keychain that cannot give the token still lets the login be forgotten; the token is then ended on the page
+  const token = await tokenOf(io, origin, login, false).then((g) => g.token, (e: unknown) => { if (e instanceof CliError) return null; throw e; });
   let ended = false;
-  try {
-    const res = await io.fetch(`${apiOf(origin)}/me/token`, { method: "DELETE", headers: { authorization: `Bearer ${login.token.split(".")[0]}` } });
-    ended = res.status === 204 || res.status === 401; // 401: it had already ended
-  } catch { /* offline: say so below */ }
-  forgetLogin(io.env, origin);
+  if (token) {
+    try {
+      const res = await io.fetch(`${apiOf(origin)}/me/token`, { method: "DELETE", headers: { authorization: `Bearer ${token.split(".")[0]}` } });
+      ended = res.status === 204 || res.status === 401; // 401: it had already ended
+    } catch { /* offline: say so below */ }
+  }
+  // PETTY-276: the keychain's entry goes too
+  const left = await forgetLogin(io, origin, login);
   io.err(ended
     ? `Signed out of ${origin}: the token “${clean(login.name)}” is ended there and forgotten here.\n`
-    : `Forgotten here, but ${origin} could not be reached to end the token: revoke “${clean(login.name)}” in Settings → Access tokens.\n`);
+    : token
+      ? `Forgotten here, but ${origin} could not be reached to end the token: revoke “${clean(login.name)}” in Settings → Access tokens.\n`
+      : `Forgotten here, but the keychain did not give the token to end it at ${origin}: revoke “${clean(login.name)}” in Settings → Access tokens.\n`);
+  if (left) io.err(`petty: note: ${left}\n`);
 }
 
-/** The token and Petty to use: PETTY_TOKEN first (for scripts and CI), then the stored login. */
-function credentials(io: Io, host: string | undefined): { origin: string; token: string } {
+/** The file holds a token (not only where the keychain keeps one): then others must not read it. */
+const fileHoldsToken = (io: Io): boolean => openToOthers(storePath(io.env)) && Object.values(readStore(io.env).hosts).some((h) => h.token !== undefined);
+
+/**
+ * The token and Petty to use: PETTY_TOKEN first (for scripts and CI), then the stored login, from the
+ * keychain or the file. `move`: a token still in the file moves to the keychain (PETTY-276).
+ */
+async function credentials(io: Io, host: string | undefined, move = true): Promise<{ origin: string; token: string }> {
   const envToken = io.env["PETTY_TOKEN"]?.trim();
   if (envToken) {
     const where = host ?? io.env["PETTY_API_URL"] ?? io.env["PETTY_HOST"];
@@ -254,19 +282,20 @@ function credentials(io: Io, host: string | undefined): { origin: string; token:
   const origin = host ? originOf(host) : io.env["PETTY_HOST"] ? originOf(io.env["PETTY_HOST"]) : store.default;
   const login = origin ? store.hosts[origin] : undefined;
   if (!origin || !login) throw new CliError(3, origin ? `not signed in to ${origin}: run petty auth login --host ${origin}` : "not signed in: run petty auth login --host https://<your Petty>");
-  if (openToOthers(storePath(io.env))) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
-  return { origin, token: login.token };
+  const got = await tokenOf(io, origin, login, move);
+  if (!got.keychain && fileHoldsToken(io)) io.err(`petty: warning: ${storePath(io.env)} can be read by other users; run: chmod 600 ${storePath(io.env)}\n`);
+  return { origin, token: got.token };
 }
 
-async function clientFor(io: Io, host: string | undefined): Promise<AgentClient> {
-  const c = credentials(io, host);
+async function clientFor(io: Io, host: string | undefined, move = true): Promise<AgentClient> {
+  const c = await credentials(io, host, move);
   return checkToken(io, c.origin, c.token);
 }
 
 // ------------------------------------------------------------------------------------------------ mcp
 
 async function mcp(io: Io, host: string | undefined, printConfig: boolean): Promise<void> {
-  const c = credentials(io, host);
+  const c = await credentials(io, host);
   if (printConfig) {
     const self = io.env["PETTY_SELF"] ?? fileURLToPath(import.meta.url);
     // the app starts `petty mcp` without this shell's variables: it uses the login petty auth login stored
@@ -301,7 +330,8 @@ async function liveNames(io: Io, prior: readonly string[]): Promise<Names | null
   const hostAt = prior.findIndex((w) => w === "--host" || w.startsWith("--host="));
   const host = hostAt < 0 ? undefined : prior[hostAt]!.includes("=") ? prior[hostAt]!.split("=")[1] : prior[hostAt + 1];
   const work = (async (): Promise<Names> => {
-    const client = await clientFor({ ...io, err: () => undefined }, host);
+    // a Tab press reads the token but never moves it: no keychain write, no note, while a word is typed
+    const client = await clientFor({ ...io, err: () => undefined }, host, false);
     const drawers: AgentDrawer[] = await client.drawers();
     const [tags, places] = await Promise.all([client.tags(), client.places()]);
     return {
@@ -381,7 +411,8 @@ ${shown.filter((c) => ["add", "take", "adjust", "tag", "untag", "move"].includes
 More
 ${shown.filter((c) => ["mcp", "completion"].includes(c.name)).map(row).join("\n")}
 
-Name an item as "Drawer › Item" (Tab completes it), by words, or by the drawerId/itemId --json prints.
+Name an item as "Drawer › Item" (Tab completes it), by words, by the drawerId/itemId --json prints,
+or by its page in Petty, copied from the browser (https://…/drawers/…/lines/…).
 Every command takes --host <address> and, where it prints, --json. petty help <command> tells more.
 Docs: https://github.com/WawRepo/petty/blob/main/docs/cli.md
 `);

@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useFlip } from "../lib/flip.js";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -24,7 +25,8 @@ import { PlacePicker } from "../components/PlacePicker.js";
 import { Sheet } from "../components/Sheet.js";
 import { TextField } from "../components/TextField.js";
 import { addPlace, flatten, pathKey, placeOfView, savePlaceTree, usePlaceTree, type PlaceNode, type PlacePath } from "../lib/places.js";
-import { homePlace, setHomePlace } from "../lib/homePlace.js";
+import { homePlace, onHomePlace, setHomePlace } from "../lib/homePlace.js";
+import { usePane } from "../lib/panes.js";
 import { quantityLabel } from "../lib/format.js";
 import { lineBalance as balanceOf } from "../lib/drawers.js";
 import { searchDrawers } from "../lib/search.js";
@@ -43,6 +45,7 @@ function GroupTotals({ tot, lang }: { tot: Totals; lang: string }) {
 function SearchHits({ view, lines }: { view: DrawerView; lines: readonly Line[] }) {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
+  const open = usePane()?.line ?? null; // two panes (PETTY-138): the item open on the right
   const id = view.summary.id;
   return (
     <ul className="search-hits" aria-label={t("home.search.hitsIn", { name: view.doc?.name ?? "…" })}>
@@ -52,7 +55,7 @@ function SearchHits({ view, lines }: { view: DrawerView; lines: readonly Line[] 
         const sub = l.kind === "single" ? l.text.split("\n")[0]?.slice(0, 60) : null;
         return (
           <li key={l.id}>
-            <button type="button" className="search-hit" data-testid="search-hit" onClick={() => nav(l.kind === "single" ? `/drawers/${id}` : `/drawers/${id}/lines/${l.id}`)}>
+            <button type="button" className="search-hit" data-testid="search-hit" aria-current={open === l.id ? "page" : undefined} onClick={() => nav(l.kind === "single" ? `/drawers/${id}` : `/drawers/${id}/lines/${l.id}`)}>
               <span className="rowmain">
                 <span className="rowtitle">{l.name}</span>
                 {sub ? <span className="rowsub">{sub}</span> : null}
@@ -72,6 +75,14 @@ const Icon = {
   coins: <Coins size={14} strokeWidth={2} aria-hidden="true" />,
   pin: <MapPin size={11} strokeWidth={2.4} aria-hidden="true" />,
 };
+/**
+ * Two panes (PETTY-138): the row of the drawer open on the right is the list's current one — "page" for the
+ * drawer itself, "true" while one of its items is open. One column: no row is.
+ */
+function useCurrent(id: string): "page" | "true" | undefined {
+  const pane = usePane();
+  return pane?.drawer === id ? (pane.line ? "true" : "page") : undefined;
+}
 const drawerIcon = (v: DrawerView | undefined) => (v?.doc ? iconOf(v.doc) ?? DEFAULT_DRAWER_ICON : DEFAULT_DRAWER_ICON);
 
 function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-place" }: { view: DrawerView; counted: boolean; dim?: boolean; place?: string; placeTestId?: string }) {
@@ -80,6 +91,7 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   const showVerification = verificationShown(pinsDoc);
   const showTotals = totalsShown(pinsDoc);
   const nav = useNavigate();
+  const current = useCurrent(view.summary.id);
   const name = view.doc?.name ?? view.name ?? "…";
   const w = drawerWarnings(view);
   const attention = w.problems > 0 || w.chain !== "ok" || w.negative || w.skipped > 0;
@@ -101,7 +113,7 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
   // PETTY-375: no aria-label. The row is named by what it shows (name, place, amount, count), so a screen
   // reader also reads the amount and a voice user can say the name they see (WCAG 2.5.3).
   return (
-    <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row">
+    <button type="button" className={`row${dim ? " dim" : ""}`} onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row" data-drawer-id={view.summary.id} aria-current={current}>
       {view.photo ? <img className="row-thumb" src={view.photo} alt="" /> : <span className={`tile ${colorClass(view.doc ? colorOf(view.doc) : null)}`} aria-hidden="true" data-icon={drawerIcon(view)}><PIcon name={drawerIcon(view)} /></span>}
       <span className="rowmain">
         <span className="rowtitle"><span data-testid="drawer-name">{name}</span>{place ? <span className="row-sub" data-testid={placeTestId}>{Icon.pin}{place}</span> : null}</span>
@@ -133,8 +145,9 @@ function DrawerRow({ view, counted, dim = false, place = "", placeTestId = "row-
 function DamagedRow({ view }: { view: DrawerView }) {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const current = useCurrent(view.summary.id);
   return (
-    <button type="button" className="row" onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row">
+    <button type="button" className="row" onClick={() => nav(`/drawers/${view.summary.id}`)} data-testid="drawer-row" data-drawer-id={view.summary.id} aria-current={current}>
       <span className="tile" aria-hidden="true"><PIcon name={DEFAULT_DRAWER_ICON} /></span>
       <span className="rowmain">
         <span className="rowtitle"><span data-testid="drawer-name">{view.doc?.name ?? view.name ?? "…"}</span></span>
@@ -188,6 +201,9 @@ export function HomeScreen() {
   const { t, i18n } = useTranslation();
   const nav = useNavigate();
   const morph = useMorph();
+  // Two panes (PETTY-138): Home is the list on the left; its total and picture go to the right pane while
+  // no drawer is open there, and away while one is.
+  const pane = usePane();
   const state = useDrawers();
   const [adding, setAdding] = useState(false);
   const [starter, setStarter] = useState("");
@@ -216,6 +232,8 @@ export function HomeScreen() {
   // PETTY-269: the picked place outlives the screen (in memory), so Back from a drawer lands on its level
   const [picked, setPickedHere] = useState<string[]>(() => [...homePlace()]);
   const setPicked = (path: string[]) => { setHomePlace(path); setPickedHere(path); };
+  // a place picked in the trail of a drawer open beside the list
+  useEffect(() => onHomePlace(() => setPickedHere([...homePlace()])), []);
   const paths = new Map<string, readonly string[]>();  // drawer id -> folded path
   const labels = new Map<string, string>();            // folded segment -> display spelling (first wins)
   for (const id of state.order) {
@@ -288,7 +306,7 @@ export function HomeScreen() {
   const active = searching && debounced.trim() !== "";
   // PETTY-280 (M11): the skeleton's size next time: the top card's height as drawn, and whether chips show
   useEffect(() => {
-    if (state.status !== "ready" || searching) return;
+    if (state.status !== "ready" || searching || pane) return; // the skeleton is the one column's
     const frame = requestAnimationFrame(() => {
       const top = document.querySelector('[data-testid="home-totals"], .home-picture');
       rememberHomeShape(top ? Math.round(top.getBoundingClientRect().height) : 0, !!document.querySelector('[data-testid="tag-bar"]'));
@@ -296,6 +314,31 @@ export function HomeScreen() {
     return () => cancelAnimationFrame(frame);
   });
   const totalCard = state.status === "ready" && !active && showTotals && counted && (tot.byCurrency.length > 0 || tot.incomplete);
+  // PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers.
+  const top = totalCard ? (
+    <section className={`total-card${homeArt && treeArt ? " tree" : ""}`} data-testid="home-totals">
+      <div className="tmain">
+        <h2 className="label">{filtering ? t("home.totalsIn", { tag: selectedLabels }) : t("home.totals")}</h2>
+        {tot.byCurrency.length ? (
+          <ul className={`totals-list${tot.byCurrency.length === 1 ? " single" : " multi"}`} aria-label={t("home.totalsCount", { count: tot.byCurrency.length })}>
+            {tot.byCurrency.map((c) => (
+              <li key={`${c.code}:${c.amount}`} className={`val-in${c.amount < 0 ? " negative" : ""}`}>
+                <span className="num">{formatAmount(c.amount, c.exponent, i18n.language)}</span> <span className="cur">{normalizeCurrencyCode(c.code)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="tsub m0" data-testid="totals-across">{t("home.across", { count: visibleIds.filter((id) => !excluded.has(id)).length })}</p>
+        {tot.incomplete ? <div className="warn" role="status" data-testid="totals-incomplete">{t("home.incomplete")}</div> : null}
+      </div>
+      <DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary>
+    </section>
+  ) : homeArt && state.status === "ready" && !active && visibleIds.length > 0 ? (
+    // no total to show (no money yet, or totals switched off): the picture stands on its own
+    <section className={`home-picture${treeArt ? " tree" : ""}`}><DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary></section>
+  ) : null;
+  // In the left pane Home is part of the page, not its main part (the right pane holds that).
+  const Root = pane ? "div" : "main";
   return (
     <>
       <TopBar title={t("app.name")} brand actions={
@@ -304,7 +347,7 @@ export function HomeScreen() {
         </button>
       } />
       {/* data-status: a screen going back to Home waits for "ready" — then its picture is drawn, or will not be (PETTY-279) */}
-      <main data-testid="home" data-status={state.status}>
+      <Root data-testid="home" data-status={state.status} className={pane ? "home-list" : undefined}>
         {state.status === "failed" ? <p className="error" role="alert">{t("home.loadFailed")} <Button variant="ghost" onClick={() => void loadAll()}>{t("app.retry")}</Button></p> : null}
         {state.status === "loading" ? <HomeSkeleton /> : null}
         <OfflineBanner />
@@ -334,28 +377,7 @@ export function HomeScreen() {
             )}
           </div>
         ) : null}
-        {/* PETTY-117 (audit F10): while a search is typed, the page is the results — no totals, chips, nudges or non-matching drawers. */}
-        {totalCard ? (
-          <section className={`total-card${homeArt && treeArt ? " tree" : ""}`} data-testid="home-totals">
-            <div className="tmain">
-              <h2 className="label">{filtering ? t("home.totalsIn", { tag: selectedLabels }) : t("home.totals")}</h2>
-              {tot.byCurrency.length ? (
-                <ul className={`totals-list${tot.byCurrency.length === 1 ? " single" : " multi"}`} aria-label={t("home.totalsCount", { count: tot.byCurrency.length })}>
-                  {tot.byCurrency.map((c) => (
-                    <li key={`${c.code}:${c.amount}`} className={`val-in${c.amount < 0 ? " negative" : ""}`}>
-                      <span className="num">{formatAmount(c.amount, c.exponent, i18n.language)}</span> <span className="cur">{normalizeCurrencyCode(c.code)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <p className="tsub m0" data-testid="totals-across">{t("home.across", { count: visibleIds.filter((id) => !excluded.has(id)).length })}</p>
-              {tot.incomplete ? <div className="warn" role="status" data-testid="totals-incomplete">{t("home.incomplete")}</div> : null}
-            </div>
-            <DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary>
-          </section>
-        ) : null}
-        {/* no total to show (no money yet, or totals switched off): the picture stands on its own */}
-        {!totalCard && homeArt && state.status === "ready" && !active && visibleIds.length > 0 ? <section className={`home-picture${treeArt ? " tree" : ""}`}><DrawerBoundary resetKey={state.drawers} fallback={null}>{homeArt}</DrawerBoundary></section> : null}
+        {pane ? null : top}
         {active || state.status !== "ready" ? null : <Nudges />}
         {state.status === "ready" && !active && showPlaces && labels.size > 0 ? (
           <div className="tag-bar" role="group" aria-label={t("home.tags.label")} data-testid="tag-bar">
@@ -417,7 +439,8 @@ export function HomeScreen() {
         )}
         </div>
         <button type="button" className="addbtn" onClick={() => { setStarter(""); setAdding(true); }} disabled={state.status !== "ready"}>+ {t("home.addDrawer")}</button>
-      </main>
+      </Root>
+      {pane?.overview && top ? createPortal(top, pane.overview) : null}
       <AddDrawerSheet open={adding} tree={tree} initialName={starter} onClose={() => setAdding(false)} onCreate={async (name, place) => { const id = await createDrawer(name, place ?? []); nav(`/drawers/${id}`); }} />
     </>
   );

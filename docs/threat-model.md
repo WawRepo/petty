@@ -1,6 +1,6 @@
 # Threat model
 
-**Current as of 2026-11-16 (after v1.5.42).** This is the maintained description of what Petty protects,
+**Current as of 2026-11-17 (after v1.5.52).** This is the maintained description of what Petty protects,
 from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
@@ -419,8 +419,12 @@ relays the sealed blob once and deletes the request; it never sees the token.
   person, only a signed-in and unlocked person can allow one, and a token can never
   allow a token. Asking for codes is limited per address (an IPv6 client counts by its /64 network,
   as for every per-address limit).
-- **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
-  token file. What a person types (names, amounts, notes) stays in their shell's history, outside
+- **The login on disk.** The token is in the system's keychain (macOS keychain, Secret Service,
+  Windows Credential Manager) when there is one, reached through the system's own tools with the token
+  on stdin, never as an argument (PETTY-276). `~/.petty/hosts.json`, readable by its user only, keeps
+  the rest of the login, or the token too when there is no keychain or it failed, like the MCP
+  program's token file. A program that runs as the same user can still ask the keychain for it: the
+  keychain keeps the token out of copies of the home folder, not away from that user's programs. What a person types (names, amounts, notes) stays in their shell's history, outside
   Petty's control; [cli.md](cli.md) says how to keep notes out of it.
 - **The page it opens.** The command line builds the address itself, from the Petty it signs in to
   and its own code. It opens only an `http:` or `https:` address, and no shell reads it: on Windows it
@@ -430,8 +434,11 @@ relays the sealed blob once and deletes the request; it never sees the token.
 
 Calls that could destroy keys or data — replacing the vault or its recovery-code copy, deleting the
 account, deleting a drawer, deleting a line (its entries go with it), publishing a new drawer key and
-every batch of the re-encryption that follows, adding or removing a passkey, creating a token —
-require a server-issued challenge **signed with the account key**, in addition to the session.
+every batch of the re-encryption that follows, adding or removing a passkey, creating a token, and
+since PETTY-513 every write of a drawer's document (`PUT /drawers/:id/document`), replacing or removing
+a drawer's photo (`PUT`/`DELETE /drawers/:id/photo`) and every write of the user document (`PUT
+/me/doc`: pins, trusted tokens, accepted keys and counters) — require a server-issued challenge **signed
+with the account key**, in addition to the session.
 Replacing the vault or the recovery code, changing passkeys and deleting the account also ask for the
 login password in local mode. There is one challenge per person (`POST /me/custody-challenge`); it is
 valid five minutes and works once. It lives in the database, so it works the same when several
@@ -441,7 +448,11 @@ another, each with a fresh proof, and sends a call again when the server answers
 server checks the proof before the password and before it writes anything, so a call sent again never
 counts as a second password try. A web app from before PETTY-440 and PETTY-441 sends no proof for a key
 change or a line deletion: the server answers 403 `CustodyProofRequired` and changes nothing. The
-login password can be reset from an email link; the vault key cannot be reset by anyone. Replaced
+login password can be reset from an email link; the vault key cannot be reset by anyone. A web app
+from before PETTY-513 sends no proof with a document, photo or user-document write either: those are
+refused the same way until the tab is reloaded. An access token writes a drawer's document without a
+proof: a proof was needed to make the token, and the entries it writes are signed with its own key. It
+cannot call the photo or user-document routes at all. Replaced
 vault blobs are kept 30 days (an admin can put one back), and the owner is emailed on a password reset
 and a vault change.
 
@@ -502,7 +513,8 @@ count or a reversal; per-line write counts; and exact timestamps — a pattern o
 sees when each account was last active (written at most once every 5 minutes), which version of the
 operator's terms it accepted and when, the names of its passkeys and access tokens and when each token
 was last used, and the address a device login was asked from, kept until the request is used or
-expires. With `EMAIL_KEY` set (PETTY-359), the database holds every email address sealed with that key
+expires. With Clerk sign-in it keeps a hash of each Clerk session id and when a request last carried it,
+with no link to an account, to count sign-ins (PETTY-285). With `EMAIL_KEY` set (PETTY-359), the database holds every email address sealed with that key
 and a keyed hash of it for lookups: a copy of the database alone (a backup, a disk, an SQL injection
 that reads tables) shows no address. The keyed hash is the same for the same address, so two copies
 still show which accounts kept theirs. The running app still reads every address with the key, to sign
@@ -521,7 +533,8 @@ browser never sends (PETTY-457). The device-login page still has its one-time co
 ([monitoring.md](monitoring.md)).
 
 The app deletes some things by itself, hourly while it is in use and daily otherwise: expired
-sessions, device logins nobody finished, custody challenges and limit counts that ran out, a
+sessions, device logins nobody finished, custody challenges and limit counts that ran out, Clerk
+sessions not used for 30 days, a
 password-reset token after its hour, an unused join link when it ends, and vault blobs replaced more
 than 30 days ago. A used join link forgets the address it was for at once. A drawer keeps replaced
 documents for 30 days, then housekeeping deletes them. The same goes for a replaced user document and

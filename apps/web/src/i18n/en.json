@@ -3,6 +3,7 @@
     "name": "Petty",
     "loading": "Loading…",
     "back": "Back",
+    "backToList": "Back to the list",
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
@@ -162,6 +163,9 @@
     "totalsIn": "Total value · {tag}",
     "across": "{count, plural, one {Across # drawer} other {Across # drawers}}",
     "drawersTitle": "Drawers",
+    "pane": {
+      "hint": "A drawer you pick in the list opens here."
+    },
     "items": "{count, plural, one {# item} other {# items}}",
     "currencies": "{count, plural, one {# currency} other {# currencies}}",
     "tags": {
@@ -617,7 +621,7 @@
     "transferDecline": "Decline",
     "transferWaiting": "Waiting for {name} to accept ownership of “{drawer}”.",
     "cancel": "Cancel offer",
-      "stale": "{name}'s invitation is out of date: the drawer's key changed since. Ask {name} to invite you again."
+    "stale": "{name}'s invitation is out of date: the drawer's key changed since. Ask {name} to invite you again."
   },
   "members": {
     "title": "Members",
@@ -1261,7 +1265,7 @@
       },
       "phone": {
         "q": "Is there a phone app?",
-        "a": "Petty installs from the browser (Add to Home Screen) and works offline like a native app, on iPhone and Android."
+        "a": "Petty installs from the browser (Add to Home Screen) and works offline like a native app, on iPhone and Android. On a computer, the list of drawers stays on the left and the one you open shows beside it."
       }
     },
     "footer": "© 2026 Petty · everything you keep, encrypted end to end",

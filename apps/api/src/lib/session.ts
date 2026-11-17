@@ -5,7 +5,9 @@ import { config } from "../config.js";
 import { randomToken, sha256 } from "./bytes.js";
 import { forbidden, unauthorized } from "./errors.js";
 
-import { clerkProfile, clerkUserExists, verifyClerkToken, type ClerkIdentity } from "./clerk.js";
+import { checkClerkToken, clerkProfile, clerkUserExists, type ClerkIdentity } from "./clerk.js";
+import { noteClerkSession } from "./clerk-sessions.js";
+import { authEvents } from "./metrics.js";
 import { mails } from "./mail.js";
 import { emailColumnsSql, emailMatchParams, emailMatchSql, openEmail, type StoredEmail } from "./email-seal.js";
 import { assertTokenMay, authenticateToken, PAT_PREFIX } from "./tokens.js";
@@ -132,9 +134,14 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
       // Clerk mode (PETTY-88): the session is Clerk's; the API verifies the bearer token and maps it to a users row.
       const h = req.headers.authorization ?? "";
       if (!h.startsWith("Bearer ")) return;
-      const id = await verifyClerkToken(h.slice(7).trim());
-      if (!id) return;
+      const check = await checkClerkToken(h.slice(7).trim());
+      if ("refused" in check) {
+        authEvents.inc({ event: check.refused === "expired" ? "clerk_token_expired" : "clerk_token_invalid" }); // PETTY-285
+        return;
+      }
+      const id = check.identity;
       req.clerk = id;
+      if (id.sid) void noteClerkSession(id.sid); // PETTY-285: a session seen for the first time is a sign-in
       const { rows } = await apiPool.query<SessionUser>(
         "select id, display_name, locale, is_admin from users where clerk_user_id = $1 and deleted_at is null and blocked_at is null",
         [id.sub],

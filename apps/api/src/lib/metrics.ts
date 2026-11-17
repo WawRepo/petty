@@ -63,15 +63,19 @@ export const httpDuration = dualHistogram(
   ["method", "route", "status"], BUCKETS,
 );
 
-/** The sign-in events each mode can count. Under Clerk, Clerk signs people in; Petty sees only the sign-up and the device flow. */
+/**
+ * The sign-in events each mode can count. Under Clerk, Clerk signs people in: Petty counts a session the first
+ * time a request carries it (`clerk_signin`) and the session tokens it refuses, by reason (PETTY-285,
+ * lib/clerk.ts), besides the sign-up and the device flow.
+ */
 const AUTH_EVENTS = {
-  clerk: ["signup", "device_code", "device_approved", "device_denied"],
+  clerk: ["signup", "clerk_signin", "clerk_token_expired", "clerk_token_invalid", "device_code", "device_approved", "device_denied"],
   local: ["login_ok", "login_fail", "rate_limited", "signup", "forgot", "reset", "logout", "device_code", "device_approved", "device_denied"],
 } as const;
 export const authEvents = dualCounter(
   "petty_auth_events_total",
-  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied",
-  "event", AUTH_EVENTS.local, AUTH_EVENTS[config.authProvider],
+  "Sign-in flow events: login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied, clerk_signin, clerk_token_expired, clerk_token_invalid",
+  "event", [...AUTH_EVENTS.local, "clerk_signin", "clerk_token_expired", "clerk_token_invalid"], AUTH_EVENTS[config.authProvider],
 );
 
 export const entriesAppended = dualCounter(

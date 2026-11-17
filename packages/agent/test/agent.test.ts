@@ -246,7 +246,7 @@ describe("headless client (PETTY-165)", () => {
     const doc = await openDocument(k, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) });
     const renamed = applyOps(doc as never, [{ type: "rename_line", line_id: lineId, name: "Cash box" }], { lineHasEntries: () => true });
     const sealedDoc = await owner.sealDoc(drawerId, k, renamed);
-    expect((await owner.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false })).statusCode).toBe(200);
+    expect((await owner.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false, proof: await owner.proof() })).statusCode).toBe(200);
     // the token's change still lands, and the rename survives
     await c.tagItem(drawerId, lineId, "kept");
     const line = (await c.drawers())[0]!.lines[0]!;
@@ -270,7 +270,7 @@ describe("headless client (PETTY-165)", () => {
     const doc = await openDocument(k, { record_type: "document", record_id: drawerId, drawer_id: drawerId, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) });
     const renamed = applyOps(doc as never, [{ type: "rename_drawer", name: "Kitchen (shared)" }], { lineHasEntries: () => true });
     const sealedDoc = await bob.sealDoc(drawerId, k, renamed);
-    expect((await bob.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false })).statusCode).toBe(200);
+    expect((await bob.call("PUT", `/drawers/${drawerId}/document`, { base_version: got.drawer.version, key_version: 1, schema_version: 1, nonce: toB64(sealedDoc.nonce), ciphertext: toB64(sealedDoc.ciphertext), verification: false, proof: await bob.proof() })).statusCode).toBe(200);
 
     const c = await client("read");
     expect((await c.drawers()).map((d) => d.name)).toContain("Kitchen (shared)");
@@ -654,7 +654,7 @@ describe("headless client (PETTY-165)", () => {
     // the owner's app finishes: the document under key 2, and the token gets key 2 (syncTokenWraps)
     const doc = await openDocument(key1, { record_type: "document", record_id: shed.id, drawer_id: shed.id, line_id: null, author_id: before.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(before.document.nonce), ciphertext: fromB64(before.document.ciphertext) });
     const resealed = await owner.sealDoc(shed.id, key2, doc as never, 2);
-    expect((await owner.call("PUT", `/drawers/${shed.id}/document`, { base_version: before.drawer.version, key_version: 2, schema_version: 1, nonce: toB64(resealed.nonce), ciphertext: toB64(resealed.ciphertext), verification: false })).statusCode).toBe(200);
+    expect((await owner.call("PUT", `/drawers/${shed.id}/document`, { base_version: before.drawer.version, key_version: 2, schema_version: 1, nonce: toB64(resealed.nonce), ciphertext: toB64(resealed.ciphertext), verification: false, proof: await owner.proof() })).statusCode).toBe(200);
     expect((await owner.call("POST", `/me/tokens/${made.id}/keys`, { keys: [{ drawer_id: shed.id, key_version: 2, wrap: await forToken(key2, 2) }] })).statusCode).toBe(204);
 
     // started again, the tool holds key 2, and what it writes the owner opens under key 2

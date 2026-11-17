@@ -5,9 +5,11 @@ import { rewriteEmails, type RewriteResult } from "./email-seal.js";
 
 /** How long a replaced drawer document stays restorable (PETTY-183, review NR-3); a replaced user document or photo too (PETTY-506). */
 export const HISTORY_DAYS = 30;
+/** How long a Clerk session's row stays after a request last carried it (PETTY-285, lib/clerk-sessions.ts). */
+export const CLERK_SESSION_DAYS = 30;
 
 /** Housekeeping, as petty_api: nothing here touches entries. On bgPool, so it is not counted as a request using the database. */
-export async function runMaintenance(): Promise<{ sessions: number; vault_history: number; document_history: number; device_requests: number; custody_challenges: number; rate_counters: number; password_resets: number; join_links: number; tokens: number; tombstones: number; kept_copies: number; emails: RewriteResult; pending: boolean }> {
+export async function runMaintenance(): Promise<{ sessions: number; vault_history: number; document_history: number; device_requests: number; custody_challenges: number; rate_counters: number; clerk_sessions: number; password_resets: number; join_links: number; tokens: number; tombstones: number; kept_copies: number; emails: RewriteResult; pending: boolean }> {
   const s = await bgPool.query("delete from sessions where expires_at < now()");
   const v = await bgPool.query("delete from vault_history where replaced_at < now() - interval '30 days'");
   // PETTY-488: a write drops its own drawer's old copies, but a drawer nobody writes to again kept them for good
@@ -20,6 +22,8 @@ export async function runMaintenance(): Promise<{ sessions: number; vault_histor
   // PETTY-334: what several instances share instead of their memory; each row outlives its use by a window at most
   const c = await bgPool.query("delete from custody_challenges where expires_at < now()");
   const r = await bgPool.query("delete from rate_counters where reset_at < now()");
+  // PETTY-285: the Clerk sessions counted as sign-ins, once not seen for a while (lib/clerk-sessions.ts)
+  const k = await bgPool.query("delete from clerk_sessions_seen where seen_at < now() - make_interval(days => $1)", [CLERK_SESSION_DAYS]);
   // PETTY-341 (GDPR, storage limitation): a reset token is dead after its hour; an unused join link that
   // ended holds an email of someone who never signed up (a used link forgets its email at once, auth.ts)
   const p = await bgPool.query("delete from password_resets where expires_at < now()");
@@ -36,7 +40,7 @@ export async function runMaintenance(): Promise<{ sessions: number; vault_histor
   const left = await bgPool.query<{ pending: boolean }>(
     "select exists(select 1 from rate_counters) or exists(select 1 from device_requests) or exists(select 1 from custody_challenges) or exists(select 1 from password_resets) as pending",
   );
-  return { sessions: s.rowCount ?? 0, vault_history: v.rowCount ?? 0, document_history: h.rowCount ?? 0, device_requests: d.rowCount ?? 0, custody_challenges: c.rowCount ?? 0, rate_counters: r.rowCount ?? 0, password_resets: p.rowCount ?? 0, join_links: j.rowCount ?? 0, tokens: t, tombstones: g.rows[0]!.n, kept_copies: (ku.rowCount ?? 0) + (kp.rowCount ?? 0), emails, pending: left.rows[0]!.pending };
+  return { sessions: s.rowCount ?? 0, vault_history: v.rowCount ?? 0, document_history: h.rowCount ?? 0, device_requests: d.rowCount ?? 0, custody_challenges: c.rowCount ?? 0, rate_counters: r.rowCount ?? 0, clerk_sessions: k.rowCount ?? 0, password_resets: p.rowCount ?? 0, join_links: j.rowCount ?? 0, tokens: t, tombstones: g.rows[0]!.n, kept_copies: (ku.rowCount ?? 0) + (kp.rowCount ?? 0), emails, pending: left.rows[0]!.pending };
 }
 
 const HOUR = 60 * 60_000;

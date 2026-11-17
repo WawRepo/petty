@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { deviceUserCode, fromB64, hashEntry, openEntryUnverified, sealDeviceToken, toB64 } from "@petty/crypto";
 import { applyOp, newDocument } from "@petty/ledger";
 import type { Client } from "../../../apps/api/src/devtools/fixtures.js";
+import { fakeKeychain } from "../../../apps/cli/test/fake-keychain.js";
 import { API, ORIGIN, compose, newUser } from "../lib.js";
 
 /**
@@ -15,14 +16,17 @@ import { API, ORIGIN, compose, newUser } from "../lib.js";
  * address, make a token, seal it to the tool), and the downloaded program then reads and writes with it.
  * PETTY-451: the code has 20 letters; a request without one (an older command line) is told to update.
  * PETTY-452: a token for chosen drawers reads those only.
+ * PETTY-276: the token goes to the system's keychain; these runs keep it in the file
+ * (PETTY_TOKEN_STORE=file), so a test never reaches the keychain of the computer it runs on, except
+ * the one test that gives the program stand-ins of the keychain tools.
  */
 const dir = mkdtempSync(join(tmpdir(), "petty-it-cli-"));
 const cli = join(dir, "petty.mjs");
 let ann: Client;
 let drawerId: string, lineId: string, raw: string, key: CryptoKey;
 
-function petty(args: string[], stdin?: string) {
-  const child = spawn(process.execPath, [cli, ...args], { env: { ...process.env, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "" }, stdio: ["pipe", "pipe", "pipe"] });
+function petty(args: string[], stdin?: string, env: Record<string, string> = {}) {
+  const child = spawn(process.execPath, [cli, ...args], { env: { ...process.env, PETTY_CONFIG_DIR: dir, PETTY_TOKEN: "", PETTY_TOKEN_STORE: "file", ...env }, stdio: ["pipe", "pipe", "pipe"] });
   let out = "", err = "";
   child.stdout.on("data", (b: Buffer) => { out += b.toString(); });
   child.stderr.on("data", (b: Buffer) => { err += b.toString(); });
@@ -138,8 +142,45 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const find = petty(["find", "garage", "cash"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toContain("Garage box › Cash  26.50 EUR");
+    // PETTY-515: also by the item's page in the app, as the browser's address bar shows it
+    const page = petty(["find", `${ORIGIN}/drawers/${drawerId}/lines/${lineId}`]);
+    expect(await page.done).toBe(0);
+    expect(page.out()).toContain("Garage box › Cash  26.50 EUR");
     const write = petty(["take", "Garage box › Cash", "1"]);
     expect(await write.done).toBe(3); // read only
+  });
+
+  // the shipped program with stand-ins of `security` (macOS) and `secret-tool` (Linux) first on the PATH
+  // (apps/cli/test/fake-keychain.ts): it runs whichever this system has, never with the token as an argument
+  it.skipIf(process.platform === "win32")("keeps the token in the keychain, and hosts.json only says so (PETTY-276)", async () => {
+    const fake = fakeKeychain();
+    const own = mkdtempSync(join(tmpdir(), "petty-it-keychain-"));
+    try {
+      const env = { PETTY_CONFIG_DIR: own, PETTY_TOKEN_STORE: "", PATH: fake.path };
+      const tok = await ann.makeAccessToken("read", [{ drawer_id: drawerId, key_version: 1, key: raw }]);
+      const login = petty(["auth", "login", "--host", ORIGIN, "--with-token"], `${tok.token}\n`, env);
+      expect(await login.done).toBe(0);
+      expect(login.err()).toMatch(/Kept in the (macOS keychain|keyring \(Secret Service\))\.\n/);
+      expect(Object.values(fake.store())).toEqual([tok.token]);
+      const file = readFileSync(join(own, "hosts.json"), "utf8");
+      expect(file).not.toContain("petty_pat_");
+      expect(JSON.parse(file).hosts[ORIGIN]).toMatchObject({ token_in: "keychain", role: "read" });
+
+      const find = petty(["find", "garage", "cash"], undefined, env);
+      expect(await find.done).toBe(0);
+      expect(find.out()).toContain("Garage box › Cash");
+      const status = petty(["auth", "status", "--json"], undefined, env);
+      expect(await status.done).toBe(0);
+      expect(JSON.parse(status.out())).toMatchObject([{ host: ORIGIN, works: true, from: "keychain" }]);
+      const logout = petty(["auth", "logout"], undefined, env);
+      expect(await logout.done).toBe(0);
+      expect(fake.store()).toEqual({});
+      expect((await fetch(`${API}/me/token`, { headers: { authorization: `Bearer ${tok.bearer}` } })).status).toBe(401);
+      for (const argv of fake.argv()) expect(argv.join(" ")).not.toContain("petty_pat_");
+    } finally {
+      fake.remove();
+      rmSync(own, { recursive: true, force: true });
+    }
   });
 
   it("shows text from a drawer with its control characters as ?, and escaped with --json; amounts line up after emoji (PETTY-453, PETTY-493, PETTY-495)", async () => {
@@ -173,6 +214,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const find = petty(["find", "odd", "key"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
+    // PETTY-515: an older item id, not a UUID, names its item like any id --json prints
+    const byId = petty(["find", `${made.id}/old${ESC} id`]);
+    expect(await byId.done).toBe(0);
+    expect(byId.out()).toContain("Odd?[2J box › Key");
     const json = petty(["drawers", "--json"]);
     expect(await json.done).toBe(0);
     // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there

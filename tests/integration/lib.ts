@@ -60,6 +60,8 @@ export interface SeedState {
   drawerKey: string; // base64 raw AES key, test data only
   balance: number;
   entries: number;
+  /** PETTY-513: the account's vault passphrase (test data only), so a later file can open the vault and prove custody for a write. */
+  passphrase?: string;
 }
 const statePath = () => process.env["PETTY_IT_STATE"] ?? join(import.meta.dirname, ".state.json");
 export const readState = (): SeedState | null => (existsSync(statePath()) ? (JSON.parse(readFileSync(statePath(), "utf8")) as SeedState) : null);

@@ -456,12 +456,20 @@ export const PutDocumentBody = SealedBody.extend({
   base_version: z.number().int().min(1),
   /** true when this write appends a verification: the server stamps last_verified_at */
   verification: z.boolean().default(false),
+  /**
+   * PETTY-513: a person's session sends a custody proof with every document write, so a session without
+   * the vault key cannot replace the drawer's document. An access token sends none: a custody proof made
+   * the token, and its writes are signed with the token's own key.
+   */
+  proof: CustodyProof.optional(),
 });
 export type PutDocumentBody = z.infer<typeof PutDocumentBody>;
 export const PutDocumentResponse = z.object({ version: z.number().int(), last_write_at: z.string(), last_verified_at: z.string().nullable() });
 /** PETTY-441: deleting a line removes its entries for good, so it needs a custody proof like deleting a drawer. */
-export const DeleteLineBody = z.object({ document: PutDocumentBody, proof: CustodyProof });
-export const PutPhotoBody = SealedBody;
+export const DeleteLineBody = z.object({ document: PutDocumentBody.omit({ proof: true }), proof: CustodyProof });
+/** PETTY-513: replacing or removing a drawer's photo needs a custody proof, like the other writes that destroy data. */
+export const PutPhotoBody = SealedBody.extend({ proof: CustodyProof });
+export const DeletePhotoBody = z.object({ proof: CustodyProof });
 
 /**
  * PETTY-243: size limits the server enforces on ciphertext it cannot read. A photo is a JPEG of at
@@ -565,7 +573,8 @@ export const UserDocRow = z.object({ version: z.number().int(), schema_version: 
 /** PETTY-506: the person's own user documents replaced in the last 30 days, newest first, still sealed. Only their own session sees them. */
 export const UserDocHistory = z.object({ history: z.array(z.object({ id: z.string(), replaced_at: z.string(), document: UserDocRow })) });
 export type UserDocHistory = z.infer<typeof UserDocHistory>;
-export const PutUserDocBody = z.object({ base_version: z.number().int().min(0), schema_version: z.number().int().min(1), nonce: sized.nonce, ciphertext: b64Sized(0, USER_DOC_MAX_CIPHERTEXT) });
+/** PETTY-513: with a custody proof, so a session without the vault key cannot replace the pins, trusted tokens and counters. */
+export const PutUserDocBody = z.object({ base_version: z.number().int().min(0), schema_version: z.number().int().min(1), nonce: sized.nonce, ciphertext: b64Sized(0, USER_DOC_MAX_CIPHERTEXT), proof: CustodyProof });
 
 // ---------------------------------------------------------------- vault custody changes
 export const CustodyChallenge = z.object({ challenge: b64, expires_at: z.string() });

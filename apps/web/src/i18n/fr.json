@@ -3,6 +3,7 @@
     "name": "Petty",
     "loading": "Chargement…",
     "back": "Retour",
+    "backToList": "Retour à la liste",
     "cancel": "Annuler",
     "save": "Enregistrer",
     "close": "Fermer",
@@ -162,6 +163,9 @@
     "totalsIn": "Valeur totale · {tag}",
     "across": "{count, plural, one {Dans # tiroir} other {Dans # tiroirs}}",
     "drawersTitle": "Tiroirs",
+    "pane": {
+      "hint": "Le tiroir choisi dans la liste s’ouvre ici."
+    },
     "items": "{count, plural, one {# élément} other {# éléments}}",
     "currencies": "{count, plural, one {# devise} other {# devises}}",
     "tags": {
@@ -617,7 +621,7 @@
     "transferDecline": "Refuser",
     "transferWaiting": "En attente de l’accord de {name} pour devenir propriétaire de « {drawer} ».",
     "cancel": "Annuler l’offre",
-      "stale": "L’invitation de {name} n’est plus valable : la clé du tiroir a changé depuis. Demandez à {name} de vous inviter à nouveau."
+    "stale": "L’invitation de {name} n’est plus valable : la clé du tiroir a changé depuis. Demandez à {name} de vous inviter à nouveau."
   },
   "members": {
     "title": "Membres",
@@ -1261,7 +1265,7 @@
       },
       "phone": {
         "q": "Existe-t-il une application mobile ?",
-        "a": "Petty s’installe depuis le navigateur (Ajouter à l’écran d’accueil) et fonctionne hors ligne comme une application native, sur iPhone et Android."
+        "a": "Petty s’installe depuis le navigateur (Ajouter à l’écran d’accueil) et fonctionne hors ligne comme une application native, sur iPhone et Android. Sur un ordinateur, la liste des tiroirs reste à gauche et celui que vous ouvrez s’affiche à côté."
       }
     },
     "footer": "© 2026 Petty · tout ce que vous gardez, chiffré de bout en bout",

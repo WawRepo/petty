@@ -2,7 +2,7 @@ import { HISTORY_DAYS } from "./maintenance.js";
 import type { Queryable } from "./tx.js";
 
 /**
- * PETTY-506: copies of a replaced user document and of a replaced or removed drawer photo (migration 021).
+ * PETTY-506: copies of a replaced user document and of a replaced or removed drawer photo (migration 023).
  * They are kept HISTORY_DAYS (30) days, like a replaced drawer document, so the person's own app can put one
  * back. The server cannot read them and never chooses one.
  *

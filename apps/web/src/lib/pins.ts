@@ -10,6 +10,7 @@ import { UserDocHistory, UserDocRow, z, type Member } from "@petty/protocol";
 import { api, ApiError, NetworkError } from "./api.js";
 import { idb } from "./idb.js";
 import { getAuth } from "./session.js";
+import { withCustodyProof } from "./custody.js";
 
 // `earlier` (PETTY-413): the signing keys this person confirmed for the contact before the current one, so that entries
 // those keys signed still verify. A key that was pinned on first sight and never confirmed is not kept.
@@ -138,6 +139,12 @@ async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
   return { key: selfKey, identity: { record_type: "document", record_id: a.me.id, drawer_id: a.me.id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: 1 } };
 }
 export function forgetSelfKey(): void { selfKey = null; resetPins(); }
+/** The account's signing key, for the custody proof of a save (PETTY-513). */
+function signingKey(): CryptoKey {
+  const a = getAuth();
+  if (a.status !== "unlocked") throw new Error("vault locked");
+  return a.keys.ecdsaPrivate;
+}
 
 /** Opens a sealed user document and checks its shape. Throws when it does not open or is not one. */
 async function openUserDoc(k: CryptoKey, identity: RecordIdentity, row: { readonly nonce: string; readonly ciphertext: string }): Promise<UserDocT> {
@@ -252,8 +259,10 @@ async function save(mutate: (doc: UserDocT) => UserDocT): Promise<void> {
     // PETTY-439: the counter this copy was loaded with, plus one. After a VersionConflict the copy is the fresh one.
     const next: UserDocT = { ...mutate(state.doc), v: 2, rev: (state.doc.rev ?? 0) + 1 };
     const sealed = await seal(k, identity, utf8(canonicalJson(next)));
+    const body = { base_version: state.version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) };
     try {
-      const r = await api<{ version: number }>("PUT", "/me/doc", { base_version: state.version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+      // PETTY-513: the save carries a custody proof, so a session without the vault key cannot replace this document
+      const r = await withCustodyProof(signingKey(), (proof) => api<{ version: number }>("PUT", "/me/doc", { ...body, proof }));
       await idb.set(seenKey(identity.record_id), seenOf(r.version, next));
       await idb.set(K_DOC, { userId: identity.record_id, version: r.version, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) } satisfies CachedDoc);
       set({ status: "ready", doc: next, version: r.version, lastSeenVersion: r.version });

@@ -11,8 +11,8 @@ import {
   signCustodyChallenge, signDelegation, signingKeyId, toB64, type DrawerKeyWrapV1, type RecordIdentity, type VaultBlobV1,
 } from "@petty/crypto";
 import {
-  AccessTokenCreate, AccessTokenKeysBody, AddPasskeyBody, Bootstrap, CreateDrawerBody, CustodyProof, DeleteLineBody, DOCUMENT_MIN_CIPHERTEXT, DrawerKeyWrap, ENTRY_MAX_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, EntryRow, FIELD_BYTES,
-  InviteBody, Me, PasskeyVault, PostEntryBody, PutUserDocBody, PutVaultBody, RotationBatchBody, SealedBody, SignedDelegation, SignupBody, StartRotationBody, StoredDrawerKeyWrap, StoredVaultBlob,
+  AccessTokenCreate, AccessTokenKeysBody, AddPasskeyBody, Bootstrap, CreateDrawerBody, CustodyProof, DeleteLineBody, DeletePhotoBody, DOCUMENT_MIN_CIPHERTEXT, DrawerKeyWrap, ENTRY_MAX_CIPHERTEXT, ENTRY_MIN_CIPHERTEXT, EntryRow, FIELD_BYTES,
+  InviteBody, Me, PasskeyVault, PostEntryBody, PutDocumentBody, PutPhotoBody, PutUserDocBody, PutVaultBody, RotationBatchBody, SealedBody, SignedDelegation, SignupBody, StartRotationBody, StoredDrawerKeyWrap, StoredVaultBlob,
   TOKEN_BUNDLE_MAX_CIPHERTEXT, USER_DOC_MAX_CIPHERTEXT, UserDelegations, VaultBlob, b64ByteLength, b64Sized,
 } from "../src/index.js";
 
@@ -89,7 +89,7 @@ describe("what the clients make fits the request schemas", () => {
     expect(ok(CreateDrawerBody, { id, document, self_wrap: selfWrap })).toBe(true);
     expect(ok(InviteBody, { invitee_id: id, role: "write", wrap: selfWrap })).toBe(true);
     expect(ok(PostEntryBody, { id, line_id: id, is_checkpoint: false, reverses_entry_id: null, ...entry })).toBe(true);
-    expect(ok(PutUserDocBody, { base_version: 0, schema_version: 1, nonce: document.nonce, ciphertext: document.ciphertext })).toBe(true);
+    expect(ok(PutUserDocBody, { base_version: 0, schema_version: 1, nonce: document.nonce, ciphertext: document.ciphertext, proof })).toBe(true);
     expect(ok(StartRotationBody, { to_version: 2, wraps: [{ user_id: id, wrap: { ...selfWrap, key_version: 2 } }], proof })).toBe(true);
     expect(ok(RotationBatchBody, { to_version: 2, entries: [{ id, nonce: entry.nonce, ciphertext: entry.ciphertext }], document, photo: document, proof })).toBe(true);
     expect(ok(DeleteLineBody, { document: { ...document, base_version: 1 }, proof })).toBe(true);
@@ -141,6 +141,18 @@ describe("what does not fit is refused", () => {
     expect(ok(DeleteLineBody, { document: { ...sealed, base_version: 1 } })).toBe(false);
   });
 
+  it("writing a photo or the user document carries a custody proof; a document write may leave it out, for an access token (PETTY-513)", () => {
+    expect(ok(PutPhotoBody, { ...sealed, proof })).toBe(true);
+    expect(ok(PutPhotoBody, sealed)).toBe(false);
+    expect(ok(DeletePhotoBody, { proof })).toBe(true);
+    expect(ok(DeletePhotoBody, {})).toBe(false);
+    expect(ok(PutUserDocBody, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(32), proof })).toBe(true);
+    expect(ok(PutUserDocBody, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(32) })).toBe(false);
+    expect(ok(PutDocumentBody, { ...sealed, base_version: 1, proof })).toBe(true);
+    expect(ok(PutDocumentBody, { ...sealed, base_version: 1 })).toBe(true);
+    expect(ok(PutDocumentBody, { ...sealed, base_version: 1, proof: { ...proof, signature: bytes(65) } })).toBe(false);
+  });
+
   it("a field of the wrong size, in every request body that stores one", () => {
     const entry = { id, line_id: id, is_checkpoint: false, reverses_entry_id: null, ...sealed };
     const cases: [string, { safeParse: (v: unknown) => { success: boolean } }, unknown, unknown][] = [
@@ -152,7 +164,7 @@ describe("what does not fit is refused", () => {
       ["a wrap's sender key", CreateDrawerBody, { id, document: sealed, self_wrap: wrap }, { id, document: sealed, self_wrap: { ...wrap, sender_ecdh_pub: big } }],
       ["a token key's wrap and version", AccessTokenKeysBody, { keys: [{ drawer_id: id, key_version: 2, wrap }] }, { keys: [{ drawer_id: id, key_version: 2, wrap: { ...wrap, salt: big } }] }],
       ["a token key's version", AccessTokenKeysBody, { keys: [{ drawer_id: id, key_version: 2, wrap }] }, { keys: [{ drawer_id: id, key_version: 0, wrap }] }],
-      ["the user document", PutUserDocBody, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(USER_DOC_MAX_CIPHERTEXT) }, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(USER_DOC_MAX_CIPHERTEXT + 1) }],
+      ["the user document", PutUserDocBody, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(USER_DOC_MAX_CIPHERTEXT), proof }, { base_version: 0, schema_version: 1, nonce: bytes(12), ciphertext: bytes(USER_DOC_MAX_CIPHERTEXT + 1), proof }],
       ["a vault's salt", PutVaultBody, { proof, vault }, { proof, vault: { ...vault, kdf: { ...vault.kdf, salt: bytes(8) } } }],
       ["a vault's wrapped key", PutVaultBody, { proof, vault }, { proof, vault: { ...vault, ecdsa: { ...vault.ecdsa, ct: big } } }],
       ["a vault's public key", PutVaultBody, { proof, vault }, { proof, vault: { ...vault, pub: { ...vault.pub, ecdsa: big } } }],

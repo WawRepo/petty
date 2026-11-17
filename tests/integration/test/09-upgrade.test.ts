@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromB64, openDocument, openEntryUnverified } from "@petty/crypto";
+import { fromB64, openDocument, openEntryUnverified, unlockVault } from "@petty/crypto";
 import { fold, nextRev, readDocument, type LedgerEntry } from "@petty/ledger";
 import { Client, sealedBody, userMaterial } from "../../../apps/api/src/devtools/fixtures.js";
 import { API, compose, http, readState } from "../lib.js";
@@ -53,12 +53,15 @@ describe("existing data", () => {
       const opened = await openDocument(key, { record_type: "document", record_id: s!.drawerId, drawer_id: s!.drawerId, line_id: null, author_id: d.author_id, key_version: d.key_version, schema_version: d.schema_version }, { nonce: fromB64(d.nonce), ciphertext: fromB64(d.ciphertext) });
       return { version: got.drawer.version as number, schema: d.schema_version as number, doc: readDocument(opened, { schema_version: d.schema_version, version: got.drawer.version }) };
     };
+    // PETTY-513: a document write proves custody with the account's own key, from its vault
+    expect(s!.passphrase, "the seed state is from before PETTY-513: start from a fresh stack").toBeDefined();
+    const keys = await unlockVault((await c.call("GET", "/me")).json().vault, s!.passphrase!);
     const before = await read();
     expect(before.doc.name).toBe(s!.drawerName);
     expect(before.doc.lines.map((l) => l.id)).toEqual([s!.lineId]);
     if (before.schema === 1) {
       expect(before.doc.rev).toBeUndefined();
-      const put = await c.call("PUT", `/drawers/${s!.drawerId}/document`, { ...sealedBody(await c.sealDoc(s!.drawerId, key, nextRev(before.doc), 1, 2), 1, 2), base_version: before.version, verification: false });
+      const put = await c.call("PUT", `/drawers/${s!.drawerId}/document`, { ...sealedBody(await c.sealDoc(s!.drawerId, key, nextRev(before.doc), 1, 2), 1, 2), base_version: before.version, verification: false, proof: await c.proof(keys.ecdsaPrivate) });
       expect(put.statusCode).toBe(200);
     }
     const after = await read();
@@ -67,7 +70,7 @@ describe("existing data", () => {
     // a client from before the counter: its document without one is refused, and nothing changes
     const { rev: _rev, ...plain } = after.doc;
     void _rev;
-    const older = await c.call("PUT", `/drawers/${s!.drawerId}/document`, { ...sealedBody(await c.sealDoc(s!.drawerId, key, plain, 1, 1), 1, 1), base_version: after.version, verification: false });
+    const older = await c.call("PUT", `/drawers/${s!.drawerId}/document`, { ...sealedBody(await c.sealDoc(s!.drawerId, key, plain, 1, 1), 1, 1), base_version: after.version, verification: false, proof: await c.proof(keys.ecdsaPrivate) });
     expect(older.statusCode).toBe(409);
     expect(older.json().code).toBe("DocumentFormatOlder");
     expect(await read()).toEqual(after);

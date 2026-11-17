@@ -34,7 +34,7 @@ async function read(c: Client, drawerId: string, key: CryptoKey) {
 }
 /** One document write, in the given format. */
 async function write(c: Client, drawerId: string, key: CryptoKey, doc: DrawerDocument, baseVersion: number, schemaVersion: number) {
-  return c.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await c.sealDoc(drawerId, key, doc, 1, schemaVersion), 1, schemaVersion), base_version: baseVersion, verification: false });
+  return c.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await c.sealDoc(drawerId, key, doc, 1, schemaVersion), 1, schemaVersion), base_version: baseVersion, verification: false, proof: await c.proof() });
 }
 
 describe("drawer document format", () => {

@@ -1,4 +1,5 @@
 import { createClerkClient, verifyToken } from "@clerk/backend";
+import { TokenVerificationErrorReason as Reason } from "@clerk/backend/errors";
 import { config } from "../config.js";
 
 /**
@@ -12,23 +13,44 @@ export interface ClerkIdentity { readonly sub: string; readonly sid: string | nu
 /** PETTY-189 (NR-9): the origins a session token must have been made for. */
 const authorizedParties = (): string[] => (config.clerkAuthorizedParties.length ? config.clerkAuthorizedParties : [new URL(config.appUrl).origin]);
 
-export async function verifyClerkToken(token: string): Promise<ClerkIdentity | null> {
+/**
+ * Why a session token was refused (PETTY-285), for petty_auth_events_total:
+ *  - `expired`: outside its time window (expired, not yet valid, issued "in the future"). Some are normal:
+ *    the browser keeps a token about a minute, and a request can leave just before the next one arrives.
+ *  - `invalid`: everything else: a bad signature, another Clerk instance's key, the wrong issuer or
+ *    authorized party, no subject, not a token at all, and also Petty's own Clerk key being wrong or
+ *    Clerk's key list not loading. Normal use sends none of these, so a rise means an attack or a broken key.
+ */
+export type ClerkRefusal = "expired" | "invalid";
+export type ClerkCheck = { readonly identity: ClerkIdentity } | { readonly refused: ClerkRefusal };
+
+const TIME_WINDOW: ReadonlySet<string> = new Set([Reason.TokenExpired, Reason.TokenNotActiveYet, Reason.TokenIatInTheFuture]);
+/** The refusal a Clerk verification error stands for (its `reason`); anything without a time-window reason is `invalid`. */
+export function refusalOf(err: unknown): ClerkRefusal {
+  const reason = (err as { reason?: unknown } | null | undefined)?.reason;
+  return typeof reason === "string" && TIME_WINDOW.has(reason) ? "expired" : "invalid";
+}
+
+/** Verifies a session token: the identity it carries, or why it was refused. */
+export async function checkClerkToken(token: string): Promise<ClerkCheck> {
   try {
     const parties = authorizedParties();
-    // Resolves to the payload; any signature, expiry, format or authorized-party problem throws.
+    // Resolves to the payload, or to { errors } (a signature, expiry, format or authorized-party problem); some problems throw.
     const p = (await verifyToken(token, {
       ...(config.clerkJwtKey ? { jwtKey: config.clerkJwtKey } : {}),
       ...(config.clerkSecretKey ? { secretKey: config.clerkSecretKey } : {}),
       authorizedParties: parties,
       clockSkewInMs: 30_000,
     })) as unknown as { sub?: string; sid?: string; azp?: string } | { data?: { sub?: string; sid?: string; azp?: string }; errors?: unknown[] };
-    const payload = "errors" in p || "data" in p ? ((p as { errors?: unknown[] }).errors ? undefined : (p as { data?: { sub?: string; sid?: string; azp?: string } }).data) : (p as { sub?: string; sid?: string; azp?: string });
-    if (!payload?.sub) return null;
+    const errors = "errors" in p ? (p as { errors?: unknown[] }).errors : undefined;
+    if (errors?.length) return { refused: refusalOf(errors[0]) };
+    const payload = "data" in p ? (p as { data?: { sub?: string; sid?: string; azp?: string } }).data : (p as { sub?: string; sid?: string; azp?: string });
+    if (!payload?.sub) return { refused: "invalid" };
     // Clerk skips the check when a token has no azp; a browser session token always has one, so require it.
-    if (!payload.azp || !parties.includes(payload.azp)) return null;
-    return { sub: payload.sub, sid: payload.sid ?? null };
-  } catch {
-    return null;
+    if (!payload.azp || !parties.includes(payload.azp)) return { refused: "invalid" };
+    return { identity: { sub: payload.sub, sid: payload.sid ?? null } };
+  } catch (err) {
+    return { refused: refusalOf(err) };
   }
 }
 

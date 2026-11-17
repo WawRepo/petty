@@ -33,6 +33,15 @@ describe("the API lets an idle database sleep", () => {
     expect(lastRequestUse()).toBeGreaterThan(before);
   });
 
+  it("housekeeping deletes a Clerk session not seen for 30 days, and keeps one seen since (PETTY-285)", async () => {
+    const old = randomBytes(32);
+    const fresh = randomBytes(32);
+    await apiPool.query("insert into clerk_sessions_seen (sid_hash, seen_at) values ($1, now() - interval '31 days'), ($2, now() - interval '29 days')", [old, fresh]);
+    expect((await runMaintenance()).clerk_sessions).toBeGreaterThanOrEqual(1);
+    const left = await apiPool.query<{ h: Buffer }>("select sid_hash as h from clerk_sessions_seen where sid_hash = any($1)", [[old, fresh]]);
+    expect(left.rows.map((r) => r.h.toString("hex"))).toEqual([fresh.toString("hex")]);
+  });
+
   it("housekeeping says when short-lived rows still wait for their end", async () => {
     await apiPool.query("insert into rate_counters (key_hash, n, reset_at) values ($1, 1, now() + interval '10 minutes')", [randomBytes(32)]);
     expect((await runMaintenance()).pending).toBe(true);

@@ -135,6 +135,20 @@ button.tag-chip[aria-pressed="true"] .tag-count { color: var(--accent-text); }
   .group-h { justify-content: flex-start; gap: 18px; }
   .group-totals { display: flex; gap: 14px; text-align: left; }
 }
+/* Two panes from 900 px (PETTY-138, components/Panes.tsx): Home's list on the left scrolls on its own and
+   stays put; the drawer or item on the right scrolls with the page. Sheets and dialogs cover the window. */
+@media (min-width: 900px) {
+  .app:has(.panes) { max-width: 1160px; padding-bottom: 0; }
+  .panes { flex: 1; display: grid; grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); align-items: start; }
+  .pane-list { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid var(--border); }
+  .pane-list:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pane-list .home-list { padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .pane-detail { min-width: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .pane-hint { text-align: center; margin: 24px 0 0; }
+  .pane-list .sk-total { display: none; } /* the total is the right pane's */
+}
+/* the drawer open beside the list (aria-current, set only in two panes) */
+.row[aria-current] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
 .group-h h2 { font-size: 15px; display: inline-flex; align-items: baseline; gap: 8px; }
 .group-h .tag-chip { height: 28px; line-height: 26px; border: 0; background: none; box-shadow: none; padding: 0; font-size: 15px; } /* a heading, not a filter (M15) */
 .group-totals { list-style: none; margin: 0; padding: 0; text-align: right; }

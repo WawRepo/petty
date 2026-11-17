@@ -15,8 +15,65 @@ number, also when it adds features, and a new minor or major is started by hand 
   drawer's owner finds replaced and removed photos under "Earlier versions" and can put one back. A
   kept photo counts toward the owner's storage until it ends: a new photo adds its whole size, and
   removing one frees its space only after 30 days (deleting the drawer frees it at once).
-  Deleting your account deletes the copies at once. Operators: migration 021 adds two tables, and the
+  Deleting your account deletes the copies at once. Operators: migration 023 adds two tables, and the
   hourly `maintenance` log line has a new count, `kept_copies`.
+- `petty` takes an item's page in Petty, copied from the browser's address bar
+  (`https://<your petty>/drawers/…/lines/…`), wherever it takes an item, and `petty move` takes a
+  drawer's page (PETTY-515).
+
+### Fixed
+- `petty` finds an item by its id also when the id is not a UUID, as items made before item ids had
+  to be UUIDs have. Before, the id that `petty find` and `--json` print for such an item was not
+  found when you gave it back. The quoted form that the AI add-on shows works too (PETTY-515).
+- When `petty` and your Petty do not match at sign-in, the message now names the `petty.mjs` to
+  download for your Petty's version, with the page that shows how to install it (PETTY-515).
+
+## [1.5.53] — 2026-11-17
+
+### Security
+- Changing a drawer's document (its lines, names, tags, places and checks), replacing or removing a
+  drawer's photo, and saving your own settings document now need proof of your vault key, as deleting
+  a drawer already did (PETTY-513). Someone who signs in with your login password alone, or with a stolen
+  session, can no longer replace them. The app sends the proof by itself; nothing changes for you. An
+  open tab from an older Petty cannot save these until it is reloaded. Access tokens (the AI add-on and
+  the command line) need no proof: one was needed to make the token.
+
+## [1.5.52] — 2026-11-17
+
+### Security
+- The `petty` command line keeps its token in your system's keychain (PETTY-276): the macOS keychain,
+  the Secret Service on Linux (`secret-tool`), or Windows Credential Manager. `~/.petty/hosts.json`
+  then keeps only the token's name and `"token_in": "keychain"`. The token never goes on a command
+  line. A token an older `petty` left in the file moves to the keychain the first time a command uses
+  it. Without a keychain, or when it fails, the token stays in the file, with one note on stderr.
+  `PETTY_TOKEN_STORE=file` keeps it in the file always. `petty auth status` says where the token is,
+  and `petty auth logout` removes it from the keychain too. An older `petty` does not see a token in
+  the keychain: sign in again with it.
+
+## [1.5.51] — 2026-11-17
+
+### Changed
+- Maintenance only: dependency and build updates.
+
+## [1.5.50] — 2026-11-17
+
+### Added
+- Two panes on a wide screen (900 px and up). The list of drawers stays on the left, and the drawer or
+  item you open shows on the right, with its row marked in the list. With nothing open, the right side
+  shows the total and the picture. The keyboard follows: opening a row moves to the drawer's title, and
+  Escape or "Back to the list" goes back to its row. Links to a drawer or an item open both panes. On a
+  phone nothing changes.
+- With Clerk sign-in, the metrics count sign-ins and refused session tokens (PETTY-285). Before, Petty
+  counted no sign-in under Clerk at all. `petty_auth_events_total` has three new `event` values:
+  `clerk_signin` (the first request with a Clerk session that Petty has not seen),
+  `clerk_token_expired` and `clerk_token_invalid` (a session token Petty refused, and why). A new table
+  remembers the sessions seen, by a hash of their id and with no link to an account, so a restart does
+  not count one twice; housekeeping deletes a row 30 days after the session was last used. The upgrade
+  adds the table (migration 022); there is no new setting.
+
+### Fixed
+- Without `EMAIL_KEY`, the housekeeping log no longer counts every stored address as sealed with an
+  unknown key (`emails.unknown`), and no longer warns "set EMAIL_KEY" on each run (PETTY-359).
 
 ## [1.5.49] — 2026-11-17
 
@@ -1087,7 +1144,11 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.49...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.53...HEAD
+[1.5.53]: https://github.com/WawRepo/petty/releases/tag/v1.5.53
+[1.5.52]: https://github.com/WawRepo/petty/releases/tag/v1.5.52
+[1.5.51]: https://github.com/WawRepo/petty/releases/tag/v1.5.51
+[1.5.50]: https://github.com/WawRepo/petty/releases/tag/v1.5.50
 [1.5.49]: https://github.com/WawRepo/petty/releases/tag/v1.5.49
 [1.5.48]: https://github.com/WawRepo/petty/releases/tag/v1.5.48
 [1.5.47]: https://github.com/WawRepo/petty/releases/tag/v1.5.47

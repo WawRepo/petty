@@ -121,11 +121,11 @@ says `Signed in`.
 - **`petty` and your Petty must match.** The sign-in code once had 12 letters and has 20 now. An older
   `petty` at a newer Petty stops with `did not start a sign-in (CommandLineTooOld)`; a newer `petty`
   at an older Petty stops with `runs an older Petty than this command line`. Install the `petty` that
-  goes with your Petty (the page *Use Petty with AI* has the commands). A login you already have
-  keeps working.
-- `petty auth status` checks the token still works and names the drawers it opens: every drawer
-  (also ones made later) or only the chosen ones. `petty auth logout` ends it on the server and
-  forgets it here.
+  goes with your Petty: when your Petty says its version, the message names that release's `petty.mjs`
+  to download, and the page *Use Petty with AI* has the commands. A login you already have keeps working.
+- `petty auth status` checks the token still works, names the drawers it opens (every drawer, also
+  ones made later, or only the chosen ones) and says where the token is kept. `petty auth logout` ends
+  it on the server and forgets it here, in the keychain too.
 - A token you made by hand: `petty auth login --host … --with-token < token.txt`.
 - **Scripts and CI:** set `PETTY_TOKEN` and `PETTY_API_URL` (`https://<your petty>/api`). They win
   over the stored login.
@@ -147,9 +147,12 @@ says `Signed in`.
 | `petty completion -s <shell>` | the Tab completion script |
 | `petty auth login` · `status` · `logout` · `token` | see *Sign in* |
 
-Name an item as `"Drawer › Item"` (Tab completes it), by words (`kitchen cash`), or by the
-`drawerId/itemId` that `--json` prints. Amounts are in the item's own units:
-`petty add "Kitchen tin › Cash" 10.50`. `petty help <command>` tells more.
+Name an item as `"Drawer › Item"` (Tab completes it), by words (`kitchen cash`), by the
+`drawerId/itemId` that `--json` prints, or by its page in Petty, copied from the browser's address bar
+(`https://<your petty>/drawers/…/lines/…`). An item made before item ids had to be UUIDs may have another
+id: it works the same, as `--json` prints it or quoted as the AI add-on shows it. `petty move` takes a drawer's name,
+its id or its page. Amounts are in the item's own units: `petty add "Kitchen tin › Cash" 10.50`.
+`petty help <command>` tells more.
 
 For scripts and agents, `--json` prints JSON. Exit codes: **0** done, **1** error, **2** usage,
 **3** not signed in, the token ended, or it may only read, **4** nothing or more than one thing matches.
@@ -205,8 +208,31 @@ the command was typed in. To replace an earlier entry: `claude mcp remove petty`
 
 ## What is kept, and where
 
-- `~/.petty/hosts.json`, readable by you only (600, in a 700 folder): the token for each Petty you
-  signed in to. Nothing read from Petty is written anywhere.
+- **The token goes to your system's keychain** when there is one (PETTY-276), so a copy of your home
+  folder (a backup, a synced folder) has no token in it:
+
+  | System | Keychain | How `petty` reaches it |
+  |---|---|---|
+  | macOS | the login keychain | `security`; the line with the token goes on its stdin (`security -i`) |
+  | Linux | the Secret Service (GNOME Keyring, KWallet) | `secret-tool`, which reads the token from stdin |
+  | Windows | Credential Manager | Windows PowerShell (5.1, or pwsh 7) calls `CredWriteW`, `CredReadW` and `CredDeleteW`; the token goes on its stdin |
+
+  The token is never an argument of a command, where `ps` or the task list would show it to other
+  users. The entry is named `petty` and the Petty's address (on Windows `petty:<address>`).
+- `~/.petty/hosts.json`, readable by you only (600, in a 700 folder): for each Petty you signed in to,
+  the token's name, read or write, and `"token_in": "keychain"`; or the token itself, when the file
+  keeps it. Nothing read from Petty is written anywhere.
+- **The file keeps the token** when this computer has no keychain tool (a server without `secret-tool`),
+  or when the keychain fails (locked, no desktop session over SSH): then `petty` says so once, on
+  stderr, and signs in all the same. `PETTY_TOKEN_STORE=file` keeps new tokens in the file always
+  (no note); a token already in the keychain stays there until you sign in again.
+- **A token an older `petty` left in the file** moves to the keychain the first time a command uses it
+  (not while Tab completes a word): `petty` writes it to the keychain, reads it back, and only then
+  takes it out of the file, and says so on stderr. If the keychain fails, it stays in the file. An
+  older `petty` does not see a token in the keychain: sign in again with it.
+- **A locked keychain** stops a command with exit code 3 and the keychain's own words; unlock it and
+  run the command again. On macOS and Linux it may ask for its password in a window; `petty` waits up
+  to 15 seconds for it.
 - The token opens the drawers it may read: treat it like a password. `petty auth token` prints it.
 - **Your shell's history keeps what you type**, in plain text: a drawer's name, an amount, a note.
   Petty cannot prevent that. `--note -` reads the note from stdin instead, and a command that starts

@@ -54,12 +54,16 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   passkey cannot go while there is no passphrase (`LastDoor`). The server never verifies assertions —
   a passkey is a key holder, not a login. A plaintext storage mode was rejected:
   it breaks the product's one promise.
-- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-200/201, PETTY-440/441).**
+- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-200/201, PETTY-440/441, PETTY-513).**
   Replacing the vault or its recovery-code copy, adding or removing a passkey, deleting the account,
   deleting a drawer, deleting a line (`POST /drawers/:id/lines/:lineId/delete`), creating an access
-  token, and publishing a new drawer key (`POST /drawers/:id/rotation`) and every re-encryption batch
-  after it (`PUT /drawers/:id/rotation/batch`) require a server-issued challenge signed with the
-  account key. `POST /me/custody-challenge` gives one per person: 32 random bytes, five minutes, one
+  token, publishing a new drawer key (`POST /drawers/:id/rotation`) and every re-encryption batch
+  after it (`PUT /drawers/:id/rotation/batch`), and since PETTY-513 every write of a drawer's document,
+  its photo (replace and remove) and the user document require a server-issued challenge signed with the
+  account key. PETTY-513 chose a proof per write over a proof bound to the session: a stolen session of
+  an unlocked browser would pass a session-bound check, while a proof per write needs the key itself; it
+  costs one small request before each of these writes and needs no new table or route. An access token
+  writes a document without a proof (a proof made the token; its writes are signed with its own key). `POST /me/custody-challenge` gives one per person: 32 random bytes, five minutes, one
   use (`apps/api/src/lib/custody.ts`). Any write member's app may finish a rotation another began,
   with its own proof for each step. Replaced vault blobs are kept 30 days in `vault_history`; an
   admin can restore one; the owner is emailed on a password reset and a vault change. Reason: the
@@ -93,6 +97,8 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   the server only relays the sealed blob. The code is derived from that key (12 of 20 consonants), so
   the page and the command line both detect a swapped key. Only the login is stored
   (`~/.petty/hosts.json`, 600); Tab completion decrypts names per key press, never cached on disk.
+  *Since PETTY-276 (2026-11-17) the token itself goes to the system's keychain when there is one, and
+  `hosts.json` keeps the rest; see [cli.md](cli.md).*
   *Since PETTY-451 (2026-11-10) the code has 20 of the 20 consonants and is derived from that key and
   the instance's address; the 12-letter form is neither made nor accepted. The command line makes the
   code and sends it with `POST /device/code`; one that sends none is refused by name (400
@@ -105,7 +111,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `RestoreByApp`.*
 - **Kept user documents and photos (PETTY-506, 2026-11-17).** A replaced user document and a
   replaced or removed drawer photo are kept for 30 days too (`user_doc_history`,
-  `drawer_photo_history`, migration 021), so one bad write (a session without the vault key, a bug)
+  `drawer_photo_history`, migration 023), so one bad write (a session without the vault key, a bug)
   cannot destroy the list of trusted keys or a photo for good. The server cannot open them and never
   picks one. Only the person's own session lists their user-document copies (`GET /me/doc/history`);
   only the drawer's owner lists and fetches photo copies (`GET /drawers/:id/photo/history[/:id]`), as
@@ -269,7 +275,7 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   older than that (PETTY-506); deleting an account deletes its
   unused join links and reset tokens. What deletion keeps (the account's id, language, dates and
   public keys, so others' records still verify) goes in the first housekeeping run after nothing
-  needs it (PETTY-349, `purge_tombstones()` in migration 019, then 021): no entry, drawer document
+  needs it (PETTY-349, `purge_tombstones()` in migration 019, then 023): no entry, drawer document
   or photo, kept document version or photo, or drawer-key wrap names the person, and no membership, owned drawer,
   transfer or pending invitation is left. Its answered invitations, rotations, used join links and
   revoked tokens go with it.

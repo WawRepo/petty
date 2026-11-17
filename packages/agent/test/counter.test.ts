@@ -47,7 +47,7 @@ async function drawerAndTool(name: string, over: (doc: DrawerDocument) => Drawer
 }
 /** The owner saves a document in the given format. */
 async function put(drawerId: string, key: CryptoKey, doc: DrawerDocument, baseVersion: number, schemaVersion: number, claimed = schemaVersion) {
-  return owner.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await owner.sealDoc(drawerId, key, doc, 1, schemaVersion), 1, claimed), base_version: baseVersion, verification: false });
+  return owner.call("PUT", `/drawers/${drawerId}/document`, { ...sealedBody(await owner.sealDoc(drawerId, key, doc, 1, schemaVersion), 1, claimed), base_version: baseVersion, verification: false, proof: await owner.proof() });
 }
 /** The stored document, opened with the drawer key under the format its row names. */
 async function stored(drawerId: string, key: CryptoKey) {
