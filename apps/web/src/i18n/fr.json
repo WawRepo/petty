@@ -325,7 +325,7 @@
     "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
     "unknown": "Une erreur s’est produite. Réessayez.",
     "displayName": "Saisissez un nom simple sur une seule ligne, sans lien ni adresse e-mail. Après un point, mettez une espace, comme dans « J. Martin ».",
-    "storageFull": "Votre espace de stockage est plein. Supprimez les photos ou les tiroirs dont vous n’avez plus besoin. Les Réglages indiquent l’espace utilisé.",
+    "storageFull": "Votre espace de stockage est plein. Supprimez les tiroirs dont vous n’avez plus besoin. Une photo retirée ou remplacée compte encore 30 jours, tant qu’elle peut être remise. Les Réglages indiquent l’espace utilisé.",
     "ownerStorageFull": "Le propriétaire de ce tiroir n’a plus d’espace, la modification n’a donc pas été enregistrée. Demandez-lui de libérer de la place.",
     "photoTooLarge": "Cette photo est trop grande. Choisissez-en une plus petite."
   },
@@ -468,14 +468,22 @@
     "tagRemoveConfirm": "Retirer « {tag} » de {count, plural, one {# élément} other {# éléments}} ? Les éléments restent.",
     "history": {
       "title": "Versions précédentes",
-      "hint": "Les noms, éléments, étiquettes et lieux tels qu’ils étaient avant chaque modification, conservés 30 jours. Restaurer une version garde aussi la version actuelle ici. Les opérations et les soldes ne sont pas concernés.",
+      "hint": "Les noms, éléments, étiquettes, lieux et la photo tels qu’ils étaient avant chaque modification, conservés 30 jours. Restaurer une version garde aussi la version actuelle ici. Les opérations et les soldes ne sont pas concernés.",
       "empty": "Aucune version précédente ces 30 derniers jours.",
       "unreadable": "Impossible à ouvrir sur cet appareil",
       "lines": "{count, plural, one {# élément} other {# éléments}}",
       "byTool": "modifié par un outil",
       "restore": "Restaurer",
       "restoreNamed": "Restaurer la version du {when}",
-      "restored": "Version précédente restaurée."
+      "restored": "Version précédente restaurée.",
+      "photosTitle": "Photos précédentes",
+      "photoReplaced": "Photo remplacée",
+      "photoRemoved": "Photo retirée",
+      "photoShow": "Afficher",
+      "photoShowNamed": "Afficher la photo du {when}",
+      "photoRestoreNamed": "Restaurer la photo du {when}",
+      "photoAlt": "Photo précédente du {when}",
+      "photoRestored": "Photo précédente restaurée."
     },
     "trail": "Où se trouve ce tiroir"
   },
@@ -767,7 +775,19 @@
     "rolledBackInside": "La copie de votre liste de clés de confiance envoyée par le serveur est plus ancienne que celle que cet appareil a vue en dernier, mais le serveur ne lui donne pas un numéro plus ancien. Quelqu’un a peut-être modifié le serveur, ou tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
     "missingTitle": "Le serveur n’a pas votre liste de clés de confiance",
     "missing": "Votre compte a des tiroirs, le serveur devrait donc avoir cette liste. Elle peut manquer parce que votre compte est plus ancien que la liste, parce qu’une sauvegarde a été restaurée, ou parce que quelqu’un tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, Petty n’ouvre que les tiroirs dont vous avez créé la clé, et vous ne pouvez pas partager de tiroirs. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau.",
-    "startOver": "Commencer une nouvelle liste"
+    "startOver": "Commencer une nouvelle liste",
+    "unreadableTitle": "Votre liste de clés de confiance ne s’ouvre pas",
+    "unreadable": "La copie de cette liste sur le serveur ne s’ouvre pas avec vos clés. Cela peut venir d’un enregistrement raté, d’un bug, ou d’une modification faite directement sur le serveur. Tant que vous ne remettez pas une copie ou ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "unreadableCopy": "Le serveur garde les copies précédentes 30 jours. La plus récente qui s’ouvre sur cet appareil date du {when}.",
+    "unreadableNoCopy": "Aucune copie précédente ne s’ouvre sur cet appareil. Vous pouvez commencer une nouvelle liste.",
+    "putBack": "Remettre la copie du {when}",
+    "putBackTitle": "Remettre une copie précédente ?",
+    "putBackBody": "Petty enregistre la copie du {when} comme votre liste de clés de confiance. Les personnes confirmées après ce moment doivent être confirmées à nouveau. La copie qui ne s’ouvre pas reste 30 jours sur le serveur.",
+    "putBackConfirm": "La remettre",
+    "putBackDone": "Votre liste de clés de confiance est de retour.",
+    "startNewTitle": "Commencer une nouvelle liste ?",
+    "startNewBody": "Petty enregistre une nouvelle liste de clés de confiance, vide. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau. Les copies précédentes restent 30 jours sur le serveur.",
+    "startedNew": "Une nouvelle liste de clés de confiance est enregistrée."
   },
   "privacy": {
     "link": "Confidentialité et sécurité",
@@ -1237,7 +1257,7 @@
       },
       "undo": {
         "q": "Puis-je annuler une modification d’un tiroir ?",
-        "a": "Oui. Une opération erronée est corrigée par une nouvelle opération, et l’ancienne reste dans l’historique. Les modifications des noms, éléments, étiquettes et lieux sont conservées 30 jours, et le propriétaire du tiroir peut rétablir une version précédente."
+        "a": "Oui. Une opération erronée est corrigée par une nouvelle opération, et l’ancienne reste dans l’historique. Les modifications des noms, éléments, étiquettes, lieux et de la photo sont conservées 30 jours, et le propriétaire du tiroir peut rétablir une version précédente."
       },
       "cost": {
         "q": "Combien ça coûte ?",

@@ -325,7 +325,7 @@
     "network": "Nie udało się połączyć z serwerem. Sprawdź dostęp do internetu i spróbuj ponownie.",
     "unknown": "Coś poszło nie tak. Spróbuj ponownie.",
     "displayName": "Wpisz zwykłe imię w jednej linii, bez linków i adresów e-mail. Po kropce wstaw spację, np. „J. Kowalski”.",
-    "storageFull": "Nie masz już wolnego miejsca na dane. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
+    "storageFull": "Nie masz już wolnego miejsca na dane. Usuń szuflady, których już nie potrzebujesz. Usunięte lub zastąpione zdjęcie liczy się jeszcze przez 30 dni, dopóki można je przywrócić. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
     "ownerStorageFull": "Właściciel tej szuflady nie ma już wolnego miejsca na dane, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
     "photoTooLarge": "To zdjęcie jest za duże. Wybierz mniejsze."
   },
@@ -468,14 +468,22 @@
     "tagRemoveConfirm": "Usunąć „{tag}” z {count, plural, one {# pozycji} few {# pozycji} many {# pozycji} other {# pozycji}}? Pozycje zostają.",
     "history": {
       "title": "Wcześniejsze wersje",
-      "hint": "Nazwy, pozycje, tagi i miejsca sprzed każdej zmiany, przechowywane 30 dni. Przywrócenie zachowuje tu także obecną wersję. Wpisy i salda się nie zmieniają.",
+      "hint": "Nazwy, pozycje, tagi, miejsca i zdjęcie sprzed każdej zmiany, przechowywane 30 dni. Przywrócenie zachowuje tu także obecną wersję. Wpisy i salda się nie zmieniają.",
       "empty": "Brak wcześniejszych wersji z ostatnich 30 dni.",
       "unreadable": "Nie da się otworzyć na tym urządzeniu",
       "lines": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
       "byTool": "zmienione przez narzędzie",
       "restore": "Przywróć",
       "restoreNamed": "Przywróć wersję z {when}",
-      "restored": "Przywrócono wcześniejszą wersję."
+      "restored": "Przywrócono wcześniejszą wersję.",
+      "photosTitle": "Wcześniejsze zdjęcia",
+      "photoReplaced": "Zastąpione zdjęcie",
+      "photoRemoved": "Usunięte zdjęcie",
+      "photoShow": "Pokaż",
+      "photoShowNamed": "Pokaż zdjęcie z {when}",
+      "photoRestoreNamed": "Przywróć zdjęcie z {when}",
+      "photoAlt": "Wcześniejsze zdjęcie z {when}",
+      "photoRestored": "Przywrócono wcześniejsze zdjęcie."
     },
     "trail": "Gdzie jest ta szuflada"
   },
@@ -767,7 +775,19 @@
     "rolledBackInside": "Kopia listy zaufanych kluczy, którą przysłał serwer, jest starsza niż ta, którą to urządzenie widziało ostatnio, ale serwer nie oznacza jej numerem jako starszej. Ktoś mógł zmienić serwer albo próbuje podsunąć Ci nowe klucze. Dopóki nie założysz nowej listy, żaden nowy klucz nie zostanie automatycznie uznany za zaufany i nie możesz udostępniać szuflad.",
     "missingTitle": "Serwer nie ma listy Twoich zaufanych kluczy",
     "missing": "Twoje konto ma szuflady, więc serwer powinien mieć tę listę. Może jej brakować, bo konto jest starsze niż ta lista, bo przywrócono kopię zapasową albo ktoś próbuje podsunąć Ci nowe klucze. Dopóki nie założysz nowej listy, Petty otwiera tylko szuflady, których klucz pochodzi od Ciebie, i nie możesz udostępniać szuflad. Potem potwierdź numer bezpieczeństwa każdej osoby, która udostępniła Ci szufladę, a jej szuflady znów się otworzą.",
-    "startOver": "Załóż nową listę zaufanych kluczy"
+    "startOver": "Załóż nową listę zaufanych kluczy",
+    "unreadableTitle": "Twoja lista zaufanych kluczy się nie otwiera",
+    "unreadable": "Kopii tej listy z serwera nie da się otworzyć Twoimi kluczami. Może to wynikać z nieudanego zapisu, z błędu albo ze zmiany wprowadzonej bezpośrednio na serwerze. Dopóki nie przywrócisz kopii albo nie założysz nowej listy, żaden nowy klucz nie zostanie automatycznie uznany za zaufany i nie możesz udostępniać szuflad.",
+    "unreadableCopy": "Serwer przechowuje wcześniejsze kopie przez 30 dni. Najnowsza, która otwiera się na tym urządzeniu, jest z {when}.",
+    "unreadableNoCopy": "Żadna wcześniejsza kopia nie otwiera się na tym urządzeniu. Możesz założyć nową listę.",
+    "putBack": "Przywróć kopię z {when}",
+    "putBackTitle": "Przywrócić wcześniejszą kopię?",
+    "putBackBody": "Petty zapisze kopię z {when} jako Twoją listę zaufanych kluczy. Osoby potwierdzone po tym czasie trzeba potwierdzić ponownie. Kopia, która się nie otwiera, zostaje na serwerze przez 30 dni.",
+    "putBackConfirm": "Przywróć",
+    "putBackDone": "Twoja lista zaufanych kluczy wróciła.",
+    "startNewTitle": "Założyć nową listę?",
+    "startNewBody": "Petty zapisze nową, pustą listę zaufanych kluczy. Potem potwierdź numer bezpieczeństwa każdej osoby, która udostępniła Ci szufladę, a jej szuflady znów się otworzą. Wcześniejsze kopie zostają na serwerze przez 30 dni.",
+    "startedNew": "Zapisano nową listę zaufanych kluczy."
   },
   "privacy": {
     "link": "Prywatność i bezpieczeństwo",
@@ -1237,7 +1257,7 @@
       },
       "undo": {
         "q": "Czy mogę cofnąć zmianę w szufladzie?",
-        "a": "Tak. Błędny wpis poprawia się nowym wpisem, a stary zostaje w historii. Zmiany nazw, pozycji, tagów i miejsc są przechowywane 30 dni, a właściciel szuflady może przywrócić wcześniejszą wersję."
+        "a": "Tak. Błędny wpis poprawia się nowym wpisem, a stary zostaje w historii. Zmiany nazw, pozycji, tagów, miejsc i zdjęcia są przechowywane 30 dni, a właściciel szuflady może przywrócić wcześniejszą wersję."
       },
       "cost": {
         "q": "Ile to kosztuje?",

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DeletePhotoBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PutDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
+import { Bootstrap, CreateDrawerBody, DeleteDrawerBody, DeleteLineBody, DeletePhotoBody, DOCUMENT_MIN_CIPHERTEXT, DocumentHistory, PHOTO_MAX_CIPHERTEXT, PhotoHistory, PutDocumentBody, PutDocumentResponse, PutPhotoBody, type DrawerSummary, type Member } from "@petty/protocol";
 import { apiPool, maintPool } from "../db.js";
 import { fromB64, iso } from "../lib/bytes.js";
 import { badRequest, conflict, forbidden, gone, notFound, tooLarge } from "../lib/errors.js";
 import { HISTORY_DAYS } from "../lib/maintenance.js";
+import { keepPhoto } from "../lib/kept.js";
 import { assertQuota } from "../lib/quota.js";
 import { requireRole, type DrawerRow } from "../lib/perm.js";
 import { consumeCustodyProof, requireProofField } from "../lib/custody.js";
@@ -230,14 +231,18 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-243: the client limit, enforced here too, so a script or token cannot store bigger photos.
     const ciphertext = fromB64(body.ciphertext);
     if (ciphertext.length > PHOTO_MAX_CIPHERTEXT) throw tooLarge("PhotoTooLarge", "photo over the size limit", { drawer_id: drawer.id, max_bytes: PHOTO_MAX_CIPHERTEXT });
-    const old = (await apiPool.query<{ n: number }>("select octet_length(ciphertext) as n from drawer_photos where drawer_id = $1", [drawer.id])).rows[0]?.n ?? 0;
-    await assertQuota(apiPool, drawer.owner_id, ciphertext.length - old);
-    await apiPool.query(
-      `insert into drawer_photos (drawer_id, author_id, key_version, schema_version, nonce, ciphertext) values ($1, $2, $3, $4, $5, $6)
-       on conflict (drawer_id) do update set author_id = excluded.author_id, key_version = excluded.key_version, schema_version = excluded.schema_version, nonce = excluded.nonce, ciphertext = excluded.ciphertext, updated_at = now()`,
-      [drawer.id, me.id, body.key_version, body.schema_version, fromB64(body.nonce), ciphertext],
-    );
-    await apiPool.query("update drawers set last_write_at = now() where id = $1", [drawer.id]);
+    await withTx(apiPool, async (db) => {
+      // PETTY-506: the photo it replaces stays 30 days (lib/kept.ts), so the new one adds its whole size, like a document
+      // write. Checked before the old one is copied, which would count it twice.
+      await assertQuota(db, drawer.owner_id, ciphertext.length);
+      await keepPhoto(db, drawer.id, me.id, false);
+      await db.query(
+        `insert into drawer_photos (drawer_id, author_id, key_version, schema_version, nonce, ciphertext) values ($1, $2, $3, $4, $5, $6)
+         on conflict (drawer_id) do update set author_id = excluded.author_id, key_version = excluded.key_version, schema_version = excluded.schema_version, nonce = excluded.nonce, ciphertext = excluded.ciphertext, updated_at = now()`,
+        [drawer.id, me.id, body.key_version, body.schema_version, fromB64(body.nonce), ciphertext],
+      );
+      await db.query("update drawers set last_write_at = now() where id = $1", [drawer.id]);
+    });
     return reply.code(204).send();
   });
 
@@ -247,9 +252,43 @@ export async function drawerRoutes(app: FastifyInstance): Promise<void> {
     await requireRole(apiPool, req.params.id, me.id, "write");
     requireProofField(req.body);
     await consumeCustodyProof(req, me.id, DeletePhotoBody.parse(req.body).proof);
-    await apiPool.query("delete from drawer_photos where drawer_id = $1", [req.params.id]);
-    await apiPool.query("update drawers set last_write_at = now() where id = $1", [req.params.id]);
+    await withTx(apiPool, async (db) => {
+      await keepPhoto(db, req.params.id, me.id, true); // PETTY-506: a removed photo stays 30 days too
+      await db.query("delete from drawer_photos where drawer_id = $1", [req.params.id]);
+      await db.query("update drawers set last_write_at = now() where id = $1", [req.params.id]);
+    });
     return reply.code(204).send();
+  });
+
+  /**
+   * PETTY-506: owner only, like the document history. The photos replaced or removed in the last 30 days, newest
+   * first, without their ciphertext; the owner's app fetches one, opens it with the drawer key of its time, and
+   * puts it back as a normal photo write (sealed with the current key, with the owner as author).
+   */
+  app.get<{ Params: { id: string } }>("/drawers/:id/photo/history", async (req) => {
+    const me = requireUser(req);
+    await requireRole(apiPool, req.params.id, me.id, "owner");
+    const { rows } = await apiPool.query(
+      `select id, author_id, key_version, written_at, replaced_at, replaced_by, removed from drawer_photo_history
+        where drawer_id = $1 and replaced_at >= now() - make_interval(days => $2) order by replaced_at desc, id desc`,
+      [req.params.id, HISTORY_DAYS],
+    );
+    return PhotoHistory.parse({
+      history: rows.map((r) => ({ id: String(r.id), author_id: r.author_id, key_version: r.key_version, written_at: iso(r.written_at), replaced_at: iso(r.replaced_at), replaced_by: r.replaced_by, removed: r.removed })),
+    });
+  });
+
+  app.get<{ Params: { id: string; historyId: string } }>("/drawers/:id/photo/history/:historyId", async (req) => {
+    const me = requireUser(req);
+    await requireRole(apiPool, req.params.id, me.id, "owner");
+    if (!/^[0-9]{1,18}$/.test(req.params.historyId)) throw notFound("PhotoNotFound", { drawer_id: req.params.id });
+    const r = (await apiPool.query(
+      `select author_id, key_version, schema_version, nonce, ciphertext, written_at as updated_at from drawer_photo_history
+        where id = $1 and drawer_id = $2 and replaced_at >= now() - make_interval(days => $3)`,
+      [req.params.historyId, req.params.id, HISTORY_DAYS],
+    )).rows[0];
+    if (!r) throw notFound("PhotoNotFound", { drawer_id: req.params.id });
+    return sealedRow(r);
   });
 
   /**

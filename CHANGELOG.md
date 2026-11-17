@@ -8,6 +8,16 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- Petty keeps earlier copies of your list of trusted keys and of each drawer's photo for 30 days. If
+  your list stops opening (after a failed save, a bug, or a change made directly on the
+  server), the home screen offers to put back the newest copy that opens, after you confirm. A
+  drawer's owner finds replaced and removed photos under "Earlier versions" and can put one back. A
+  kept photo counts toward the owner's storage until it ends: a new photo adds its whole size, and
+  removing one frees its space only after 30 days (deleting the drawer frees it at once).
+  Deleting your account deletes the copies at once. Operators: migration 023 adds two tables, and the
+  hourly `maintenance` log line has a new count, `kept_copies`.
+
 ## [1.5.54] — 2026-11-17
 
 ### Added

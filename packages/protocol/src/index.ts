@@ -498,6 +498,23 @@ export const DocumentHistoryItem = z.object({
 export const DocumentHistory = z.object({ history: z.array(DocumentHistoryItem) });
 export type DocumentHistory = z.infer<typeof DocumentHistory>;
 
+/**
+ * PETTY-506: kept photos of a drawer, replaced or removed in the last 30 days, newest first. Owner only, like
+ * the document history. The list has no ciphertext (a photo is up to 300 KiB): `GET .../photo/history/:id` has it.
+ */
+export const PhotoHistoryItem = z.object({
+  id: z.string(),
+  author_id: uuid,
+  key_version: z.number().int(),
+  written_at: z.string(),
+  replaced_at: z.string(),
+  replaced_by: uuid.nullable(),
+  /** true: a delete ended it; false: a new photo took its place */
+  removed: z.boolean(),
+});
+export const PhotoHistory = z.object({ history: z.array(PhotoHistoryItem) });
+export type PhotoHistory = z.infer<typeof PhotoHistory>;
+
 export const PostEntryBody = z.object({
   id: uuid,
   line_id: uuid,
@@ -553,6 +570,9 @@ export const ExportResponse = z.object({
 
 /** Per-user encrypted document (key pins, preferences), sealed under a key only the user can derive. */
 export const UserDocRow = z.object({ version: z.number().int(), schema_version: z.number().int(), nonce: b64, ciphertext: b64, updated_at: z.string() });
+/** PETTY-506: the person's own user documents replaced in the last 30 days, newest first, still sealed. Only their own session sees them. */
+export const UserDocHistory = z.object({ history: z.array(z.object({ id: z.string(), replaced_at: z.string(), document: UserDocRow })) });
+export type UserDocHistory = z.infer<typeof UserDocHistory>;
 /** PETTY-513: with a custody proof, so a session without the vault key cannot replace the pins, trusted tokens and counters. */
 export const PutUserDocBody = z.object({ base_version: z.number().int().min(0), schema_version: z.number().int().min(1), nonce: sized.nonce, ciphertext: b64Sized(0, USER_DOC_MAX_CIPHERTEXT), proof: CustodyProof });
 

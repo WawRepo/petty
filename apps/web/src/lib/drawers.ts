@@ -12,7 +12,7 @@ import {
   createDrawerKey, hashEntry, PettyCryptoError, DOCUMENT_SCHEMA_VERSION, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
 import { applyOps, fold, newDocument, nextRev, readDocument, revRolledBack, reverseOf, sumsAreExact, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type LineBalance, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
-import { DocumentHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
+import { DocumentHistory, PhotoHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
@@ -951,6 +951,30 @@ export async function setPhoto(id: string, jpeg: Uint8Array): Promise<void> {
   await withCustodyProof(a.keys.ecdsaPrivate, (proof) => api("PUT", `/drawers/${id}/photo`, { ...body, proof })); // PETTY-513
   if (view.photo) URL.revokeObjectURL(view.photo);
   patch(id, { photo: photoUrl(jpeg), summary: { ...view.summary, has_photo: true, last_write_at: new Date().toISOString() } });
+}
+
+/** PETTY-506: a photo of this drawer replaced or removed in the last 30 days. The server keeps it sealed; the owner's app opens it. */
+export interface PhotoVersion { readonly id: string; readonly replacedAt: string; readonly removed: boolean }
+/** The kept photos, newest first. Owner only (the server says 403 to others). */
+export async function photoHistory(id: string): Promise<PhotoVersion[]> {
+  const r = PhotoHistory.parse(await api<unknown>("GET", `/drawers/${id}/photo/history`));
+  return r.history.map((h) => ({ id: h.id, replacedAt: h.replaced_at, removed: h.removed }));
+}
+/** One kept photo, opened with the drawer key of its time (an older one too, when this device holds it). Null when it does not open here. */
+export async function openKeptPhoto(id: string, versionId: string): Promise<Uint8Array | null> {
+  const view = state.drawers.get(id);
+  if (!view?.key) throw new Error("drawer not ready");
+  const row = await api<SealedRow>("GET", `/drawers/${id}/photo/history/${versionId}`);
+  try {
+    const key = row.key_version === view.summary.key_version ? view.key : await (await keyResolver(view.summary, view.wraps, view.members))(row.key_version);
+    return await openPhoto(key, photoIdentity(view.summary, row.author_id, row.key_version), sealedOf(row));
+  } catch { return null; }
+}
+/** PETTY-506: puts a kept photo back as a normal photo write: sealed with the current key, with this person as author. The current photo is kept in turn. */
+export async function restorePhoto(id: string, versionId: string): Promise<void> {
+  const bytes = await openKeptPhoto(id, versionId);
+  if (!bytes) throw new Error("photo not readable");
+  await setPhoto(id, bytes);
 }
 
 export async function removePhoto(id: string): Promise<void> {

@@ -214,6 +214,11 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   whose keys you made yourself it cannot tell an older key from the newest. With no connection, the
   app uses the sealed copy that this device kept from its last load. A browser that never used the
   account has no older version to compare with: it takes the copy the server gives it.
+- A user document that does not open, or is not one, blocks the same things (PETTY-506). The server
+  keeps each replaced copy for 30 days, and the app offers to put back the newest one that opens and
+  whose counter is not lower than the highest this browser saw, after a confirm; it saves it as a
+  normal write with a counter above every copy. So a server cannot use these copies to serve an older
+  list. A browser that saw no counter has nothing to compare with and may take any copy that opens.
 
 ## Integrity
 
@@ -532,12 +537,13 @@ sessions, device logins nobody finished, custody challenges and limit counts tha
 sessions not used for 30 days, a
 password-reset token after its hour, an unused join link when it ends, and vault blobs replaced more
 than 30 days ago. A used join link forgets the address it was for at once. A drawer keeps replaced
-documents for 30 days, then housekeeping deletes them. Deleting an account erases its email, name,
-vault copies, user document, passkeys, sessions, unused join links and reset tokens, and the keys and
-names of its tokens. Its public keys and its entries in drawers that others keep stay, so those
+documents for 30 days, then housekeeping deletes them. The same goes for a replaced user document and
+a replaced or removed drawer photo (PETTY-506): at most the 10 newest and the first of each day, for
+30 days. Deleting an account erases its email, name, vault copies, user document and its kept copies,
+passkeys, sessions, unused join links and reset tokens, and the keys and names of its tokens. Its public keys and its entries in drawers that others keep stay, so those
 entries still verify. What is left of the account (its id, language, dates and public keys) goes in
 the first housekeeping run after nothing that others keep names it any more: no entry, drawer
-document or photo, kept document version, or drawer key it wrapped for someone.
+document or photo, kept document version or photo, or drawer key it wrapped for someone.
 
 ## Operator responsibilities
 

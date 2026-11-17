@@ -325,7 +325,7 @@
     "network": "No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
     "unknown": "Algo salió mal. Inténtalo de nuevo.",
     "displayName": "Escribe un nombre sencillo en una sola línea, sin enlaces ni direcciones de correo. Después de un punto, pon un espacio, como en «J. García».",
-    "storageFull": "Tu almacenamiento está lleno. Quita fotos o cajones que ya no necesites. En Ajustes puedes ver cuánto usas.",
+    "storageFull": "Tu almacenamiento está lleno. Elimina los cajones que ya no necesites. Una foto quitada o sustituida sigue contando 30 días, mientras se puede recuperar. En Ajustes puedes ver cuánto usas.",
     "ownerStorageFull": "El propietario de este cajón no tiene espacio libre, así que el cambio no se guardó. Pídele que libere espacio.",
     "photoTooLarge": "Esta foto es demasiado grande. Elige una más pequeña."
   },
@@ -468,14 +468,22 @@
     "tagRemoveConfirm": "¿Quitar «{tag}» de {count, plural, one {# elemento} other {# elementos}}? Los elementos se conservan.",
     "history": {
       "title": "Versiones anteriores",
-      "hint": "Nombres, elementos, etiquetas y lugares tal como estaban antes de cada cambio, guardados durante 30 días. Si restauras una versión, la actual también se guarda aquí. Los movimientos y los saldos no cambian.",
+      "hint": "Nombres, elementos, etiquetas, lugares y la foto tal como estaban antes de cada cambio, guardados durante 30 días. Si restauras una versión, la actual también se guarda aquí. Los movimientos y los saldos no cambian.",
       "empty": "No hay versiones anteriores de los últimos 30 días.",
       "unreadable": "No se puede abrir en este dispositivo",
       "lines": "{count, plural, one {# elemento} other {# elementos}}",
       "byTool": "cambiado por una herramienta",
       "restore": "Restaurar",
       "restoreNamed": "Restaurar la versión del {when}",
-      "restored": "Versión anterior restaurada."
+      "restored": "Versión anterior restaurada.",
+      "photosTitle": "Fotos anteriores",
+      "photoReplaced": "Foto sustituida",
+      "photoRemoved": "Foto quitada",
+      "photoShow": "Mostrar",
+      "photoShowNamed": "Mostrar la foto del {when}",
+      "photoRestoreNamed": "Restaurar la foto del {when}",
+      "photoAlt": "Foto anterior del {when}",
+      "photoRestored": "Foto anterior restaurada."
     },
     "trail": "Dónde está este cajón"
   },
@@ -767,7 +775,19 @@
     "rolledBackInside": "La copia de tu lista de claves de confianza que envió el servidor es más antigua que la que este dispositivo vio por última vez, pero el servidor no le pone un número más antiguo. Puede que alguien haya alterado el servidor, o que intente que confíes en claves nuevas. Hasta que empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
     "missingTitle": "El servidor no tiene tu lista de claves de confianza",
     "missing": "Tu cuenta tiene cajones, así que el servidor debería tener esta lista. Puede faltar porque tu cuenta es más antigua que la lista, porque se restauró una copia de seguridad o porque alguien intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, Petty solo abre los cajones cuya clave creaste tú y no podrás compartir cajones. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse.",
-    "startOver": "Empezar una lista nueva de claves de confianza"
+    "startOver": "Empezar una lista nueva de claves de confianza",
+    "unreadableTitle": "Tu lista de claves de confianza no se abre",
+    "unreadable": "La copia de esta lista que tiene el servidor no se puede abrir con tus claves. Puede deberse a un guardado fallido, a un error o a un cambio hecho directamente en el servidor. Hasta que recuperes una copia o empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
+    "unreadableCopy": "El servidor guarda las copias anteriores durante 30 días. La más reciente que se abre en este dispositivo es del {when}.",
+    "unreadableNoCopy": "Ninguna copia anterior se abre en este dispositivo. Puedes empezar una lista nueva.",
+    "putBack": "Recuperar la copia del {when}",
+    "putBackTitle": "¿Recuperar una copia anterior?",
+    "putBackBody": "Petty guarda la copia del {when} como tu lista de claves de confianza. Tendrás que volver a confirmar a quien hayas confirmado después de esa fecha. La copia que no se abre se queda en el servidor durante 30 días.",
+    "putBackConfirm": "Recuperarla",
+    "putBackDone": "Tu lista de claves de confianza ha vuelto.",
+    "startNewTitle": "¿Empezar una lista nueva?",
+    "startNewBody": "Petty guarda una lista de claves de confianza nueva y vacía. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse. Las copias anteriores se quedan en el servidor durante 30 días.",
+    "startedNew": "Se ha guardado una lista nueva de claves de confianza."
   },
   "privacy": {
     "link": "Privacidad y seguridad",
@@ -1237,7 +1257,7 @@
       },
       "undo": {
         "q": "¿Puedo deshacer un cambio en un cajón?",
-        "a": "Sí. Un movimiento erróneo se corrige con uno nuevo, y el anterior se queda en el historial. Los cambios de nombres, elementos, etiquetas y lugares se guardan 30 días, y el propietario del cajón puede restaurar una versión anterior."
+        "a": "Sí. Un movimiento erróneo se corrige con uno nuevo, y el anterior se queda en el historial. Los cambios de nombres, elementos, etiquetas, lugares y la foto se guardan 30 días, y el propietario del cajón puede restaurar una versión anterior."
       },
       "cost": {
         "q": "¿Cuánto cuesta?",

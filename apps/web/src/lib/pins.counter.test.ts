@@ -22,7 +22,7 @@ vi.mock("./session.js", () => ({ getAuth: () => mem.auth }));
 vi.mock("react", () => ({ useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot() }));
 
 // `usePins` under a plain name: outside React it is only a read of the store
-import { acceptedDocRev, acknowledgeRollback, confirmPin, forgetSelfKey, leftDrawerAt, loadPins, noteMembers, parseUserDoc, pinnedSigningKeys, placesShown, recordDrawerVersions, recordLeft, rotationOwed, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack } from "./pins.js";
+import { acceptedDocRev, acknowledgeRollback, confirmPin, forgetSelfKey, keptUserDocs, leftDrawerAt, loadPins, noteMembers, parseUserDoc, pinnedSigningKeys, placesShown, putBackRev, putBackUserDoc, recordDrawerVersions, recordLeft, restorableUserDocs, rotationOwed, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack, type KeptUserDoc } from "./pins.js";
 
 const USER = "5b0c6a0e-6f0e-4d7e-9a57-0d6c1f6a2a11";
 const DRAWER = "d1000000-0000-4000-8000-000000000001";
@@ -30,7 +30,8 @@ const identity: RecordIdentity = { record_type: "document", record_id: USER, dra
 let key: CryptoKey;
 
 interface Row { version: number; schema_version: number; nonce: string; ciphertext: string }
-const server = { row: null as Row | null, puts: 0, down: false, refusePut: false, alwaysNewer: false, challenge: null as string | null, ecdsaPub: "" };
+/** `kept` (PETTY-506): the copies each save replaced, oldest first, as the server keeps them 30 days. */
+const server = { row: null as Row | null, puts: 0, down: false, refusePut: false, alwaysNewer: false, kept: [] as Row[], challenge: null as string | null, ecdsaPub: "" };
 /** The sealed row as the user's own key makes it. */
 async function sealedRow(doc: unknown, version: number): Promise<Row> {
   const s = await seal(key, identity, utf8(canonicalJson(doc)));
@@ -60,10 +61,14 @@ beforeAll(async () => {
   key = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(USER), "AES-GCM", ["encrypt", "decrypt"]);
 });
 beforeEach(() => {
-  server.row = null; server.puts = 0; server.down = false; server.refusePut = false; server.alwaysNewer = false; server.challenge = null;
+  server.row = null; server.puts = 0; server.down = false; server.refusePut = false; server.alwaysNewer = false; server.kept = []; server.challenge = null;
   newBrowser();
   vi.stubGlobal("fetch", async (url: string, init?: { method?: string; body?: string }) => {
     if (server.down) throw new TypeError("fetch failed");
+    if (url === "/api/me/doc/history") {
+      const history = server.kept.map((r, i) => ({ id: String(i + 1), replaced_at: `2026-11-1${i}T10:00:00.000Z`, document: { ...r, updated_at: "2026-11-01T10:00:00.000Z" } })).reverse();
+      return new Response(JSON.stringify({ history }), { status: 200 });
+    }
     if (url === "/api/me/custody-challenge") {
       server.challenge = toB64(crypto.getRandomValues(new Uint8Array(32)));
       return new Response(JSON.stringify({ challenge: server.challenge, expires_at: new Date(Date.now() + 300_000).toISOString() }), { status: 200 });
@@ -79,6 +84,7 @@ beforeEach(() => {
     if (!body.proof || body.proof.challenge !== challenge) return new Response(JSON.stringify({ code: "CustodyProofRequired", message: "custody proof required" }), { status: 403 });
     if (!(await verifyCustodyProof(server.ecdsaPub, body.proof.challenge, body.proof.signature))) return new Response(JSON.stringify({ code: "CustodyProofInvalid", message: "custody proof invalid" }), { status: 403 });
     if (server.alwaysNewer || body.base_version !== (server.row?.version ?? 0)) return new Response(JSON.stringify({ code: "VersionConflict", message: "user document changed" }), { status: 409 });
+    if (server.row) server.kept.push(server.row);
     server.row = { version: body.base_version + 1, schema_version: body.schema_version, nonce: body.nonce, ciphertext: body.ciphertext };
     return new Response(JSON.stringify({ version: server.row.version, updated_at: "2026-11-10T10:00:00.000Z" }), { status: 200 });
   });
@@ -369,5 +375,75 @@ describe("the user document's memory of keys and members, with the counter", () 
     expect(await recordLeft(DRAWER, "bob", 2)).toBe(false);
     await expect(confirmPin("bob", BOB_KEYS, DRAWER)).rejects.toThrow("PinsRolledBack");
     expect(server.puts).toBe(0);
+  });
+});
+
+describe("a list that does not open (PETTY-506)", () => {
+  const junk = (version: number): Row => ({ version, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(64))) });
+  /** A save that does not open (a bug, a failed save, a change on the server): the server keeps the copy it replaced. */
+  const writeJunk = () => { server.kept.push(server.row!); server.row = junk(server.row!.version + 1); };
+  const copy = (id: string, rev: number | undefined): KeptUserDoc => ({ id, replacedAt: "2026-11-10T10:00:00.000Z", doc: rev === undefined ? { v: 1, pins: {} } : { v: 2, rev, pins: {} } });
+
+  it("offers only copies not older than this browser saw, and puts one back with a counter above all", () => {
+    const kept = [copy("3", 3), copy("2", 2), copy("1", undefined)];
+    expect(restorableUserDocs({ version: 3, rev: 3 }, kept).map((c) => c.id)).toEqual(["3"]);
+    expect(restorableUserDocs({ version: 3 }, kept).map((c) => c.id)).toEqual(["3", "2", "1"]); // saw no counter: any that opens
+    expect(restorableUserDocs({ version: 9, rev: 4 }, kept)).toEqual([]);
+    expect(putBackRev({ version: 3, rev: 3 }, kept)).toBe(4);
+    expect(putBackRev({ version: 9, rev: 7 }, kept)).toBe(8);
+    expect(putBackRev({ version: 0 }, [])).toBe(1);
+  });
+
+  it("is not saved over and blocks trust; the newest kept copy that opens is put back, and saves work again", async () => {
+    await startUserDoc();            // rev 1
+    await setPlacesShown(false);     // rev 2
+    await setTotalsShown(false);     // rev 3, version 3
+    writeJunk();                     // version 4 does not open
+    writeJunk();                     // version 5 does not open; version 4 is kept but does not open either
+    server.puts = 0;
+    reload();
+    await loadPins();
+    expect(pinsNow()).toMatchObject({ status: "unreadable", version: 5, lastSeenVersion: 3 });
+    await expect(setPlacesShown(true)).rejects.toThrow("PinsUnreadable");
+    await recordDrawerVersions(new Map(), new Map(), new Map(), new Map([[DRAWER, 9]]));
+    await startUserDoc();
+    expect(server.puts).toBe(0);
+
+    const offered = await keptUserDocs();
+    expect(offered.map((c) => c.doc.rev)).toEqual([3]); // rev 2 and 1 are older than this browser saw; the junk does not open
+    await putBackUserDoc(offered[0]!.id);
+    expect(pinsNow()).toMatchObject({ status: "ready", version: 6 });
+    expect((await onServer())!.doc).toMatchObject({ v: 2, rev: 4, hide_totals: true, hide_places: true });
+    expect(seen()).toEqual({ version: 6, rev: 4 });
+    await setPlacesShown(true);
+    expect((await onServer())!.doc).toMatchObject({ rev: 5 });
+  });
+
+  it("a browser that saw nothing takes any copy that opens; a new list gets a counter above every copy", async () => {
+    await startUserDoc();
+    await setPlacesShown(false);
+    await setTotalsShown(false);
+    writeJunk();
+    newBrowser();
+    await loadPins();
+    expect(pinsNow().status).toBe("unreadable");
+    expect((await keptUserDocs()).map((c) => c.doc.rev)).toEqual([3, 2, 1]);
+    await putBackUserDoc(null);
+    expect((await onServer())!.doc).toEqual({ v: 2, rev: 4, pins: {} });
+    expect(pinsNow().status).toBe("ready");
+  });
+
+  it("put back does nothing while the list opens, and stops when another device saved a copy since", async () => {
+    await startUserDoc();
+    await expect(putBackUserDoc(null)).rejects.toThrow();
+    await setPlacesShown(false);
+    writeJunk();
+    reload();
+    await loadPins();
+    expect(pinsNow().status).toBe("unreadable");
+    writeJunk(); // another device (or the same bad writer) saves again meanwhile
+    server.puts = 0;
+    await expect(putBackUserDoc(null)).rejects.toThrow();
+    expect(server.row!.version).toBe(4);
   });
 });

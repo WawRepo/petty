@@ -938,6 +938,7 @@ html.tour-open { overflow: hidden; }
 .passkey-row:last-child { border-bottom: 0; }
 .passkey-row .switch-label { display: block; font-weight: 600; font-size: 15px; }
 .passkey-row .btn { flex: none; }
+.kept-photo { display: block; max-width: 160px; max-height: 160px; margin-top: 6px; border-radius: 8px; object-fit: cover; }
 /* PETTY-148: a Manage tags row: the name takes the free width and wraps; the two buttons keep their own width. */
 .tag-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .tag-row-actions .btn { width: auto; }

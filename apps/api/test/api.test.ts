@@ -667,14 +667,15 @@ describe("storage limits (PETTY-243)", () => {
     expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(100_000), proof: await A.proof() })).statusCode).toBe(204);
     const used = (await storage(A)).used_bytes;
     expect(used).toBeGreaterThanOrEqual(100_000);
-    setQuota(used + 50_000);
-    expect(await storage(A)).toEqual({ used_bytes: used, quota_bytes: used + 50_000 });
+    setQuota(used + 150_000);
+    expect(await storage(A)).toEqual({ used_bytes: used, quota_bytes: used + 150_000 });
 
     // B writes into A's drawer: the bytes are A's, so A's quota refuses the bigger photo
     const over = await B.call("PUT", `/drawers/${id}/photo`, { ...photo(200_000), proof: await B.proof() });
     expect(over.statusCode).toBe(413);
-    expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { owner_id: A.id, used_bytes: used, quota_bytes: used + 50_000 } });
-    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(120_000), proof: await B.proof() })).statusCode).toBe(204); // +20 000 still fits
+    expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { owner_id: A.id, used_bytes: used, quota_bytes: used + 150_000 } });
+    // +120 000 still fits: the replaced photo is kept 30 days (PETTY-506), so a new one adds its whole size
+    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(120_000), proof: await B.proof() })).statusCode).toBe(204);
     expect((await B.postEntry(id, key, line, "add", 1)).res.statusCode).toBe(201);
     expect((await A.createDrawer("Small", newDocument("Small"))).res.statusCode).toBe(201);  // a new drawer (a 16 KiB padded document) fits
 
@@ -683,8 +684,9 @@ describe("storage limits (PETTY-243)", () => {
     expect((await A.createDrawer("None", newDocument("None"))).res.json().code).toBe("StorageQuotaExceeded");
     const put = await A.call("PUT", `/drawers/${id}/document`, { ...sealedBody(await A.sealDoc(id, key, { ...doc, name: "Renamed" }), 1), base_version: 1, proof: await A.proof() });
     expect(put.json().code).toBe("StorageQuotaExceeded");
-    // what frees space passes: a smaller photo, removing the photo, deleting a line
-    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(10_000), proof: await A.proof() })).statusCode).toBe(204);
+    // a smaller photo adds bytes too now (the old one is kept 30 days, PETTY-506); removing the photo is always
+    // allowed, and deleting a line frees space
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(10_000), proof: await A.proof() })).json().code).toBe("StorageQuotaExceeded");
     expect((await A.call("DELETE", `/drawers/${id}/photo`, { proof: await A.proof() })).statusCode).toBe(204);
     const without = applyOp(doc, { type: "remove_line", line_id: line }, { lineHasEntries: () => true });
     setQuota((await storage(A)).used_bytes);
