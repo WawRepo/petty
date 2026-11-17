@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.52] — 2026-11-17
+
 ### Security
 - The `petty` command line keeps its token in your system's keychain (PETTY-276): the macOS keychain,
   the Secret Service on Linux (`secret-tool`), or Windows Credential Manager. `~/.petty/hosts.json`
@@ -1112,7 +1114,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.51...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.52...HEAD
+[1.5.52]: https://github.com/WawRepo/petty/releases/tag/v1.5.52
 [1.5.51]: https://github.com/WawRepo/petty/releases/tag/v1.5.51
 [1.5.50]: https://github.com/WawRepo/petty/releases/tag/v1.5.50
 [1.5.49]: https://github.com/WawRepo/petty/releases/tag/v1.5.49
