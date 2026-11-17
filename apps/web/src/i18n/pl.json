@@ -744,6 +744,7 @@
     "imported": "Zaimportowano {count, plural, one {# szufladę} few {# szuflady} many {# szuflad} other {# szuflady}}",
     "importInvalid": "To nie jest plik eksportu Petty.",
     "importWrongPassword": "To hasło nie otworzyło pliku.",
+    "importTooLarge": "Kwoty w tym pliku dają razem liczbę zbyt dużą, aby zachować ją dokładnie. Nic nie zaimportowano.",
     "plainLead": "Bez szyfrowania: każdy, kto dostanie plik, przeczyta wszystko."
   },
   "delete": {

@@ -121,10 +121,14 @@ export function script(shell: Shell): string {
       return `# ${HEAD} -s bash
 # Load it from ~/.bashrc:  eval "$(petty completion -s bash)"
 _petty_complete() {
-  # the words are taken before IFS changes: bash 3.2 (macOS) joins a sliced array under another IFS
   local words=("\${COMP_WORDS[@]:1:COMP_CWORD}")
-  local IFS=$'\\n'
-  COMPREPLY=($(PETTY_COMPLETE_SHELL=bash petty __complete "\${words[@]}" 2>/dev/null))
+  local line
+  # one candidate per line, taken as it is: COMPREPLY=($(…)) would match a * ? or [ in a name against the
+  # files here (PETTY-519). mapfile is bash 4 only; this loop runs on bash 3.2 (macOS) too.
+  COMPREPLY=()
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ -n "$line" ]]; then COMPREPLY+=("$line"); fi
+  done < <(PETTY_COMPLETE_SHELL=bash petty __complete "\${words[@]}" 2>/dev/null)
 }
 complete -o default -F _petty_complete petty
 `;

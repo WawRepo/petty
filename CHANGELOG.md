@@ -8,6 +8,20 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- An import refuses a file whose amounts could add up past the largest exact number ("The amounts in
+  that file add up to a number too large to keep exact. Nothing was imported."). Before, it made a
+  drawer that opened as damaged. It also checks every drawer in the file before it makes the first, so
+  a refused file leaves nothing half imported (PETTY-519).
+- Tab completion in bash offers a name with `*`, `?` or `[` as it is. Before, bash replaced it with the
+  names of matching files in the current folder. Load the script again (`eval "$(petty completion -s
+  bash)"`, or open a new shell) to get the fix (PETTY-519).
+
+### Changed
+- Petty checks a drawer it opens against upper limits: 1 000 items, 25 000 checks, 4 000 characters in
+  a check's comment, 120 in the drawer's name. No drawer made in Petty comes near them. A drawer over
+  one opens as damaged, and nothing is written over it (PETTY-519).
+
 ## [1.5.55] — 2026-11-17
 
 ### Added

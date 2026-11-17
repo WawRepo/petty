@@ -744,6 +744,7 @@
     "imported": "{count, plural, one {# Schublade} other {# Schubladen}} importiert",
     "importInvalid": "Diese Datei ist kein Petty-Export.",
     "importWrongPassword": "Mit diesem Passwort ließ sich die Datei nicht öffnen.",
+    "importTooLarge": "Die Beträge in dieser Datei ergeben zusammen eine Zahl, die zu groß ist, um genau zu bleiben. Es wurde nichts importiert.",
     "plainLead": "Unverschlüsselt: Wer die Datei bekommt, kann alles darin lesen."
   },
   "delete": {

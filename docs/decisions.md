@@ -316,6 +316,19 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   to drawer members), and the operator who holds the key can still read every address. An HMAC index
   lets the key holder test a guessed address; it does not stop that, only a copy of the database without
   the key.
+- **What a drawer's document may hold (PETTY-519).** Every reader checks a document it opens against
+  caps (`assertDocumentShape` in `packages/ledger/src/document.ts`): at most 1 000 items (five times the
+  200 every client allows), 25 000 checks (a stored document, under the server's 2 MiB request limit,
+  holds at most 24 576), 1 000 items listed in one check, 4 000 characters in a check's comment (the
+  app takes 500), 128 in an id or a time (clients write 36 and 24) and 120 in the drawer's name (the
+  rule of every name). They sit far above what a Petty client writes, so no drawer a client made is
+  refused; they bound what a hand-made archive or a hostile member's client can make a reader do. The
+  server cannot check them (it never reads a document) and does not change. A document over one opens
+  as damaged in the app ("bad_document", the owner may put back an earlier version), and the command
+  line and the add-on leave it out with a warning. Nothing is written over it, so a later build with
+  higher caps reads it again. An import checks every drawer of an archive, its document and its sums,
+  before it writes the first, and refuses a file whose amounts could add up past the largest exact
+  number.
 
 ## Non-goals
 

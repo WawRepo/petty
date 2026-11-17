@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LedgerError, applyOp, applyOps, assertDocumentShape, foldText, hasTag, iconOf, lineCounted, lineTagsOf, newDocument, staleness, tagsOf, totals, type Line, type Verification, colorOf } from "../src/index.js";
+import { LedgerError, MAX_DOCUMENT_LINES, MAX_ID, MAX_LINES, MAX_NAME, MAX_TEXT, MAX_VERIFICATIONS, applyOp, applyOps, assertDocumentShape, foldText, hasTag, iconOf, lineCounted, lineTagsOf, newDocument, staleness, tagsOf, totals, type Line, type Verification, colorOf } from "../src/index.js";
 
 const money = (id: string, currency = "PLN", exponent = 2): Line => ({ id, kind: "money", name: `${currency} ${id}`, currency, exponent });
 const single = (id: string): Line => ({ id, kind: "single", name: "Passport", text: "" });
@@ -50,6 +50,61 @@ describe("document ops", () => {
     expect(() => assertDocumentShape({ ...good, lines: [money(A), money(A)] })).toThrow(/bad_document/);
     expect(() => assertDocumentShape({ v: 2 })).toThrow(/bad_document/);
     expect(() => assertDocumentShape({ ...good, lines: [{ id: "z", kind: "money", name: "x", currency: "EUR", exponent: 99 }] })).toThrow(/bad_exponent/);
+  });
+});
+
+describe("assertDocumentShape: the most a document may hold (PETTY-519)", () => {
+  const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
+  const lines = (n: number): Line[] => Array.from({ length: n }, (_, i) => ({ id: uuid(i), kind: "single", name: "x".repeat(MAX_NAME), text: "y".repeat(MAX_TEXT) }));
+  const listed = (line_id: string): Verification["lines"][number] => ({ line_id, kind: "single", balance: null, present: true, head_seq: null });
+  const check = (over: Partial<Verification> = {}): Verification => ({
+    id: uuid(1), author_id: uuid(2), logged_at: "2026-11-18T12:00:00.000Z", comment: "", lines: lines(MAX_LINES).map((l) => listed(l.id)), ...over,
+  });
+
+  it("takes the largest document a client writes", () => {
+    // as the app makes it: 200 items with the longest name and note, then a check of them all
+    let d = applyOp(newDocument("n".repeat(MAX_NAME)), { type: "set_tags", tags: ["shed"] }, ctx());
+    d = applyOps(d, lines(MAX_LINES).map((line) => ({ type: "add_line" as const, line })), ctx());
+    expect(() => applyOp(d, { type: "add_line", line: { ...lines(1)[0]!, id: uuid(MAX_LINES) } }, ctx())).toThrow(/too_many_lines/);
+    // the app's 500 characters, and the label an import adds
+    d = applyOp(d, { type: "append_verification", verification: check({ comment: `${"c".repeat(500)} · [imported: ${"m".repeat(80)}]` }) }, ctx());
+    expect(() => assertDocumentShape(JSON.parse(JSON.stringify(d)))).not.toThrow();
+  });
+
+  it("takes as many checks as the largest stored document can hold", () => {
+    // the server takes 2 MiB of request: at most 1.5 MiB of sealed document
+    const smallest: Verification = { id: "", author_id: "", logged_at: "", comment: "", lines: [] };
+    const most = Math.floor((2 * 1024 * 1024 * 3) / 4 / (JSON.stringify(smallest).length + 1));
+    expect(most).toBeLessThan(MAX_VERIFICATIONS);
+    expect(() => assertDocumentShape({ ...newDocument("K"), verifications: Array.from({ length: most }, () => smallest) })).not.toThrow();
+  });
+
+  it("takes each cap, and refuses one over it", () => {
+    const base = newDocument("K");
+    const at = [
+      { ...base, name: "n".repeat(MAX_NAME) },
+      { ...base, lines: lines(MAX_DOCUMENT_LINES) },
+      { ...base, lines: [{ ...lines(1)[0]!, id: "i".repeat(MAX_ID) }] },
+      { ...base, verifications: Array.from({ length: MAX_VERIFICATIONS }, () => check({ lines: [] })) },
+      { ...base, verifications: [check({ id: "i".repeat(MAX_ID), author_id: "a".repeat(MAX_ID), logged_at: "t".repeat(MAX_ID), comment: "c".repeat(MAX_TEXT) })] },
+      { ...base, verifications: [check({ lines: Array.from({ length: MAX_DOCUMENT_LINES }, () => listed("l".repeat(MAX_ID))) })] },
+    ];
+    for (const d of at) expect(() => assertDocumentShape(d)).not.toThrow();
+    const over: unknown[] = [
+      { ...base, name: "n".repeat(MAX_NAME + 1) },
+      { ...base, lines: lines(MAX_DOCUMENT_LINES + 1) },
+      { ...base, lines: [{ ...lines(1)[0]!, id: "i".repeat(MAX_ID + 1) }] },
+      { ...base, lines: [null] },
+      { ...base, verifications: Array.from({ length: MAX_VERIFICATIONS + 1 }, () => check({ lines: [] })) },
+      { ...base, verifications: [check({ id: "i".repeat(MAX_ID + 1) })] },
+      { ...base, verifications: [check({ author_id: "a".repeat(MAX_ID + 1) })] },
+      { ...base, verifications: [check({ logged_at: "t".repeat(MAX_ID + 1) })] },
+      { ...base, verifications: [check({ comment: "c".repeat(MAX_TEXT + 1) })] },
+      { ...base, verifications: [check({ lines: Array.from({ length: MAX_DOCUMENT_LINES + 1 }, () => listed("l")) })] },
+      { ...base, verifications: [check({ lines: [listed("l".repeat(MAX_ID + 1))] })] },
+      { ...base, verifications: [null] },
+    ];
+    for (const d of over) expect(() => assertDocumentShape(d), JSON.stringify(d).slice(0, 80)).toThrow(/bad_document/);
   });
 });
 

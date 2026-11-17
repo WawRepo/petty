@@ -744,6 +744,7 @@
     "imported": "{count, plural, one {# drawer} other {# drawers}} imported",
     "importInvalid": "That file is not a Petty export.",
     "importWrongPassword": "That password did not open the file.",
+    "importTooLarge": "The amounts in that file add up to a number too large to keep exact. Nothing was imported.",
     "plainLead": "Unencrypted: anyone who gets the file can read everything in it."
   },
   "delete": {
