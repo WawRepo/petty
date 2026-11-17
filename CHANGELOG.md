@@ -18,6 +18,8 @@ number, also when it adds features, and a new minor or major is started by hand 
   Deleting your account deletes the copies at once. Operators: migration 021 adds two tables, and the
   hourly `maintenance` log line has a new count, `kept_copies`.
 
+## [1.5.49] — 2026-11-17
+
 ### Security
 - An instance can keep its users' email addresses out of its database. With the new setting
   `EMAIL_KEY` (32 random bytes: `openssl rand -base64 32`), the server seals every address with that
@@ -1085,7 +1087,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.48...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.49...HEAD
+[1.5.49]: https://github.com/WawRepo/petty/releases/tag/v1.5.49
 [1.5.48]: https://github.com/WawRepo/petty/releases/tag/v1.5.48
 [1.5.47]: https://github.com/WawRepo/petty/releases/tag/v1.5.47
 [1.5.46]: https://github.com/WawRepo/petty/releases/tag/v1.5.46
