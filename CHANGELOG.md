@@ -16,6 +16,13 @@ number, also when it adds features, and a new minor or major is started by hand 
   shows the total and the picture. The keyboard follows: opening a row moves to the drawer's title, and
   Escape or "Back to the list" goes back to its row. Links to a drawer or an item open both panes. On a
   phone nothing changes.
+- With Clerk sign-in, the metrics count sign-ins and refused session tokens (PETTY-285). Before, Petty
+  counted no sign-in under Clerk at all. `petty_auth_events_total` has three new `event` values:
+  `clerk_signin` (the first request with a Clerk session that Petty has not seen),
+  `clerk_token_expired` and `clerk_token_invalid` (a session token Petty refused, and why). A new table
+  remembers the sessions seen, by a hash of their id and with no link to an account, so a restart does
+  not count one twice; housekeeping deletes a row 30 days after the session was last used. The upgrade
+  adds the table (migration 022); there is no new setting.
 
 ### Fixed
 - Without `EMAIL_KEY`, the housekeeping log no longer counts every stored address as sealed with an

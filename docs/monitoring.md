@@ -35,7 +35,7 @@ separate port, not on the app port, so a reverse proxy never exposes them. The c
 | Metric | Labels | Meaning |
 |---|---|---|
 | `petty_http_request_duration_seconds` (histogram) | `method`, `route`, `status` | latency and count per route template (`/api/drawers/:id`), never per URL; non-API traffic is one `static` bucket |
-| `petty_auth_events_total` | `event` = login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied | sign-in events; with `AUTH_PROVIDER=clerk` only signup and the three device events (Clerk handles the rest) |
+| `petty_auth_events_total` | `event` = login_ok, login_fail, rate_limited, signup, forgot, reset, logout, device_code, device_approved, device_denied, clerk_signin, clerk_token_expired, clerk_token_invalid | sign-in events. Local sign-in counts the first ten. With `AUTH_PROVIDER=clerk`, Clerk signs people in, and Petty counts signup, the three device events and its own three: `clerk_signin` (the first request with a Clerk session Petty has not seen, PETTY-285), `clerk_token_expired` and `clerk_token_invalid` (a session token it refused: out of its time window, or anything else, see below) |
 | `petty_entries_total` | `result` = created, duplicate | entry appends; duplicates are idempotent replays from the offline outbox |
 | `petty_rotations_started_total` | none | drawer key rotations started |
 | `petty_mail_total` | `result` = ok, failed | emails handed to SMTP |
@@ -120,6 +120,7 @@ and on the OTLP push alike; with several instances, add `by (deployment_environm
 | Waiting for the database | `max(petty_pg_pool_clients{state="waiting"}) > 0` | 5 min |
 | Password guessing (local sign-in only) | `increase(petty_auth_events_total{event="login_fail"}[15m]) > 20` | — |
 | Sign-in limiter (local sign-in only) | `increase(petty_auth_events_total{event="rate_limited"}[15m]) > 0` | — |
+| Refused session tokens (Clerk only) | `increase(petty_auth_events_total{event="clerk_token_invalid"}[15m]) > 20` | — |
 | Security refusals | `sum by (code) (increase(petty_security_refusals_total[15m])) > 2` | — |
 | Memory | `max(petty_process_resident_memory_bytes) / <the machine's memory in bytes> > 0.8` | 15 min |
 | Error logs (Loki) | `count_over_time({service_name="petty"} \| detected_level="error" [10m]) > 5` | — |
@@ -129,6 +130,14 @@ that scales to zero, probe `/api/health/live` instead, see above), and, if you
 run the backup job from `deploy/backup`, an alert when the last successful backup is older than
 26 hours. Every counter starts at 0 on the scrape and on the OTLP push, with a series for each label
 value this instance can count, so "no data" on a counter means the metrics do not arrive, not a quiet
-day. With `AUTH_PROVIDER=clerk` the two sign-in rules above never fire: Clerk signs people in, so
-Petty counts no `login_fail` or `rate_limited`, and these series are not there. Tampering that only the client can see — a ciphertext that fails to open (`AuthTagMismatch`), a
+day. With `AUTH_PROVIDER=clerk` the two local sign-in rules above never fire: Clerk signs people in, so
+Petty counts no `login_fail` or `rate_limited`, and these series are not there. Under local sign-in the
+Clerk rule has no series either. Some `clerk_token_expired` is normal: a browser keeps a session token
+about a minute, and a request can leave just before the next token arrives. `clerk_token_invalid` is
+everything else (a bad signature, another Clerk instance's key, the wrong issuer or origin, not a token
+at all), which normal use never sends: a rise is someone trying tokens, or the instance's own Clerk key
+(`CLERK_JWT_KEY`) is wrong, and then nobody can sign in. A `clerk_signin` is counted once per Clerk
+session: table `clerk_sessions_seen` remembers a hash of each session id, so a restart or a second
+instance does not count it again. A session that nobody uses for 30 days is forgotten, and counts again
+if it comes back. Tampering that only the client can see — a ciphertext that fails to open (`AuthTagMismatch`), a
 broken hash chain — never reaches the server, so no server alert can report it.
