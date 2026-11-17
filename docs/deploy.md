@@ -85,6 +85,8 @@ may sign up, set `OPEN_SIGNUP=true` in `deploy/compose/.env` instead.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | outgoing mail. The server must offer TLS: STARTTLS (usually port 587) or TLS on port 465. Only `localhost`, `127.0.0.1` and `mailpit` may be plain. Mail to a relay without TLS fails; the app logs it, and nobody else sees it. |
 | `CONTACT_EMAIL` | the operator's address, shown to everyone: the "Get an invite" buttons, the landing page, `/api/config`, and the security emails ("write to …"). Empty hides all of them. |
 | `LEGAL_DIR` | a folder with your own privacy notice and terms of service, see below. Empty (the default) = none. |
+| `EMAIL_KEY` | seals every email address the database stores; 32 random bytes in base64 (`openssl rand -base64 32`). Empty (the default) = addresses stay plain. **Keep a spare copy:** without it no address can be read and nobody can sign in. See "Email key" below. |
+| `EMAIL_KEY_OLD` | only while changing the email key: the former key (several: comma separated), read until the app has moved every address to `EMAIL_KEY`. With `EMAIL_KEY` empty, the app writes every address back in plain. |
 | `TRUST_PROXY` | the proxies whose `X-Forwarded-For` the app believes: addresses, CIDR ranges or `loopback`, `linklocal`, `uniquelocal` (`true` = all three); empty or `false` = none, the image's default. The compose file sets all three. See above. |
 | `RATE_LIMIT_PER_MINUTE` | API requests per client address per minute, for every route; `0` = off. The image's default is `600`. Over it, the API answers 429 with `Retry-After: 60`. The web app's own files and `/api/health*` do not count. Sign-in, sign-up, password reset and device codes keep their own, stricter limits. |
 | `SHARING_MAIL_PER_SENDER`, `SHARING_MAIL_PER_RECIPIENT` | drawer invitation, ownership-offer and join-link emails per 24 hours that one person may send (default `20`) and one person or address may receive (default `5`); one email per drawer (join link: per sender) and recipient a day applies on top. `0` = no limit. Past a limit the invitation or offer is still made and shows in the app; only its email is skipped, and the inviter sees that. An emailed join link past a limit is refused (429) and no link is made; the inviter can still make a link in Settings and send it themselves. So nobody can use invite → revoke loops or join links to fill someone's inbox (PETTY-407, PETTY-423). |
@@ -175,12 +177,47 @@ services:
       LEGAL_DIR: /legal
 ```
 
+## Email key
+
+Without a key, the database stores every email address in plain text: a copy of it (a backup, a stolen
+disk, an SQL injection that reads tables) shows who has an account. With `EMAIL_KEY`, the app seals each
+address (AES-256-GCM) before it writes it, and stores a keyed hash of the address in lower case beside it,
+so sign-in and lookup by address still work. The database never sees the key. Drawer content is sealed in
+the browser already; this covers the addresses, which the server must read to send mail.
+
+1. Make a key: `openssl rand -base64 32`. **Keep a spare copy** apart from the server and from the
+   database backups (a password manager, a printed sheet). Without the key no address can be read: nobody
+   can sign in by email, and no mail can be sent. A restored backup needs the key it was made with.
+2. First upgrade every instance to a version that knows the key (an older one finds no sealed address,
+   so it signs nobody in and could let an address sign up twice). Then set `EMAIL_KEY` on all of them and
+   restart. Each housekeeping run (one at start, then every hour while the app is in use) seals every
+   plain address, 200 rows at a time; new accounts are sealed at once. Check:
+   `select count(*) from users where email is not null;` prints `0` a minute after the start.
+3. From then on, the app refuses to start when the database holds addresses sealed with a key it does not
+   have (`EMAIL_KEY` empty or another one): its log says `email key check failed` and names the key ids.
+   Set the right key; nothing is lost while it does not start.
+
+**Changing the key:** set the new key as `EMAIL_KEY` and the old one as `EMAIL_KEY_OLD`. The next run moves
+every address to the new key. When `select count(distinct email_key_id) from users;` and the same for
+`join_links` print `1` or `0` (one key id left: each id is derived from its key, never the key), remove
+`EMAIL_KEY_OLD`.
+
+**Back to plain:** set only `EMAIL_KEY_OLD` to the key (no `EMAIL_KEY`). The next run writes every address
+back in plain. Do this before you downgrade to a version without the email key.
+
+Every app instance on one database needs the same keys: an instance without them refuses to start once
+rows are sealed, and one that still runs with fewer keys logs a warning at each run (below) and cannot sign
+in the people whose address it cannot open. Change the keys on all instances at once. Each `maintenance` log line has an `emails` part with the rows moved (`users`, `join_links`),
+rows under a key this instance does not have (`unknown`, also logged as a warning), rows that did not open
+(`unreadable`), and addresses stored twice (`conflicts`). Logs never show an address or a key.
+
 ## Backups
 
 The compose file ships no backup job — add one before you keep real data. `deploy/backup/Dockerfile`
 builds a small image with `pg_dump` and `age` so a dump is encrypted before it is written anywhere;
 keep the age private key off the server. Drawer content is already ciphertext, but a dump still holds
-emails and vault material, so treat it as personal data.
+emails (unless `EMAIL_KEY` is set) and vault material, so treat it as personal data. With `EMAIL_KEY`, keep
+the key apart from the dumps: a dump restores only with it.
 
 Below, `$C` stands for `docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env`.
 

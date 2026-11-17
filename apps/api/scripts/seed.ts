@@ -9,13 +9,14 @@ import { hashEntry } from "@petty/crypto";
 import { applyOps, newDocument } from "@petty/ledger";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
+import { emailMatchParams, emailMatchSql } from "../src/lib/email-seal.js";
 import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, userMaterial, sealedBody } from "../src/devtools/fixtures.js";
 
 async function main() {
   const owner = new pg.Client({ connectionString: config.ownerDatabaseUrl });
   await owner.connect();
-  const exists = await owner.query("select 1 from users where email = 'alice@petty.local'");
+  const exists = await owner.query(`select 1 from users u where ${emailMatchSql("u", 1)}`, await emailMatchParams("alice@petty.local"));
   await owner.end();
   if (exists.rowCount) { process.stdout.write("seed: alice already exists — run `make reset` to reseed\n"); return; }
 

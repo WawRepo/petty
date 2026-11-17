@@ -7,6 +7,7 @@ import { apiPool } from "../db.js";
 import { iso } from "../lib/bytes.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { requireAdmin } from "../lib/session.js";
+import { emailColumnsSql, openEmail } from "../lib/email-seal.js";
 
 /**
  * Account administration (Phase 15a): list, block, sign out everywhere, grant admin.
@@ -18,16 +19,17 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.get("/admin/users", async (req) => {
     requireAdmin(req);
     const { rows } = await apiPool.query(
-      `select u.id, u.email, u.display_name, u.locale, u.created_at, u.is_admin, u.blocked_at, u.deleted_at,
+      `select u.id, ${emailColumnsSql("u")}, u.display_name, u.locale, u.created_at, u.is_admin, u.blocked_at, u.deleted_at,
               (select count(*)::int from drawers d where d.owner_id = u.id) as owned,
               greatest(u.last_seen_at, (select max(s.last_seen_at) from sessions s where s.user_id = u.id)) as last_seen_at, -- PETTY-241: Clerk mode too
               exists(select 1 from passkey_vaults p where p.user_id = u.id) as has_passkey
          from users u order by u.created_at`,
     );
-    return AdminUsers.parse({ users: rows.map((r) => ({
-      id: r.id, email: r.email, display_name: r.display_name, locale: r.locale, created_at: iso(r.created_at), is_admin: r.is_admin,
+    // PETTY-359: "" only while another instance with the email key seals a row and this one has none
+    return AdminUsers.parse({ users: await Promise.all(rows.map(async (r) => ({
+      id: r.id, email: (await openEmail("users", r)) ?? "", display_name: r.display_name, locale: r.locale, created_at: iso(r.created_at), is_admin: r.is_admin,
       blocked_at: r.blocked_at ? iso(r.blocked_at) : null, deleted: !!r.deleted_at, owned: r.owned, last_seen_at: r.last_seen_at ? iso(r.last_seen_at) : null, has_passkey: r.has_passkey,
-    })) });
+    }))) });
   });
 
   async function target(req: { params: { id: string } }, meId: string): Promise<string> {

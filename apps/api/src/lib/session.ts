@@ -7,9 +7,11 @@ import { forbidden, unauthorized } from "./errors.js";
 
 import { clerkProfile, clerkUserExists, verifyClerkToken, type ClerkIdentity } from "./clerk.js";
 import { mails } from "./mail.js";
+import { emailColumnsSql, emailMatchParams, emailMatchSql, openEmail, type StoredEmail } from "./email-seal.js";
 import { assertTokenMay, authenticateToken, PAT_PREFIX } from "./tokens.js";
 
-export interface SessionUser { id: string; email: string; display_name: string; locale: string; is_admin: boolean }
+/** The signed-in person. No email: a request never needs the address (PETTY-359 keeps it sealed until a mail goes out). */
+export interface SessionUser { id: string; display_name: string; locale: string; is_admin: boolean }
 declare module "fastify" {
   /** `clerk`: the verified Clerk identity of this request (clerk mode), whether or not a users row exists yet. */
   interface FastifyRequest { user: SessionUser | null; sessionId: string | null; clerk: ClerkIdentity | null }
@@ -68,20 +70,21 @@ async function relinkByVerifiedEmail(sub: string): Promise<SessionUser | null> {
     email = p.email;
   } catch { return null; }
   const found = (await apiPool.query<{ id: string; clerk_user_id: string | null }>(
-    "select id, clerk_user_id from users where lower(email) = lower($1) and deleted_at is null and blocked_at is null and clerk_user_id is distinct from $2",
-    [email, sub],
+    `select u.id, u.clerk_user_id from users u where ${emailMatchSql("u", 2)} and u.deleted_at is null and u.blocked_at is null and u.clerk_user_id is distinct from $1`,
+    [sub, ...(await emailMatchParams(email))],
   )).rows[0];
   if (!found) return null;
   if (found.clerk_user_id && (await clerkUserExists(found.clerk_user_id))) return null;
   // The old link must still be the one we checked, so two racing sign-ins cannot both win.
-  const { rows } = await apiPool.query<SessionUser>(
-    `update users set clerk_user_id = $2 where id = $1 and clerk_user_id is not distinct from $3
-     returning id, email, display_name, locale, is_admin`,
+  const { rows } = await apiPool.query<SessionUser & StoredEmail>(
+    `update users u set clerk_user_id = $2 where u.id = $1 and u.clerk_user_id is not distinct from $3
+     returning u.id, ${emailColumnsSql("u")}, u.display_name, u.locale, u.is_admin`,
     [found.id, sub, found.clerk_user_id],
   );
-  const u = rows[0] ?? null;
-  if (u) mails.relinked(u.email, u.locale);
-  return u;
+  const r = rows[0];
+  if (!r) return null;
+  mails.relinked(await openEmail("users", r), r.locale);
+  return { id: r.id, display_name: r.display_name, locale: r.locale, is_admin: r.is_admin };
 }
 
 /**
@@ -133,7 +136,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
       if (!id) return;
       req.clerk = id;
       const { rows } = await apiPool.query<SessionUser>(
-        "select id, email, display_name, locale, is_admin from users where clerk_user_id = $1 and deleted_at is null and blocked_at is null",
+        "select id, display_name, locale, is_admin from users where clerk_user_id = $1 and deleted_at is null and blocked_at is null",
         [id.sub],
       );
       req.user = rows[0] ?? (await relinkByVerifiedEmail(id.sub));
@@ -142,15 +145,15 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
     }
     const token = req.cookies[COOKIE];
     if (!token) return;
-    const { rows } = await apiPool.query<{ sid: string; id: string; email: string; display_name: string; locale: string; is_admin: boolean; stale: boolean }>(
-      `select s.id as sid, u.id, u.email, u.display_name, u.locale, u.is_admin, s.last_seen_at < now() - interval '5 minutes' as stale
+    const { rows } = await apiPool.query<{ sid: string; id: string; display_name: string; locale: string; is_admin: boolean; stale: boolean }>(
+      `select s.id as sid, u.id, u.display_name, u.locale, u.is_admin, s.last_seen_at < now() - interval '5 minutes' as stale
          from sessions s join users u on u.id = s.user_id
         where s.token_hash = $1 and s.expires_at > now() and u.deleted_at is null and u.blocked_at is null`,
       [sha256(token)],
     );
     const r = rows[0];
     if (!r) return;
-    req.user = { id: r.id, email: r.email, display_name: r.display_name, locale: r.locale, is_admin: r.is_admin };
+    req.user = { id: r.id, display_name: r.display_name, locale: r.locale, is_admin: r.is_admin };
     req.sessionId = r.sid;
     // At most one write per session per 5 minutes: last_seen_at is what "users active in the last 15m" counts.
     if (r.stale) apiPool.query("update sessions set last_seen_at = now() where id = $1", [r.sid]).catch(() => undefined);

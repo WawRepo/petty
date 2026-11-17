@@ -83,6 +83,13 @@ export const config = {
   legalDir: env("LEGAL_DIR", ""),
   /** PETTY-160: the operator's address for invite requests; empty hides the "Get an invite" links. */
   contactEmail: env("CONTACT_EMAIL", ""),
+  /**
+   * PETTY-359: 32 random bytes in base64 (`openssl rand -base64 32`) that seal every stored email
+   * (lib/email-seal.ts). Empty = emails stay plain, as before. Losing it loses every address.
+   */
+  emailKey: env("EMAIL_KEY", "").trim(),
+  /** PETTY-359: earlier email keys (comma separated), still read; the housekeeping run moves their rows to EMAIL_KEY. */
+  emailKeysOld: env("EMAIL_KEY_OLD", "").split(",").map((s) => s.trim()).filter(Boolean),
   /** PETTY-215: local mode only — allow signup without a join link (a public self-hosted instance). */
   openSignup: env("OPEN_SIGNUP", "") === "true",
   /**

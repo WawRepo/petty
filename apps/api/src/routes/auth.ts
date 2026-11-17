@@ -15,6 +15,7 @@ import { authEvents } from "../lib/metrics.js";
 import { joinLinkRecipient, maySendSharingMail } from "../lib/sharing-mail.js";
 import { clientNet } from "../lib/client-ip.js";
 import { loadMe } from "./me.js";
+import { emailColumnsSql, emailMatchParams, emailMatchSql, emailRateTag, linkEmailColumns, mailAddressOf, openEmail, userEmailColumns, type StoredEmail } from "../lib/email-seal.js";
 
 const JOIN_LINK_DAYS = 7;
 
@@ -46,13 +47,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       // looked up: the answer says nothing about whether it has an account.
       if (!profile.emailVerified) throw forbidden("EmailNotVerified");
       const me = await withTx(apiPool, async (db) => {
-        const exists = await db.query("select 1 from users where clerk_user_id = $1 or (lower(email) = lower($2) and deleted_at is null)", [id.sub, profile.email]);
+        const exists = await db.query(`select 1 from users u where u.clerk_user_id = $1 or (${emailMatchSql("u", 2)} and u.deleted_at is null)`, [id.sub, ...(await emailMatchParams(profile.email))]);
         if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
+        const userId = crypto.randomUUID(); // PETTY-359: a sealed email is bound to its row id
+        const e = await userEmailColumns(userId, profile.email);
         const user = (await db.query<{ id: string }>(
           // PETTY-216: creating the account accepts the operator's terms, if this instance has them
-          `insert into users (email, display_name, password_hash, locale, vault, recovery_vault, clerk_user_id, terms_version, terms_accepted_at)
-           values ($1, $2, null, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
-          [profile.email, body.display_name ?? profile.name, body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), id.sub, termsVersion()],
+          `insert into users (id, email, email_sealed, email_key_id, email_index, display_name, password_hash, locale, vault, recovery_vault, clerk_user_id, terms_version, terms_accepted_at)
+           values ($8, $1, $9, $10, $11, $2, null, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
+          [e.email, body.display_name ?? profile.name, body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), id.sub, termsVersion(), userId, e.email_sealed, e.email_key_id, e.email_index],
         )).rows[0]!;
         await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
         await insertPasskey(db, user.id, body.passkey);
@@ -76,25 +79,30 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       if (!(await checkRate(`signup:${clientNet(req)}`, 10, 60 * 60_000))) throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     const me = await withTx(apiPool, async (db) => {
-      const link = body.join_token ? (await db.query<{ id: string; email: string | null }>(
-        "select id, email from join_links where token_hash = $1 and used_at is null and expires_at > now() for update",
+      const link = body.join_token ? (await db.query<StoredEmail>(
+        `select l.id, ${emailColumnsSql("l")} from join_links l where l.token_hash = $1 and l.used_at is null and l.expires_at > now() for update`,
         [sha256(body.join_token)],
       )).rows[0] : null;
       if (body.join_token && !link) throw badRequest("JoinLinkInvalid", "join link is invalid or used");
-      if (link?.email && link.email.toLowerCase() !== body.email.toLowerCase()) throw badRequest("JoinLinkEmailMismatch", "join link is for another address");
+      // PETTY-359: an address this instance cannot open (sealed by another one with a key) is refused, never skipped
+      const linkEmail = link ? await openEmail("join_links", link) : null;
+      if (link?.email_sealed && linkEmail === null) throw new ApiError(503, "Unavailable", "try again in a minute");
+      if (linkEmail && linkEmail.toLowerCase() !== body.email.toLowerCase()) throw badRequest("JoinLinkEmailMismatch", "join link is for another address");
       checkVaultMaterial(body);
-      const exists = await db.query("select 1 from users where lower(email) = lower($1)", [body.email]);
+      const exists = await db.query(`select 1 from users u where ${emailMatchSql("u", 1)}`, await emailMatchParams(body.email));
       if (exists.rowCount) throw conflict("EmailTaken", "email already registered");
+      const userId = crypto.randomUUID(); // PETTY-359: a sealed email is bound to its row id
+      const e = await userEmailColumns(userId, body.email);
       const user = (await db.query<{ id: string }>(
         // PETTY-216: creating the account accepts the operator's terms, if this instance has them
-        `insert into users (email, display_name, password_hash, locale, vault, recovery_vault, terms_version, terms_accepted_at)
-         values ($1, $2, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
-        [body.email, body.display_name, await hashPassword(body.password), body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), termsVersion()],
+        `insert into users (id, email, email_sealed, email_key_id, email_index, display_name, password_hash, locale, vault, recovery_vault, terms_version, terms_accepted_at)
+         values ($8, $1, $9, $10, $11, $2, $3, $4, $5, $6, $7::text, case when $7::text is null then null else now() end) returning id`,
+        [e.email, body.display_name, await hashPassword(body.password), body.locale, body.vault ? JSON.stringify(body.vault) : null, JSON.stringify(body.recovery_vault), termsVersion(), userId, e.email_sealed, e.email_key_id, e.email_index],
       )).rows[0]!;
       await db.query("insert into user_keys (user_id, ecdh_pub, ecdsa_pub, sig_key_id) values ($1, $2, $3, $4)", [user.id, body.keys.ecdh_pub, body.keys.ecdsa_pub, body.keys.sig_key_id]);
       await insertPasskey(db, user.id, body.passkey);
       // PETTY-341: the email only restricted who may use the link; once used, it is not kept
-      if (link) await db.query("update join_links set used_by = $1, used_at = now(), email = null where id = $2", [user.id, link.id]);
+      if (link) await db.query("update join_links set used_by = $1, used_at = now(), email = null, email_sealed = null, email_key_id = null where id = $2", [user.id, link.id]);
       return loadMe(db, user.id);
     });
     await createSession(reply, me.id);
@@ -104,12 +112,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.post("/auth/login", async (req, reply) => {
     const body = LoginBody.parse(req.body);
-    const emailKey = `login:${body.email.toLowerCase()}`;
+    const emailKey = `login:${await emailRateTag(body.email.toLowerCase())}`;
     if (!(await checkRate(`login:${clientNet(req)}`, LOGIN_LIMIT_PER_IP)) || (await failuresExceeded(emailKey, LOGIN_LIMIT_PER_EMAIL))) {
       authEvents.inc({ event: "rate_limited" });
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
-    const { rows } = await apiPool.query<{ id: string; password_hash: string; blocked_at: Date | null }>("select id, password_hash, blocked_at from users where lower(email) = lower($1) and deleted_at is null", [body.email]);
+    const { rows } = await apiPool.query<{ id: string; password_hash: string; blocked_at: Date | null }>(
+      `select u.id, u.password_hash, u.blocked_at from users u where ${emailMatchSql("u", 1)} and u.deleted_at is null`,
+      await emailMatchParams(body.email),
+    );
     const u = rows[0];
     // Unknown email, wrong password and blocked account all cost one Argon2id verify and answer alike: nothing to enumerate, by content or by timing.
     const ok = await verifyPassword(body.password, u?.password_hash ?? DUMMY_HASH);
@@ -135,8 +146,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       throw new ApiError(429, "TooManyAttempts", "try again later");
     }
     authEvents.inc({ event: "forgot" });
-    if (await checkRate(`forgot:${body.email.toLowerCase()}`, 5, 60 * 60_000)) {
-      const u = (await apiPool.query<{ id: string; locale: string }>("select id, locale from users where lower(email) = lower($1) and deleted_at is null and blocked_at is null", [body.email])).rows[0];
+    if (await checkRate(`forgot:${await emailRateTag(body.email.toLowerCase())}`, 5, 60 * 60_000)) {
+      const u = (await apiPool.query<{ id: string; locale: string }>(
+        `select u.id, u.locale from users u where ${emailMatchSql("u", 1)} and u.deleted_at is null and u.blocked_at is null`,
+        await emailMatchParams(body.email),
+      )).rows[0];
       if (u) {
         const token = randomToken(32);
         await apiPool.query("insert into password_resets (user_id, token_hash, expires_at) values ($1, $2, now() + interval '1 hour')", [u.id, sha256(token)]);
@@ -149,7 +163,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post("/auth/reset", async (req, reply) => {
     const body = ResetBody.parse(req.body);
     const who = await withTx(apiPool, async (db) => {
-      const r = (await db.query<{ id: string; user_id: string; email: string; locale: string }>("select r.id, r.user_id, u.email, u.locale from password_resets r join users u on u.id = r.user_id where r.token_hash = $1 and r.used_at is null and r.expires_at > now() for update of r", [sha256(body.token)])).rows[0];
+      const r = (await db.query<{ id: string; user_id: string }>("select r.id, r.user_id from password_resets r where r.token_hash = $1 and r.used_at is null and r.expires_at > now() for update of r", [sha256(body.token)])).rows[0];
       if (!r) throw badRequest("ResetInvalid", "reset link is invalid, used or expired");
       await db.query("update users set password_hash = $2 where id = $1", [r.user_id, await hashPassword(body.password)]);
       await db.query("update password_resets set used_at = now() where id = $1", [r.id]);
@@ -158,7 +172,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return r;
     });
     // The owner hears about it (SR-2): a reset they did not ask for is the first sign of a stolen mailbox.
-    mails.passwordChanged(who.email, who.locale);
+    const to = await mailAddressOf(apiPool, who.user_id);
+    if (to) mails.passwordChanged(to.email, to.locale);
     authEvents.inc({ event: "reset" });
     return reply.code(204).send();
   });
@@ -177,13 +192,18 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // PETTY-423: an emailed join link counts against the daily sharing mail limits (lib/sharing-mail.ts).
     // The email is the link's only way to the other person, so past a limit no link is made; the inviter
     // can still make one without an address (Settings) and send it themselves.
-    if (body.email && !(await maySendSharingMail("join-link", me.id, joinLinkRecipient(body.email), me.id))) {
+    if (body.email && !(await maySendSharingMail("join-link", me.id, await joinLinkRecipient(body.email), me.id))) {
       req.log.info({ kind: "join-link" }, "sharing mail skipped: limit reached");
       throw new ApiError(429, "TooManyAttempts", "too many emails today; try again later");
     }
     const token = randomToken(24);
     const expires = new Date(Date.now() + JOIN_LINK_DAYS * 86_400_000);
-    await apiPool.query("insert into join_links (token_hash, created_by, email, expires_at) values ($1, $2, $3, $4)", [sha256(token), me.id, body.email ?? null, expires]);
+    const linkId = crypto.randomUUID(); // PETTY-359: a sealed email is bound to its row id
+    const e = await linkEmailColumns(linkId, body.email ?? null);
+    await apiPool.query(
+      "insert into join_links (id, token_hash, created_by, email, email_sealed, email_key_id, expires_at) values ($1, $2, $3, $4, $5, $6, $7)",
+      [linkId, sha256(token), me.id, e.email, e.email_sealed, e.email_key_id, expires],
+    );
     if (body.email) mails.joinLink(body.email, me.display_name, token, me.locale); // no account yet: the inviter's language
     return reply.code(201).send(JoinLinkResponse.parse({ token, expires_at: iso(expires) }));
   });
@@ -195,12 +215,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post("/join-links/lookup", async (req) => {
     const { token } = JoinLinkLookupBody.parse(req.body);
-    const { rows } = await apiPool.query<{ email: string | null; inviter: string | null }>(
-      `select l.email, u.display_name as inviter from join_links l left join users u on u.id = l.created_by
+    const { rows } = await apiPool.query<StoredEmail & { inviter: string | null }>(
+      `select l.id, ${emailColumnsSql("l")}, u.display_name as inviter from join_links l left join users u on u.id = l.created_by
         where l.token_hash = $1 and l.used_at is null and l.expires_at > now()`,
       [sha256(token)],
     );
     const r = rows[0];
-    return JoinLinkInfo.parse({ valid: !!r, inviter_name: r?.inviter ?? null, email: r?.email ?? null });
+    return JoinLinkInfo.parse({ valid: !!r, inviter_name: r?.inviter ?? null, email: r ? await openEmail("join_links", r) : null });
   });
 }

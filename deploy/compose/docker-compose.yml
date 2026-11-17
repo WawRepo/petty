@@ -77,6 +77,10 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      # Seals every stored email address (docs/deploy.md, "Email key"). Empty = addresses stay plain.
+      # EMAIL_KEY_OLD: a former key, read until the app has moved every address to EMAIL_KEY.
+      EMAIL_KEY: ${EMAIL_KEY:-}
+      EMAIL_KEY_OLD: ${EMAIL_KEY_OLD:-}
       # A mounted folder with your own privacy notice and terms (docs/deploy.md); empty = none.
       LEGAL_DIR: ${LEGAL_DIR:-}
       # The image sets SECURE_COOKIES=true: keep the HTTPS reverse proxy. TRUST_PROXY = the proxies

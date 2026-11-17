@@ -9,6 +9,7 @@ import { requireUser } from "../lib/session.js";
 import { withTx } from "../lib/tx.js";
 import { membersOf } from "./drawers.js";
 import { mails } from "../lib/mail.js";
+import { emailColumnsSql, mailAddressOf, openEmail } from "../lib/email-seal.js";
 import { maySendSharingMail } from "../lib/sharing-mail.js";
 
 export async function sharingRoutes(app: FastifyInstance): Promise<void> {
@@ -25,7 +26,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     const body = InviteBody.parse(req.body);
     if (body.invitee_id === me.id) throw badRequest("SelfInvite", "you already own this drawer");
     if (body.wrap.drawer_id !== drawer.id || body.wrap.key_version !== drawer.key_version) throw badRequest("WrapMismatch", "wrap must be for this drawer at the current key version", { key_version: drawer.key_version });
-    const invitee = (await apiPool.query("select u.id, u.email, u.locale, k.id as key_id from users u left join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1 and u.deleted_at is null", [body.invitee_id])).rows[0];
+    const invitee = (await apiPool.query(`select u.id, ${emailColumnsSql("u")}, u.locale, k.id as key_id from users u left join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1 and u.deleted_at is null`, [body.invitee_id])).rows[0];
     if (!invitee) throw notFound("UserNotFound");
     if (!invitee.key_id) throw badRequest("InviteeHasNoKeys", "invitee has not finished onboarding");
     const member = await apiPool.query("select 1 from drawer_members where drawer_id = $1 and user_id = $2", [drawer.id, body.invitee_id]);
@@ -43,7 +44,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     }
     // PETTY-407: past a sharing mail limit the invitation stands and only its email is skipped; `mailed` tells the inviter.
     const mailed = await maySendSharingMail("invitation", me.id, invitee.id, drawer.id);
-    if (mailed) mails.invitation(invitee.email, me.display_name, body.role, invitee.locale);
+    if (mailed) mails.invitation(await openEmail("users", invitee), me.display_name, body.role, invitee.locale);
     else req.log.info({ drawer_id: drawer.id, kind: "invitation" }, "sharing mail skipped: limit reached");
     return reply.code(201).send({ id: inserted.id, created_at: iso(inserted.created_at), mailed });
   });
@@ -130,7 +131,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
     const me = requireUser(req);
     await requireRole(apiPool, req.params.id, me.id, "owner");
     await removeMember(req.params.id, req.params.userId);
-    const u = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [req.params.userId])).rows[0];
+    const u = await mailAddressOf(apiPool, req.params.userId);
     if (u) mails.revoked(u.email, me.display_name, u.locale);
     return reply.code(204).send();
   });
@@ -154,7 +155,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       "insert into ownership_transfers (drawer_id, from_user_id, to_user_id) values ($1, $2, $3) on conflict (drawer_id) do update set from_user_id = excluded.from_user_id, to_user_id = excluded.to_user_id, created_at = now()",
       [req.params.id, me.id, body.to_user_id],
     );
-    const u = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [body.to_user_id])).rows[0];
+    const u = await mailAddressOf(apiPool, body.to_user_id);
     // PETTY-407: an offer made again and again (offer, cancel, offer) emails once a day at most.
     if (u && (await maySendSharingMail("transfer", me.id, body.to_user_id, req.params.id))) mails.transferOffered(u.email, me.display_name, u.locale);
     return reply.code(201).send({ drawer_id: req.params.id, to_user_id: body.to_user_id });
@@ -171,7 +172,7 @@ export async function sharingRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from ownership_transfers where drawer_id = $1", [req.params.id]);
       // PETTY-446: who joins is the owner's decision; what the former owner left open ends here, and the new owner invites anew.
       await db.query("update invitations set state = 'revoked', resolved_at = now() where drawer_id = $1 and state = 'pending'", [req.params.id]);
-      const u = (await db.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [t.from_user_id])).rows[0];
+      const u = await mailAddressOf(db, t.from_user_id);
       if (u) mails.transferDone(u.email, me.display_name, u.locale);
     });
     return reply.code(204).send();

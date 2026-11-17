@@ -497,7 +497,12 @@ count or a reversal; per-line write counts; and exact timestamps — a pattern o
 sees when each account was last active (written at most once every 5 minutes), which version of the
 operator's terms it accepted and when, the names of its passkeys and access tokens and when each token
 was last used, and the address a device login was asked from, kept until the request is used or
-expires. Entry
+expires. With `EMAIL_KEY` set (PETTY-359), the database holds every email address sealed with that key
+and a keyed hash of it for lookups: a copy of the database alone (a backup, a disk, an SQL injection
+that reads tables) shows no address. The keyed hash is the same for the same address, so two copies
+still show which accounts kept theirs. The running app still reads every address with the key, to sign
+people in and send mail, so the operator still learns them; the key only takes them out of the database.
+Without the key they are plain. Entry
 ciphertext is padded to 256-byte buckets so amounts cannot be read from sizes; a long comment grows the
 row in 256-byte steps.
 

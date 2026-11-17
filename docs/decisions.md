@@ -277,6 +277,21 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `no-new-privileges`, at most 256 processes and a memory cap (`APP_MEMORY_LIMIT`, 1 GB by default).
   The image runs as `node`, without npm, corepack or yarn, and installs Alpine's package fixes when
   it is built.
+- **Email addresses sealed with a server key (PETTY-359).** With `EMAIL_KEY` (32 random bytes, only in
+  the app's environment), `users.email` and `join_links.email` are stored as AES-256-GCM ciphertext
+  (`email_sealed`) bound to the table, column, row id and key id (`email_key_id`), so a sealed address
+  cannot be moved to another row or table. Users also get `email_index`, an HMAC of the address in lower
+  case, unique, so sign-in, lookup and "already taken" still find it. HKDF derives the sealing key, the
+  index key and the key id from `EMAIL_KEY`; rate-limit keys for an address use the index key too, so no
+  table holds a hash of a bare address. One module (`apps/api/src/lib/email-seal.ts`) does every lookup and
+  every write; an address is opened only where it is shown or sent. Housekeeping moves rows between the
+  forms in batches: plain to sealed, `EMAIL_KEY_OLD` to `EMAIL_KEY`, or back to plain when only
+  `EMAIL_KEY_OLD` is set. A lookup matches both forms, so a database part way through works. The app
+  refuses to start when a row is under a key it does not have, rather than run unable to sign anyone in.
+  Without a key nothing changes: addresses stay plain. Not done: display names stay plain (they are shown
+  to drawer members), and the operator who holds the key can still read every address. An HMAC index
+  lets the key holder test a guessed address; it does not stop that, only a copy of the database without
+  the key.
 
 ## Non-goals
 

@@ -18,6 +18,7 @@ import { userKeys } from "../lib/rows.js";
 import { requireUser } from "../lib/session.js";
 import type { Queryable } from "../lib/tx.js";
 import type { CustodyProof } from "@petty/protocol";
+import { emailColumnsSql, emailMatchParams, emailMatchSql, mailAddressOf, openEmail, userEmailColumns } from "../lib/email-seal.js";
 
 /**
  * PETTY-411 (security review #13): the calls that ask for the login password again. The custody proof is
@@ -43,7 +44,7 @@ const passkeyEntry = (r: PasskeyRow): MeT["passkeys"][number] => PasskeyEntry.pa
 
 export async function loadMe(db: Queryable, userId: string): Promise<MeT> {
   const { rows } = await db.query(
-    `select u.id, u.email, u.display_name, u.locale, u.vault, u.is_admin, k.ecdh_pub, k.ecdsa_pub, k.sig_key_id, k.created_at, k.retired_at
+    `select u.id, ${emailColumnsSql("u")}, u.display_name, u.locale, u.vault, u.is_admin, k.ecdh_pub, k.ecdsa_pub, k.sig_key_id, k.created_at, k.retired_at
        from users u join user_keys k on k.user_id = u.id and k.retired_at is null
       where u.id = $1`,
     [userId],
@@ -51,7 +52,8 @@ export async function loadMe(db: Queryable, userId: string): Promise<MeT> {
   const r = rows[0];
   if (!r) throw notFound("UserNotFound");
   const pk = await db.query<PasskeyRow>("select id, credential_id, prf_salt, vault, label, transports, created_at from passkey_vaults where user_id = $1 order by created_at", [userId]);
-  return { id: r.id, email: r.email, display_name: r.display_name, locale: r.locale, keys: userKeys(r)!, pub: { ecdh: r.ecdh_pub, ecdsa: r.ecdsa_pub }, vault: r.vault ?? null, passkeys: pk.rows.map(passkeyEntry), is_admin: r.is_admin };
+  // PETTY-359: "" only while another instance with the email key seals this row and this one has none
+  return { id: r.id, email: (await openEmail("users", r)) ?? "", display_name: r.display_name, locale: r.locale, keys: userKeys(r)!, pub: { ecdh: r.ecdh_pub, ecdsa: r.ecdsa_pub }, vault: r.vault ?? null, passkeys: pk.rows.map(passkeyEntry), is_admin: r.is_admin };
 }
 
 export async function meRoutes(app: FastifyInstance): Promise<void> {
@@ -86,8 +88,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     const { rows } = await apiPool.query(
       `select u.id, u.display_name, k.ecdh_pub, k.ecdsa_pub, k.sig_key_id, k.created_at, k.retired_at
          from users u left join user_keys k on k.user_id = u.id and k.retired_at is null
-        where lower(u.email) = lower($1) and u.deleted_at is null`,
-      [email],
+        where ${emailMatchSql("u", 1)} and u.deleted_at is null`,
+      await emailMatchParams(email),
     );
     const r = rows[0];
     if (!r) throw notFound("UserNotFound");
@@ -124,7 +126,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
   app.put("/me/vault", async (req, reply) => {
     const me = requireUser(req);
     const body = PutVaultBody.parse(req.body);
-    const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown; email: string; locale: string }>("select u.password_hash, u.vault, u.recovery_vault, u.email, u.locale, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
+    const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown }>("select u.password_hash, u.vault, u.recovery_vault, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
     if (!u) throw unauthorized();
     await reauthenticate(req, me.id, body, u.password_hash);
     const same = (v: { pub: { ecdh: string; ecdsa: string } }) => v.pub.ecdh === u.ecdh_pub && v.pub.ecdsa === u.ecdsa_pub;
@@ -134,7 +136,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       if (u.vault) await db.query("insert into vault_history (user_id, vault, recovery_vault) values ($1, $2, $3)", [me.id, JSON.stringify(u.vault), u.recovery_vault ? JSON.stringify(u.recovery_vault) : null]);
       await db.query("update users set vault = $2, recovery_vault = coalesce($3, recovery_vault) where id = $1", [me.id, JSON.stringify(body.vault), body.recovery_vault ? JSON.stringify(body.recovery_vault) : null]);
     });
-    mails.vaultReplaced(u.email, u.locale);
+    const to = await mailAddressOf(apiPool, me.id);
+    if (to) mails.vaultReplaced(to.email, to.locale);
     return reply.code(204).send();
   });
 
@@ -146,7 +149,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
   app.put("/me/recovery-vault", async (req, reply) => {
     const me = requireUser(req);
     const body = PutRecoveryVaultBody.parse(req.body);
-    const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown; email: string; locale: string }>("select u.password_hash, u.vault, u.recovery_vault, u.email, u.locale, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
+    const u = (await apiPool.query<{ password_hash: string; ecdh_pub: string; ecdsa_pub: string; vault: unknown; recovery_vault: unknown }>("select u.password_hash, u.vault, u.recovery_vault, k.ecdh_pub, k.ecdsa_pub from users u join user_keys k on k.user_id = u.id and k.retired_at is null where u.id = $1", [me.id])).rows[0];
     if (!u) throw unauthorized();
     await reauthenticate(req, me.id, body, u.password_hash);
     const v = body.recovery_vault;
@@ -155,7 +158,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       if (u.vault) await db.query("insert into vault_history (user_id, vault, recovery_vault) values ($1, $2, $3)", [me.id, JSON.stringify(u.vault), u.recovery_vault ? JSON.stringify(u.recovery_vault) : null]);
       await db.query("update users set recovery_vault = $2 where id = $1", [me.id, JSON.stringify(v)]);
     });
-    mails.vaultReplaced(u.email, u.locale);
+    const to = await mailAddressOf(apiPool, me.id);
+    if (to) mails.vaultReplaced(to.email, to.locale);
     return reply.code(204).send();
   });
 
@@ -301,14 +305,16 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from join_links where created_by = $1 and used_at is null", [me.id]);
       await db.query("delete from password_resets where user_id = $1", [me.id]);
       await db.query("update user_keys set retired_at = now() where user_id = $1 and retired_at is null", [me.id]);
+      // PETTY-359: the placeholder takes the place of the address the way any address is stored, sealed with a key
+      const e = await userEmailColumns(me.id, `deleted-${me.id}@deleted.invalid`);
       await db.query(
-        `update users set email = 'deleted-' || id || '@deleted.invalid', display_name = 'Deleted user', password_hash = 'deleted',
+        `update users set email = $2, email_sealed = $3, email_key_id = $4, email_index = $5, display_name = 'Deleted user', password_hash = 'deleted',
                           vault = null, recovery_vault = null, clerk_user_id = null, deleted_at = now() where id = $1`,
-        [me.id],
+        [me.id, e.email, e.email_sealed, e.email_key_id, e.email_index],
       );
     });
     for (const t of toTransfer) {
-      const r = (await apiPool.query<{ email: string; locale: string }>("select email, locale from users where id = $1", [t.to])).rows[0];
+      const r = await mailAddressOf(apiPool, t.to);
       if (r) mails.handedOver(r.email, me.display_name, r.locale);
     }
     await destroySession(reply, null);
