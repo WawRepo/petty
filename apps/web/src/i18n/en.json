@@ -321,7 +321,7 @@
     "network": "Could not reach the server. Check your connection and try again.",
     "unknown": "Something went wrong. Try again.",
     "displayName": "Use a plain name on one line, without links or email addresses. After a dot, put a space, as in “J. Smith”.",
-    "storageFull": "Your storage is full. Remove photos or drawers you no longer need. Settings shows how much you use.",
+    "storageFull": "Your storage is full. Delete drawers you no longer need. A removed or replaced photo still counts for 30 days, while it can be put back. Settings shows how much you use.",
     "ownerStorageFull": "This drawer's owner has no storage left, so the change was not saved. Ask them to free some space.",
     "photoTooLarge": "This photo is too large. Choose a smaller one."
   },

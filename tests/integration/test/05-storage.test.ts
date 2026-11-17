@@ -41,8 +41,11 @@ describe("storage limits", () => {
     expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { owner_id: dee.id, quota_bytes: 1024 * 1024 } });
     expect((await storage()).used_bytes).toBeGreaterThan(3 * PHOTO_MAX_BYTES);
 
-    // removing a photo frees the space
+    // removing a photo is always allowed, but the removed photo is kept 30 days and still counts (PETTY-506);
+    // deleting the drawer frees its space at once
     expect((await dee.call("DELETE", `/drawers/${a.id}/photo`)).statusCode).toBe(204);
+    expect((await photoFor(dee, d.id, d.key, full)).json().code).toBe("StorageQuotaExceeded");
+    expect((await dee.call("DELETE", `/drawers/${a.id}`, { proof: await dee.proof() })).statusCode).toBe(204);
     expect((await photoFor(dee, d.id, d.key, full)).statusCode).toBe(204);
   }, 60_000);
 

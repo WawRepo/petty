@@ -321,7 +321,7 @@
     "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
     "unknown": "Une erreur s’est produite. Réessayez.",
     "displayName": "Saisissez un nom simple sur une seule ligne, sans lien ni adresse e-mail. Après un point, mettez une espace, comme dans « J. Martin ».",
-    "storageFull": "Votre espace de stockage est plein. Supprimez les photos ou les tiroirs dont vous n’avez plus besoin. Les Réglages indiquent l’espace utilisé.",
+    "storageFull": "Votre espace de stockage est plein. Supprimez les tiroirs dont vous n’avez plus besoin. Une photo retirée ou remplacée compte encore 30 jours, tant qu’elle peut être remise. Les Réglages indiquent l’espace utilisé.",
     "ownerStorageFull": "Le propriétaire de ce tiroir n’a plus d’espace, la modification n’a donc pas été enregistrée. Demandez-lui de libérer de la place.",
     "photoTooLarge": "Cette photo est trop grande. Choisissez-en une plus petite."
   },

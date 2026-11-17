@@ -321,7 +321,7 @@
     "network": "Nie udało się połączyć z serwerem. Sprawdź dostęp do internetu i spróbuj ponownie.",
     "unknown": "Coś poszło nie tak. Spróbuj ponownie.",
     "displayName": "Wpisz zwykłe imię w jednej linii, bez linków i adresów e-mail. Po kropce wstaw spację, np. „J. Kowalski”.",
-    "storageFull": "Nie masz już wolnego miejsca na dane. Usuń zdjęcia lub szuflady, których już nie potrzebujesz. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
+    "storageFull": "Nie masz już wolnego miejsca na dane. Usuń szuflady, których już nie potrzebujesz. Usunięte lub zastąpione zdjęcie liczy się jeszcze przez 30 dni, dopóki można je przywrócić. W Ustawieniach sprawdzisz, ile miejsca zajmujesz.",
     "ownerStorageFull": "Właściciel tej szuflady nie ma już wolnego miejsca na dane, więc zmiana nie została zapisana. Poproś go o zwolnienie miejsca.",
     "photoTooLarge": "To zdjęcie jest za duże. Wybierz mniejsze."
   },

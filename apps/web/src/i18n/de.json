@@ -321,7 +321,7 @@
     "network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuch es noch einmal.",
     "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
     "displayName": "Gib einen einfachen Namen in einer Zeile ein, ohne Links oder E-Mail-Adressen. Setze nach einem Punkt ein Leerzeichen, wie in „J. Schmidt“.",
-    "storageFull": "Dein Speicher ist voll. Entferne Fotos oder Schubladen, die du nicht mehr brauchst. In den Einstellungen siehst du, wie viel du belegst.",
+    "storageFull": "Dein Speicher ist voll. Lösche Schubladen, die du nicht mehr brauchst. Ein entferntes oder ersetztes Foto zählt noch 30 Tage mit, solange es sich wiederherstellen lässt. In den Einstellungen siehst du, wie viel du belegst.",
     "ownerStorageFull": "Der Eigentümer dieser Schublade hat keinen Speicher mehr frei, deshalb wurde die Änderung nicht gespeichert. Bitte ihn, Platz freizugeben.",
     "photoTooLarge": "Dieses Foto ist zu groß. Wähle ein kleineres."
   },

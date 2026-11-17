@@ -321,7 +321,7 @@
     "network": "No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
     "unknown": "Algo salió mal. Inténtalo de nuevo.",
     "displayName": "Escribe un nombre sencillo en una sola línea, sin enlaces ni direcciones de correo. Después de un punto, pon un espacio, como en «J. García».",
-    "storageFull": "Tu almacenamiento está lleno. Quita fotos o cajones que ya no necesites. En Ajustes puedes ver cuánto usas.",
+    "storageFull": "Tu almacenamiento está lleno. Elimina los cajones que ya no necesites. Una foto quitada o sustituida sigue contando 30 días, mientras se puede recuperar. En Ajustes puedes ver cuánto usas.",
     "ownerStorageFull": "El propietario de este cajón no tiene espacio libre, así que el cambio no se guardó. Pídele que libere espacio.",
     "photoTooLarge": "Esta foto es demasiado grande. Elige una más pequeña."
   },
