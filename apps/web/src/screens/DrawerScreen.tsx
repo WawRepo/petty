@@ -31,6 +31,7 @@ import { Coins, Tags } from "lucide-react";
 import { PlacePicker } from "../components/PlacePicker.js";
 import { addPlace, placeOfView, savePlaceTree, usePlaceTree } from "../lib/places.js";
 import { setHomePlace } from "../lib/homePlace.js";
+import { usePane } from "../lib/panes.js";
 import { PlaceTrail } from "../components/PlaceTrail.js";
 import { processPhoto } from "../lib/photo.js";
 import { storageErrorKey } from "../lib/storage.js";
@@ -146,8 +147,11 @@ export function DrawerScreen() {
   const homeBubble = (d: string) => `.places-art .pa-bub:not(.off) > [data-vt="${d}"], .home-art .uc-bub:not(.off) [data-vt="${d}"]`;
   const HOME = '[data-testid="home"][data-status="ready"]';
   // (TopBar hands its click event to onBack, so the trail's "land at the top" is its own function)
-  const back = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME);
-  const backToTop = () => morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME, { top: true });
+  // Beside the list (two panes, PETTY-138) back is "Back to the list": the drawer closes, focus goes to its row.
+  const pane = usePane();
+  const back = () => (pane ? pane.toList() : morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME));
+  const backToTop = () => (pane ? pane.toList() : morphBack(vtName("d", id), homeBubble(vtName("d", id)), HOME, { top: true }));
+  const backLabel = pane ? t("app.backToList") : undefined;
   const morph = useMorph();
   const toast = useToast();
   const { id = "" } = useParams();
@@ -201,8 +205,8 @@ export function DrawerScreen() {
   useEffect(() => { if (view?.summary.has_photo && !view.photo && view.key) void loadPhoto(id); }, [view?.summary.has_photo, view?.photo, view?.key, id]);
 
   // PETTY-280 (M11): the screen's shape while it loads, not a bare "Loading…" under the app's name
-  if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} /><DrawerSkeleton /></>;
-  if (!view) return <><TopBar title={t("app.name")} onBack={back} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
+  if (state.status === "loading" || state.status === "idle") return <><TopBar title="" titleAs="p" onBack={back} backLabel={backLabel} /><DrawerSkeleton /></>;
+  if (!view) return <><TopBar title={t("app.name")} onBack={back} backLabel={backLabel} /><main><p className="empty">{t("errors.unknown")}</p></main></>;
   // PETTY-443: the reason, and the ways out: an earlier version, leaving, deleting. Its Members button also serves
   // the reasons that ask to compare a safety number (PETTY-449: `sender_left`).
   if (!view.doc) return <DamagedDrawer id={id} />;
@@ -343,7 +347,7 @@ export function DrawerScreen() {
 
   return (
     <>
-      <TopBar title={doc.name} onBack={back} actions={<button type="button" className="icon-btn" aria-label={t("drawer.options")} onClick={() => setSheet("options")}>⋯</button>} />
+      <TopBar title={doc.name} onBack={back} backLabel={backLabel} actions={<button type="button" className="icon-btn" aria-label={t("drawer.options")} onClick={() => setSheet("options")}>⋯</button>} />
       <main>
         <OfflineBanner />
         <SyncReport />

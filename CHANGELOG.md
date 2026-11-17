@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- Two panes on a wide screen (900 px and up). The list of drawers stays on the left, and the drawer or
+  item you open shows on the right, with its row marked in the list. With nothing open, the right side
+  shows the total and the picture. The keyboard follows: opening a row moves to the drawer's title, and
+  Escape or "Back to the list" goes back to its row. Links to a drawer or an item open both panes. On a
+  phone nothing changes.
+
 ## [1.5.49] — 2026-11-17
 
 ### Security

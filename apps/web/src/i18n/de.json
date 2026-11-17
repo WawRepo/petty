@@ -3,6 +3,7 @@
     "name": "Petty",
     "loading": "Wird geladen…",
     "back": "Zurück",
+    "backToList": "Zurück zur Liste",
     "cancel": "Abbrechen",
     "save": "Speichern",
     "close": "Schließen",
@@ -162,6 +163,9 @@
     "totalsIn": "Gesamtwert · {tag}",
     "across": "{count, plural, one {Aus # Schublade} other {Aus # Schubladen}}",
     "drawersTitle": "Schubladen",
+    "pane": {
+      "hint": "Eine Schublade, die du in der Liste wählst, öffnet sich hier."
+    },
     "items": "{count, plural, one {# Posten} other {# Posten}}",
     "currencies": "{count, plural, one {# Währung} other {# Währungen}}",
     "tags": {
@@ -609,7 +613,7 @@
     "transferDecline": "Ablehnen",
     "transferWaiting": "{name} hat die Übergabe von „{drawer}“ noch nicht angenommen.",
     "cancel": "Angebot zurückziehen",
-      "stale": "Die Einladung von {name} ist veraltet: Der Schlüssel der Schublade hat sich seitdem geändert. Bitte {name}, dich neu einzuladen."
+    "stale": "Die Einladung von {name} ist veraltet: Der Schlüssel der Schublade hat sich seitdem geändert. Bitte {name}, dich neu einzuladen."
   },
   "members": {
     "title": "Mitglieder",
@@ -1241,7 +1245,7 @@
       },
       "phone": {
         "q": "Gibt es eine App fürs Handy?",
-        "a": "Petty wird aus dem Browser installiert (Zum Home-Bildschirm) und funktioniert offline wie eine native App, auf iPhone und Android."
+        "a": "Petty wird aus dem Browser installiert (Zum Home-Bildschirm) und funktioniert offline wie eine native App, auf iPhone und Android. Am Computer bleibt die Liste der Schubladen links, und die geöffnete erscheint daneben."
       }
     },
     "footer": "© 2026 Petty · alles, was du aufbewahrst, Ende-zu-Ende-verschlüsselt",
