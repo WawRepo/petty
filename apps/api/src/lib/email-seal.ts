@@ -197,8 +197,9 @@ export async function rewriteEmails(db: Queryable, opts: { only?: string[] } = {
   const known = [...byId.keys()];
   const out: RewriteResult = { users: 0, join_links: 0, unknown: 0, unreadable: 0, conflicts: 0 };
   out.unknown = (await db.query<{ n: number }>(
-    `select ((select count(*) from users t where t.email_key_id <> all($1::text[]) ${opts.only ? "and t.id = any($2::uuid[])" : ""})
-           + (select count(*) from join_links t where t.email_key_id <> all($1::text[]) ${opts.only ? "and t.id = any($2::uuid[])" : ""}))::int as n`,
+    // `is not null` first: with no key at all, `x <> all('{}')` is true even for null, and every plain row counted
+    `select ((select count(*) from users t where t.email_key_id is not null and t.email_key_id <> all($1::text[]) ${opts.only ? "and t.id = any($2::uuid[])" : ""})
+           + (select count(*) from join_links t where t.email_key_id is not null and t.email_key_id <> all($1::text[]) ${opts.only ? "and t.id = any($2::uuid[])" : ""}))::int as n`,
     opts.only ? [known, opts.only] : [known],
   )).rows[0]!.n;
   if (!current && !known.length) return out; // no key: nothing this instance could read or write

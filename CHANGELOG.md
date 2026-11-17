@@ -8,6 +8,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- Without `EMAIL_KEY`, the housekeeping log no longer counts every stored address as sealed with an
+  unknown key (`emails.unknown`), and no longer warns "set EMAIL_KEY" on each run (PETTY-359).
+
 ## [1.5.49] — 2026-11-17
 
 ### Security
