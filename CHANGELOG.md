@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.54] — 2026-11-17
+
 ### Added
 - `petty` takes an item's page in Petty, copied from the browser's address bar
   (`https://<your petty>/drawers/…/lines/…`), wherever it takes an item, and `petty move` takes a
@@ -1136,7 +1138,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.53...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.54...HEAD
+[1.5.54]: https://github.com/WawRepo/petty/releases/tag/v1.5.54
 [1.5.53]: https://github.com/WawRepo/petty/releases/tag/v1.5.53
 [1.5.52]: https://github.com/WawRepo/petty/releases/tag/v1.5.52
 [1.5.51]: https://github.com/WawRepo/petty/releases/tag/v1.5.51
