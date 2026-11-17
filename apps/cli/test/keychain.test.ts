@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { KeychainError, systemKeychain, windowsArgs, windowsKeychain, type Keychain } from "../src/keychain.js";
+import { KeychainError, PLAIN, systemKeychain, windowsArgs, windowsKeychain, type Keychain } from "../src/keychain.js";
 import { fakeKeychain } from "./fake-keychain.js";
 
 /**
@@ -100,4 +100,14 @@ describe("the PowerShell script (PETTY-276)", () => {
       expect(r.stderr).not.toContain("petty_pat_");
     }
   }, 120_000);
+});
+
+describe("the characters a keychain is given (PETTY-276, code scanning #98)", () => {
+  it("are printable ASCII without space, the two quotes and the backslash", () => {
+    const refused = new Set([" ", '"', "'", "\\"]);
+    for (let c = 0; c < 0x10000; c++) {
+      const s = String.fromCharCode(c);
+      expect([c, PLAIN.test(s)]).toEqual([c, c >= 0x20 && c <= 0x7e && !refused.has(s)]);
+    }
+  });
 });
