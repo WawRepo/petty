@@ -8,6 +8,18 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- `petty` takes an item's page in Petty, copied from the browser's address bar
+  (`https://<your petty>/drawers/…/lines/…`), wherever it takes an item, and `petty move` takes a
+  drawer's page (PETTY-515).
+
+### Fixed
+- `petty` finds an item by its id also when the id is not a UUID, as items made before item ids had
+  to be UUIDs have. Before, the id that `petty find` and `--json` print for such an item was not
+  found when you gave it back. The quoted form that the AI add-on shows works too (PETTY-515).
+- When `petty` and your Petty do not match at sign-in, the message now names the `petty.mjs` to
+  download for your Petty's version, with the page that shows how to install it (PETTY-515).
+
 ## [1.5.53] — 2026-11-17
 
 ### Security

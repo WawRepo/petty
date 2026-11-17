@@ -142,6 +142,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const find = petty(["find", "garage", "cash"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toContain("Garage box › Cash  26.50 EUR");
+    // PETTY-515: also by the item's page in the app, as the browser's address bar shows it
+    const page = petty(["find", `${ORIGIN}/drawers/${drawerId}/lines/${lineId}`]);
+    expect(await page.done).toBe(0);
+    expect(page.out()).toContain("Garage box › Cash  26.50 EUR");
     const write = petty(["take", "Garage box › Cash", "1"]);
     expect(await write.done).toBe(3); // read only
   });
@@ -210,6 +214,10 @@ describe("petty, the shipped command line (PETTY-274)", () => {
     const find = petty(["find", "odd", "key"]);
     expect(await find.done).toBe(0);
     expect(find.out()).toBe(`Odd?[2J box › Key  single item  (${made.id}/old? id)\n`);
+    // PETTY-515: an older item id, not a UUID, names its item like any id --json prints
+    const byId = petty(["find", `${made.id}/old${ESC} id`]);
+    expect(await byId.done).toBe(0);
+    expect(byId.out()).toContain("Odd?[2J box › Key");
     const json = petty(["drawers", "--json"]);
     expect(await json.done).toBe(0);
     // eslint-disable-next-line no-control-regex -- control characters are exactly what must not be there

@@ -411,7 +411,8 @@ ${shown.filter((c) => ["add", "take", "adjust", "tag", "untag", "move"].includes
 More
 ${shown.filter((c) => ["mcp", "completion"].includes(c.name)).map(row).join("\n")}
 
-Name an item as "Drawer › Item" (Tab completes it), by words, or by the drawerId/itemId --json prints.
+Name an item as "Drawer › Item" (Tab completes it), by words, by the drawerId/itemId --json prints,
+or by its page in Petty, copied from the browser (https://…/drawers/…/lines/…).
 Every command takes --host <address> and, where it prints, --json. petty help <command> tells more.
 Docs: https://github.com/WawRepo/petty/blob/main/docs/cli.md
 `);
