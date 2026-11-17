@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.53] — 2026-11-17
+
 ### Security
 - Changing a drawer's document (its lines, names, tags, places and checks), replacing or removing a
   drawer's photo, and saving your own settings document now need proof of your vault key, as deleting
@@ -1122,7 +1124,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.52...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.53...HEAD
+[1.5.53]: https://github.com/WawRepo/petty/releases/tag/v1.5.53
 [1.5.52]: https://github.com/WawRepo/petty/releases/tag/v1.5.52
 [1.5.51]: https://github.com/WawRepo/petty/releases/tag/v1.5.51
 [1.5.50]: https://github.com/WawRepo/petty/releases/tag/v1.5.50
