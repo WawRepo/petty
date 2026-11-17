@@ -464,14 +464,22 @@
     "tagRemoveConfirm": "Remove “{tag}” from {count, plural, one {# item} other {# items}}? The items stay.",
     "history": {
       "title": "Earlier versions",
-      "hint": "Names, items, tags and places as they were before each change, kept for 30 days. Restoring one keeps the current version here too. Entries and balances are not affected.",
+      "hint": "Names, items, tags, places and the photo as they were before each change, kept for 30 days. Restoring one keeps the current version here too. Entries and balances are not affected.",
       "empty": "No earlier versions in the last 30 days.",
       "unreadable": "Cannot be opened on this device",
       "lines": "{count, plural, one {# item} other {# items}}",
       "byTool": "changed by a tool",
       "restore": "Restore",
       "restoreNamed": "Restore the version from {when}",
-      "restored": "Earlier version restored."
+      "restored": "Earlier version restored.",
+      "photosTitle": "Earlier photos",
+      "photoReplaced": "Replaced photo",
+      "photoRemoved": "Removed photo",
+      "photoShow": "Show",
+      "photoShowNamed": "Show the photo from {when}",
+      "photoRestoreNamed": "Put back the photo from {when}",
+      "photoAlt": "Earlier photo from {when}",
+      "photoRestored": "Earlier photo restored."
     },
     "trail": "Where this drawer is"
   },
@@ -763,7 +771,19 @@
     "rolledBackInside": "The copy of your trusted-keys list that the server sent is older than the one this device last saw, but the server does not number it as older. The server may have been tampered with, or someone is trying to make you trust new keys. Until you start a new list, no new key is trusted automatically and you cannot share drawers.",
     "missingTitle": "The server has no list of your trusted keys",
     "missing": "Your account has drawers, so the server should have this list. It can be missing because your account is older than the list, because a backup was restored, or because someone wants you to trust new keys. Until you start a new list, Petty opens only drawers whose key you made yourself, and you cannot share drawers. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again.",
-    "startOver": "Start a new list of trusted keys"
+    "startOver": "Start a new list of trusted keys",
+    "unreadableTitle": "Your list of trusted keys does not open",
+    "unreadable": "The server's copy of this list cannot be opened with your keys. A failed save, a bug, or someone who has your session but not your keys can cause this. Until you put a copy back or start a new list, no new key is trusted automatically and you cannot share drawers.",
+    "unreadableCopy": "The server keeps earlier copies for 30 days. The newest one that opens on this device is from {when}.",
+    "unreadableNoCopy": "No earlier copy opens on this device. You can start a new list.",
+    "putBack": "Put back the copy from {when}",
+    "putBackTitle": "Put back an earlier copy?",
+    "putBackBody": "Petty saves the copy from {when} as your list of trusted keys. Anyone you confirmed after that time must be confirmed again. The copy that does not open stays on the server for 30 days.",
+    "putBackConfirm": "Put it back",
+    "putBackDone": "Your list of trusted keys is back.",
+    "startNewTitle": "Start a new list?",
+    "startNewBody": "Petty saves a new, empty list of trusted keys. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again. Earlier copies stay on the server for 30 days.",
+    "startedNew": "A new list of trusted keys is saved."
   },
   "privacy": {
     "link": "Privacy and security",
@@ -1233,7 +1253,7 @@
       },
       "undo": {
         "q": "Can I undo a change to a drawer?",
-        "a": "Yes. A wrong entry is fixed by a new entry, and the old one stays in the history. Changes to names, items, tags and places are kept for 30 days, and the drawer's owner can put an earlier version back."
+        "a": "Yes. A wrong entry is fixed by a new entry, and the old one stays in the history. Changes to names, items, tags, places and the photo are kept for 30 days, and the drawer's owner can put an earlier version back."
       },
       "cost": {
         "q": "What does it cost?",

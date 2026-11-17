@@ -100,6 +100,9 @@ describe("deleted accounts end once nothing needs them (PETTY-349)", () => {
     ["the drawer photo", (t, d) => owner.query("insert into drawer_photos (drawer_id, author_id, key_version, schema_version, nonce, ciphertext) values ($1, $2, 1, 1, '\\x00', '\\x00')", [d, t])],
     ["a replaced document it wrote", (t, d) => owner.query("insert into drawer_document_history (drawer_id, version, author_id, key_version, schema_version, nonce, ciphertext, written_at) values ($1, 1, $2, 1, 1, '\\x00', '\\x00', now())", [d, t])],
     ["a document it replaced", (t, d) => owner.query("insert into drawer_document_history (drawer_id, version, author_id, key_version, schema_version, nonce, ciphertext, written_at, replaced_by) values ($1, 1, $3, 1, 1, '\\x00', '\\x00', now(), $2)", [d, t, O.id])],
+    // PETTY-506: kept photos name their author and who replaced them, like kept documents
+    ["a kept photo it took", (t, d) => owner.query("insert into drawer_photo_history (drawer_id, author_id, key_version, schema_version, nonce, ciphertext, written_at) values ($1, $2, 1, 1, '\\x00', '\\x00', now())", [d, t])],
+    ["a photo it replaced", (t, d) => owner.query("insert into drawer_photo_history (drawer_id, author_id, key_version, schema_version, nonce, ciphertext, written_at, replaced_by) values ($1, $3, 1, 1, '\\x00', '\\x00', now(), $2)", [d, t, O.id])],
     ["a drawer key it wrapped for a member", (t, d) => owner.query("insert into drawer_keys (drawer_id, user_id, key_version, wrap) values ($1, $3, 2, jsonb_build_object('sender_id', $2::text))", [d, t, O.id])],
     ["a drawer key of its own", (t, d) => owner.query("insert into drawer_keys (drawer_id, user_id, key_version, wrap) values ($1, $2, 2, '{}')", [d, t])],
     ["a membership", (t, d) => owner.query("insert into drawer_members (drawer_id, user_id, role) values ($1, $2, 'read')", [d, t])],

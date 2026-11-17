@@ -464,14 +464,22 @@
     "tagRemoveConfirm": "„{tag}“ von {count, plural, one {# Posten} other {# Posten}} entfernen? Die Posten bleiben erhalten.",
     "history": {
       "title": "Frühere Versionen",
-      "hint": "Namen, Posten, Tags und Orte, wie sie vor jeder Änderung waren, 30 Tage lang aufbewahrt. Beim Wiederherstellen bleibt auch die aktuelle Version hier erhalten. Buchungen und Salden bleiben unberührt.",
+      "hint": "Namen, Posten, Tags, Orte und das Foto, wie sie vor jeder Änderung waren, 30 Tage lang aufbewahrt. Beim Wiederherstellen bleibt auch die aktuelle Version hier erhalten. Buchungen und Salden bleiben unberührt.",
       "empty": "Keine früheren Versionen in den letzten 30 Tagen.",
       "unreadable": "Lässt sich auf diesem Gerät nicht öffnen",
       "lines": "{count, plural, one {# Posten} other {# Posten}}",
       "byTool": "von einem Tool geändert",
       "restore": "Wiederherstellen",
       "restoreNamed": "Version vom {when} wiederherstellen",
-      "restored": "Frühere Version wiederhergestellt."
+      "restored": "Frühere Version wiederhergestellt.",
+      "photosTitle": "Frühere Fotos",
+      "photoReplaced": "Ersetztes Foto",
+      "photoRemoved": "Entferntes Foto",
+      "photoShow": "Anzeigen",
+      "photoShowNamed": "Foto vom {when} anzeigen",
+      "photoRestoreNamed": "Foto vom {when} wiederherstellen",
+      "photoAlt": "Früheres Foto vom {when}",
+      "photoRestored": "Früheres Foto wiederhergestellt."
     },
     "trail": "Wo diese Schublade ist"
   },
@@ -763,7 +771,19 @@
     "rolledBackInside": "Die Kopie deiner Liste vertrauenswürdiger Schlüssel, die der Server geschickt hat, ist älter als die, die dieses Gerät zuletzt gesehen hat, aber der Server gibt ihr keine ältere Nummer. Jemand hat den Server vielleicht verändert – oder will dich dazu bringen, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
     "missingTitle": "Der Server hat keine Liste deiner vertrauenswürdigen Schlüssel",
     "missing": "Dein Konto hat Schubladen, also müsste der Server diese Liste haben. Sie kann fehlen, weil dein Konto älter ist als die Liste, weil ein Backup wiederhergestellt wurde – oder weil dich jemand dazu bringen will, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, öffnet Petty nur Schubladen, deren Schlüssel du selbst erstellt hast, und du kannst keine Schubladen teilen. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder.",
-    "startOver": "Neue Schlüsselliste beginnen"
+    "startOver": "Neue Schlüsselliste beginnen",
+    "unreadableTitle": "Deine Liste vertrauenswürdiger Schlüssel lässt sich nicht öffnen",
+    "unreadable": "Die Kopie dieser Liste auf dem Server lässt sich mit deinen Schlüsseln nicht öffnen. Ursache kann ein fehlgeschlagenes Speichern sein, ein Fehler oder jemand, der deine Sitzung hat, aber nicht deine Schlüssel. Bis du eine Kopie zurückholst oder eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
+    "unreadableCopy": "Der Server bewahrt frühere Kopien 30 Tage lang auf. Die neueste, die sich auf diesem Gerät öffnen lässt, ist vom {when}.",
+    "unreadableNoCopy": "Keine frühere Kopie lässt sich auf diesem Gerät öffnen. Du kannst eine neue Liste beginnen.",
+    "putBack": "Kopie vom {when} zurückholen",
+    "putBackTitle": "Frühere Kopie zurückholen?",
+    "putBackBody": "Petty speichert die Kopie vom {when} als deine Liste vertrauenswürdiger Schlüssel. Wen du danach bestätigt hast, musst du erneut bestätigen. Die Kopie, die sich nicht öffnen lässt, bleibt 30 Tage auf dem Server.",
+    "putBackConfirm": "Zurückholen",
+    "putBackDone": "Deine Liste vertrauenswürdiger Schlüssel ist zurück.",
+    "startNewTitle": "Neue Liste beginnen?",
+    "startNewBody": "Petty speichert eine neue, leere Liste vertrauenswürdiger Schlüssel. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder. Frühere Kopien bleiben 30 Tage auf dem Server.",
+    "startedNew": "Eine neue Liste vertrauenswürdiger Schlüssel ist gespeichert."
   },
   "privacy": {
     "link": "Datenschutz und Sicherheit",
@@ -1233,7 +1253,7 @@
       },
       "undo": {
         "q": "Kann ich eine Änderung an einer Schublade rückgängig machen?",
-        "a": "Ja. Eine falsche Buchung wird durch eine neue ausgeglichen, und die alte bleibt im Verlauf. Änderungen an Namen, Posten, Tags und Orten werden 30 Tage aufbewahrt, und der Eigentümer der Schublade kann eine frühere Version wiederherstellen."
+        "a": "Ja. Eine falsche Buchung wird durch eine neue ausgeglichen, und die alte bleibt im Verlauf. Änderungen an Namen, Posten, Tags, Orten und am Foto werden 30 Tage aufbewahrt, und der Eigentümer der Schublade kann eine frühere Version wiederherstellen."
       },
       "cost": {
         "q": "Was kostet das?",

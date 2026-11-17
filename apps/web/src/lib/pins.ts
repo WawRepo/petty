@@ -6,7 +6,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { fromB64, hkdfAesKey, importEcdhPublic, open, seal, safetyNumber, toB64, utf8, fromUtf8, canonicalJson, type RecordIdentity } from "@petty/crypto";
-import { UserDocRow, z, type Member } from "@petty/protocol";
+import { UserDocHistory, UserDocRow, z, type Member } from "@petty/protocol";
 import { api, ApiError, NetworkError } from "./api.js";
 import { idb } from "./idb.js";
 import { getAuth } from "./session.js";
@@ -79,7 +79,12 @@ const seenOf = (version: number, doc: UserDocT): SeenUserDoc => (doc.rev === und
  * While rolled back, and while "idle" (not loaded), only drawer keys this person wrapped are opened.
  */
 /** `olderInside` (PETTY-439): rolled back by the counter inside the document, while the server's version number is not lower. */
-interface PinsState { readonly status: "idle" | "ready" | "rolled_back"; readonly doc: UserDocT; readonly version: number; readonly lastSeenVersion: number; readonly olderInside?: boolean }
+/**
+ * "unreadable" (PETTY-506): the server's copy does not open or is not a user document (a write by a session without the
+ * vault key, a bug). Treated like "rolled_back": nothing is pinned or saved, and only keys this person wrapped open,
+ * until the person puts back a kept copy (`putBackUserDoc`) or starts a new list. `version` is the server's number.
+ */
+interface PinsState { readonly status: "idle" | "ready" | "rolled_back" | "unreadable"; readonly doc: UserDocT; readonly version: number; readonly lastSeenVersion: number; readonly olderInside?: boolean }
 let state: PinsState = { status: "idle", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 };
 const seenKey = (userId: string) => `userdoc.${userId}`;
 /** PETTY-438: the sealed document as last loaded or saved here, for a start with no connection. Ciphertext only; wiped at sign-out with the rest of the cache. */
@@ -91,7 +96,7 @@ export function usePins(): PinsState {
   return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => state);
 }
 export function resetPins(): void { set({ status: "idle", doc: { v: 1, pins: {} }, version: 0, lastSeenVersion: 0 }); }
-export function pinsBlocked(): boolean { return state.status === "rolled_back"; }
+export function pinsBlocked(): boolean { return state.status === "rolled_back" || state.status === "unreadable"; }
 /**
  * PETTY-438: the user document is loaded and not rolled back. Only then does the app open a drawer key that someone
  * else wrapped, or re-seal a drawer. Missing, rolled back or not loaded all mean: keys this person wrapped, nothing more.
@@ -134,6 +139,61 @@ async function key(): Promise<{ key: CryptoKey; identity: RecordIdentity }> {
 }
 export function forgetSelfKey(): void { selfKey = null; resetPins(); }
 
+/** Opens a sealed user document and checks its shape. Throws when it does not open or is not one. */
+async function openUserDoc(k: CryptoKey, identity: RecordIdentity, row: { readonly nonce: string; readonly ciphertext: string }): Promise<UserDocT> {
+  return parseUserDoc(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))));
+}
+
+/** A kept copy of this person's user document (PETTY-506) that opens here. */
+export interface KeptUserDoc { readonly id: string; readonly replacedAt: string; readonly doc: UserDocT }
+/**
+ * PETTY-506: which kept copies may be put back. Only those that open, newest first, and none older than the newest
+ * copy this browser saw (its counter inside is not lower): putting back an older one would undo what the counter
+ * guards against (PETTY-439), a server handing out an earlier list. A browser that saw none takes any that opens.
+ */
+export function restorableUserDocs(seen: SeenUserDoc, kept: readonly KeptUserDoc[]): KeptUserDoc[] {
+  return kept.filter((c) => seen.rev === undefined || (c.doc.rev ?? 0) >= seen.rev);
+}
+/** The counter a put-back copy gets: above every counter this browser saw or found in a kept copy, so no device takes it for an older one. */
+export function putBackRev(seen: SeenUserDoc, kept: readonly KeptUserDoc[]): number {
+  return Math.max(seen.rev ?? 0, ...kept.map((c) => c.doc.rev ?? 0)) + 1;
+}
+async function openedCopies(): Promise<KeptUserDoc[]> {
+  const { key: k, identity } = await key();
+  const r = UserDocHistory.parse(await api<unknown>("GET", "/me/doc/history"));
+  const out: KeptUserDoc[] = [];
+  for (const h of r.history) {
+    try { out.push({ id: h.id, replacedAt: h.replaced_at, doc: await openUserDoc(k, identity, h.document) }); } catch { /* does not open: not offered */ }
+  }
+  return out;
+}
+/** PETTY-506: the kept copies this person may put back now, newest first (see `restorableUserDocs`). */
+export async function keptUserDocs(): Promise<KeptUserDoc[]> {
+  const { identity } = await key();
+  const seen = (await idb.get<SeenUserDoc>(seenKey(identity.record_id))) ?? { version: 0 };
+  return restorableUserDocs(seen, await openedCopies());
+}
+/**
+ * PETTY-506: replaces a user document that does not open. `copyId` names a kept copy to put back (one of
+ * `keptUserDocs`); null starts a new, empty list. Saved as a normal write, with a counter above every one seen.
+ * Its base is the version that did not open, so a copy another device saved since is not overwritten (VersionConflict).
+ */
+export async function putBackUserDoc(copyId: string | null): Promise<void> {
+  if (state.status !== "unreadable") throw new Error("user document opens");
+  const base = state.version;
+  const { key: k, identity } = await key();
+  const seen = (await idb.get<SeenUserDoc>(seenKey(identity.record_id))) ?? { version: 0 };
+  const copies = await openedCopies();
+  const chosen = copyId === null ? { v: 1 as const, pins: {} } : restorableUserDocs(seen, copies).find((c) => c.id === copyId)?.doc;
+  if (!chosen) throw new Error("copy not restorable");
+  const next: UserDocT = { ...chosen, v: 2, rev: putBackRev(seen, copies) };
+  const sealed = await seal(k, identity, utf8(canonicalJson(next)));
+  const r = await api<{ version: number }>("PUT", "/me/doc", { base_version: base, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+  await idb.set(seenKey(identity.record_id), seenOf(r.version, next));
+  await idb.set(K_DOC, { userId: identity.record_id, version: r.version, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) } satisfies CachedDoc);
+  set({ status: "ready", doc: next, version: r.version, lastSeenVersion: r.version });
+}
+
 let upgrading = false;
 export async function loadPins(): Promise<void> {
   const { key: k, identity } = await key();
@@ -149,7 +209,11 @@ export async function loadPins(): Promise<void> {
       return;
     }
     const row = UserDocRow.parse(raw);
-    const doc = parseUserDoc(JSON.parse(fromUtf8(await open(k, identity, { nonce: fromB64(row.nonce), ciphertext: fromB64(row.ciphertext) }))));
+    let doc: UserDocT;
+    try { doc = await openUserDoc(k, identity, row); } catch {
+      set({ status: "unreadable", doc: state.doc, version: row.version, lastSeenVersion: seen }); // PETTY-506
+      return;
+    }
     if (userDocRolledBack(remembered, row.version, doc)) { set({ status: "rolled_back", doc, version: row.version, lastSeenVersion: seen, olderInside: row.version >= seen }); return; }
     await idb.set(seenKey(userId), seenOf(row.version, doc));
     await idb.set(K_DOC, { userId, version: row.version, nonce: row.nonce, ciphertext: row.ciphertext } satisfies CachedDoc);
@@ -184,6 +248,7 @@ async function save(mutate: (doc: UserDocT) => UserDocT): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     if (state.status === "idle") await loadPins();
     if (state.status === "rolled_back") throw new Error("PinsRolledBack");
+    if (state.status === "unreadable") throw new Error("PinsUnreadable");
     // PETTY-439: the counter this copy was loaded with, plus one. After a VersionConflict the copy is the fresh one.
     const next: UserDocT = { ...mutate(state.doc), v: 2, rev: (state.doc.rev ?? 0) + 1 };
     const sealed = await seal(k, identity, utf8(canonicalJson(next)));

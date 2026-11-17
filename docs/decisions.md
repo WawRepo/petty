@@ -103,6 +103,23 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   (2026-11-10) the owner's app puts a version back itself, as a normal `PUT /drawers/:id/document`
   with the next counter (see "Drawer format 2"); `POST /drawers/:id/document/restore` answers 410
   `RestoreByApp`.*
+- **Kept user documents and photos (PETTY-506, 2026-11-17).** A replaced user document and a
+  replaced or removed drawer photo are kept for 30 days too (`user_doc_history`,
+  `drawer_photo_history`, migration 021), so one bad write (a session without the vault key, a bug)
+  cannot destroy the list of trusted keys or a photo for good. The server cannot open them and never
+  picks one. Only the person's own session lists their user-document copies (`GET /me/doc/history`);
+  only the drawer's owner lists and fetches photo copies (`GET /drawers/:id/photo/history[/:id]`), as
+  for document history. No token may call them. The app puts one back as a normal write, so the
+  current copy is kept in turn, and needs no custody proof, as `PUT /me/doc` and a photo write need
+  none. When the user document does not open, the web app offers the newest copy that opens and is
+  not older (by the counter inside) than this browser saw; a server cannot use it to roll the list
+  back. How many: the 10 newest and the first copy replaced on each day. A drawer document keeps
+  every copy, bounded by the quota; a user document is no drawer's and not in the quota, and a photo
+  copy is up to 300 KiB, so a count bounds them. "Newest N" alone would let a script with a stolen
+  session push out the good copy with N writes in a row; the first of each day still holds the state
+  from before. That is at most about 40 copies per person or drawer (a user document is at most
+  256 KiB, so at worst about 10 MiB per person outside the quota). Kept photos count against the
+  drawer owner's quota, so a new photo adds its whole size; removing one always passes.
 - **Open sign-up (PETTY-215).** Local mode only: `OPEN_SIGNUP=true` lets anyone create an account
   without a join link (a public self-hosted instance). Default stays invite-only; the first account of
   an installation is minted with the `join-link` script.
@@ -248,11 +265,12 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `#`. The `GET` forms are gone (404).
   A used join link forgets its email; housekeeping (`apps/api/src/lib/maintenance.ts`) deletes unused
   join links that ended, reset tokens that expired, and drawer documents replaced more than 30 days ago
-  (PETTY-488; before, only the drawer's next write dropped them); deleting an account deletes its
+  (PETTY-488; before, only the drawer's next write dropped them), and kept user documents and photos
+  older than that (PETTY-506); deleting an account deletes its
   unused join links and reset tokens. What deletion keeps (the account's id, language, dates and
   public keys, so others' records still verify) goes in the first housekeeping run after nothing
-  needs it (PETTY-349, `purge_tombstones()` in migration 019): no entry, drawer document or photo,
-  kept document version or drawer-key wrap names the person, and no membership, owned drawer,
+  needs it (PETTY-349, `purge_tombstones()` in migration 019, then 021): no entry, drawer document
+  or photo, kept document version or photo, or drawer-key wrap names the person, and no membership, owned drawer,
   transfer or pending invitation is left. Its answered invitations, rotations, used join links and
   revoked tokens go with it.
 - **Invitations follow the owner (PETTY-446).** Only the owner invites, an invitation is accepted only

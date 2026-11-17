@@ -135,13 +135,16 @@ stores nothing.
 
 The quota (`STORAGE_QUOTA_MB`) counts ciphertext bytes. Everything else in a stored row has a fixed
 size, and an entry or a document cannot be smaller than a client writes it, so every row costs
-storage. A key rotation re-encrypts rows in place: a row may not grow past its limit, and what a
+storage. A replaced drawer document or photo is kept 30 days and counts too, so a new photo adds its
+whole size; a replaced user document is kept the same way but is not counted (at most about 40 per
+person). A key rotation re-encrypts rows in place: a row may not grow past its limit, and what a
 batch adds counts against the quota like any other write.
 
 Rows written before these limits existed keep the size they have, and the app still reads them; the
 limits apply to what is sent from then on. To see whether a database holds rows from before that are
 not the size a client writes: `select count(*) from entries where octet_length(nonce) <> 12;` (the
-same for `drawer_documents`, `drawer_document_history` and `drawer_photos`).
+same for `drawer_documents`, `drawer_document_history`, `drawer_photos`, `drawer_photo_history` and
+`user_doc_history`).
 
 ## Privacy notice and terms
 

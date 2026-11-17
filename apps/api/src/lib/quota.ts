@@ -4,7 +4,7 @@ import type { Queryable } from "./tx.js";
 
 /**
  * PETTY-243: per-user storage. What counts is the ciphertext stored in the drawers a person OWNS —
- * photos, documents, the 30-day document history and entries — so writes by members of a shared
+ * photos, documents, the 30-day document and photo history (PETTY-506) and entries — so writes by members of a shared
  * drawer count against its owner. The server cannot read any of it; it only counts bytes.
  *
  * The check is soft: two writes racing at the limit can both pass, overshooting by one record.
@@ -16,6 +16,7 @@ export async function storageUsed(db: Queryable, ownerId: string): Promise<numbe
      select (coalesce((select sum(octet_length(ciphertext)) from drawer_photos where drawer_id in (select id from d)), 0)
            + coalesce((select sum(octet_length(ciphertext)) from drawer_documents where drawer_id in (select id from d)), 0)
            + coalesce((select sum(octet_length(ciphertext)) from drawer_document_history where drawer_id in (select id from d)), 0)
+           + coalesce((select sum(octet_length(ciphertext)) from drawer_photo_history where drawer_id in (select id from d)), 0)
            + coalesce((select sum(octet_length(ciphertext)) from entries where drawer_id in (select id from d)), 0))::text as used`,
     [ownerId],
   );
@@ -24,7 +25,8 @@ export async function storageUsed(db: Queryable, ownerId: string): Promise<numbe
 
 /**
  * Refuses a write that would add `addBytes` to a drawer owner's storage past the instance quota.
- * Writes that add nothing (a smaller photo, a delete) always pass, so a full account can free space.
+ * Writes that add nothing (a delete) always pass. A replaced document or photo is kept 30 days (PETTY-183,
+ * PETTY-506), so a full account frees space by deleting a line or a drawer.
  */
 export async function assertQuota(db: Queryable, ownerId: string, addBytes: number): Promise<void> {
   const quota = config.storageQuotaBytes;

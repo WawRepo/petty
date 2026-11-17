@@ -42,15 +42,44 @@ describe("personal data is not kept longer than needed", () => {
     expect(kept.json().keys.map((k: { ecdsa_pub: string }) => k.ecdsa_pub)).toEqual([wrote.user.pub.ecdsa]); // so the entry still verifies
   });
 
+  // PETTY-506: a replaced user document and a replaced or removed drawer photo are kept 30 days, for the person's own app
+  it("a replaced user document and photo are kept for their owner only, the request role may clear old ones, and they go with the account or drawer", async () => {
+    const [ann, bob] = [await newUser("ret-kept-ann"), await newUser("ret-kept-bob")];
+    await ann.editUserDoc((d) => { d.hide_totals = true; });
+    await ann.editUserDoc((d) => { d.hide_places = true; });
+    const docs = (await ann.call("GET", "/me/doc/history")).json().history as { document: { version: number } }[];
+    expect(docs.map((h) => h.document.version)).toEqual([1]);
+    expect((await bob.call("GET", "/me/doc/history")).json()).toEqual({ history: [] });
+
+    const { id: drawer } = await ann.createDrawer("Shelf");
+    const photo = (fill: number) => ({ key_version: 1, schema_version: 1, nonce: Buffer.alloc(12, fill).toString("base64"), ciphertext: Buffer.alloc(4096, fill).toString("base64") });
+    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, photo(1))).statusCode).toBe(204);
+    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, photo(2))).statusCode).toBe(204);
+    expect((await ann.call("DELETE", `/drawers/${drawer}/photo`)).statusCode).toBe(204);
+    const photos = (await ann.call("GET", `/drawers/${drawer}/photo/history`)).json().history as { id: string; removed: boolean }[];
+    expect(photos.map((h) => h.removed)).toEqual([true, false]);
+    expect((await ann.call("GET", `/drawers/${drawer}/photo/history/${photos[1]!.id}`)).json().ciphertext).toBe(photo(1).ciphertext);
+    expect((await bob.call("GET", `/drawers/${drawer}/photo/history`)).statusCode).toBe(404); // not a member
+
+    // what each maintenance run deletes, as the request role, on the production image's migrations
+    expect(sql("delete from user_doc_history where replaced_at < now() - interval '30 days'")).toMatch(/^DELETE \d+$/);
+    expect(sql("delete from drawer_photo_history where replaced_at < now() - interval '30 days'")).toMatch(/^DELETE \d+$/);
+    expect((await ann.call("DELETE", `/drawers/${drawer}`, { proof: await ann.proof() })).statusCode).toBe(204);
+    expect(sql(`select count(*) from drawer_photo_history where drawer_id = '${drawer}'`)).toBe("0");
+    expect((await ann.call("POST", "/me/delete", { password: ann.user.password, proof: await ann.proof(), decisions: [] })).statusCode).toBe(204);
+    expect(sql(`select count(*) from user_doc_history where user_id = '${ann.id}'`)).toBe("0");
+  });
+
   // PETTY-488: and old drawer history, which before went only with the drawer's next write
   it("the maintenance run at start also clears dead tokens' data, old drawer history and unneeded deleted accounts, as the request role, without an error (PETTY-410)", () => {
     const lines = compose("logs --no-color --no-log-prefix app").split("\n").filter((l) => l.includes('"msg":"maintenance'));
     expect(lines.filter((l) => l.includes('"msg":"maintenance failed"'))).toEqual([]);
-    const runs = lines.map((l) => JSON.parse(l.slice(l.indexOf("{"))) as { msg: string; tokens?: unknown; document_history?: unknown; tombstones?: unknown }).filter((l) => l.msg === "maintenance");
+    const runs = lines.map((l) => JSON.parse(l.slice(l.indexOf("{"))) as { msg: string; tokens?: unknown; document_history?: unknown; kept_copies?: unknown; tombstones?: unknown }).filter((l) => l.msg === "maintenance");
     expect(runs.length).toBeGreaterThan(0);
     for (const r of runs) {
       expect(typeof r.tokens).toBe("number");
       expect(typeof r.document_history).toBe("number");
+      expect(typeof r.kept_copies).toBe("number"); // PETTY-506
       expect(typeof r.tombstones).toBe("number");
     }
   });

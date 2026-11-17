@@ -8,6 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Added
+- Petty keeps earlier copies of your list of trusted keys and of each drawer's photo for 30 days. If
+  your list stops opening (after a failed save, a bug, or someone who got into your session without
+  your keys), the home screen offers to put back the newest copy that opens, after you confirm. A
+  drawer's owner finds replaced and removed photos under "Earlier versions" and can put one back. A
+  kept photo counts toward the owner's storage until it ends, so a new photo adds its whole size.
+  Deleting your account deletes the copies at once. Operators: migration 021 adds two tables, and the
+  hourly `maintenance` log line has a new count, `kept_copies`.
+
 ### Security
 - An instance can keep its users' email addresses out of its database. With the new setting
   `EMAIL_KEY` (32 random bytes: `openssl rand -base64 32`), the server seals every address with that

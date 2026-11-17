@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, MAX_PASSKEYS, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, StoredVaultBlob, UserDocRow, UserLookup, UserLookupBody, type Me as MeT } from "@petty/protocol";
+import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, MAX_PASSKEYS, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, StoredVaultBlob, UserDocHistory, UserDocRow, UserLookup, UserLookupBody, type Me as MeT } from "@petty/protocol";
 import { config } from "../config.js";
 import { storageUsed } from "../lib/quota.js";
 import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
@@ -19,6 +19,8 @@ import { requireUser } from "../lib/session.js";
 import type { Queryable } from "../lib/tx.js";
 import type { CustodyProof } from "@petty/protocol";
 import { emailColumnsSql, emailMatchParams, emailMatchSql, mailAddressOf, openEmail, userEmailColumns } from "../lib/email-seal.js";
+import { keepUserDoc } from "../lib/kept.js";
+import { HISTORY_DAYS } from "../lib/maintenance.js";
 
 /**
  * PETTY-411 (security review #13): the calls that ask for the login password again. The custody proof is
@@ -220,6 +222,8 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       const cur = (await db.query<{ version: number }>("select version from user_docs where user_id = $1 for update", [me.id])).rows[0];
       const current = cur?.version ?? 0;
       if (current !== body.base_version) throw conflict("VersionConflict", "user document changed", { current_version: current });
+      // PETTY-506: the copy it replaces stays 30 days, so the person's app can put it back
+      if (cur) await keepUserDoc(db, me.id);
       const r = await db.query(
         `insert into user_docs (user_id, version, schema_version, nonce, ciphertext) values ($1, 1, $2, $3, $4)
          on conflict (user_id) do update set version = user_docs.version + 1, schema_version = excluded.schema_version, nonce = excluded.nonce, ciphertext = excluded.ciphertext, updated_at = now()
@@ -227,6 +231,27 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
         [me.id, body.schema_version, fromB64(body.nonce), fromB64(body.ciphertext)],
       );
       return { version: r.rows[0]!.version, updated_at: iso(r.rows[0]!.updated_at) };
+    });
+  });
+
+  /**
+   * PETTY-506: the person's own user documents replaced in the last 30 days, newest first, still sealed. Their app
+   * opens them; when the current one does not open, it offers the newest that does and saves it as a normal write.
+   * Tokens cannot call this (lib/tokens.ts), like GET /me/doc.
+   */
+  app.get("/me/doc/history", async (req) => {
+    const me = requireUser(req);
+    const { rows } = await apiPool.query(
+      `select id, version, schema_version, nonce, ciphertext, written_at, replaced_at from user_doc_history
+        where user_id = $1 and replaced_at >= now() - make_interval(days => $2) order by replaced_at desc, id desc`,
+      [me.id, HISTORY_DAYS],
+    );
+    return UserDocHistory.parse({
+      history: rows.map((r) => ({
+        id: String(r.id),
+        replaced_at: iso(r.replaced_at),
+        document: { version: r.version, schema_version: r.schema_version, nonce: toB64(r.nonce), ciphertext: toB64(r.ciphertext), updated_at: iso(r.written_at) },
+      })),
     });
   });
 
@@ -299,6 +324,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       await db.query("delete from sessions where user_id = $1", [me.id]);
       await endAllTokens(db, me.id, { erase: true });
       await db.query("delete from user_docs where user_id = $1", [me.id]);
+      await db.query("delete from user_doc_history where user_id = $1", [me.id]); // PETTY-506
       await db.query("delete from passkey_vaults where user_id = $1", [me.id]);
       await db.query("delete from vault_history where user_id = $1", [me.id]);
       // PETTY-341: an invite from a deleted account dies with it (and the invitee's email with it); a reset token too
