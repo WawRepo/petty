@@ -349,8 +349,8 @@ export function DrawerScreen() {
     <>
       <TopBar title={doc.name} onBack={back} backLabel={backLabel} actions={<button type="button" className="icon-btn" aria-label={t("drawer.options")} onClick={() => setSheet("options")}>⋯</button>} />
       <main>
-        <OfflineBanner />
-        <SyncReport />
+        {/* two panes (PETTY-138): the list beside shows the connection and the changes waiting to send, once */}
+        {pane ? null : <><OfflineBanner /><SyncReport /></>}
         <section className="drawer-head" data-testid="drawer-head">
           {/* PETTY-269: the way back to Home at the level of this drawer's place */}
           {placesShown(pinsDoc) && placeOfView(view).length ? (

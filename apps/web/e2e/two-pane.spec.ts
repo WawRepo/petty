@@ -67,6 +67,12 @@ test("two panes at 1280 px: the list stays, the drawer and the item open beside 
   await expect(page.getByTestId("confirm-summary")).toBeHidden({ timeout: 15_000 });
   await expect(page.getByTestId("line-balance")).toHaveText("125.00");
   await expect(drawerRow(page, "Cash tin").getByTestId("row-amount")).toContainText("125.00"); // the list follows
+  // the connection's line shows once, in the list, not again in the right pane
+  await page.context().setOffline(true);
+  await expect(page.getByTestId("offline-banner")).toHaveCount(1);
+  await expect(page.getByRole("navigation", { name: "Drawers" }).getByTestId("offline-banner")).toBeVisible();
+  await page.context().setOffline(false);
+  await expect(page.getByTestId("offline-banner")).toHaveCount(0);
 
   // the item's Back goes to its drawer, focus on the drawer's heading
   await page.getByRole("button", { name: "Back", exact: true }).click();

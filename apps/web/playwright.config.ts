@@ -31,6 +31,12 @@ const asked = projectsAsked(process.argv);
 /** `*` as Playwright reads it in a project name: any run of characters. */
 const askedFor = (name: string) => asked === null || asked.some((p) => new RegExp(`^${p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`, "i").test(name));
 const needsBuilt = askedFor("prod") || askedFor("clerk-prod");
+/**
+ * PETTY-138: from 900 px the app has two panes. The suite runs in the one-column app, the phone's layout
+ * and the one most people use, in a desktop browser just under that width; e2e/two-pane.spec.ts sets
+ * 1280 px for the two panes, and the landing page's spec its own laptop width.
+ */
+const ONE_COLUMN = { width: 860, height: 720 };
 
 export default defineConfig({
   testDir: "./e2e",
@@ -41,10 +47,10 @@ export default defineConfig({
   timeout: process.env["CI"] ? 120_000 : 60_000,
   use: { trace: "retain-on-failure", locale: "en-GB" },
   projects: [
-    { name: "dev", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${WEB_PORT}` }, testIgnore: /prod\.spec\.ts/ },
-    { name: "prod", use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" }, testMatch: /prod\.spec\.ts/ },
+    { name: "dev", use: { ...devices["Desktop Chrome"], viewport: ONE_COLUMN, baseURL: `http://localhost:${WEB_PORT}` }, testIgnore: /prod\.spec\.ts/ },
+    { name: "prod", use: { ...devices["Desktop Chrome"], viewport: ONE_COLUMN, baseURL: "http://localhost:3100" }, testMatch: /prod\.spec\.ts/ },
     // PETTY-185: the Clerk flow against the built app under the production CSP (CLERK_E2E=1, root .env in clerk mode).
-    { name: "clerk-prod", use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" }, testMatch: /clerk\.spec\.ts/ },
+    { name: "clerk-prod", use: { ...devices["Desktop Chrome"], viewport: ONE_COLUMN, baseURL: "http://localhost:3100" }, testMatch: /clerk\.spec\.ts/ },
   ],
   webServer: [
     // Test-only: the login limiter is per process; a day of e2e runs against one dev API would trip it.

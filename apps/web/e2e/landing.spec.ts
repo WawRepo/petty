@@ -2,6 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures.js";
 
+// A laptop's width: the suite's default is the one-column app's (playwright.config.ts, PETTY-138).
+test.use({ viewport: { width: 1280, height: 720 } });
+
 /**
  * PETTY-248: the "One idea, many uses" demo on the landing page. Every example is the app's one
  * pattern — places in a tree, drawers in places, items in drawers — each in its own shape and with its

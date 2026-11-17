@@ -22,6 +22,7 @@ import { initial } from "../lib/format.js";
 import { storageErrorKey } from "../lib/storage.js";
 import { dateLocale } from "../lib/time.js";
 import { LineSkeleton } from "../components/Skeleton.js";
+import { usePane } from "../lib/panes.js";
 
 type Op = Exclude<EntryOp, "reverse">;
 type MoneyOrCount = Exclude<Line, { kind: "single" }>;
@@ -171,6 +172,8 @@ export function LineScreen() {
   // PETTY-269: back to the drawer plays the other way — the line's bubble shrinks into its place in the drawer's picture
   const morphBack = useMorphBack(`/drawers/${id}`);
   const back = () => morphBack(vtName("l", lineId), `.drawer-art .uc-bub:not(.off) [data-vt="${vtName("l", lineId)}"]`, '[data-testid="drawer-art"]');
+  // two panes (PETTY-138): the list beside shows the connection and the changes waiting to send, once
+  const status = usePane() ? null : <><OfflineBanner /><SyncReport /></>;
   const state = useDrawers();
   const [op, setOp] = useState<Op | null>(null);
   const [picked, setPicked] = useState<LedgerEntry | null>(null);
@@ -210,8 +213,7 @@ export function LineScreen() {
       <>
         <TopBar title={line.name} onBack={back} actions={optionsButton} />
         <main>
-          <OfflineBanner />
-          <SyncReport />
+          {status}
           {hero}
           <ReadOnlyHint view={view} />
           <section className="card single-text" data-testid="single-text">{line.text ? <p className="m0">{line.text}</p> : <p className="empty m0">{t("line.noText")}</p>}</section>
@@ -245,8 +247,7 @@ export function LineScreen() {
     <>
       <TopBar title={line.name} onBack={back} actions={optionsButton} />
       <main>
-        <OfflineBanner />
-        <SyncReport />
+        {status}
         <div className="balance-hero">
           {/* PETTY-250: the line's icon in its kind's colour, as on the landing page; a new balance fades in */}
           {hero}
