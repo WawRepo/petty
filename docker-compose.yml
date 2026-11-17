@@ -62,6 +62,7 @@ services:
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
       CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      EMAIL_KEY: ${EMAIL_KEY:-}
       CLERK_FRONTEND_API: ${CLERK_FRONTEND_API:-}
       CLERK_JWT_KEY: ${CLERK_JWT_KEY:-}
     command: ["sh", "-c", "pnpm migrate && pnpm start"]

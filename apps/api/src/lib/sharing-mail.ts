@@ -1,6 +1,7 @@
 import { config } from "../config.js";
 import { mailsLimited, type SHARING_MAIL_KINDS } from "./metrics.js";
 import { checkRate } from "./password.js";
+import { emailRateTag } from "./email-seal.js";
 
 const DAY_MS = 24 * 60 * 60_000;
 
@@ -24,5 +25,8 @@ export async function maySendSharingMail(kind: (typeof SHARING_MAIL_KINDS)[numbe
   return ok;
 }
 
-/** The recipient key of a join-link email: the address in lower case, apart from account ids. Rate keys are stored hashed. */
-export const joinLinkRecipient = (address: string): string => `address:${address.trim().toLowerCase()}`;
+/**
+ * The recipient key of a join-link email: the address in lower case, apart from account ids. Rate keys are
+ * stored hashed; with an email key (PETTY-359) the address in it is an HMAC too.
+ */
+export const joinLinkRecipient = async (address: string): Promise<string> => `address:${await emailRateTag(address.trim().toLowerCase())}`;

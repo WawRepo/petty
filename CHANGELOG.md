@@ -8,6 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- An instance can keep its users' email addresses out of its database. With the new setting
+  `EMAIL_KEY` (32 random bytes: `openssl rand -base64 32`), the server seals every address with that
+  key before it stores it, and seals the ones already stored in its hourly housekeeping. Sign-in, invites
+  by address and every email work as before. A copy of the database without the key shows no address.
+  Keep a spare copy of the key: without it no address can be read and nobody can sign in. The server
+  refuses to start without the key once addresses are sealed. `EMAIL_KEY_OLD` changes the key, or turns
+  sealing off again. Without `EMAIL_KEY` nothing changes (docs/deploy.md, "Email key").
+
 ## [1.5.48] — 2026-11-16
 
 ### Fixed

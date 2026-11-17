@@ -41,7 +41,6 @@ interface Row {
   name: string;
   role: "read" | "write";
   scope: string[] | null;
-  email: string;
   display_name: string;
   locale: string;
   is_admin: boolean;
@@ -50,11 +49,11 @@ interface Row {
 }
 
 /** Look up a bearer credential. Returns null for unknown, revoked, expired, blocked or deleted. */
-export async function authenticateToken(bearer: string): Promise<{ token: TokenAuth; user: { id: string; email: string; display_name: string; locale: string; is_admin: boolean } } | null> {
+export async function authenticateToken(bearer: string): Promise<{ token: TokenAuth; user: { id: string; display_name: string; locale: string; is_admin: boolean } } | null> {
   const id = bearer.slice(PAT_PREFIX.length);
   if (!/^[A-Za-z0-9_-]{16,128}$/.test(id)) return null;
   const { rows } = await apiPool.query<Row>(
-    `select t.id, t.user_id, t.name, t.role, t.scope, (t.sig_key_id is not null) as signs, u.email, u.display_name, u.locale, u.is_admin,
+    `select t.id, t.user_id, t.name, t.role, t.scope, (t.sig_key_id is not null) as signs, u.display_name, u.locale, u.is_admin,
             (t.last_used_at is null or t.last_used_at < now() - interval '5 minutes') as stale
        from access_tokens t join users u on u.id = t.user_id
       where t.token_hash = $1 and t.revoked_at is null and (t.expires_at is null or t.expires_at > now())
@@ -67,7 +66,7 @@ export async function authenticateToken(bearer: string): Promise<{ token: TokenA
   if (r.stale) apiPool.query("update access_tokens set last_used_at = now() where id = $1", [r.id]).catch(() => undefined);
   return {
     token: { id: r.id, userId: r.user_id, name: r.name, role: r.role, scope: r.scope, signs: r.signs },
-    user: { id: r.user_id, email: r.email, display_name: r.display_name, locale: r.locale, is_admin: false },
+    user: { id: r.user_id, display_name: r.display_name, locale: r.locale, is_admin: false },
   };
 }
 

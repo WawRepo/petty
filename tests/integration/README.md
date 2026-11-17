@@ -35,6 +35,7 @@ volume at the end. `test.env` holds test-only passwords.
 | `17-retention` | personal data kept no longer than needed: a used join link forgets the email; the request role may clear dead reset tokens; the start-up maintenance run clears dead tokens' data and drawer history older than 30 days, with no error; a deleted account nothing needs goes (`purge_tombstones()` as the request role), one whose entry another person keeps stays with its public key |
 | `18-legal` | the operator's legal texts from `LEGAL_DIR`, in the asked language or the nearest one; a sign-up records the terms version; `/terms` is a page of the app |
 | `19-otlp` | traces, metrics and logs pushed over OTLP/HTTP with the names the alerts read, a trace linked to its log lines |
-| `20-stop` | the API runs as `node` itself and stops at once, and cleanly, when told to (the last file: nothing else runs while it is down) |
+| `20-email-at-rest` | with `EMAIL_KEY` the start-up housekeeping seals every address written before it, so a full dump holds none; sign-in in another case, lookup, "already taken", a reset mail and an invitation mail, and a join link from before the key still work; an instance without the key does not start and logs why (no address, no key); `EMAIL_KEY_OLD` alone writes every address back in plain. Starts both instances again, then puts them back |
+| `21-stop` | the API runs as `node` itself and stops at once, and cleanly, when told to (the last file: nothing else runs while it is down) |
 
 Files run in name order. **Every change revises these tests** (see `CLAUDE.md`).

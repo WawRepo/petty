@@ -176,6 +176,47 @@ describe("clerk mode", () => {
     expect((await apiPool.query("select clerk_user_id from users where id = $1", [created.json().id])).rows[0].clerk_user_id).toBe(second);
   });
 
+  it("PETTY-359: with an email key the provisioned address is sealed; it still blocks a second account and still relinks", async () => {
+    const { rewriteEmails } = await import("../src/lib/email-seal.js");
+    const keys = config as { emailKey: string; emailKeysOld: string[] };
+    keys.emailKey = Buffer.alloc(32, 5).toString("base64"); // test-only
+    let id = "";
+    try {
+      const first = `user_${run}S1`;
+      const U = new Client(app, await userMaterial("sela"));
+      U.bearer = await token(first);
+      const sb = U.user.signupBody;
+      const created = await U.call("POST", "/auth/provision", { display_name: sb["display_name"], keys: sb["keys"], vault: sb["vault"], recovery_vault: sb["recovery_vault"] });
+      expect(created.statusCode).toBe(201);
+      id = created.json().id;
+      const email = created.json().email as string;
+      expect(email).toBe(`${first.toLowerCase()}@test.local`);
+      expect((await owner.query("select email, email_sealed is not null as sealed from users where id = $1", [id])).rows[0]).toEqual({ email: null, sealed: true });
+      // another identity with the same address, while the first one exists: no relink, and no second account
+      const twin = `user_${run}S2`;
+      emails.set(twin, email.toUpperCase());
+      const T = new Client(app, await userMaterial("selb"));
+      T.bearer = await token(twin);
+      expect((await T.call("GET", "/me")).json().code).toBe("NoVault");
+      const tb = T.user.signupBody;
+      expect((await T.call("POST", "/auth/provision", { display_name: tb["display_name"], keys: tb["keys"], vault: tb["vault"], recovery_vault: tb["recovery_vault"] })).json().code).toBe("EmailTaken");
+      // the first identity is gone: the account is found by its sealed address and relinked
+      gone.add(first);
+      const second = `user_${run}S3`;
+      emails.set(second, email.toUpperCase());
+      U.bearer = await token(second);
+      const me = await U.call("GET", "/me");
+      expect(me.json().id).toBe(id);
+      expect(me.json().email).toBe(email);
+    } finally {
+      // back in plain: the other files share this database and have no key
+      keys.emailKeysOld = [keys.emailKey];
+      keys.emailKey = "";
+      if (id) await rewriteEmails(apiPool, { only: [id] });
+      keys.emailKeysOld = [];
+    }
+  });
+
   it("PETTY-189 (NR-9): a token made for another site, or naming none, is refused", async () => {
     const sub = `user_${run}AZP`;
     const call = async (t: string) => (await app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${t}` } })).json().code as string;

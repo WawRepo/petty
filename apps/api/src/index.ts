@@ -16,6 +16,8 @@ const push = otlpOn
 const { buildApp } = await import("./app.js");
 const { startMetricsServer } = await import("./lib/metrics.js");
 const { startMaintenance } = await import("./lib/maintenance.js");
+const { checkEmailKeys, EmailKeyError } = await import("./lib/email-seal.js");
+const { bgPool } = await import("./db.js");
 
 const app = buildApp();
 // PETTY-418: the image starts this file as node itself, the container's first process, and Linux gives
@@ -31,6 +33,27 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
     void app.close().catch(() => undefined).then(() => process.exit(0));
   });
 }
+
+/**
+ * PETTY-359: stored emails sealed with a key this instance does not have (EMAIL_KEY missing or wrong) stop
+ * it: sign-in by address and every mail would fail. Checked before the API listens when the database
+ * answers within a few seconds, else again every 5 s once it listens; housekeeping (which seals and
+ * re-seals rows) starts only after the check passed. A bad EMAIL_KEY value stops it the same way.
+ */
+async function emailKeysChecked(): Promise<boolean> {
+  try {
+    await Promise.race([checkEmailKeys(bgPool), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 5_000).unref())]);
+    return true;
+  } catch (err) {
+    if (err instanceof EmailKeyError) {
+      app.log.error({ err: { name: err.name, message: err.message } }, "email key check failed");
+      process.exit(1);
+    }
+    return false; // the database does not answer yet
+  }
+}
+const emailKeysOk = await emailKeysChecked();
+
 app.listen({ port: config.port, host: config.host }).then(async () => {
   app.log.info({ tracing, endpoint: tracing ? endpointForLog(config.otlpEndpoint) : null, otlpPush: push, env: config.deploymentEnv || null }, "tracing");
   if (config.metricsPort > 0) {
@@ -38,7 +61,13 @@ app.listen({ port: config.port, host: config.host }).then(async () => {
     app.log.info({ port: config.metricsPort }, "metrics listening");
   }
   // Expired sessions and 30-day-old vault history are removed (SR-13, SR-2): hourly while the database is in use, else daily (PETTY-355).
-  startMaintenance(app.log);
+  if (emailKeysOk) startMaintenance(app.log);
+  else {
+    app.log.warn("email key check waits for the database");
+    const retry = setInterval(() => {
+      void emailKeysChecked().then((ok) => { if (ok) { clearInterval(retry); startMaintenance(app.log); } });
+    }, 5_000);
+  }
 }).catch((err: unknown) => {
   app.log.error({ err }, "api failed to start");
   process.exit(1);

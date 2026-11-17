@@ -13,6 +13,7 @@ import { hashEntry } from "@petty/crypto";
 import { applyOps, newDocument, type DocumentOp } from "@petty/ledger";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
+import { emailMatchParams, emailMatchSql } from "../src/lib/email-seal.js";
 import { apiPool, maintPool } from "../src/db.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
 
@@ -27,7 +28,7 @@ async function main() {
   }
   const owner = new pg.Client({ connectionString: config.ownerDatabaseUrl });
   await owner.connect();
-  const exists = await owner.query("select 1 from users where email = 'ania@petty.local'");
+  const exists = await owner.query(`select 1 from users u where ${emailMatchSql("u", 1)}`, await emailMatchParams("ania@petty.local"));
   await owner.end();
   if (exists.rowCount) { process.stdout.write("seed-demo: ania already exists — `make demo-reset` to start over\n"); return; }
 

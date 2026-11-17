@@ -12,6 +12,7 @@ import {
 import { newDocument, type DrawerDocument } from "@petty/ledger";
 import { config } from "../config.js";
 import { randomToken, sha256 } from "../lib/bytes.js";
+import { linkEmailColumns } from "../lib/email-seal.js";
 
 export interface UserMaterial {
   email: string; password: string; passphrase: string; display_name: string; recovery_code: string;
@@ -41,7 +42,9 @@ export async function makeJoinLink(email: string | null = null): Promise<string>
   const owner = new pg.Client({ connectionString: config.ownerDatabaseUrl });
   await owner.connect();
   try {
-    await owner.query("insert into join_links (token_hash, email, expires_at) values ($1, $2, now() + interval '1 day')", [sha256(token), email]);
+    const id = crypto.randomUUID();
+    const e = await linkEmailColumns(id, email); // PETTY-359: sealed when this process has an email key
+    await owner.query("insert into join_links (id, token_hash, email, email_sealed, email_key_id, expires_at) values ($1, $2, $3, $4, $5, now() + interval '1 day')", [id, sha256(token), e.email, e.email_sealed, e.email_key_id]);
   } finally {
     await owner.end();
   }

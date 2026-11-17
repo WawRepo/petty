@@ -24,11 +24,11 @@ export const http = {
   },
 } as unknown as ConstructorParameters<typeof Client>[0];
 
-/** Runs `docker compose <args>` against the test stack and returns stdout. */
-export function compose(args: string): string {
+/** Runs `docker compose <args>` against the test stack and returns stdout. `env` sets variables the compose file reads. */
+export function compose(args: string, env: Record<string, string> = {}): string {
   const dc = process.env["PETTY_IT_COMPOSE"];
   if (!dc) throw new Error("run through tests/integration/run.sh (PETTY_IT_COMPOSE is not set)");
-  return execSync(`${dc} ${args}`, { cwd: import.meta.dirname, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PETTY_IMAGE: process.env["PETTY_IMAGE"] ?? "unused" } });
+  return execSync(`${dc} ${args}`, { cwd: import.meta.dirname, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PETTY_IMAGE: process.env["PETTY_IMAGE"] ?? "unused", ...env } });
 }
 
 /** A value from test.env (test-only passwords). */
