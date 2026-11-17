@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.50] — 2026-11-17
+
 ### Added
 - Two panes on a wide screen (900 px and up). The list of drawers stays on the left, and the drawer or
   item you open shows on the right, with its row marked in the list. With nothing open, the right side
@@ -1088,7 +1090,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.49...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.50...HEAD
+[1.5.50]: https://github.com/WawRepo/petty/releases/tag/v1.5.50
 [1.5.49]: https://github.com/WawRepo/petty/releases/tag/v1.5.49
 [1.5.48]: https://github.com/WawRepo/petty/releases/tag/v1.5.48
 [1.5.47]: https://github.com/WawRepo/petty/releases/tag/v1.5.47
