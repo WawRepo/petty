@@ -53,9 +53,9 @@ describe("personal data is not kept longer than needed", () => {
 
     const { id: drawer } = await ann.createDrawer("Shelf");
     const photo = (fill: number) => ({ key_version: 1, schema_version: 1, nonce: Buffer.alloc(12, fill).toString("base64"), ciphertext: Buffer.alloc(4096, fill).toString("base64") });
-    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, photo(1))).statusCode).toBe(204);
-    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, photo(2))).statusCode).toBe(204);
-    expect((await ann.call("DELETE", `/drawers/${drawer}/photo`)).statusCode).toBe(204);
+    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, { ...photo(1), proof: await ann.proof() })).statusCode).toBe(204);
+    expect((await ann.call("PUT", `/drawers/${drawer}/photo`, { ...photo(2), proof: await ann.proof() })).statusCode).toBe(204);
+    expect((await ann.call("DELETE", `/drawers/${drawer}/photo`, { proof: await ann.proof() })).statusCode).toBe(204);
     const photos = (await ann.call("GET", `/drawers/${drawer}/photo/history`)).json().history as { id: string; removed: boolean }[];
     expect(photos.map((h) => h.removed)).toEqual([true, false]);
     expect((await ann.call("GET", `/drawers/${drawer}/photo/history/${photos[1]!.id}`)).json().ciphertext).toBe(photo(1).ciphertext);

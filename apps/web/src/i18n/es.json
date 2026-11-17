@@ -777,7 +777,7 @@
     "missing": "Tu cuenta tiene cajones, así que el servidor debería tener esta lista. Puede faltar porque tu cuenta es más antigua que la lista, porque se restauró una copia de seguridad o porque alguien intenta que confíes en claves nuevas. Hasta que empieces una lista nueva, Petty solo abre los cajones cuya clave creaste tú y no podrás compartir cajones. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse.",
     "startOver": "Empezar una lista nueva de claves de confianza",
     "unreadableTitle": "Tu lista de claves de confianza no se abre",
-    "unreadable": "La copia de esta lista que tiene el servidor no se puede abrir con tus claves. Puede deberse a un guardado fallido, a un error o a alguien que tiene tu sesión pero no tus claves. Hasta que recuperes una copia o empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
+    "unreadable": "La copia de esta lista que tiene el servidor no se puede abrir con tus claves. Puede deberse a un guardado fallido, a un error o a un cambio hecho directamente en el servidor. Hasta que recuperes una copia o empieces una lista nueva, no se confiará automáticamente en ninguna clave nueva y no podrás compartir cajones.",
     "unreadableCopy": "El servidor guarda las copias anteriores durante 30 días. La más reciente que se abre en este dispositivo es del {when}.",
     "unreadableNoCopy": "Ninguna copia anterior se abre en este dispositivo. Puedes empezar una lista nueva.",
     "putBack": "Recuperar la copia del {when}",

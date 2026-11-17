@@ -380,7 +380,7 @@ describe("the user document's memory of keys and members, with the counter", () 
 
 describe("a list that does not open (PETTY-506)", () => {
   const junk = (version: number): Row => ({ version, schema_version: 1, nonce: toB64(crypto.getRandomValues(new Uint8Array(12))), ciphertext: toB64(crypto.getRandomValues(new Uint8Array(64))) });
-  /** A save that does not open, as a session without the vault key can make one: the server keeps the copy it replaced. */
+  /** A save that does not open (a bug, a failed save, a change on the server): the server keeps the copy it replaced. */
   const writeJunk = () => { server.kept.push(server.row!); server.row = junk(server.row!.version + 1); };
   const copy = (id: string, rev: number | undefined): KeptUserDoc => ({ id, replacedAt: "2026-11-10T10:00:00.000Z", doc: rev === undefined ? { v: 1, pins: {} } : { v: 2, rev, pins: {} } });
 

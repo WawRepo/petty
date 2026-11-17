@@ -195,7 +195,9 @@ export async function putBackUserDoc(copyId: string | null): Promise<void> {
   if (!chosen) throw new Error("copy not restorable");
   const next: UserDocT = { ...chosen, v: 2, rev: putBackRev(seen, copies) };
   const sealed = await seal(k, identity, utf8(canonicalJson(next)));
-  const r = await api<{ version: number }>("PUT", "/me/doc", { base_version: base, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+  const body = { base_version: base, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) };
+  // PETTY-513: like every save of this document, the put-back carries a custody proof
+  const r = await withCustodyProof(signingKey(), (proof) => api<{ version: number }>("PUT", "/me/doc", { ...body, proof }));
   await idb.set(seenKey(identity.record_id), seenOf(r.version, next));
   await idb.set(K_DOC, { userId: identity.record_id, version: r.version, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) } satisfies CachedDoc);
   set({ status: "ready", doc: next, version: r.version, lastSeenVersion: r.version });

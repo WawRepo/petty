@@ -777,7 +777,7 @@
     "missing": "Dein Konto hat Schubladen, also müsste der Server diese Liste haben. Sie kann fehlen, weil dein Konto älter ist als die Liste, weil ein Backup wiederhergestellt wurde – oder weil dich jemand dazu bringen will, neuen Schlüsseln zu vertrauen. Bis du eine neue Liste beginnst, öffnet Petty nur Schubladen, deren Schlüssel du selbst erstellt hast, und du kannst keine Schubladen teilen. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder.",
     "startOver": "Neue Schlüsselliste beginnen",
     "unreadableTitle": "Deine Liste vertrauenswürdiger Schlüssel lässt sich nicht öffnen",
-    "unreadable": "Die Kopie dieser Liste auf dem Server lässt sich mit deinen Schlüsseln nicht öffnen. Ursache kann ein fehlgeschlagenes Speichern sein, ein Fehler oder jemand, der deine Sitzung hat, aber nicht deine Schlüssel. Bis du eine Kopie zurückholst oder eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
+    "unreadable": "Die Kopie dieser Liste auf dem Server lässt sich mit deinen Schlüsseln nicht öffnen. Ursache kann ein fehlgeschlagenes Speichern sein, ein Fehler oder eine Änderung direkt auf dem Server. Bis du eine Kopie zurückholst oder eine neue Liste beginnst, gilt kein neuer Schlüssel automatisch als vertrauenswürdig, und du kannst keine Schubladen teilen.",
     "unreadableCopy": "Der Server bewahrt frühere Kopien 30 Tage lang auf. Die neueste, die sich auf diesem Gerät öffnen lässt, ist vom {when}.",
     "unreadableNoCopy": "Keine frühere Kopie lässt sich auf diesem Gerät öffnen. Du kannst eine neue Liste beginnen.",
     "putBack": "Kopie vom {when} zurückholen",

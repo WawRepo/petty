@@ -777,7 +777,7 @@
     "missing": "Votre compte a des tiroirs, le serveur devrait donc avoir cette liste. Elle peut manquer parce que votre compte est plus ancien que la liste, parce qu’une sauvegarde a été restaurée, ou parce que quelqu’un tente de vous faire accepter de nouvelles clés. Tant que vous ne commencez pas une nouvelle liste, Petty n’ouvre que les tiroirs dont vous avez créé la clé, et vous ne pouvez pas partager de tiroirs. Ensuite, confirmez le numéro de sécurité de chaque personne qui a partagé un tiroir avec vous, et ses tiroirs s’ouvriront à nouveau.",
     "startOver": "Commencer une nouvelle liste",
     "unreadableTitle": "Votre liste de clés de confiance ne s’ouvre pas",
-    "unreadable": "La copie de cette liste sur le serveur ne s’ouvre pas avec vos clés. Cela peut venir d’un enregistrement raté, d’un bug, ou de quelqu’un qui a votre session mais pas vos clés. Tant que vous ne remettez pas une copie ou ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
+    "unreadable": "La copie de cette liste sur le serveur ne s’ouvre pas avec vos clés. Cela peut venir d’un enregistrement raté, d’un bug, ou d’une modification faite directement sur le serveur. Tant que vous ne remettez pas une copie ou ne commencez pas une nouvelle liste, aucune nouvelle clé n’est approuvée automatiquement et vous ne pouvez pas partager de tiroirs.",
     "unreadableCopy": "Le serveur garde les copies précédentes 30 jours. La plus récente qui s’ouvre sur cet appareil date du {when}.",
     "unreadableNoCopy": "Aucune copie précédente ne s’ouvre sur cet appareil. Vous pouvez commencer une nouvelle liste.",
     "putBack": "Remettre la copie du {when}",

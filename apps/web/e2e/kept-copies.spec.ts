@@ -32,10 +32,10 @@ test("PETTY-506: a trusted-keys list that does not open: after a confirm, the ne
   const good = (await readUserDoc(bob))!;
   expect(Object.keys(good.doc.pins).length).toBeGreaterThan(0); // alice, pinned when bob accepted
 
-  // a save that does not open, as a session without the vault key can make one; the server keeps the copy it replaced
+  // a save that does not open (a bug or a failed save; since PETTY-513 it needs the vault key); the server keeps the copy it replaced
   const junk = (n: number) => Buffer.alloc(n, 7).toString("base64");
   const api = await apiClient(bob);
-  expect((await api.call("PUT", "/me/doc", { base_version: good.version, schema_version: 1, nonce: junk(12), ciphertext: junk(512) })).status).toBe(200);
+  expect((await api.call("PUT", "/me/doc", { base_version: good.version, schema_version: 1, nonce: junk(12), ciphertext: junk(512), proof: await api.proof(bob.keys) })).status).toBe(200);
   await pageB.goto("/");
   const warning = pageB.getByTestId("pins-unreadable");
   await expect(warning).toContainText("Your list of trusted keys does not open");

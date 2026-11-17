@@ -111,18 +111,18 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   `RestoreByApp`.*
 - **Kept user documents and photos (PETTY-506, 2026-11-17).** A replaced user document and a
   replaced or removed drawer photo are kept for 30 days too (`user_doc_history`,
-  `drawer_photo_history`, migration 023), so one bad write (a session without the vault key, a bug)
+  `drawer_photo_history`, migration 023), so one bad write (a bug, a failed save, a change made on the server)
   cannot destroy the list of trusted keys or a photo for good. The server cannot open them and never
   picks one. Only the person's own session lists their user-document copies (`GET /me/doc/history`);
   only the drawer's owner lists and fetches photo copies (`GET /drawers/:id/photo/history[/:id]`), as
   for document history. No token may call them. The app puts one back as a normal write, so the
-  current copy is kept in turn, and needs no custody proof, as `PUT /me/doc` and a photo write need
-  none. When the user document does not open, the web app offers the newest copy that opens and is
+  current copy is kept in turn; it carries a custody proof, as every `PUT /me/doc` and photo write
+  does since PETTY-513. When the user document does not open, the web app offers the newest copy that opens and is
   not older (by the counter inside) than this browser saw; a server cannot use it to roll the list
   back. How many: the 10 newest and the first copy replaced on each day. A drawer document keeps
   every copy, bounded by the quota; a user document is no drawer's and not in the quota, and a photo
-  copy is up to 300 KiB, so a count bounds them. "Newest N" alone would let a script with a stolen
-  session push out the good copy with N writes in a row; the first of each day still holds the state
+  copy is up to 300 KiB, so a count bounds them. "Newest N" alone would let a script (since PETTY-513 one
+  that holds the vault key) push out the good copy with N writes in a row; the first of each day still holds the state
   from before. That is at most about 40 copies per person or drawer (a user document is at most
   256 KiB, so at worst about 10 MiB per person outside the quota). Kept photos count against the
   drawer owner's quota, so a new photo adds its whole size; removing one always passes.

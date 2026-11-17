@@ -52,8 +52,8 @@ describe("kept user documents (PETTY-506)", () => {
     const opened = JSON.parse(fromUtf8(await open(key, identity, { nonce: fromB64(kept[0]!.document.nonce), ciphertext: fromB64(kept[0]!.document.ciphertext) })));
     expect(opened).toMatchObject({ v: 2, rev: 2, places: [{ name: "Garage" }] });
 
-    // a write that does not open (a session without the vault key can make one) keeps the good copy
-    const bad = await A.call("PUT", "/me/doc", { base_version: 3, schema_version: 1, nonce: fake(12, 1), ciphertext: fake(2048, 2) });
+    // a write that does not open (a bug or a failed save; since PETTY-513 it needs the vault key too) keeps the good copy
+    const bad = await A.call("PUT", "/me/doc", { base_version: 3, schema_version: 1, nonce: fake(12, 1), ciphertext: fake(2048, 2), proof: await A.proof() });
     expect(bad.statusCode).toBe(200);
     await expect(A.readUserDoc()).rejects.toThrow();
     const after = await history(A);
@@ -61,7 +61,7 @@ describe("kept user documents (PETTY-506)", () => {
     // the app puts the newest good copy back as a normal save, with a counter above every one it saw
     const good = JSON.parse(fromUtf8(await open(key, identity, { nonce: fromB64(after[0]!.document.nonce), ciphertext: fromB64(after[0]!.document.ciphertext) })));
     const sealed = await seal(key, identity, utf8(canonicalJson({ ...good, rev: good.rev + 1 })));
-    expect((await A.call("PUT", "/me/doc", { base_version: 4, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) })).statusCode).toBe(200);
+    expect((await A.call("PUT", "/me/doc", { base_version: 4, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext), proof: await A.proof() })).statusCode).toBe(200);
     expect((await A.readUserDoc())!.doc).toMatchObject({ rev: 4, places: [{ name: "Attic" }] });
     expect((await history(A)).length).toBe(4); // the unreadable one is kept too: the server cannot tell
   });
@@ -118,9 +118,9 @@ describe("kept drawer photos (PETTY-506)", () => {
   it("a replaced or removed photo is kept; only the owner lists and fetches it, sealed as it was", async () => {
     const [A, B] = [await person("ph-owner"), await person("ph-member")];
     const id = await shared(A, B);
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(20_000, 1))).statusCode).toBe(204);
-    expect((await B.call("PUT", `/drawers/${id}/photo`, photo(30_000, 2))).statusCode).toBe(204); // replaces A's
-    expect((await B.call("DELETE", `/drawers/${id}/photo`)).statusCode).toBe(204);              // removes B's
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(20_000, 1), proof: await A.proof() })).statusCode).toBe(204);
+    expect((await B.call("PUT", `/drawers/${id}/photo`, { ...photo(30_000, 2), proof: await B.proof() })).statusCode).toBe(204); // replaces A's
+    expect((await B.call("DELETE", `/drawers/${id}/photo`, { proof: await B.proof() })).statusCode).toBe(204);              // removes B's
     expect((await A.call("GET", `/drawers/${id}/photo`)).statusCode).toBe(404);
 
     const list = (await A.call("GET", `/drawers/${id}/photo/history`)).json().history as { id: string; author_id: string; replaced_by: string; removed: boolean; key_version: number }[];
@@ -145,7 +145,7 @@ describe("kept drawer photos (PETTY-506)", () => {
     expect((await A.call("GET", `/drawers/${id}/photo/history/x1`)).statusCode).toBe(404);
 
     // putting it back is a normal photo write; deleting the drawer deletes every kept copy
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(20_000, 3))).statusCode).toBe(204);
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(20_000, 3), proof: await A.proof() })).statusCode).toBe(204);
     expect((await A.call("DELETE", `/drawers/${id}`, { proof: await A.proof() })).statusCode).toBe(204);
     expect((await owner.query("select 1 from drawer_photo_history where drawer_id = $1", [id])).rowCount).toBe(0);
   });
@@ -153,17 +153,17 @@ describe("kept drawer photos (PETTY-506)", () => {
   it("kept photos count against the owner's storage: a new photo adds its whole size", async () => {
     const A = await person("ph-quota");
     const { id } = await A.createDrawer("Box");
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(100_000, 1))).statusCode).toBe(204);
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(100_000, 1), proof: await A.proof() })).statusCode).toBe(204);
     const used = (await A.call("GET", "/me/storage")).json().used_bytes as number;
     setQuota(used + 150_000);
-    const over = await A.call("PUT", `/drawers/${id}/photo`, photo(160_000, 2));
+    const over = await A.call("PUT", `/drawers/${id}/photo`, { ...photo(160_000, 2), proof: await A.proof() });
     expect(over.statusCode).toBe(413);
     expect(over.json()).toMatchObject({ code: "StorageQuotaExceeded", context: { used_bytes: used } });
-    expect((await A.call("PUT", `/drawers/${id}/photo`, photo(140_000, 3))).statusCode).toBe(204);
+    expect((await A.call("PUT", `/drawers/${id}/photo`, { ...photo(140_000, 3), proof: await A.proof() })).statusCode).toBe(204);
     expect((await A.call("GET", "/me/storage")).json().used_bytes).toBe(used + 140_000); // the 100 000 are still kept
     // removing it is always allowed; its bytes stay counted until the copy ends
     setQuota(used + 140_000);
-    expect((await A.call("DELETE", `/drawers/${id}/photo`)).statusCode).toBe(204);
+    expect((await A.call("DELETE", `/drawers/${id}/photo`, { proof: await A.proof() })).statusCode).toBe(204);
     expect((await A.call("GET", "/me/storage")).json().used_bytes).toBe(used + 140_000);
   });
 });
