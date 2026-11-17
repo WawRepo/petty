@@ -41,7 +41,7 @@ const answer = (status: number, body: unknown) => new Response(JSON.stringify(bo
 function terminal(opts: { env?: Record<string, string>; fetch?: typeof fetch; signedIn?: boolean; realTime?: boolean } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "petty-cli-"));
   dirs.push(dir);
-  const t = { out: "", err: "", env: { PETTY_CONFIG_DIR: dir, ...(opts.signedIn === false ? {} : { PETTY_TOKEN: token, PETTY_API_URL: `${ORIGIN}/api` }), ...opts.env } as Record<string, string | undefined> };
+  const t = { out: "", err: "", env: { PETTY_CONFIG_DIR: dir, PETTY_TOKEN_STORE: "file", ...(opts.signedIn === false ? {} : { PETTY_TOKEN: token, PETTY_API_URL: `${ORIGIN}/api` }), ...opts.env } as Record<string, string | undefined> };
   const io: Io = {
     out: (s) => { t.out += s; },
     err: (s) => { t.err += s; },
@@ -54,6 +54,7 @@ function terminal(opts: { env?: Record<string, string>; fetch?: typeof fetch; si
     sleep: (ms) => new Promise((r) => setTimeout(r, opts.realTime ? ms : Math.min(ms, 30))),
     now: () => Date.now(),
     hostname: "laptop",
+    platform: process.platform,
   };
   return { t, petty: async (...argv: string[]) => { t.out = ""; t.err = ""; return run(argv, io); } };
 }

@@ -414,8 +414,12 @@ relays the sealed blob once and deletes the request; it never sees the token.
   person, only a signed-in and unlocked person can allow one, and a token can never
   allow a token. Asking for codes is limited per address (an IPv6 client counts by its /64 network,
   as for every per-address limit).
-- **The login on disk.** `~/.petty/hosts.json`, readable by its user only, like the MCP program's
-  token file. What a person types (names, amounts, notes) stays in their shell's history, outside
+- **The login on disk.** The token is in the system's keychain (macOS keychain, Secret Service,
+  Windows Credential Manager) when there is one, reached through the system's own tools with the token
+  on stdin, never as an argument (PETTY-276). `~/.petty/hosts.json`, readable by its user only, keeps
+  the rest of the login, or the token too when there is no keychain or it failed, like the MCP
+  program's token file. A program that runs as the same user can still ask the keychain for it: the
+  keychain keeps the token out of copies of the home folder, not away from that user's programs. What a person types (names, amounts, notes) stays in their shell's history, outside
   Petty's control; [cli.md](cli.md) says how to keep notes out of it.
 - **The page it opens.** The command line builds the address itself, from the Petty it signs in to
   and its own code. It opens only an `http:` or `https:` address, and no shell reads it: on Windows it
