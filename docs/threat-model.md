@@ -1,6 +1,6 @@
 # Threat model
 
-**Current as of 2026-11-16 (after v1.5.42).** This is the maintained description of what Petty protects,
+**Current as of 2026-11-17 (after v1.5.52).** This is the maintained description of what Petty protects,
 from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
@@ -429,8 +429,11 @@ relays the sealed blob once and deletes the request; it never sees the token.
 
 Calls that could destroy keys or data — replacing the vault or its recovery-code copy, deleting the
 account, deleting a drawer, deleting a line (its entries go with it), publishing a new drawer key and
-every batch of the re-encryption that follows, adding or removing a passkey, creating a token —
-require a server-issued challenge **signed with the account key**, in addition to the session.
+every batch of the re-encryption that follows, adding or removing a passkey, creating a token, and
+since PETTY-513 every write of a drawer's document (`PUT /drawers/:id/document`), replacing or removing
+a drawer's photo (`PUT`/`DELETE /drawers/:id/photo`) and every write of the user document (`PUT
+/me/doc`: pins, trusted tokens, accepted keys and counters) — require a server-issued challenge **signed
+with the account key**, in addition to the session.
 Replacing the vault or the recovery code, changing passkeys and deleting the account also ask for the
 login password in local mode. There is one challenge per person (`POST /me/custody-challenge`); it is
 valid five minutes and works once. It lives in the database, so it works the same when several
@@ -440,7 +443,11 @@ another, each with a fresh proof, and sends a call again when the server answers
 server checks the proof before the password and before it writes anything, so a call sent again never
 counts as a second password try. A web app from before PETTY-440 and PETTY-441 sends no proof for a key
 change or a line deletion: the server answers 403 `CustodyProofRequired` and changes nothing. The
-login password can be reset from an email link; the vault key cannot be reset by anyone. Replaced
+login password can be reset from an email link; the vault key cannot be reset by anyone. A web app
+from before PETTY-513 sends no proof with a document, photo or user-document write either: those are
+refused the same way until the tab is reloaded. An access token writes a drawer's document without a
+proof: a proof was needed to make the token, and the entries it writes are signed with its own key. It
+cannot call the photo or user-document routes at all. Replaced
 vault blobs are kept 30 days (an admin can put one back), and the owner is emailed on a password reset
 and a vault change.
 

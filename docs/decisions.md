@@ -54,12 +54,16 @@ something else. Superseded rows are marked, not deleted. The reasoning for the e
   passkey cannot go while there is no passphrase (`LastDoor`). The server never verifies assertions —
   a passkey is a key holder, not a login. A plaintext storage mode was rejected:
   it breaks the product's one promise.
-- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-200/201, PETTY-440/441).**
+- **Custody proofs (security review SR-2, 2026-09-08; extended PETTY-200/201, PETTY-440/441, PETTY-513).**
   Replacing the vault or its recovery-code copy, adding or removing a passkey, deleting the account,
   deleting a drawer, deleting a line (`POST /drawers/:id/lines/:lineId/delete`), creating an access
-  token, and publishing a new drawer key (`POST /drawers/:id/rotation`) and every re-encryption batch
-  after it (`PUT /drawers/:id/rotation/batch`) require a server-issued challenge signed with the
-  account key. `POST /me/custody-challenge` gives one per person: 32 random bytes, five minutes, one
+  token, publishing a new drawer key (`POST /drawers/:id/rotation`) and every re-encryption batch
+  after it (`PUT /drawers/:id/rotation/batch`), and since PETTY-513 every write of a drawer's document,
+  its photo (replace and remove) and the user document require a server-issued challenge signed with the
+  account key. PETTY-513 chose a proof per write over a proof bound to the session: a stolen session of
+  an unlocked browser would pass a session-bound check, while a proof per write needs the key itself; it
+  costs one small request before each of these writes and needs no new table or route. An access token
+  writes a document without a proof (a proof made the token; its writes are signed with its own key). `POST /me/custody-challenge` gives one per person: 32 random bytes, five minutes, one
   use (`apps/api/src/lib/custody.ts`). Any write member's app may finish a rotation another began,
   with its own proof for each step. Replaced vault blobs are kept 30 days in `vault_history`; an
   admin can restore one; the owner is emailed on a password reset and a vault change. Reason: the

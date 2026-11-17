@@ -8,6 +8,14 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- Changing a drawer's document (its lines, names, tags, places and checks), replacing or removing a
+  drawer's photo, and saving your own settings document now need proof of your vault key, as deleting
+  a drawer already did (PETTY-513). Someone who signs in with your login password alone, or with a stolen
+  session, can no longer replace them. The app sends the proof by itself; nothing changes for you. An
+  open tab from an older Petty cannot save these until it is reloaded. Access tokens (the AI add-on and
+  the command line) need no proof: one was needed to make the token.
+
 ## [1.5.52] — 2026-11-17
 
 ### Security

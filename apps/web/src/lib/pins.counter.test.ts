@@ -1,10 +1,11 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { canonicalJson, exportPublicKeys, fromB64, fromUtf8, generateUserKeys, hkdfAesKey, open, seal, toB64, utf8, type RecordIdentity } from "@petty/crypto";
+import { canonicalJson, exportPublicKeys, fromB64, fromUtf8, generateUserKeys, hkdfAesKey, open, seal, toB64, utf8, verifyCustodyProof, type RecordIdentity } from "@petty/crypto";
 
 /**
  * PETTY-439: the counter inside the user document. The module under test runs as in the browser; the server,
  * IndexedDB and the unlocked vault are played here. The "server" keeps one sealed row and a version number,
- * and the tests move both the way a server that kept older copies could.
+ * and the tests move both the way a server that kept older copies could. Like the real one, it takes a save
+ * only with a custody proof for its one challenge, signed with the account key (PETTY-513).
  */
 const mem = vi.hoisted(() => ({ idb: new Map<string, unknown>(), auth: { status: "locked" } as unknown }));
 vi.mock("./idb.js", () => ({
@@ -29,7 +30,7 @@ const identity: RecordIdentity = { record_type: "document", record_id: USER, dra
 let key: CryptoKey;
 
 interface Row { version: number; schema_version: number; nonce: string; ciphertext: string }
-const server = { row: null as Row | null, puts: 0, down: false, refusePut: false, alwaysNewer: false };
+const server = { row: null as Row | null, puts: 0, down: false, refusePut: false, alwaysNewer: false, challenge: null as string | null, ecdsaPub: "" };
 /** The sealed row as the user's own key makes it. */
 async function sealedRow(doc: unknown, version: number): Promise<Row> {
   const s = await seal(key, identity, utf8(canonicalJson(doc)));
@@ -53,20 +54,30 @@ function status(): { status: string; rev: number | undefined; olderInside: boole
 beforeAll(async () => {
   const keys = await generateUserKeys();
   const pub = await exportPublicKeys(keys);
-  mem.auth = { status: "unlocked", me: { id: USER }, keys: { pub, ecdhPrivate: keys.ecdh.privateKey } };
+  mem.auth = { status: "unlocked", me: { id: USER }, keys: { pub, ecdhPrivate: keys.ecdh.privateKey, ecdsaPrivate: keys.ecdsa.privateKey } };
+  server.ecdsaPub = pub.ecdsa;
   const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: keys.ecdh.publicKey }, keys.ecdh.privateKey, 256));
   key = await hkdfAesKey(shared, utf8("petty/self-doc/v1"), utf8(USER), "AES-GCM", ["encrypt", "decrypt"]);
 });
 beforeEach(() => {
-  server.row = null; server.puts = 0; server.down = false; server.refusePut = false; server.alwaysNewer = false;
+  server.row = null; server.puts = 0; server.down = false; server.refusePut = false; server.alwaysNewer = false; server.challenge = null;
   newBrowser();
   vi.stubGlobal("fetch", async (url: string, init?: { method?: string; body?: string }) => {
     if (server.down) throw new TypeError("fetch failed");
+    if (url === "/api/me/custody-challenge") {
+      server.challenge = toB64(crypto.getRandomValues(new Uint8Array(32)));
+      return new Response(JSON.stringify({ challenge: server.challenge, expires_at: new Date(Date.now() + 300_000).toISOString() }), { status: 200 });
+    }
     if (url !== "/api/me/doc") throw new Error(`unexpected request: ${url}`);
     if ((init?.method ?? "GET") === "GET") return server.row ? new Response(JSON.stringify({ ...server.row, updated_at: "2026-11-10T10:00:00.000Z" }), { status: 200 }) : new Response(null, { status: 204 });
     server.puts += 1;
     if (server.refusePut) return new Response(JSON.stringify({ code: "Internal", message: "internal error" }), { status: 500 });
-    const body = JSON.parse(init!.body!) as { base_version: number; schema_version: number; nonce: string; ciphertext: string };
+    const body = JSON.parse(init!.body!) as { base_version: number; schema_version: number; nonce: string; ciphertext: string; proof?: { challenge: string; signature: string } };
+    // PETTY-513: one challenge, used once, and the proof must be the account key's signature over it
+    const challenge = server.challenge;
+    server.challenge = null;
+    if (!body.proof || body.proof.challenge !== challenge) return new Response(JSON.stringify({ code: "CustodyProofRequired", message: "custody proof required" }), { status: 403 });
+    if (!(await verifyCustodyProof(server.ecdsaPub, body.proof.challenge, body.proof.signature))) return new Response(JSON.stringify({ code: "CustodyProofInvalid", message: "custody proof invalid" }), { status: 403 });
     if (server.alwaysNewer || body.base_version !== (server.row?.version ?? 0)) return new Response(JSON.stringify({ code: "VersionConflict", message: "user document changed" }), { status: 409 });
     server.row = { version: body.base_version + 1, schema_version: body.schema_version, nonce: body.nonce, ciphertext: body.ciphertext };
     return new Response(JSON.stringify({ version: server.row.version, updated_at: "2026-11-10T10:00:00.000Z" }), { status: 200 });

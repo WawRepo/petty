@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { AddPasskeyBody, CustodyChallenge, DeleteAccountBody, DeletePreview, MAX_PASSKEYS, Me, PasskeyEntry, PasskeyVault, PatchMeBody, PutRecoveryVaultBody, PutUserDocBody, PutVaultBody, RemovePasskeyBody, StorageUsage, StoredVaultBlob, UserDocRow, UserLookup, UserLookupBody, type Me as MeT } from "@petty/protocol";
 import { config } from "../config.js";
 import { storageUsed } from "../lib/quota.js";
-import { consumeCustodyProof, issueChallenge } from "../lib/custody.js";
+import { consumeCustodyProof, issueChallenge, requireProofField } from "../lib/custody.js";
 import { deleteClerkUser } from "../lib/clerk.js";
 import { apiPool } from "../db.js";
 import { badRequest, conflict, notFound, unauthorized, ApiError } from "../lib/errors.js";
@@ -206,7 +206,10 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(204).send();
   });
 
-  /** The user's own encrypted document (key pins). Version-checked like a drawer document. */
+  /**
+   * The user's own encrypted document (key pins). Version-checked like a drawer document. PETTY-513: a write
+   * needs a custody proof, so a session without the vault key cannot replace it. Tokens cannot call it.
+   */
   app.get("/me/doc", async (req, reply) => {
     const me = requireUser(req);
     const r = (await apiPool.query("select * from user_docs where user_id = $1", [me.id])).rows[0];
@@ -215,7 +218,9 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
   });
   app.put("/me/doc", async (req) => {
     const me = requireUser(req);
+    requireProofField(req.body);
     const body = PutUserDocBody.parse(req.body);
+    await consumeCustodyProof(req, me.id, body.proof);
     return withTx(apiPool, async (db) => {
       const cur = (await db.query<{ version: number }>("select version from user_docs where user_id = $1 for update", [me.id])).rows[0];
       const current = cur?.version ?? 0;
