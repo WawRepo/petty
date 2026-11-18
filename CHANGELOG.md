@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.59] — 2026-11-18
+
 ### Security
 - "Start a new list of trusted keys", in the warning that the server sent an older copy of that list
   or none, now saves a new, empty list, and asks first. Before, it took the server's older copy, and
@@ -1211,7 +1213,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.58...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.59...HEAD
+[1.5.59]: https://github.com/WawRepo/petty/releases/tag/v1.5.59
 [1.5.58]: https://github.com/WawRepo/petty/releases/tag/v1.5.58
 [1.5.57]: https://github.com/WawRepo/petty/releases/tag/v1.5.57
 [1.5.56]: https://github.com/WawRepo/petty/releases/tag/v1.5.56
