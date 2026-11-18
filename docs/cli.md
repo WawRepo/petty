@@ -31,9 +31,14 @@ Windows (PowerShell):
 New-Item -ItemType Directory -Force "$HOME\.petty" | Out-Null
 Invoke-WebRequest https://github.com/WawRepo/petty/releases/download/v1.2.3/petty.mjs -OutFile "$HOME\.petty\petty.mjs"
 # run it as: node "$HOME\.petty\petty.mjs" <command>
-# or make `petty` a command: save this as petty.cmd in a folder on your PATH
-#   @node "%USERPROFILE%\.petty\petty.mjs" %*
+# or make `petty` a command: add this line to your profile (notepad $PROFILE)
+#   function petty { & node "$HOME\.petty\petty.mjs" @args }
 ```
+
+Make `petty` a PowerShell function, not a `petty.cmd` or `petty.bat`. Windows runs those through
+`cmd.exe`, which reads the whole command line again and runs what follows a `&` or `|` in a word, such
+as in a name from a drawer that Tab completion put there. If you made a `petty.cmd` before, delete it
+and add the function (PETTY-510).
 
 ### Check what you download
 
@@ -174,7 +179,7 @@ notice a history that got shorter; the web app can ([threat model](threat-model.
 | bash | `eval "$(petty completion -s bash)"` in `~/.bashrc` |
 | zsh | `petty completion -s zsh > "${fpath[1]}/_petty"`, then open a new shell |
 | fish | `petty completion -s fish > ~/.config/fish/completions/petty.fish` |
-| PowerShell | `petty completion -s powershell \| Out-String \| Invoke-Expression` in `$PROFILE` |
+| PowerShell | `petty completion -s powershell \| Out-String \| Invoke-Expression` in `$PROFILE` (on Windows, after the `petty` function of [Install](#install)) |
 
 Tab completes commands, flags and their values, and the names of your items, drawers, tags and
 places. Names are fetched and decrypted when you press Tab, and never saved on disk; with no network
