@@ -34,6 +34,30 @@ describe("Tab completion in real shells (PETTY-274)", () => {
     });
   }
 
+  for (const bash of ["/bin/bash", "bash"]) {
+    it.skipIf(!has(bash))(`${bash}: a name with * ? [ or spaces is one candidate, as it is, never matched against files (PETTY-519)`, () => {
+      // A stand-in `petty` offers these names, in a folder whose files each pattern would match.
+      const fake = resolve(mkdtempSync(join(tmpdir(), "petty-bash-")));
+      try {
+        const names = ["a*", "b?c", "[x]", "Kitchen tin › *", "back\\slash", "plain"];
+        for (const f of ["abc", "a1", "bxc", "x", "Kitchen tin › box"]) writeFileSync(join(fake, f), "");
+        writeFileSync(join(fake, "names"), `${names.join("\n")}\n\n`);
+        writeFileSync(join(fake, "petty.bash"), script("bash"));
+        writeFileSync(join(fake, "petty"), `#!/bin/sh\n[ "$1" = "__complete" ] && cat "$PETTY_NAMES"\n`);
+        chmodSync(join(fake, "petty"), 0o755);
+        const r = spawnSync(bash, ["-c", `cd "$PETTY_DIR" && . ./petty.bash && COMP_WORDS=(petty untag ""); COMP_CWORD=2; _petty_complete; printf '%s\\n' "\${#COMPREPLY[@]}" "\${COMPREPLY[@]}"`], {
+          env: { ...process.env, PATH: `${fake}:${process.env["PATH"]}`, PETTY_NAMES: join(fake, "names"), PETTY_DIR: fake },
+          encoding: "utf8", timeout: 60_000,
+        });
+        expect(r.stderr).toBe("");
+        // the count first: the empty line at the end is no candidate
+        expect(r.stdout.trimEnd().split("\n")).toEqual([String(names.length), ...names]);
+      } finally {
+        rmSync(fake, { recursive: true, force: true });
+      }
+    });
+  }
+
   it.skipIf(!has("zsh"))("zsh: the script parses, and its function hands compadd the commands", () => {
     writeFileSync(join(dir, "_petty"), script("zsh"));
     const r = sh("zsh", ["-n", join(dir, "_petty")]);

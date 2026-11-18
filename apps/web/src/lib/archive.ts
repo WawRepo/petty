@@ -6,7 +6,7 @@
  * importer, keep the original author and date as a text label, and are flagged.
  */
 import { fromB64, openDocument, openEntryUnverified, openPhoto, sealArchive, openArchive, sealDocument, toB64, createDrawerKey, DOCUMENT_SCHEMA_VERSION, type ExportArchiveV1, type RecordIdentity } from "@petty/crypto";
-import { assertDocumentShape, nextRev, readDocument, revRolledBack, type DrawerDocument, type Line } from "@petty/ledger";
+import { MAX_TEXT, assertDocumentShape, nextRev, readDocument, revRolledBack, sumsAreExact, type DrawerDocument, type Line, type LineBalance } from "@petty/ledger";
 import { ExportPayload, z, type DrawerSummary, type ExportDrawer, type ExportPayload as ExportPayloadT } from "@petty/protocol";
 import { api } from "./api.js";
 import { appendEntry, getDrawers, loadAll, setPhoto } from "./drawers.js";
@@ -99,6 +99,41 @@ export async function openImport(parsed: ParsedImport, password: string): Promis
 
 export type ImportProgress = { drawer: string; done: number; total: number };
 
+/** PETTY-519: the archive's amounts could add up past the largest exact number. Nothing was written. */
+export class ImportSumTooLarge extends Error {
+  constructor() { super("ImportSumTooLarge"); this.name = "ImportSumTooLarge"; }
+}
+
+/**
+ * PETTY-519: whether the drawer the import makes of this archived one opens with exact sums: each item's
+ * (fold().overflow) and each currency's over the items (sumsAreExact), the checks the app makes when it
+ * opens a drawer. The import may leave out an entry the server refuses, or an undo whose target it left
+ * out, so the check adds up the size of every amount, from zero again at each count: when each such total
+ * is exact, so is every sum of some of them, in any order, at the end and on the way. A real archive is
+ * never near the limit, about 9 * 10^15 minor units.
+ */
+export function importSumsAreExact(doc: DrawerDocument, entries: ExportDrawer["entries"]): boolean {
+  if (entries.some((e) => !Number.isSafeInteger(e.entry.amount))) return false;
+  const money: LineBalance[] = [];
+  for (const line of doc.lines) {
+    if (line.kind === "single") continue;
+    const list = entries.filter((e) => e.entry.line_id === line.id).sort((x, y) => x.seq - y.seq);
+    let size = 0;
+    for (const e of list) {
+      size = e.entry.op === "adjust" ? Math.abs(e.entry.amount) : size + Math.abs(e.entry.amount);
+      if (!Number.isSafeInteger(size)) return false;
+    }
+    if (line.kind === "money") money.push({ line, balance: size });
+  }
+  return sumsAreExact(money);
+}
+
+/** A check's comment as imported: the label names who wrote it, unless the comment would grow past MAX_TEXT. */
+function importedComment(comment: string, author: string): string {
+  const labelled = `${comment ? comment + " · " : ""}[imported: ${author}]`;
+  return labelled.length <= MAX_TEXT ? labelled : comment;
+}
+
 /**
  * Creates a NEW drawer per archived drawer (new id, new key, me as owner), then
  * replays the entries in seq order per line as my own entries: the original
@@ -110,6 +145,11 @@ export async function importPayload(payload: ExportPayloadT, onProgress: (p: Imp
   const created: string[] = [];
   const total = payload.drawers.reduce((n, d) => n + d.entries.length, 0);
   let done = 0;
+  // PETTY-519: every drawer is checked before the first is written, so a refused archive leaves nothing behind
+  for (const ad of payload.drawers) {
+    assertDocumentShape(ad.document);
+    if (!importSumsAreExact(ad.document, ad.entries)) throw new ImportSumTooLarge();
+  }
   for (const ad of payload.drawers) {
     assertDocumentShape(ad.document);
     // PETTY-422: a new drawer, so a counter of its own from 1, whatever the archive holds
@@ -117,7 +157,7 @@ export async function importPayload(payload: ExportPayloadT, onProgress: (p: Imp
     void _rev;
     const id = crypto.randomUUID();
     const { key, selfWrap } = await createDrawerKey({ ecdhPrivate: a.keys.ecdhPrivate, ecdhPublicB64: a.keys.pub.ecdh }, id, 1);
-    const importedDoc: DrawerDocument = nextRev({ ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: `${v.comment ? v.comment + " · " : ""}[imported: ${ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?"}]` })) });
+    const importedDoc: DrawerDocument = nextRev({ ...doc, has_photo: false, verifications: doc.verifications.map((v) => ({ ...v, author_id: a.me.id, comment: importedComment(v.comment, ad.members.find((m) => m.id === v.author_id)?.display_name ?? "?") })) });
     const sealed = await sealDocument(key, { record_type: "document", record_id: id, drawer_id: id, line_id: null, author_id: a.me.id, key_version: 1, schema_version: DOCUMENT_SCHEMA_VERSION }, importedDoc);
     await startUserDoc(); // PETTY-438: an account with a drawer has a user document
     await api<DrawerSummary>("POST", "/drawers", { id, document: { key_version: 1, schema_version: DOCUMENT_SCHEMA_VERSION, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) }, self_wrap: selfWrap });

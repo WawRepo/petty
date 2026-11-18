@@ -744,6 +744,7 @@
     "imported": "{count, plural, one {# tiroir importé} other {# tiroirs importés}}",
     "importInvalid": "Ce fichier n’est pas un export Petty.",
     "importWrongPassword": "Ce mot de passe n’a pas ouvert le fichier.",
+    "importTooLarge": "Les montants de ce fichier donnent ensemble un nombre trop grand pour rester exact. Rien n’a été importé.",
     "plainLead": "Sans chiffrement : quiconque obtient le fichier peut tout y lire."
   },
   "delete": {

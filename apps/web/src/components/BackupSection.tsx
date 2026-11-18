@@ -2,12 +2,13 @@ import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { WrongPassphrase, EXPORT_PASSWORD_MIN_LENGTH } from "@petty/crypto";
+import { LedgerError } from "@petty/ledger";
 import { Button } from "./Button.js";
 import { ConfirmSheet } from "./ConfirmSheet.js";
 import { Sheet } from "./Sheet.js";
 import { TextField } from "./TextField.js";
 import { useToast } from "./Toast.js";
-import { buildExport, downloadText, exportEncrypted, exportPlain, importPayload, openImport, parseImportFile, type ImportProgress, type ParsedImport } from "../lib/archive.js";
+import { ImportSumTooLarge, buildExport, downloadText, exportEncrypted, exportPlain, importPayload, openImport, parseImportFile, type ImportProgress, type ParsedImport } from "../lib/archive.js";
 
 export function BackupSection() {
   const { t } = useTranslation();
@@ -69,6 +70,11 @@ export function BackupSection() {
       const ids = await importPayload(payload, setProgress);
       toast(t("backup.imported", { count: ids.length }));
       nav("/");
+    } catch (e) {
+      // PETTY-519: refused before anything was written; said here, as the password sheet is already closed
+      if (e instanceof ImportSumTooLarge) toast(t("backup.importTooLarge"));
+      else if (e instanceof LedgerError) toast(t("backup.importInvalid"));
+      else throw e;
     } finally { setProgress(null); }
   }
 

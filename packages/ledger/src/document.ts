@@ -317,6 +317,28 @@ export function applyOps(doc: DrawerDocument, ops: readonly DocumentOp[], ctx: O
   return ops.reduce((d, op) => applyOp(d, op, ctx), doc);
 }
 
+/**
+ * PETTY-519: the most a document may hold. assertDocumentShape checks them, so every reader does: the app,
+ * the import, the command line and the add-on. The server cannot (it never sees a document), and need
+ * not: it takes a request of at most 2 MiB (bodyLimit in apps/api/src/app.ts, since the first release).
+ * Each cap sits far above what a Petty client writes, so no document a client made is refused; they bound
+ * what a hand-made archive or a hostile member's client can make a reader do.
+ * - Items: every client refuses the 201st (MAX_LINES, since the first release). Five times that. A check
+ *   (verification) lists the items of its drawer, so it has the same cap.
+ * - Checks: none is ever removed, so only the size of a document bounds them. A 2 MiB
+ *   request holds at most 1.5 MiB of sealed document (base64), and the smallest check this function takes is
+ *   64 bytes of JSON with its comma: no stored document holds more than 24 576.
+ * - A check's comment: the app takes 500 characters and an import adds a label under 100. An item's note
+ *   has MAX_TEXT; so has a comment.
+ * - Ids and times: every client writes a UUID (36 characters) and an ISO time (24).
+ * - The drawer's name: the rule of every name (MAX_NAME), which newDocument and rename_drawer apply.
+ */
+export const MAX_DOCUMENT_LINES = 5 * MAX_LINES;
+export const MAX_VERIFICATIONS = 25_000;
+export const MAX_ID = 128;
+
+const shortText = (s: unknown): boolean => typeof s === "string" && s.length <= MAX_ID;
+
 /** Structural check for a document that came out of a ciphertext. Throws LedgerError("bad_document"). */
 export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
   if (typeof x !== "object" || x === null) throw new LedgerError("bad_document");
@@ -324,6 +346,7 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
   if (d["v"] !== 1 || typeof d["name"] !== "string" || typeof d["has_photo"] !== "boolean" || !Array.isArray(d["lines"]) || !Array.isArray(d["verifications"])) {
     throw new LedgerError("bad_document");
   }
+  if (d["name"].length > MAX_NAME || d["lines"].length > MAX_DOCUMENT_LINES || d["verifications"].length > MAX_VERIFICATIONS) throw new LedgerError("bad_document");
   if (d["tags"] !== undefined) {
     const tags = d["tags"];
     if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string" || t.length === 0 || t.length > MAX_TAG_LENGTH) || tags.length > MAX_TAGS) throw new LedgerError("bad_document");
@@ -333,12 +356,14 @@ export function assertDocumentShape(x: unknown): asserts x is DrawerDocument {
   if (d["rev"] !== undefined && (!Number.isSafeInteger(d["rev"]) || (d["rev"] as number) < 1)) throw new LedgerError("bad_document");
   const ids = new Set<string>();
   for (const l of d["lines"] as Line[]) {
+    if (typeof l !== "object" || l === null) throw new LedgerError("bad_document");
     assertLine(l);
-    if (ids.has(l.id)) throw new LedgerError("bad_document");
+    if (l.id.length > MAX_ID || ids.has(l.id)) throw new LedgerError("bad_document");
     ids.add(l.id);
   }
   for (const v of d["verifications"] as Verification[]) {
-    if (typeof v.id !== "string" || typeof v.author_id !== "string" || typeof v.logged_at !== "string" || typeof v.comment !== "string" || !Array.isArray(v.lines)) {
+    if (typeof v !== "object" || v === null || !shortText(v.id) || !shortText(v.author_id) || !shortText(v.logged_at)
+      || typeof v.comment !== "string" || v.comment.length > MAX_TEXT || !Array.isArray(v.lines) || v.lines.length > MAX_DOCUMENT_LINES) {
       throw new LedgerError("bad_document");
     }
     for (const vl of v.lines as readonly unknown[]) assertVerificationLine(vl);
@@ -355,7 +380,7 @@ const absentOr = (x: unknown, ok: (x: unknown) => boolean): boolean => x === und
 function assertVerificationLine(x: unknown): void {
   if (typeof x !== "object" || x === null) throw new LedgerError("bad_document");
   const l = x as Record<string, unknown>;
-  if (typeof l["line_id"] !== "string" || !absentOr(l["kind"], (k) => LINE_KINDS.includes(k)) || !absentOr(l["balance"], Number.isSafeInteger)
+  if (!shortText(l["line_id"]) || !absentOr(l["kind"], (k) => LINE_KINDS.includes(k)) || !absentOr(l["balance"], Number.isSafeInteger)
     || !absentOr(l["present"], (p) => typeof p === "boolean") || !absentOr(l["head_seq"], Number.isSafeInteger)) throw new LedgerError("bad_document");
 }
 

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDrawerKey, createRecoveryVault, fromB64, generateRecoveryCode, generateUserKeys, openDocument, openEntryUnverified, patSecret, patToken, reseal, sealPatBundle, toB64, unlockVault, wrapDrawerKey, type VaultBlobV1 } from "@petty/crypto";
-import { applyOp, fold, newDocument, nextRev, readDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
+import { MAX_DOCUMENT_LINES, applyOp, fold, newDocument, nextRev, readDocument, type DrawerDocument, type LedgerEntry } from "@petty/ledger";
 import { connect } from "@petty/agent";
 import { DOCUMENT_MIN_CIPHERTEXT, DrawerInvitation } from "@petty/protocol";
 import { sealedBody, type Client } from "../../../apps/api/src/devtools/fixtures.js";
@@ -329,6 +329,27 @@ describe("household", () => {
 
     expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);
     await expect(agent.drawers()).rejects.toMatchObject({ code: "TokenRevoked" });
+  });
+
+  it("a document over a cap stays as it is: the tool leaves the drawer out with a warning and writes nothing to it (PETTY-519)", async () => {
+    // a hand-made client may seal more items than any Petty client writes; the server cannot tell
+    const big: DrawerDocument = { ...newDocument("Too many items"), lines: Array.from({ length: MAX_DOCUMENT_LINES + 1 }, () => ({ id: crypto.randomUUID(), kind: "single" as const, name: "x", text: "" })) };
+    const made = await ann.createDrawer("Too many items", big);
+    expect(made.res.statusCode).toBe(201);
+    const wrap = (await ann.call("GET", "/bootstrap")).json().wraps.find((w: { drawer_id: string }) => w.drawer_id === made.id);
+    const raw = toB64(new Uint8Array(await crypto.subtle.exportKey("raw", await ann.unwrap(wrap, ann.user.pub.ecdh, true))));
+    const tok = await ann.makeAccessToken("write", [{ drawer_id: made.id, key_version: 1, key: raw }]);
+    expect(tok.res.statusCode).toBe(201);
+    const agent = await connect({ token: tok.token, apiUrl: API });
+    expect((await agent.drawers()).map((d) => d.id)).not.toContain(made.id);
+    expect(agent.warnings).toContainEqual(expect.objectContaining({ code: "drawer_unreadable", drawerId: made.id }));
+    await expect(agent.mutate(made.id, [{ type: "rename_drawer", name: "Fewer" }])).rejects.toMatchObject({ code: "bad_document" });
+    // nothing was written over it, and every item is still there for a build that takes more
+    const got = (await ann.call("GET", `/drawers/${made.id}`)).json();
+    expect(got.drawer.version).toBe(1);
+    const kept = await openDocument(made.key, { record_type: "document", record_id: made.id, drawer_id: made.id, line_id: null, author_id: got.document.author_id, key_version: 1, schema_version: 1 }, { nonce: fromB64(got.document.nonce), ciphertext: fromB64(got.document.ciphertext) }) as DrawerDocument;
+    expect(kept.lines).toHaveLength(MAX_DOCUMENT_LINES + 1);
+    expect((await ann.call("DELETE", `/me/tokens/${tok.rowId}`)).statusCode).toBe(204);
   });
 
   it("a token's drawer keys sent in several requests all reach the tool (PETTY-372)", async () => {
