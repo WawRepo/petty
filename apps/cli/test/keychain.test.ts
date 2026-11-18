@@ -10,7 +10,9 @@ import { fakeKeychain } from "./fake-keychain.js";
  * The three keychain backends (PETTY-276) against stand-ins of their tools (fake-keychain.ts). What the
  * stand-ins cannot show: that the real `security`, `secret-tool` and Credential Manager behave as they
  * do. `security -i` and its quoting were tried by hand on macOS; the PowerShell script is run by pwsh
- * below where pwsh is installed, up to the call into advapi32, which only Windows has.
+ * below where pwsh is installed, up to the call into advapi32, which only Windows has. CI runs the real
+ * Credential Manager and the real Secret Service too (PETTY-510, at the end). The stand-ins are scripts
+ * that Windows cannot start by name, so Windows runs only the real one.
  */
 const fake = fakeKeychain();
 const empty = mkdtempSync(join(tmpdir(), "petty-nopath-"));
@@ -26,7 +28,7 @@ const backends: [string, () => Keychain][] = [
   ["Windows (PowerShell)", () => windowsKeychain(join(fake.dir, "powershell"), env)],
 ];
 
-describe.each(backends)("the keychain on %s (PETTY-276)", (_name, make) => {
+describe.skipIf(process.platform === "win32").each(backends)("the keychain on %s (PETTY-276)", (_name, make) => {
   it("keeps, gives back and removes a token, and never puts it on a command line", async () => {
     fake.clear();
     const kc = make();
@@ -110,4 +112,52 @@ describe("the characters a keychain is given (PETTY-276, code scanning #98)", ()
       expect([c, PLAIN.test(s)]).toEqual([c, c >= 0x20 && c <= 0x7e && !refused.has(s)]);
     }
   });
+});
+
+/**
+ * PETTY-510: the real keychain, where CI asks for it (PETTY_REAL_KEYCHAIN=1, ci.yml): Credential Manager on
+ * Windows, through Windows PowerShell 5.1 as petty starts it and through pwsh 7, and the Secret Service
+ * (GNOME Keyring) on Linux. A throw-away entry is written, read three times and removed. Each step's wall
+ * time is printed: Tab completion waits at most 1.5 s for names, and every read starts the tool anew.
+ */
+const REAL = process.env["PETTY_REAL_KEYCHAIN"] === "1";
+const THROWAWAY = "https://ci.invalid";
+const ms = (since: number) => `${Math.round(performance.now() - since)} ms`;
+
+async function realRound(label: string, kc: Keychain): Promise<void> {
+  let t = performance.now();
+  await kc.remove(THROWAWAY);
+  expect(await kc.get(THROWAWAY)).toBeNull();
+  const none = ms(t);
+  t = performance.now();
+  await kc.set(THROWAWAY, TOKEN);
+  const set = ms(t);
+  const gets: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    t = performance.now();
+    expect(await kc.get(THROWAWAY)).toBe(TOKEN);
+    gets.push(ms(t));
+  }
+  t = performance.now();
+  await kc.remove(THROWAWAY);
+  const removed = ms(t);
+  expect(await kc.get(THROWAWAY)).toBeNull();
+  console.warn(`PETTY-510 ${label}: remove + get of nothing ${none}; set ${set}; get ${gets.join(", ")}; remove ${removed}`);
+}
+
+describe.runIf(REAL && process.platform === "win32")("the real Windows Credential Manager (PETTY-510)", () => {
+  it("Windows PowerShell 5.1, as petty starts it, keeps, gives back and removes an entry", async () => {
+    await realRound("Credential Manager, powershell.exe", systemKeychain("win32", process.env));
+  }, 120_000);
+
+  const pwsh = REAL && process.platform === "win32" ? spawnSync("where.exe", ["pwsh"], { encoding: "utf8" }).stdout?.split(/\r?\n/)[0]?.trim() : undefined;
+  it.skipIf(!pwsh)("pwsh 7 runs the same script", async () => {
+    await realRound("Credential Manager, pwsh", windowsKeychain(pwsh!, process.env));
+  }, 120_000);
+});
+
+describe.runIf(REAL && process.platform === "linux")("the real Secret Service (PETTY-510)", () => {
+  it("secret-tool keeps, gives back and removes an entry, and a missing one is no error", async () => {
+    await realRound("Secret Service, secret-tool", systemKeychain("linux", process.env));
+  }, 120_000);
 });

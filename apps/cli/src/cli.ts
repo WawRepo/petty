@@ -6,7 +6,7 @@ import { foldText } from "@petty/ledger";
 import { buildServer } from "@petty/mcp/server";
 import pkg from "../package.json" with { type: "json" };
 import { COMMANDS, EXPIRES, SHELLS, commandOf, type CommandSpec } from "./commands.js";
-import { candidates, forShell, script, unquote, unquotePowerShell, type Names, type Shell } from "./complete.js";
+import { candidates, forShell, powerShellWords, script, unquote, unquotePowerShell, type Names, type Shell } from "./complete.js";
 import { CliError, type Io } from "./io.js";
 import { itemLabel, placePaths, resolveDrawer, resolveItem, splitPlace } from "./items.js";
 import { apiOf, checkToken, deviceLogin, originOf } from "./login.js";
@@ -312,7 +312,9 @@ async function mcp(io: Io, host: string | undefined, printConfig: boolean): Prom
 async function complete(args: readonly string[], io: Io): Promise<void> {
   const fromEnv = io.env["PETTY_COMPLETE_CURRENT"];
   const typed = fromEnv !== undefined ? fromEnv.replace(/^=/, "") : (args.at(-1) ?? "");
-  const before = fromEnv !== undefined ? args : args.slice(0, -1);
+  // PETTY-510: the PowerShell script sends the words before in a variable, and takes each name in base64
+  const sent = io.env["PETTY_COMPLETE_WORDS"];
+  const before = sent !== undefined ? (powerShellWords(sent) ?? []) : fromEnv !== undefined ? args : args.slice(0, -1);
   // PETTY-493: PowerShell sends the words before as their values; only the word being typed keeps its quotes
   const powershell = io.env["PETTY_COMPLETE_SHELL"] === "powershell";
   const cur = powershell ? unquotePowerShell(typed) : unquote(typed);
@@ -321,7 +323,9 @@ async function complete(args: readonly string[], io: Io): Promise<void> {
   let cached: Promise<Names | null> | null = null;
   const names = () => (cached ??= liveNames(io, prior));
   // one candidate a line: a name with a new line or another control character cannot be offered, in any shell
-  for (const c of await candidates(prior, cur, names, hosts)) if (clean(c) === c) io.out(`${forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
+  for (const c of await candidates(prior, cur, names, hosts)) {
+    if (clean(c) === c) io.out(`${sent !== undefined ? Buffer.from(c, "utf8").toString("base64") : forShell(io.env["PETTY_COMPLETE_SHELL"], c)}\n`);
+  }
 }
 
 /** Names for this Tab press: decrypted in memory with the stored login, within 1.5 s, else none. */

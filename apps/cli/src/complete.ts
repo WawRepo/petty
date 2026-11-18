@@ -86,6 +86,19 @@ export function forShell(shell: string | undefined, candidate: string): string {
   return shell === "bash" ? candidate.replace(/([\s'"\\$`!&;|<>(){}*?#~[\]])/g, "\\$1") : candidate;
 }
 
+/**
+ * PETTY-510: the words before the one being typed, as the PowerShell script sends them (a JSON list in
+ * PETTY_COMPLETE_WORDS), or null when that is not a list of strings.
+ */
+export function powerShellWords(json: string): string[] | null {
+  try {
+    const words: unknown = JSON.parse(json);
+    return Array.isArray(words) && words.every((w) => typeof w === "string") ? words : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The word being typed, as the shell passed it: bash and zsh keep the backslashes and an opening quote. */
 export const unquote = (word: string): string => word.replace(/^["']/, "").replace(/\\(.)/g, "$1");
 
@@ -171,17 +184,24 @@ Register-ArgumentCompleter -Native -CommandName petty -ScriptBlock {
         if ($_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -or $_ -is [System.Management.Automation.Language.ExpandableStringExpressionAst]) { $_.Value } else { $_.ToString() }
     })
     if ($wordToComplete -ne '' -and $prior.Count -gt 0) { $prior = @($prior | Select-Object -SkipLast 1) }
+    # PETTY-510: the words go to petty as JSON in a variable, and each name comes back as base64 of its UTF-8,
+    # never on a command line: a petty.cmd hands its command line to cmd.exe, which runs what follows a & or |
+    # in a word; Windows PowerShell drops the " in a word; and PowerShell on Windows reads what a program
+    # prints in the console's code page.
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
     $env:PETTY_COMPLETE_SHELL = 'powershell'
     $env:PETTY_COMPLETE_CURRENT = '=' + $wordToComplete
+    $env:PETTY_COMPLETE_WORDS = ConvertTo-Json -InputObject @($prior) -Compress
     try {
-        petty __complete @prior 2>$null | ForEach-Object {
+        petty __complete 2>$null | ForEach-Object {
+            $name = $utf8.GetString([Convert]::FromBase64String($_))
             # PETTY-415: a word of plain letters, digits, - and _ (a command, a flag) goes in as it is. Every other
             # candidate goes in as one single-quoted string, its quote characters doubled by PowerShell's own rule.
-            $text = if ($_ -cmatch '\\A[A-Za-z0-9_-]+\\z') { $_ } else { "'" + [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($_) + "'" }
-            [System.Management.Automation.CompletionResult]::new($text, $_, 'ParameterValue', $_)
+            $text = if ($name -cmatch '\\A[A-Za-z0-9_-]+\\z') { $name } else { "'" + [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($name) + "'" }
+            [System.Management.Automation.CompletionResult]::new($text, $name, 'ParameterValue', $name)
         }
     } finally {
-        Remove-Item Env:PETTY_COMPLETE_SHELL, Env:PETTY_COMPLETE_CURRENT -ErrorAction SilentlyContinue
+        Remove-Item Env:PETTY_COMPLETE_SHELL, Env:PETTY_COMPLETE_CURRENT, Env:PETTY_COMPLETE_WORDS -ErrorAction SilentlyContinue
     }
 }
 `;

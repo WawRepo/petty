@@ -514,6 +514,37 @@ describe("Tab completion (PETTY-274)", () => {
     }
   });
 
+  it("PowerShell: the words come in PETTY_COMPLETE_WORDS, and each name goes back in base64 (PETTY-510)", async () => {
+    const w = terminal({ env: { PETTY_TOKEN: await webToken("write"), PETTY_API_URL: `${ORIGIN}/api` } });
+    expect(await w.petty("tag", "Kitchen › Cash", "garden")).toBe(0);
+    const b64 = (s: string) => `${Buffer.from(s, "utf8").toString("base64")}\n`;
+    try {
+      const { t, petty } = terminal({ env: { PETTY_TOKEN: await webToken("read"), PETTY_API_URL: `${ORIGIN}/api`, PETTY_COMPLETE_SHELL: "powershell", PETTY_COMPLETE_CURRENT: "='Ki'", PETTY_COMPLETE_WORDS: JSON.stringify(["add"]) }, realTime: true });
+      expect(await petty("__complete")).toBe(0);
+      expect(t.out).toBe(b64("Kitchen › Cash"));
+      t.out = "";
+      t.env["PETTY_COMPLETE_CURRENT"] = "=";
+      t.env["PETTY_COMPLETE_WORDS"] = JSON.stringify(["untag", "Kitchen › Cash"]);
+      await petty("__complete");
+      expect(t.out).toBe(b64("garden"));
+      // the words on the command line are not read then
+      t.out = "";
+      t.env["PETTY_COMPLETE_WORDS"] = "[]";
+      t.env["PETTY_COMPLETE_CURRENT"] = "=au";
+      await petty("__complete", "untag", "Kitchen › Cash");
+      expect(t.out).toBe(b64("auth"));
+      // a variable that is no list of words is no words
+      for (const bad of ["not json", '["auth", 1]', '{"0": "auth"}']) {
+        t.out = "";
+        t.env["PETTY_COMPLETE_WORDS"] = bad;
+        await petty("__complete");
+        expect(t.out).toBe(b64("auth"));
+      }
+    } finally {
+      expect(await w.petty("untag", "Kitchen › Cash", "garden")).toBe(0);
+    }
+  });
+
   it("PowerShell: reads the word being typed as PowerShell does (PETTY-493)", () => {
     expect(unquotePowerShell("'Kit")).toBe("Kit");
     expect(unquotePowerShell("'Kit'")).toBe("Kit");

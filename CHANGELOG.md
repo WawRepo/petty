@@ -8,6 +8,18 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- Tab completion in PowerShell no longer puts the words typed so far on the command line of `petty`.
+  On Windows, through a `petty.cmd` as docs/cli.md advised, `cmd.exe` read that line again and ran what
+  followed a `&` or `|` in a word, such as in a drawer's name chosen by someone you share it with. The
+  finished line you run goes through `cmd.exe` too: docs/cli.md now makes `petty` a PowerShell function.
+  If you made a `petty.cmd`, delete it and add the function, then open a new PowerShell (PETTY-510).
+
+### Fixed
+- Tab completion in PowerShell on Windows offers a name with letters such as `ü` or `›` as it is, and
+  gives petty a word with a `"` before the one being typed as it is. Before, PowerShell read the names in
+  the console's code page, and the `"` could be lost on the way to petty (PETTY-510).
+
 ## [1.5.56] — 2026-11-18
 
 ### Fixed
