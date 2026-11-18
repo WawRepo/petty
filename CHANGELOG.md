@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.56] — 2026-11-18
+
 ### Fixed
 - An import refuses a file whose amounts could add up past the largest exact number ("The amounts in
   that file add up to a number too large to keep exact. Nothing was imported."). Before, it made a
@@ -1164,7 +1166,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.55...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.56...HEAD
+[1.5.56]: https://github.com/WawRepo/petty/releases/tag/v1.5.56
 [1.5.55]: https://github.com/WawRepo/petty/releases/tag/v1.5.55
 [1.5.54]: https://github.com/WawRepo/petty/releases/tag/v1.5.54
 [1.5.53]: https://github.com/WawRepo/petty/releases/tag/v1.5.53
