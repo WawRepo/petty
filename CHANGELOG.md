@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.57] — 2026-11-18
+
 ### Security
 - Tab completion in PowerShell no longer puts the words typed so far on the command line of `petty`.
   On Windows, through a `petty.cmd` as docs/cli.md advised, `cmd.exe` read that line again and ran what
@@ -1178,7 +1180,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.56...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.57...HEAD
+[1.5.57]: https://github.com/WawRepo/petty/releases/tag/v1.5.57
 [1.5.56]: https://github.com/WawRepo/petty/releases/tag/v1.5.56
 [1.5.55]: https://github.com/WawRepo/petty/releases/tag/v1.5.55
 [1.5.54]: https://github.com/WawRepo/petty/releases/tag/v1.5.54
