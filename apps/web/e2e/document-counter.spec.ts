@@ -94,12 +94,14 @@ test("PETTY-439: an older sealed copy of the trusted-keys list under a newer ver
   await expect(rowNamed(s.pageB, "Shared")).toBeVisible();
   await expect(s.pageB.getByTestId("pins-rolled-back")).toHaveCount(0);
   // the older copy again; bob reads the warning and starts a new list (PETTY-525): an empty one, not the older copy,
-  // with a counter above the one his browser saw
+  // with a counter above the one his browser saw (his app may have saved again since the real one came back)
+  const lastRev = (await readUserDoc(s.bob))!.doc.rev!;
   await serveUserDoc(bobId, kept, now.version + 6);
   await s.pageB.reload();
   await startNewTrustList(s.pageB);
   const fresh = (await readUserDoc(s.bob))!;
-  expect(fresh.doc).toMatchObject({ v: 2, rev: keptRev + 2, pins: {} });
+  expect(fresh.doc).toMatchObject({ v: 2, pins: {} });
+  expect(fresh.doc.rev).toBeGreaterThan(lastRev);
   expect(fresh.doc.drawer_revs).toBeUndefined();
   await s.pageB.reload();
   await expect(s.pageB.getByTestId("pins-rolled-back")).toHaveCount(0);
