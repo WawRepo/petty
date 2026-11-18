@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -89,6 +90,21 @@ describe("deployment", () => {
       expect(r.stderr).toContain("set PETTY_API_URL");
       expect(r.stdout).toBe("");
     } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  // PETTY-522: release.yml builds the image with the files its pack job signed and published, and run.sh
+  // builds it the same way (with one extra file, so a pass shows that the given files filled /downloads).
+  // With PETTY_IMAGE=<a release> and PETTY_IT_DOWNLOADS=<that release's files>, this checks a release.
+  const given = process.env["PETTY_IT_DOWNLOADS"];
+  it.skipIf(!given)("serves the files it was built with at /downloads, byte for byte (PETTY-522)", async () => {
+    const sha256 = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
+    const names = readdirSync(given!).sort();
+    for (const f of ["LICENSE", "THIRD_PARTY_NOTICES.md", "petty-mcp.mjs", "petty-skill.zip", "petty.mcpb", "petty.mjs"]) expect(names).toContain(f);
+    for (const name of names) {
+      const r = await fetch(`${ORIGIN}/downloads/${encodeURIComponent(name)}`);
+      expect(r.status, name).toBe(200);
+      expect(sha256(new Uint8Array(await r.arrayBuffer())), name).toBe(sha256(readFileSync(join(given!, name))));
+    }
   });
 
   it("a file of its own is that file, also once the service worker answers navigations (PETTY-279)", async () => {

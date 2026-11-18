@@ -81,10 +81,13 @@ nothing more: someone who could change the release's files could change `SHA256S
 
 **The copy your Petty serves.** Every Petty also serves these files itself, at
 `https://<your petty>/downloads/petty.mjs` (and `petty-mcp.mjs`, `petty.mcpb`, `petty-skill.zip`).
-Nothing checks that copy, and whoever controls the server controls it. It is built again inside the
-image, so it may differ from the release's file byte for byte, and then neither check above passes.
-Use it only when you trust that server the way you trust your own computer, for example your own
-Petty on a network with no way out to GitHub.
+Whoever controls the server controls that copy, so check it the same way. A released image serves the
+very files of its release: the release builds them once, signs them, and puts those bytes in the image
+(PETTY-522). So both checks above pass on the copy of a Petty that runs a release and did not change
+it. An image from before that change, or one built by hand, packed its own copy, which may differ from
+the release's file byte for byte, and then neither check passes. Without a check, for example on a
+network with no way out to GitHub, use the copy only when you trust that server the way you trust your
+own computer.
 
 **A Petty that runs its own build or a fork.** Its version is then no release of this repository, or
 its source is somewhere else, and no release holds its files. *Use Petty with AI* says so and offers

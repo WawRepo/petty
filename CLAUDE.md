@@ -146,14 +146,17 @@ A release is started by hand and never waits for CI (PETTY-254, `.github/workflo
   the operator's step and lives outside this repository.
 - **When Actions cannot run** (v1.5.1–v1.5.8 were made this way, while Actions were blocked on the then
   private repository), do the workflow's steps by hand, in its order: `node scripts/release.ts X.Y.Z
-  <date> notes.md`; commit "Release X.Y.Z" and an annotated tag `vX.Y.Z`; build from `git archive
-  vX.Y.Z` on an amd64 machine, pushed by digest with no tag (`docker buildx build --platform linux/amd64
+  <date> notes.md`; commit "Release X.Y.Z" and an annotated tag `vX.Y.Z`; pack the add-on, the skill
+  and the command line (`pnpm --filter @petty/mcp run pack && pnpm --filter @petty/cli run pack`); build
+  from `git archive vX.Y.Z` on an amd64 machine, with those files as its `/downloads` (PETTY-522) and
+  pushed by digest with no tag (`docker buildx build --platform linux/amd64
+  --build-context downloads=<repo>/apps/web/public/downloads
   --provenance=true --sbom=true --build-arg PETTY_VERSION=vX.Y.Z --metadata-file meta.json --output
   type=image,name=<image>,push-by-digest=true,name-canonical=true,push=true`; the digest is
   `containerimage.digest` in `meta.json`; releases are amd64 only since PETTY-385);
   run the upgrade test (`make integration BASE=<previous image>`); push main and the
   tag together (`git push --atomic`); only then tag the image (`docker buildx imagetools create --tag
-  <image>:vX.Y.Z <image>@<digest>`); pack the add-on, the skill and the command line, write `SHA256SUMS`,
+  <image>:vX.Y.Z <image>@<digest>`); write `SHA256SUMS` for the packed files,
   and `gh release create` with the section as notes; move `latest`; list the add-on in the MCP Registry
   (`node scripts/mcp-server-json.ts vX.Y.Z petty.mcpb > server.json`, then `mcp-publisher login github`
   and `mcp-publisher publish server.json`). An image built this way has no CI provenance (no source
