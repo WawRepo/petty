@@ -105,7 +105,7 @@ describe("assertDocumentShape: the most a document may hold (PETTY-519)", () => 
       { ...base, verifications: [null] },
     ];
     for (const d of over) expect(() => assertDocumentShape(d), JSON.stringify(d).slice(0, 80)).toThrow(/bad_document/);
-  });
+  }, 30_000); // 2.5–5.2 s on a CI runner (25,000 verifications twice): over vitest's 5 s default
 });
 
 describe("staleness (server clock only)", () => {
