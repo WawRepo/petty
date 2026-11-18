@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.60] — 2026-11-18
+
 ### Fixed
 - The server no longer stops when Postgres ends its connections: on a database restart, an update of
   the database image, or a switchover to another database server. Before, a connection that waited
@@ -1220,7 +1222,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.59...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.60...HEAD
+[1.5.60]: https://github.com/WawRepo/petty/releases/tag/v1.5.60
 [1.5.59]: https://github.com/WawRepo/petty/releases/tag/v1.5.59
 [1.5.58]: https://github.com/WawRepo/petty/releases/tag/v1.5.58
 [1.5.57]: https://github.com/WawRepo/petty/releases/tag/v1.5.57
