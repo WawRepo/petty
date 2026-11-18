@@ -131,7 +131,8 @@ describe.each(POWERSHELLS)("Tab completion in %s (PETTY-274)", (ps) => {
     try {
       const lines = ["petty untag 'Kitchen tin › Cash' ", "petty untag 'a''b' ga", 'petty untag "Shed `"box" ', "petty untag ‘x’’y’ ", "petty untag Kitchen ", "petty untag 'Kit"];
       writeFileSync(join(fake, "lines"), `${lines.join("\n")}\n`);
-      writeFileSync(join(fake, "petty.ps1"), script("powershell"));
+      // not petty.ps1: PowerShell would take that file for the command `petty`, and use no native completer
+      writeFileSync(join(fake, "complete.ps1"), script("powershell"));
       writeFileSync(join(fake, "fake.cjs"), `const fs = require("fs"), a = process.argv.slice(2);
 if (a[0] === "__complete") fs.appendFileSync(process.env.PETTY_ARGS, [...a.slice(1), process.env.PETTY_COMPLETE_CURRENT].map((w) => w + "|").join("") + "\\n");
 `);
@@ -139,7 +140,7 @@ if (a[0] === "__complete") fs.appendFileSync(process.env.PETTY_ARGS, [...a.slice
       const r = powershell(ps, `
         Get-Content -Raw -LiteralPath $env:PETTY_SCRIPT | Invoke-Expression
         foreach ($line in (Get-Content -Encoding utf8 -LiteralPath $env:PETTY_LINES)) { $null = TabExpansion2 -inputScript $line -cursorColumn $line.Length }`,
-      envWith(fake, { PETTY_SCRIPT: join(fake, "petty.ps1"), PETTY_LINES: join(fake, "lines"), PETTY_ARGS: join(fake, "args") }));
+      envWith(fake, { PETTY_SCRIPT: join(fake, "complete.ps1"), PETTY_LINES: join(fake, "lines"), PETTY_ARGS: join(fake, "args") }));
       expect(r.stderr).toBe("");
       expect(readFileSync(join(fake, "args"), "utf8").trimEnd().split("\n")).toEqual([
         "untag|Kitchen tin › Cash|=|",
@@ -168,7 +169,7 @@ if (a[0] === "__complete") fs.appendFileSync(process.env.PETTY_ARGS, [...a.slice
     const fake = mkdtempSync(join(tmpdir(), "petty-pwsh-"));
     try {
       writeFileSync(join(fake, "names"), `${names.join("\n")}\n`);
-      writeFileSync(join(fake, "petty.ps1"), script("powershell"));
+      writeFileSync(join(fake, "complete.ps1"), script("powershell"));
       writeFileSync(join(fake, "fake.cjs"), `const fs = require("fs"), a = process.argv.slice(2);
 if (a[0] === "__complete") process.stdout.write(fs.readFileSync(process.env.PETTY_NAMES));
 else for (const w of a) fs.appendFileSync(process.env.PETTY_ARGS, w + "\\n");
@@ -182,7 +183,7 @@ else for (const w of a) fs.appendFileSync(process.env.PETTY_ARGS, w + "\\n");
         foreach ($t in $texts) { Invoke-Expression ('petty add ' + $t) }
         [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
         foreach ($t in $texts) { [Console]::Out.WriteLine($t) }`,
-      envWith(fake, { PETTY_NAMES: join(fake, "names"), PETTY_SCRIPT: join(fake, "petty.ps1"), PETTY_ARGS: join(fake, "args"), PETTY_MARK: join(fake, "mark") }));
+      envWith(fake, { PETTY_NAMES: join(fake, "names"), PETTY_SCRIPT: join(fake, "complete.ps1"), PETTY_ARGS: join(fake, "args"), PETTY_MARK: join(fake, "mark") }));
       expect(r.stderr).toBe("");
       // PowerShell reads ‘ ’ ‚ ‛ as a quote too: all are doubled
       const quoted = (n: string) => (/^[A-Za-z0-9_-]+$/.test(n) ? n : `'${n.replace(/['‘’‚‛]/g, "$&$&")}'`);
