@@ -8,6 +8,19 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- "Start a new list of trusted keys", in the warning that the server sent an older copy of that list
+  or none, now saves a new, empty list, and asks first. Before, it took the server's older copy, and
+  with it a person, an access token or a drawer key that you had given up since. Only your display
+  choices carry over (totals, places, the picture, what counts in the total, item tags). Each drawer
+  that someone else shared opens again after you confirm that person's safety number. Access tokens
+  you made before get no new drawer keys: make new ones where you need them. The account's other
+  browsers take the new list without a second warning (docs/threat-model.md; PETTY-525).
+- A drawer whose key came from someone who is no longer a member, and whom you cannot confirm (for
+  example after a new list), stays closed and now says so: ask the drawer's owner to open Petty. Their
+  app replaces the key after a member leaves and wraps the new one from them, so the drawer opens once
+  you confirm the owner. Petty never takes that person's key from the server instead (PETTY-526).
+
 ## [1.5.58] — 2026-11-18
 
 ### Security

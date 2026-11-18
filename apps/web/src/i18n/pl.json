@@ -197,6 +197,7 @@
       "sender_unknown": "Klucz udostępniła osoba, której jeszcze nie znasz.",
       "sender_unconfirmed": "Klucz tej szuflady pochodzi od członka, którego numeru bezpieczeństwa nie potwierdzono. Porównaj go w sekcji Członkowie i wybierz „Numer się zgadza”, aby otworzyć szufladę.",
       "sender_left": "Klucz tej szuflady pochodzi od osoby, która opuściła tę szufladę albo została z niej usunięta, więc Petty jej nie otworzyło. Jeśli ta osoba znów jest członkiem, porównaj jej numer bezpieczeństwa w sekcji Członkowie i wybierz „Numer się zgadza”. Jeśli nie, ktoś mógł zmienić serwer.",
+      "sender_gone": "Klucz tej szuflady pochodzi od osoby, która nie jest już jej członkiem, więc Petty jej nie otworzyło. Poproś właściciela szuflady, żeby otworzył Petty: Petty wymieni wtedy klucz i da Ci nowy.",
       "sender_key_changed": "Klucz osoby, która udostępniła tę szufladę, zmienił się. Sprawdź jej numer bezpieczeństwa w sekcji Członkowie.",
       "pins_blocked": "Klucz do tej szuflady dała Ci inna osoba, a Petty nie może jej teraz sprawdzić: Twojej listy zaufanych kluczy brakuje na serwerze, jest starsza niż wcześniej albo się nie wczytała. Poszukaj ostrzeżenia na ekranie głównym albo spróbuj ponownie, gdy będziesz online.",
       "key_rolled_back": "Serwer przysłał starszy klucz tej szuflady niż ten, który już był, więc Petty jej nie otworzyło. Ktoś mógł zmienić serwer.",
@@ -787,7 +788,7 @@
     "putBackConfirm": "Przywróć",
     "putBackDone": "Twoja lista zaufanych kluczy wróciła.",
     "startNewTitle": "Założyć nową listę?",
-    "startNewBody": "Petty zapisze nową, pustą listę zaufanych kluczy. Potem potwierdź numer bezpieczeństwa każdej osoby, która udostępniła Ci szufladę, a jej szuflady znów się otworzą. Wcześniejsze kopie zostają na serwerze przez 30 dni.",
+    "startNewBody": "Petty zapisze nową, pustą listę zaufanych kluczy. Potem potwierdź numer bezpieczeństwa każdej osoby, która udostępniła Ci szufladę, a jej szuflady znów się otworzą. Tokeny dostępu utworzone wcześniej nie dostaną nowych kluczy szuflad; w razie potrzeby utwórz nowe. Wcześniejsze kopie zostają na serwerze przez 30 dni.",
     "startedNew": "Zapisano nową listę zaufanych kluczy."
   },
   "privacy": {

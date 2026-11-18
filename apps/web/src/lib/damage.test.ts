@@ -3,7 +3,7 @@ import { damageWays } from "./damage.js";
 import type { DrawerError } from "./drawers.js";
 
 const ALL: readonly DrawerError[] = [
-  "no_key", "sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced", "key_rolled_back",
+  "no_key", "sender_unknown", "sender_unconfirmed", "sender_left", "sender_gone", "sender_key_changed", "pins_blocked", "key_replaced", "key_rolled_back",
   "doc_rolled_back", "unwrap_failed", "decrypt_failed", "bad_document", "unknown_schema", "bad_entries", "sum_too_large",
 ];
 

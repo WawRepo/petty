@@ -39,7 +39,7 @@ const tokenId = (): string => toB64(crypto.getRandomValues(new Uint8Array(24))).
  * back or replaced, one from a sender not confirmed, or one that did not open. A damaged document is not
  * such a problem: the key is fine. The token gets the key later (syncTokenWraps) once the drawer is right.
  */
-const KEY_PROBLEMS: ReadonlySet<DrawerError> = new Set<DrawerError>(["no_key", "sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced", "key_rolled_back", "unwrap_failed"]);
+const KEY_PROBLEMS: ReadonlySet<DrawerError> = new Set<DrawerError>(["no_key", "sender_unknown", "sender_unconfirmed", "sender_left", "sender_gone", "sender_key_changed", "pins_blocked", "key_replaced", "key_rolled_back", "unwrap_failed"]);
 
 async function openableKeys(scope: readonly string[] | null): Promise<{ drawerId: string; keyVersion: number; key: CryptoKey }[]> {
   const me = getAuth();

@@ -63,8 +63,13 @@ export interface SeenUserDoc { readonly version: number; readonly rev?: number }
 /**
  * PETTY-439: is this copy older than one this browser saw? The server's version number says so when it is lower.
  * The counter inside says so when it is lower or gone, also under a version number that is not lower.
+ * PETTY-525: a counter above the highest this browser saw says the copy is newer, whatever number the server gives it.
+ * Only this person's key makes that counter, and the server writes the number: a server that wants an older copy taken
+ * gives it a high number, so a low one guards nothing here. A new list started on another device after the server went
+ * back to a lower number is such a copy, and this browser takes it instead of warning again.
  */
 export function userDocRolledBack(seen: SeenUserDoc, version: number, doc: { readonly rev?: number | undefined }): boolean {
+  if (seen.rev !== undefined && doc.rev !== undefined && doc.rev > seen.rev) return false;
   return version < seen.version || (seen.rev !== undefined && (doc.rev ?? 0) < seen.rev);
 }
 const seenOf = (version: number, doc: UserDocT): SeenUserDoc => (doc.rev === undefined ? { version } : { version, rev: doc.rev });
@@ -114,15 +119,38 @@ export async function startUserDoc(): Promise<void> {
   if (state.status === "idle") await loadPins();
   if (state.status === "ready" && state.version === 0) await save((doc) => doc);
 }
-/** The user read the warning and chose to start over: forget the remembered version and counter and load whatever the server has. */
+/**
+ * The user read the warning and chose to start over. PETTY-525 (the owner's choice): a new, empty list, saved with a
+ * counter above every one seen, in place of what the server has now (`saveInPlace`). Before, this took the server's
+ * older copy as it was, and with it pins removed since, a key version or a token given up since, or a member who left.
+ * Now nothing from that copy says whom or which key to trust: each drawer someone else shared opens again once this
+ * person confirms that person's safety number. Only display choices carry over (`newList`).
+ */
 export async function acknowledgeRollback(): Promise<void> {
-  const a = getAuth();
-  if (a.status !== "unlocked") return;
-  await idb.del(seenKey(a.me.id));
-  await idb.del(K_DOC);
-  set({ ...state, status: "idle", lastSeenVersion: 0 });
-  await loadPins();
-  await startUserDoc(); // PETTY-438: the new list exists on the server from now on, so the next load does not miss it again
+  if (state.status !== "rolled_back") return;
+  const base = state.version;
+  const { identity } = await key();
+  const seen = (await idb.get<SeenUserDoc>(seenKey(identity.record_id))) ?? { version: 0 };
+  try {
+    const copies = await openedCopies();
+    await saveInPlace(base, newList(state.doc), Math.max(putBackRev(seen, copies), (state.doc.rev ?? 0) + 1));
+  } catch (e) {
+    // another device may have saved since: the next try starts from what the server has then, or the warning goes
+    await loadPins().catch(() => undefined);
+    throw e;
+  }
+}
+/**
+ * PETTY-525: what a new list keeps of the one before: how this person likes the home screen (totals, places, the
+ * picture, what counts in the total) and their item tags. No pin, key version, fingerprint, member, person who left
+ * or token: each of these says whom or which key to trust. Nor `hide_verification`: after a new list there are people
+ * to confirm, and the screens for that must show.
+ */
+const DISPLAY_FIELDS = ["excluded_from_total", "hide_places", "hide_totals", "hide_picture", "places", "line_tags"] as const;
+export function newList(from: UserDocT): UserDocT {
+  const next: Record<string, unknown> = { v: 1, pins: {} };
+  for (const f of DISPLAY_FIELDS) if (from[f] !== undefined) next[f] = from[f];
+  return next as UserDocT;
 }
 /** The account was deleted: its remembered version goes with it. A sign-out keeps it (PETTY-402). */
 export async function forgetUserDocVersion(userId: string): Promise<void> { await idb.del(seenKey(userId)); }
@@ -188,12 +216,17 @@ export async function keptUserDocs(): Promise<KeptUserDoc[]> {
 export async function putBackUserDoc(copyId: string | null): Promise<void> {
   if (state.status !== "unreadable") throw new Error("user document opens");
   const base = state.version;
-  const { key: k, identity } = await key();
+  const { identity } = await key();
   const seen = (await idb.get<SeenUserDoc>(seenKey(identity.record_id))) ?? { version: 0 };
   const copies = await openedCopies();
-  const chosen = copyId === null ? { v: 1 as const, pins: {} } : restorableUserDocs(seen, copies).find((c) => c.id === copyId)?.doc;
+  const chosen = copyId === null ? newList(state.doc) : restorableUserDocs(seen, copies).find((c) => c.id === copyId)?.doc;
   if (!chosen) throw new Error("copy not restorable");
-  const next: UserDocT = { ...chosen, v: 2, rev: putBackRev(seen, copies) };
+  await saveInPlace(base, chosen, putBackRev(seen, copies));
+}
+/** PETTY-506, PETTY-525: saves `chosen` with counter `rev` in place of the server's copy at version `base`, and takes it as the newest seen here. */
+async function saveInPlace(base: number, chosen: UserDocT, rev: number): Promise<void> {
+  const { key: k, identity } = await key();
+  const next: UserDocT = { ...chosen, v: 2, rev };
   const sealed = await seal(k, identity, utf8(canonicalJson(next)));
   const body = { base_version: base, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) };
   // PETTY-513: like every save of this document, the put-back carries a custody proof

@@ -197,6 +197,7 @@
       "sender_unknown": "The key was shared by someone you have not seen before.",
       "sender_unconfirmed": "This drawer’s key comes from a member whose safety number you have not confirmed. Compare it in Members and choose “Numbers match” to open the drawer.",
       "sender_left": "This drawer’s key comes from someone who left this drawer or was removed from it, so Petty did not open it. If they are a member again, compare their safety number in Members and choose “Numbers match”. If not, the server may have been tampered with.",
+      "sender_gone": "This drawer’s key comes from someone who is no longer a member, so Petty did not open it. Ask the drawer’s owner to open Petty: it then replaces the key and gives you the new one.",
       "sender_key_changed": "The key of the person who shared this drawer has changed. Check their safety number in Members.",
       "pins_blocked": "Another person gave you the key to this drawer, and Petty cannot check that person now: your list of trusted keys is missing on the server, older than before, or did not load. Look for the warning on the home screen, or try again when you are online.",
       "key_rolled_back": "The server sent an older key for this drawer than the one you already had, so Petty did not open it. The server may have been tampered with.",
@@ -787,7 +788,7 @@
     "putBackConfirm": "Put it back",
     "putBackDone": "Your list of trusted keys is back.",
     "startNewTitle": "Start a new list?",
-    "startNewBody": "Petty saves a new, empty list of trusted keys. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again. Earlier copies stay on the server for 30 days.",
+    "startNewBody": "Petty saves a new, empty list of trusted keys. After that, confirm the safety number of each person who shared a drawer with you, and their drawers open again. Access tokens you made before get no new drawer keys; make new ones where you need them. Earlier copies stay on the server for 30 days.",
     "startedNew": "A new list of trusted keys is saved."
   },
   "privacy": {

@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { createDrawerKey, sealDocument, toB64 } from "@petty/crypto";
-import { acceptViaUi, apiClient, dbQuery, editUserDoc, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, readDrawerDoc, readUserDoc, rowNamed, signupWithKeys, test } from "./fixtures.js";
+import { acceptViaUi, apiClient, dbQuery, editUserDoc, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, readDrawerDoc, readUserDoc, rowNamed, signupWithKeys, startNewTrustList, test } from "./fixtures.js";
 
 /**
  * PETTY-439, PETTY-422: the server's version number of a sealed document is a plain column that the server
@@ -59,7 +59,7 @@ async function twoMembers(browser: import("@playwright/test").Browser) {
   return { alice, bob, ctxA, pageA, ctxB, pageB, id };
 }
 
-test("PETTY-439: an older sealed copy of the trusted-keys list under a newer version number gives the warning; a drawer someone else shared stays closed until a new list is started", async ({ browser }) => {
+test("PETTY-439: an older sealed copy of the trusted-keys list under a newer version number gives the warning; a drawer someone else shared stays closed, also after a new list is started (PETTY-525), until its sender is confirmed again", async ({ browser }) => {
   const s = await twoMembers(browser);
   const bobId = (await apiClient(s.bob)).id;
   await s.pageB.goto(`/drawers/${s.id}`);
@@ -93,14 +93,27 @@ test("PETTY-439: an older sealed copy of the trusted-keys list under a newer ver
   await s.pageB.goto("/");
   await expect(rowNamed(s.pageB, "Shared")).toBeVisible();
   await expect(s.pageB.getByTestId("pins-rolled-back")).toHaveCount(0);
-  // the older copy again; bob reads the warning and starts a new list from it
+  // the older copy again; bob reads the warning and starts a new list (PETTY-525): an empty one, not the older copy,
+  // with a counter above the one his browser saw (his app may have saved again since the real one came back)
+  const lastRev = (await readUserDoc(s.bob))!.doc.rev!;
   await serveUserDoc(bobId, kept, now.version + 6);
   await s.pageB.reload();
-  await s.pageB.getByRole("button", { name: "Start a new list of trusted keys" }).click();
-  await expect(s.pageB.getByTestId("pins-rolled-back")).toHaveCount(0);
+  await startNewTrustList(s.pageB);
+  const fresh = (await readUserDoc(s.bob))!;
+  expect(fresh.doc).toMatchObject({ v: 2, pins: {} });
+  expect(fresh.doc.rev).toBeGreaterThan(lastRev);
+  expect(fresh.doc.drawer_revs).toBeUndefined();
   await s.pageB.reload();
-  await expect(rowNamed(s.pageB, "Shared")).toBeVisible();
   await expect(s.pageB.getByTestId("pins-rolled-back")).toHaveCount(0);
+  // the drawer alice shared stays closed until bob confirms her again, then opens
+  await s.pageB.goto(`/drawers/${s.id}`);
+  await expect(s.pageB.getByRole("alert")).toContainText("comes from a member whose safety number you have not confirmed");
+  await s.pageB.getByRole("button", { name: "Members" }).click();
+  const aliceCard = s.pageB.getByTestId("member-card").filter({ hasText: "alice" });
+  await aliceCard.getByRole("button", { name: "Numbers match" }).click();
+  await expect(aliceCard).toHaveAttribute("data-status", "confirmed");
+  await s.pageB.goto(`/drawers/${s.id}`);
+  await expect(s.pageB.getByTestId("line-row").first()).toContainText("100.00 EUR");
   await s.ctxA.close(); await s.ctxB.close();
 });
 

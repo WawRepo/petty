@@ -197,6 +197,7 @@
       "sender_unknown": "Den Schlüssel hat jemand geteilt, den du noch nicht kennst.",
       "sender_unconfirmed": "Der Schlüssel dieser Schublade kommt von einem Mitglied, dessen Sicherheitsnummer du nicht bestätigt hast. Vergleiche sie unter Mitglieder und wähle „Nummern stimmen überein“, um die Schublade zu öffnen.",
       "sender_left": "Der Schlüssel dieser Schublade kommt von jemandem, der diese Schublade verlassen hat oder aus ihr entfernt wurde, deshalb hat Petty sie nicht geöffnet. Wenn die Person wieder Mitglied ist, vergleiche ihre Sicherheitsnummer unter Mitglieder und wähle „Nummern stimmen überein“. Wenn nicht, hat jemand den Server vielleicht verändert.",
+      "sender_gone": "Der Schlüssel dieser Schublade kommt von jemandem, der kein Mitglied mehr ist, deshalb hat Petty sie nicht geöffnet. Bitte die Person, der die Schublade gehört, Petty zu öffnen: Petty ersetzt dann den Schlüssel und gibt dir den neuen.",
       "sender_key_changed": "Der Schlüssel der Person, die diese Schublade geteilt hat, hat sich geändert. Prüfe ihre Sicherheitsnummer unter Mitglieder.",
       "pins_blocked": "Den Schlüssel zu dieser Schublade hat dir eine andere Person gegeben, und Petty kann sie jetzt nicht prüfen: Deine Liste vertrauenswürdiger Schlüssel fehlt auf dem Server, ist älter als zuvor oder wurde nicht geladen. Sieh nach der Warnung auf dem Startbildschirm oder versuche es erneut, wenn du online bist.",
       "key_rolled_back": "Der Server hat einen älteren Schlüssel für diese Schublade geschickt als den, den du schon hattest, deshalb hat Petty sie nicht geöffnet. Jemand hat den Server vielleicht verändert.",
@@ -787,7 +788,7 @@
     "putBackConfirm": "Zurückholen",
     "putBackDone": "Deine Liste vertrauenswürdiger Schlüssel ist zurück.",
     "startNewTitle": "Neue Liste beginnen?",
-    "startNewBody": "Petty speichert eine neue, leere Liste vertrauenswürdiger Schlüssel. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder. Frühere Kopien bleiben 30 Tage auf dem Server.",
+    "startNewBody": "Petty speichert eine neue, leere Liste vertrauenswürdiger Schlüssel. Bestätige danach die Sicherheitsnummer jeder Person, die eine Schublade mit dir geteilt hat; dann öffnen sich ihre Schubladen wieder. Zugriffstokens, die du vorher erstellt hast, bekommen keine neuen Schubladenschlüssel; erstelle bei Bedarf neue. Frühere Kopien bleiben 30 Tage auf dem Server.",
     "startedNew": "Eine neue Liste vertrauenswürdiger Schlüssel ist gespeichert."
   },
   "privacy": {

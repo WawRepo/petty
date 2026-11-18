@@ -197,6 +197,7 @@
       "sender_unknown": "La clave la compartió alguien a quien no habías visto antes.",
       "sender_unconfirmed": "La clave de este cajón viene de un miembro cuyo número de seguridad no has confirmado. Compáralo en Miembros y elige «Los números coinciden» para abrir el cajón.",
       "sender_left": "La clave de este cajón viene de alguien que salió de este cajón o fue quitado de él, así que Petty no lo abrió. Si vuelve a ser miembro, compara su número de seguridad en Miembros y elige «Los números coinciden». Si no, puede que alguien haya alterado el servidor.",
+      "sender_gone": "La clave de este cajón viene de alguien que ya no es miembro, así que Petty no lo abrió. Pide a quien es dueño del cajón que abra Petty: Petty cambia entonces la clave y te da la nueva.",
       "sender_key_changed": "La clave de la persona que compartió este cajón ha cambiado. Comprueba su número de seguridad en Miembros.",
       "pins_blocked": "La clave de este cajón te la dio otra persona, y Petty no puede comprobar ahora quién es: tu lista de claves de confianza falta en el servidor, es más antigua que antes o no se cargó. Busca el aviso en la pantalla de inicio o inténtalo de nuevo cuando tengas conexión.",
       "key_rolled_back": "El servidor envió una clave de este cajón más antigua que la que ya tenías, así que Petty no lo abrió. Puede que alguien haya alterado el servidor.",
@@ -787,7 +788,7 @@
     "putBackConfirm": "Recuperarla",
     "putBackDone": "Tu lista de claves de confianza ha vuelto.",
     "startNewTitle": "¿Empezar una lista nueva?",
-    "startNewBody": "Petty guarda una lista de claves de confianza nueva y vacía. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse. Las copias anteriores se quedan en el servidor durante 30 días.",
+    "startNewBody": "Petty guarda una lista de claves de confianza nueva y vacía. Después, confirma el número de seguridad de cada persona que compartió un cajón contigo y sus cajones volverán a abrirse. Los tokens de acceso que creaste antes no reciben claves de cajón nuevas; crea otros donde los necesites. Las copias anteriores se quedan en el servidor durante 30 días.",
     "startedNew": "Se ha guardado una lista nueva de claves de confianza."
   },
   "privacy": {
