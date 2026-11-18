@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
 import { apiPool, bgPool, maintPool } from "../src/db.js";
-import { runMaintenance } from "../src/lib/maintenance.js";
+import { runMaintenanceAlone } from "./maintenance-alone.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
 
 /**
@@ -62,7 +62,7 @@ describe("deleted accounts end once nothing needs them (PETTY-349)", () => {
     expect(await keysListed(Z.id)).toBe(200);
 
     await release();
-    const r = await runMaintenance();
+    const r = await runMaintenanceAlone();
     expect(typeof r.tombstones).toBe("number"); // the count is the run's; another file's run may have taken this one first
     expect(await rowOf(Z.id)).toBeUndefined();
     expect(await keysListed(Z.id)).toBe(404);
@@ -82,14 +82,14 @@ describe("deleted accounts end once nothing needs them (PETTY-349)", () => {
     expect((await W.postEntry(id, key, crypto.randomUUID(), "add", 250)).res.statusCode).toBe(201);
     await deleteAccount(W);
 
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(W.id)).toEqual({ deleted: true, keys: 1 });
     const listed = await O.call("GET", `/users/${W.id}/keys`);
     expect(listed.statusCode).toBe(200);
     expect(listed.json()).toMatchObject({ display_name: "Deleted user", deleted: true });
 
     await owner.query("select delete_drawer($1)", [id]);
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(W.id)).toBeUndefined();
   }, 60_000);
 
@@ -116,16 +116,16 @@ describe("deleted accounts end once nothing needs them (PETTY-349)", () => {
     const drawer = await ownDrawer("Shelf");
     await make(t, drawer);
     await release();
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(t)).toEqual({ deleted: true, keys: 1 });
     await owner.query("select delete_drawer($1)", [drawer]); // every one of these rows belongs to the drawer
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(t)).toBeUndefined();
   }, 60_000);
 
   it("a live account is never deleted, even with nothing in it", async () => {
     const L = await person("live");
-    const r = await runMaintenance();
+    const r = await runMaintenanceAlone();
     expect(typeof r.tombstones).toBe("number");
     expect(await rowOf(L.id)).toEqual({ deleted: false, keys: 1 });
     expect((await L.call("GET", "/me")).statusCode).toBe(200);
@@ -145,10 +145,10 @@ describe("deleted accounts end once nothing needs them (PETTY-349)", () => {
       expect(await rowOf(t)).toEqual({ deleted: true, keys: 1 });
       await tx.query("commit");
     } finally { tx.release(); }
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(t)).toEqual({ deleted: true, keys: 1 }); // the reference committed: kept
     await owner.query("select delete_drawer($1)", [drawer]);
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await rowOf(t)).toBeUndefined();
   }, 60_000);
 
