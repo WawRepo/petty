@@ -97,3 +97,44 @@ jobs:
         with: { node-version: 26, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: sh tests/integration/run.sh
+
+  # The command line on Windows (PETTY-510): its keychain through the real Credential Manager, and its
+  # PowerShell Tab completion in Windows PowerShell 5.1 and pwsh 7. Only the tests that need no database
+  # (the test job runs them all on Ubuntu); no e2e, no image.
+  windows:
+    if: ${{ !(github.event.repository.private && github.triggering_actor == 'dependabot[bot]') }} # as test
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 26, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: node apps/cli/test/petty510-experiment.mjs   # TEMPORARY (PETTY-510): timings only
+        continue-on-error: true
+      - run: pnpm exec vitest run test/keychain.test.ts test/shells.test.ts test/items.test.ts test/width.test.ts
+        working-directory: apps/cli
+        env: { AUTH_PROVIDER: local, PETTY_REAL_KEYCHAIN: "1" }
+      - run: pnpm exec vitest run test/invisible.test.ts
+        working-directory: packages/agent
+
+  # The command line's keychain on Linux (PETTY-510): the real secret-tool and GNOME Keyring, on a session
+  # bus of its own, with a new login keyring that has an empty password.
+  keyring:
+    if: ${{ !(github.event.repository.private && github.triggering_actor == 'dependabot[bot]') }} # as test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 26, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gnome-keyring libsecret-tools dbus-daemon
+      - run: |
+          dbus-run-session -- sh -c 'printf "" | gnome-keyring-daemon --unlock --components=secrets > /dev/null && pnpm exec vitest run test/keychain.test.ts'
+        working-directory: apps/cli
+        env: { PETTY_REAL_KEYCHAIN: "1" }
