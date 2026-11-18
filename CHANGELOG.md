@@ -19,6 +19,10 @@ number, also when it adds features, and a new minor or major is started by hand 
 - Tab completion in PowerShell on Windows offers a name with letters such as `ü` or `›` as it is, and
   gives petty a word with a `"` before the one being typed as it is. Before, PowerShell read the names in
   the console's code page, and the `"` could be lost on the way to petty (PETTY-510).
+
+## [1.5.56] — 2026-11-18
+
+### Fixed
 - An import refuses a file whose amounts could add up past the largest exact number ("The amounts in
   that file add up to a number too large to keep exact. Nothing was imported."). Before, it made a
   drawer that opened as damaged. It also checks every drawer in the file before it makes the first, so
@@ -1174,7 +1178,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.55...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.56...HEAD
+[1.5.56]: https://github.com/WawRepo/petty/releases/tag/v1.5.56
 [1.5.55]: https://github.com/WawRepo/petty/releases/tag/v1.5.55
 [1.5.54]: https://github.com/WawRepo/petty/releases/tag/v1.5.54
 [1.5.53]: https://github.com/WawRepo/petty/releases/tag/v1.5.53
