@@ -6,7 +6,7 @@ import Fastify, { LogController, type FastifyInstance } from "fastify";
 import { config } from "./config.js";
 import type { HealthResponse } from "@petty/protocol";
 import { z, ZodError } from "zod";
-import { dbIsUp } from "./db.js";
+import { dbIsUp, logPoolErrors } from "./db.js";
 import { ApiError, notFound, SECURITY_REFUSALS } from "./lib/errors.js";
 import { sessionPlugin } from "./lib/session.js";
 import { securityHeaders } from "./lib/headers.js";
@@ -56,6 +56,7 @@ export function buildApp() {
     trustProxy: config.trustProxy,
   });
 
+  logPoolErrors(app.log); // PETTY-530
   warnUntrustedProxy(app, { trustProxy: config.trustProxy, clientIpHeader: config.clientIpHeader }); // PETTY-419
   app.register(cookie);
   tracingHooks(app);

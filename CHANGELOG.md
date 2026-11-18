@@ -8,6 +8,13 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Fixed
+- The server no longer stops when Postgres ends its connections: on a database restart, an update of
+  the database image, or a switchover to another database server. Before, a connection that waited
+  unused in the pool got that error, and the API process exited (about 8 s down until it started again).
+  Now it logs "database connection lost" with the error code and opens a new connection for the next
+  request (PETTY-530).
+
 ## [1.5.59] — 2026-11-18
 
 ### Security
