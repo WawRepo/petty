@@ -22,7 +22,7 @@ vi.mock("./session.js", () => ({ getAuth: () => mem.auth }));
 vi.mock("react", () => ({ useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot() }));
 
 // `usePins` under a plain name: outside React it is only a read of the store
-import { acceptedDocRev, acknowledgeRollback, confirmPin, forgetSelfKey, keptUserDocs, leftDrawerAt, loadPins, noteMembers, parseUserDoc, pinnedSigningKeys, placesShown, putBackRev, putBackUserDoc, recordDrawerVersions, recordLeft, restorableUserDocs, rotationOwed, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack, type KeptUserDoc } from "./pins.js";
+import { acceptedDocRev, acknowledgeRollback, confirmPin, forgetSelfKey, keptUserDocs, leftDrawerAt, loadPins, newList, noteMembers, parseUserDoc, pinnedSigningKeys, placesShown, putBackRev, putBackUserDoc, recordDrawerVersions, recordLeft, restorableUserDocs, rotationOwed, setPlacesShown, setTotalsShown, startUserDoc, usePins as pinsNow, userDocRolledBack, type KeptUserDoc } from "./pins.js";
 
 const USER = "5b0c6a0e-6f0e-4d7e-9a57-0d6c1f6a2a11";
 const DRAWER = "d1000000-0000-4000-8000-000000000001";
@@ -113,6 +113,16 @@ describe("the rules", () => {
     expect(userDocRolledBack({ version: 7, rev: 4 }, 12, { rev: 3 })).toBe(true);
     expect(userDocRolledBack({ version: 7, rev: 4 }, 12, {})).toBe(true);
     expect(userDocRolledBack({ version: 0 }, 1, {})).toBe(false); // a browser new to the account takes what it is given
+    // PETTY-525: a counter above the highest seen is newer, whatever number the server gives it; an equal one under a lower number is not
+    expect(userDocRolledBack({ version: 7, rev: 4 }, 3, { rev: 5 })).toBe(false);
+    expect(userDocRolledBack({ version: 7, rev: 4 }, 3, { rev: 4 })).toBe(true);
+  });
+
+  it("a new list keeps only display choices: nothing that says whom or which key to trust, and verification shows (PETTY-525)", () => {
+    const places = [{ name: "Home", children: [] }];
+    const full = parseUserDoc({ v: 2, rev: 9, pins: { someone: PIN }, excluded_from_total: ["d"], hide_places: true, hide_verification: true, hide_totals: true, hide_picture: true, places, line_tags: ["x"], tokens: [{ id: "t", pub_fp: "f", scope: null, expires_at: null }], drawer_keys: { d: 2 }, drawer_docs: { d: 3 }, drawer_key_fps: { d: { "2": "fp" } }, drawer_members: { d: ["u"] }, drawer_left: { d: { u: 1 } }, drawer_revs: { d: 4 } });
+    expect(newList(full)).toEqual({ v: 1, pins: {}, excluded_from_total: ["d"], hide_places: true, hide_totals: true, hide_picture: true, places, line_tags: ["x"] });
+    expect(newList({ v: 1, pins: { someone: PIN } })).toEqual({ v: 1, pins: {} });
   });
 });
 
@@ -249,7 +259,7 @@ describe("the user document against a server that kept older copies", () => {
     expect(placesShown()).toBe(true);
   });
 
-  it("starting a new list forgets the remembered counter too, and gives a copy without one its counter", async () => {
+  it("starting a new list saves an empty one in place of the older copy, with a counter above every one seen (PETTY-525)", async () => {
     server.row = await sealedRow(before, 6);
     await loadPins(); // version 7, rev 1
     await setPlacesShown(false); // version 8, rev 2
@@ -258,9 +268,45 @@ describe("the user document against a server that kept older copies", () => {
     await loadPins();
     expect((status()).status).toBe("rolled_back");
     await acknowledgeRollback();
-    expect(status()).toMatchObject({ status: "ready", rev: 1 });
-    expect(await onServer()).toEqual({ version: 9, doc: { ...before, v: 2, rev: 1 } });
-    expect(seen()).toEqual({ version: 9, rev: 1 });
+    // the pin and the drawer version of the older copy are gone; its display choice stays
+    expect(status()).toMatchObject({ status: "ready", rev: 3 });
+    expect(await onServer()).toEqual({ version: 9, doc: { v: 2, rev: 3, pins: {}, hide_totals: true } });
+    expect(seen()).toEqual({ version: 9, rev: 3 });
+    // only while the warning stands
+    const puts = server.puts;
+    await acknowledgeRollback();
+    expect(server.puts).toBe(puts);
+  });
+
+  it("a new list started after the server lost the document is taken by another browser that saw a higher number (PETTY-525)", async () => {
+    await startUserDoc();
+    await setPlacesShown(false);
+    await setTotalsShown(false); // version 3, rev 3
+    const other = seen(); // what a second browser of the account remembers
+    server.row = null; // the server loses the document
+    reload();
+    await loadPins();
+    expect(status().status).toBe("rolled_back");
+    await acknowledgeRollback();
+    expect(await onServer()).toEqual({ version: 1, doc: { v: 2, rev: 4, pins: {} } });
+    newBrowser();
+    mem.idb.set(`userdoc.${USER}`, other);
+    await loadPins();
+    expect(status()).toMatchObject({ status: "ready", rev: 4 });
+  });
+
+  it("a new list does not overwrite a copy another device saved meanwhile; that copy is taken instead (PETTY-525)", async () => {
+    await startUserDoc();
+    await setPlacesShown(false); // version 2, rev 2
+    server.row = await sealedRow({ v: 2, rev: 1, pins: {} }, 7); // older inside
+    reload();
+    await loadPins();
+    expect(status()).toMatchObject({ status: "rolled_back", olderInside: true });
+    const newer = await sealedRow({ v: 2, rev: 5, pins: { someone: PIN } }, 9);
+    server.row = newer;
+    await expect(acknowledgeRollback()).rejects.toThrow();
+    expect(server.row).toBe(newer);
+    expect(status()).toMatchObject({ status: "ready", rev: 5 });
   });
 
   it("with no connection, the copy this browser kept is used when it is the newest it saw", async () => {

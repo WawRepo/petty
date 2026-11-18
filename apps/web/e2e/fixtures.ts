@@ -271,6 +271,13 @@ export async function openSettings(page: Page): Promise<void> {
   await page.getByRole("dialog").getByRole("button", { name: "Settings" }).click();
 }
 
+/** PETTY-525: the trusted-keys warning's "start a new list", and its confirm. Waits until the warning is gone. */
+export async function startNewTrustList(page: Page): Promise<void> {
+  await page.getByTestId("pins-rolled-back").getByRole("button", { name: "Start a new list of trusted keys" }).click();
+  await page.getByRole("dialog", { name: "Start a new list?" }).getByRole("button", { name: "Start a new list of trusted keys" }).click();
+  await expect(page.getByTestId("pins-rolled-back")).toHaveCount(0);
+}
+
 /** A drawer's row on Home, or an item's row in a drawer, by its exact name. The rows have no aria-label:
  * a button is named by what it shows, name first (PETTY-375, axe's label-content-name-mismatch). */
 export function rowNamed(page: Page, name: string): Locator {

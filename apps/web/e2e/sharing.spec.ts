@@ -1,5 +1,5 @@
 import { unwrapDrawerKey, openEntryUnverified, fromB64, AuthTagMismatch } from "@petty/crypto";
-import { acceptViaUi, apiClient, dbQuery, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, rowNamed, signupWithKeys, test } from "./fixtures.js";
+import { acceptViaUi, apiClient, dbQuery, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, rowNamed, signupWithKeys, startNewTrustList, test } from "./fixtures.js";
 
 test("invite by email with safety number; no access before accept; reader sees everything but cannot export; emails go out", async ({ browser }) => {
   const alice = await signupWithKeys("alice");
@@ -228,8 +228,7 @@ test("a lost or rolled-back trusted-keys document is loud, suspends first-sight 
   await pageA.keyboard.press("Escape");
   // acknowledge → back to normal
   await pageA.goto("/");
-  await pageA.getByRole("button", { name: "Start a new list of trusted keys" }).click();
-  await expect(pageA.getByTestId("pins-rolled-back")).toHaveCount(0);
+  await startNewTrustList(pageA);
   await ctxA.close(); await ctxB.close();
 });
 
@@ -258,8 +257,7 @@ test("a 401 or a sign-out keeps the trusted-keys document's version, so a docume
   await expect(pageA.getByTestId("member-card").filter({ hasText: "bob" }).getByTestId("pin-status")).not.toHaveText("Compared");
   // the user starts over; a normal sign-out and sign-in after that shows no warning
   await pageA.goto("/");
-  await pageA.getByRole("button", { name: "Start a new list of trusted keys" }).click();
-  await expect(pageA.getByTestId("pins-rolled-back")).toHaveCount(0);
+  await startNewTrustList(pageA);
   await openSettings(pageA);
   await pageA.getByTestId("settings-sign-out").click();
   const loggedOut = pageA.waitForResponse((r) => r.url().endsWith("/auth/logout"));

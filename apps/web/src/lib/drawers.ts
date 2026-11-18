@@ -26,7 +26,7 @@ import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, si
 import { NetworkError } from "./api.js";
 void usePins;
 
-export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_left" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
+export type DrawerError = "no_key" | "sender_unknown" | "sender_unconfirmed" | "sender_left" | "sender_gone" | "sender_key_changed" | "pins_blocked" | "key_replaced" | "key_rolled_back" | "doc_rolled_back" | "unwrap_failed" | "decrypt_failed" | "bad_document" | "unknown_schema" | "bad_entries" | "sum_too_large";
 export interface RotationProgress { readonly total: number; readonly done: number }
 export interface Transfer { readonly drawer_id: string; readonly from_user_id: string; readonly to_user_id: string }
 export type EntryProblemCode = "decrypt_failed" | "signature_invalid" | "author_key_missing";
@@ -163,7 +163,14 @@ export async function expectedSender(wrap: DrawerKeyWrap, members: readonly Memb
   const pin = getPin(wrap.sender_id);
   if (pin && confirmedFor(wrap.drawer_id, wrap.sender_id, wrap.key_version)) return { pub: pin.ecdh };
   const accepted = acceptedKeyFingerprint(wrap.drawer_id, wrap.key_version) !== null || acceptedKeyVersion(wrap.drawer_id) === wrap.key_version;
-  if (!accepted) return { error: !pin ? "sender_unknown" : pin.confirmed_at && leftDrawerAt(wrap.drawer_id, wrap.sender_id) !== null ? "sender_left" : "sender_unconfirmed" };
+  if (!accepted) {
+    if (pin?.confirmed_at && leftDrawerAt(wrap.drawer_id, wrap.sender_id) !== null) return { error: "sender_left" };
+    // PETTY-526: someone no longer in the drawer, whom this person cannot confirm there, for example after a new list of
+    // trusted keys (PETTY-525). The app does not take their key from the server. A departure makes the key turn: the
+    // owner's app (or another writer's) wraps a new key from a member this person can confirm (rotation.ts).
+    if (!members.some((m) => m.user_id === wrap.sender_id)) return { error: "sender_gone" };
+    return { error: !pin ? "sender_unknown" : "sender_unconfirmed" };
+  }
   if (pin) return { pub: pin.ecdh };
   const m = members.find((x) => x.user_id === wrap.sender_id);
   if (m?.keys) return { pub: m.keys.ecdh_pub };
@@ -227,7 +234,7 @@ async function keyResolver(d: DrawerSummary, wraps: readonly DrawerKeyWrap[], me
 function errorCode(e: unknown): DrawerError {
   if (e instanceof PettyCryptoError && e.code === "UnknownSchemaVersion") return "unknown_schema";
   // PETTY-438: an older key that is not taken, while the document still waits for its re-seal, says why
-  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
+  if (e instanceof Error && ["sender_unknown", "sender_unconfirmed", "sender_left", "sender_gone", "sender_key_changed", "pins_blocked", "key_replaced"].includes(e.message)) return e.message as DrawerError;
   // PETTY-500: rows of a line out of order or repeated are the entries' fault, not the document's: an earlier version does not help
   if (e instanceof LedgerError && ["bad_seq", "duplicate_seq", "duplicate_entry", "line_mismatch"].includes(e.code)) return "bad_entries";
   if (e instanceof LedgerError) return "bad_document";

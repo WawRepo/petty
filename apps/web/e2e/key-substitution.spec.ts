@@ -1,6 +1,6 @@
 import type { Browser, Page } from "@playwright/test";
 import { exportPublicKeys, generateDrawerKey, generateUserKeys, safetyNumber, signingKeyId, wrapDrawerKey } from "@petty/crypto";
-import { acceptViaUi, apiClient, dbQuery, editUserDoc, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, readUserDoc, rowNamed, shareViaApi, signupWithKeys, test, type TestUserWithKeys } from "./fixtures.js";
+import { acceptViaUi, apiClient, dbQuery, editUserDoc, expect, inviteViaUi, loginAndUnlock, makeDrawer, openSettings, readUserDoc, rowNamed, shareViaApi, signupWithKeys, startNewTrustList, test, type TestUserWithKeys } from "./fixtures.js";
 
 /**
  * The security review of v1.5.26 (PETTY-395): a server or database that hands out keys of its own must not
@@ -291,6 +291,65 @@ test("PETTY-438: the first key of a drawer, from a person not confirmed yet, ope
   await ctxA.close(); await ctxB.close();
 });
 
+test("PETTY-526: after a new list, a key from someone who left stays closed and says so; the owner's app gives a new key, which opens once its sender is confirmed", async ({ browser }) => {
+  const carol = await signupWithKeys("carol");
+  const alice = await signupWithKeys("alice");
+  const bob = await signupWithKeys("bob");
+  const ctxC = await browser.newContext(); const pageC = await ctxC.newPage();
+  const ctxA = await browser.newContext(); const pageA = await ctxA.newPage();
+  const ctxB = await browser.newContext(); const pageB = await ctxB.newPage();
+  // carol makes the drawer and gives alice and bob its key; then she hands it to alice and leaves
+  await loginAndUnlock(pageC, carol);
+  const id = await makeDrawer(pageC, "Shared");
+  await inviteViaUi(pageC, id, alice, "write");
+  await inviteViaUi(pageC, id, bob, "write");
+  await loginAndUnlock(pageA, alice);
+  await acceptViaUi(pageA);
+  await loginAndUnlock(pageB, bob);
+  await acceptViaUi(pageB);
+  await pageB.goto(`/drawers/${id}`);
+  await expect(pageB.getByTestId("line-row").first()).toContainText("100.00 EUR");
+  await pageC.goto(`/drawers/${id}/members`);
+  await pageC.getByTestId("member-card").filter({ hasText: "alice" }).getByRole("button", { name: "Make owner" }).click();
+  await pageA.goto("/");
+  await pageA.getByRole("button", { name: "Take ownership" }).click();
+  await expect(pageA.getByTestId("pending-transfer")).toHaveCount(0);
+  await pageC.goto(`/drawers/${id}/members`);
+  await pageC.getByRole("button", { name: "Leave drawer" }).click();
+  await pageC.getByRole("dialog").getByRole("button", { name: "Leave drawer" }).click();
+  await expect(pageC.getByTestId("home")).toHaveAttribute("data-status", "ready");
+  await ctxC.close();
+  const [before] = (await dbQuery("select key_version from drawers where id = $1", [id])) as { key_version: number }[];
+
+  // bob's list is lost, and he starts a new one: carol's key is not taken, and the screen says why
+  await ctxB.close();
+  await dbQuery("delete from user_docs where user_id = $1", [(await apiClient(bob)).id]);
+  const ctxN = await browser.newContext(); const pageN = await ctxN.newPage();
+  await loginAndUnlock(pageN, bob);
+  await startNewTrustList(pageN);
+  await pageN.goto(`/drawers/${id}`);
+  await expect(pageN.getByRole("alert")).toContainText("comes from someone who is no longer a member");
+
+  // alice, the owner, confirms bob and opens Petty: her app replaces the key, wrapped by her
+  await pageA.goto(`/drawers/${id}/members`);
+  const bobCard = pageA.getByTestId("member-card").filter({ hasText: "bob" });
+  await bobCard.getByRole("button", { name: "Numbers match" }).click();
+  await expect(bobCard).toHaveAttribute("data-status", "confirmed");
+  await pageA.goto("/");
+  await expect.poll(async () => ((await dbQuery("select key_version, rotation_needed from drawers where id = $1", [id])) as { key_version: number; rotation_needed: boolean }[])[0], { timeout: 15_000 }).toEqual({ key_version: before!.key_version + 1, rotation_needed: false });
+
+  // bob now has a key from alice: closed until he confirms her, then open
+  await pageN.goto(`/drawers/${id}`);
+  await expect(pageN.getByRole("alert")).toContainText(UNCONFIRMED);
+  await pageN.getByRole("button", { name: "Members" }).click();
+  const aliceCard = pageN.getByTestId("member-card").filter({ hasText: "alice" });
+  await aliceCard.getByRole("button", { name: "Numbers match" }).click();
+  await expect(aliceCard).toHaveAttribute("data-status", "confirmed");
+  await pageN.goto(`/drawers/${id}`);
+  await expect(pageN.getByTestId("line-row").first()).toContainText("100.00 EUR");
+  await ctxA.close(); await ctxN.close();
+});
+
 test("PETTY-438: an account with drawers and no user document: own drawers open at once, a shared one after a new list is started and its sender confirmed; another browser then opens both", async ({ browser }) => {
   const s = await sharedDrawer(browser);
   await s.pageB.goto("/");
@@ -307,8 +366,7 @@ test("PETTY-438: an account with drawers and no user document: own drawers open 
   await pageN.goto(`/drawers/${s.id}`);
   await expect(pageN.getByRole("alert")).toContainText(BLOCKED);
   await pageN.goto("/");
-  await pageN.getByRole("button", { name: "Start a new list of trusted keys" }).click();
-  await expect(pageN.getByTestId("pins-rolled-back")).toHaveCount(0);
+  await startNewTrustList(pageN);
   await expect(rowNamed(pageN, "Own")).toContainText("100.00 EUR");
   await pageN.goto(`/drawers/${s.id}`);
   await expect(pageN.getByRole("alert")).toContainText(UNCONFIRMED);

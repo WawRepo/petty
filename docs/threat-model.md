@@ -203,7 +203,8 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   loaded plus one. Each browser remembers the newest version number and the highest counter it saw,
   also across a sign-out or an expired session (PETTY-402), and warns loudly when the server has none,
   a lower number, or a copy whose counter is lower or gone: an older sealed copy under a newer number
-  is caught too. A document from before the counter gets its first one the next time the web app loads
+  is caught too. A counter higher than any it saw wins over a lower number (PETTY-525): only your key
+  makes the counter, while the server writes the number. A document from before the counter gets its first one the next time the web app loads
   it; until that load only the number is compared. A document with a counter says so inside (`v` 2): a
   web app from before the counter does not open it and saves nothing, so it cannot put a copy without
   the counter, or without a field it does not know, in its place. An account with
@@ -211,8 +212,14 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   invitation saves the inviter's pin), so "none" also warns on a browser that never used the account.
   Until you acknowledge the warning, and whenever the document cannot be loaded, the app opens only
   drawer keys that you wrapped yourself, pins nothing on first sight, wraps no key and starts or
-  continues no key rotation. When you start a new list, the drawers that others shared open again
-  after you confirm their safety number. A new list remembers no key versions yet, so for a drawer
+  continues no key rotation. Starting a new list saves an empty one (PETTY-525): nothing from the
+  copy the server sent counts, neither a pin nor an accepted key version, a person who left, or an
+  access token; only display choices carry over. Its counter is above every counter this browser saw
+  and every copy the server keeps, so the account's other browsers take it without a new warning. The
+  drawers that others shared open again after you confirm their safety number, and access tokens made
+  before get no new drawer keys. A key wrapped by someone who has left the drawer stays closed: the app
+  does not take that person's key from the server's list, and says so (PETTY-526). Each departure makes
+  the key turn, so the owner's app, or another writer's, wraps a new key from a member you can confirm. A new list remembers no key versions yet, so for a drawer
   whose keys you made yourself it cannot tell an older key from the newest. With no connection, the
   app uses the sealed copy that this device kept from its last load. A browser that never used the
   account has no older version to compare with: it takes the copy the server gives it.

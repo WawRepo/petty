@@ -10,20 +10,32 @@ import { dateLocale } from "../lib/time.js";
 /** Shown when the server lost or rolled back the user's trusted-keys document (security review SR-3). */
 export function PinsWarning() {
   const { t } = useTranslation();
+  const toast = useToast();
   const pins = usePins();
   // PETTY-438: what the warning said when "start over" was chosen. It stays on screen, busy, until the new list is
   // saved and the drawers are loaded again; a page left before that shows the warning once more.
   const [busy, setBusy] = useState<null | { missing: boolean; inside: boolean; seen: number; server: number }>(null);
+  // PETTY-525: a new list is empty, so the person must confirm people again; it is asked first, as for a list that does not open
+  const [ask, setAsk] = useState(false);
   if (pins.status === "unreadable") return <UnreadableWarning />;
   if (pins.status !== "rolled_back" && !busy) return null;
   // no list on the server and none seen here (a browser new to the account) is said in its own words
   // PETTY-439: an older copy that the server numbers as not older is told by the counter inside it; the two numbers would say the opposite
   const shown = busy ?? { missing: pins.lastSeenVersion === 0 && pins.version === 0, inside: pins.olderInside === true, seen: pins.lastSeenVersion, server: pins.version };
+  const startOver = async () => {
+    setBusy(shown);
+    try {
+      await acknowledgeRollback();
+      toast(t("pins.startedNew"));
+      await loadAll().catch(() => undefined);
+    } catch { toast(t("errors.unknown")); } finally { setBusy(null); }
+  };
   return (
     <div className="warn-box" role="alert" data-testid="pins-rolled-back">
       <p className="m0 fw700">{t(shown.missing ? "pins.missingTitle" : "pins.rolledBackTitle")}</p>
       <p className="hint my6">{shown.missing ? t("pins.missing") : shown.inside ? t("pins.rolledBackInside") : t("pins.rolledBack", { seen: shown.seen, server: shown.server })}</p>
-      <Button variant="secondary" busy={busy !== null} onClick={() => { setBusy(shown); void acknowledgeRollback().then(() => loadAll()).catch(() => undefined).finally(() => setBusy(null)); }}>{t("pins.startOver")}</Button>
+      <Button variant="secondary" busy={busy !== null} onClick={() => setAsk(true)}>{t("pins.startOver")}</Button>
+      <ConfirmSheet open={ask} title={t("pins.startNewTitle")} body={t("pins.startNewBody")} confirmLabel={t("pins.startOver")} onClose={() => setAsk(false)} onConfirm={startOver} />
     </div>
   );
 }
