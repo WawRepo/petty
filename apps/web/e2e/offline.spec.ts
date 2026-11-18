@@ -1,5 +1,7 @@
+import { randomBytes, randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "@playwright/test";
-import { dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings, rowNamed } from "./fixtures.js";
+import { exportPublicKeys, fromB64, generateUserKeys, hashEntry, openEntryUnverified, sealEntry, signDelegation, signEntry, signingKeyId, toB64, unwrapDrawerKey, type DrawerKeyWrapV1, type EntryPayloadV1 } from "@petty/crypto";
+import { apiClient, dbQuery, expect, loginAndUnlock, shareViaApi, signupWithKeys, test, openSettings, rowNamed, type TestUserWithKeys } from "./fixtures.js";
 
 async function makeLine(page: Page, drawer: string): Promise<{ drawerId: string; lineId: string }> {
   await page.getByRole("button", { name: "Add drawer" }).click();
@@ -160,5 +162,69 @@ test("offline reload: unlock works with no network, drawers come from the cipher
   });
   await page.reload(); // still unlocked within 24 h: no prompt
   await expect(page.getByTestId("outbox-old")).toContainText("waited more than a day");
+  await ctx.close();
+});
+
+/**
+ * A tool's entry, as the command line or the AI add-on makes one (PETTY-184): the user's account key signs a delegation
+ * for the token's own key, and the token's key signs an "add" of `amount` (minor units) on the line's newest entry.
+ */
+async function toolAdds(user: TestUserWithKeys, drawerId: string, amount: number): Promise<{ entryId: string }> {
+  const api = await apiClient(user);
+  const boot = (await api.call("GET", "/bootstrap")).json as { wraps: DrawerKeyWrapV1[]; entries: Array<{ id: string; drawer_id: string; line_id: string; author_id: string; key_version: number; nonce: string; ciphertext: string }> };
+  const wrap = boot.wraps.filter((w) => w.drawer_id === drawerId).at(-1)!;
+  const key = await unwrapDrawerKey(wrap, user.keys.ecdh.privateKey, { drawer_id: drawerId, key_version: wrap.key_version, senderEcdhPublicB64: user.ecdhPub });
+  const last = boot.entries.filter((e) => e.drawer_id === drawerId).at(-1)!;
+  const head = await openEntryUnverified(key, { record_type: "entry", record_id: last.id, drawer_id: drawerId, line_id: last.line_id, author_id: last.author_id, key_version: last.key_version, schema_version: 1 }, { nonce: fromB64(last.nonce), ciphertext: fromB64(last.ciphertext) });
+  const tool = await generateUserKeys();
+  const toolPub = (await exportPublicKeys(tool)).ecdsa;
+  const accountPub = (await exportPublicKeys(user.keys)).ecdsa;
+  const delegation = await signDelegation(user.keys.ecdsa.privateKey, { user_id: api.id, account_sig_key_id: await signingKeyId(accountPub), token_ecdsa_pub: toolPub, created_at: new Date().toISOString(), expires_at: null });
+  await dbQuery("insert into access_tokens (user_id, name, token_hash, role, bundle_nonce, bundle_ciphertext, ecdsa_pub, sig_key_id, delegation) values ($1, 'tool', $2, 'write', 'AAAA', 'AAAA', $3, $4, $5)",
+    [api.id, randomBytes(32), toolPub, delegation.token_sig_key_id, JSON.stringify(delegation)]);
+  const payload: EntryPayloadV1 = {
+    v: 1, id: randomUUID(), drawer_id: drawerId, line_id: last.line_id, op: "add", amount, exponent: 2, comment: "", logged_at: new Date().toISOString(),
+    reverses: null, prev_hash: await hashEntry(head), delta_hint: null, author_id: api.id, sig_key_id: delegation.token_sig_key_id,
+  };
+  const sealed = await sealEntry(key, { record_type: "entry", record_id: payload.id, drawer_id: drawerId, line_id: last.line_id, author_id: api.id, key_version: wrap.key_version, schema_version: 1 }, await signEntry(payload, tool.ecdsa.privateKey));
+  const r = await api.call("POST", `/drawers/${drawerId}/entries`, { id: payload.id, line_id: last.line_id, is_checkpoint: false, reverses_entry_id: null, key_version: wrap.key_version, schema_version: 1, nonce: toB64(sealed.nonce), ciphertext: toB64(sealed.ciphertext) });
+  expect(r.status).toBe(201);
+  return { entryId: payload.id };
+}
+
+test("PETTY-523: a tool's entry checks also after a reload with no network, and a revocation the app saw stays, online and offline", async ({ browser }) => {
+  const alice = await signupWithKeys("alice");
+  const ctx = await browser.newContext(); const page = watched(await ctx.newPage());
+  await loginAndUnlock(page, alice);
+  const { drawerId, lineId } = await makeLine(page, "Toolbox");
+  const { entryId } = await toolAdds(alice, drawerId, 500);
+  const line = `/drawers/${drawerId}/lines/${lineId}`;
+  const counted = async (balance: string, rows: number, problems: string | null) => {
+    await expect(page.getByTestId("line-balance")).toHaveText(balance);
+    await expect(page.getByTestId("entry-row")).toHaveCount(rows);
+    if (problems === null) await expect(page.getByTestId("warn-problems")).toHaveCount(0);
+    else await expect(page.getByTestId("warn-problems")).toContainText(problems);
+  };
+  await page.goto(line);
+  await counted("105.00", 2, null);
+  // no network: the reload starts from the copy kept on this device, the delegation included
+  await page.route("**/api/**", (r) => r.abort("internetdisconnected"));
+  await page.reload(); // still unlocked within 24 h: no prompt
+  await expect(page.getByTestId("offline-banner")).toContainText("Showing what was loaded last time");
+  await counted("105.00", 2, null);
+  // the token is revoked before the server took the entry: online, the entry is out of the balance
+  await page.unroute("**/api/**");
+  await dbQuery("update access_tokens set revoked_at = (select received_at - interval '1 second' from entries where id = $1) where user_id = (select author_id from entries where id = $1)", [entryId]);
+  await page.reload();
+  await counted("100.00", 1, "1 entry could not be read or verified");
+  // the server then forgets the revocation: the app does not
+  await dbQuery("update access_tokens set revoked_at = null where user_id = (select author_id from entries where id = $1)", [entryId]);
+  await page.reload();
+  await counted("100.00", 1, "1 entry could not be read or verified");
+  // and neither does the copy kept for a start with no network
+  await page.route("**/api/**", (r) => r.abort("internetdisconnected"));
+  await page.reload();
+  await expect(page.getByTestId("offline-banner")).toContainText("Showing what was loaded last time");
+  await counted("100.00", 1, "1 entry could not be read or verified");
   await ctx.close();
 });
