@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.58] — 2026-11-18
+
 ### Security
 - A released image serves at `/downloads` the very files of its GitHub Release (`petty.mjs`,
   `petty-mcp.mjs`, `petty.mcpb`, `petty-skill.zip`): the release builds them once, signs them, and puts
@@ -1196,7 +1198,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.57...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.58...HEAD
+[1.5.58]: https://github.com/WawRepo/petty/releases/tag/v1.5.58
 [1.5.57]: https://github.com/WawRepo/petty/releases/tag/v1.5.57
 [1.5.56]: https://github.com/WawRepo/petty/releases/tag/v1.5.56
 [1.5.55]: https://github.com/WawRepo/petty/releases/tag/v1.5.55
