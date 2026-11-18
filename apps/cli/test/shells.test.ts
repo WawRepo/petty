@@ -191,10 +191,12 @@ else for (const w of a) fs.appendFileSync(process.env.PETTY_ARGS, w + "\\n");
       // on Windows the function the docs tell PowerShell users to make: through a petty.cmd, cmd.exe would read
       // the finished line, and run what follows the & or | in a name
       const define = petty(windows ? "function" : "script", fake, join(fake, "fake.cjs"));
-      // the candidates are kept, each finished line is run, and only then printed, in UTF-8: what the Tab
-      // got is read in PowerShell's own code page, as a person's PowerShell reads it
+      // Tab runs in code page 852, as a Polish Windows console has it (CI's Windows has UTF-8): a name sent
+      // as it is would come back as other letters (PETTY-510). The candidates are kept, each finished line
+      // is run, and only then are they printed, in UTF-8.
       const r = powershell(ps, `${define}
         Get-Content -Raw -LiteralPath $env:PETTY_SCRIPT | Invoke-Expression
+        [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(852)
         $texts = @((TabExpansion2 -inputScript 'petty add ' -cursorColumn 10).CompletionMatches | ForEach-Object CompletionText)
         foreach ($t in $texts) { Invoke-Expression ('petty add ' + $t) }
         [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
