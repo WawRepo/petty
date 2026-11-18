@@ -5,7 +5,7 @@ import { buildApp } from "../src/app.js";
 import { config } from "../src/config.js";
 import { apiPool, bgPool, maintPool } from "../src/db.js";
 import { sha256 } from "../src/lib/bytes.js";
-import { runMaintenance } from "../src/lib/maintenance.js";
+import { runMaintenanceAlone } from "./maintenance-alone.js";
 import { Client, makeJoinLink, userMaterial } from "../src/devtools/fixtures.js";
 
 /**
@@ -32,7 +32,7 @@ describe("personal data is not kept longer than needed (PETTY-341)", () => {
     const open = await makeJoinLink(`open-${run}@test.local`);
     await owner.query("insert into password_resets (user_id, token_hash, expires_at) values ($1, $2, now() - interval '1 minute'), ($1, $3, now() + interval '1 hour')", [u.id, sha256(`dead-${run}`), sha256(`live-${run}`)]);
 
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await emailOf(ended)).toBeUndefined();
     expect(await emailOf(open)).toEqual({ email: `open-${run}@test.local` }); // still usable, so still kept
     expect(await emailOf(used)).toEqual({ email: null }); // the row stays: who joined through whom
@@ -82,7 +82,7 @@ describe("personal data is not kept longer than needed (PETTY-341)", () => {
     await owner.query("update access_tokens set expires_at = now() - interval '1 minute' where id = $1", [expired]);
     await owner.query("update access_tokens set revoked_at = now() where id = $1", [revokedEarly]); // what a revoke before PETTY-442 left behind
 
-    await runMaintenance();
+    await runMaintenanceAlone();
     expect(await stored(expired)).toEqual({ bundle: false, keys: 0 });
     expect(await stored(revokedEarly)).toEqual({ bundle: false, keys: 0 });
     expect(await stored(live)).toEqual({ bundle: true, keys: 1 }); // a live token keeps what it needs
@@ -107,8 +107,8 @@ describe("personal data is not kept longer than needed (PETTY-341)", () => {
     const all = async () => (await owner.query<{ n: number }>("select count(*)::int as n from drawer_document_history where drawer_id = $1", [drawerId])).rows[0]!.n;
     expect([await old(), await all()]).toEqual([1, 2]);
 
-    const r = await runMaintenance();
-    expect(r.document_history).toBeGreaterThanOrEqual(1);
+    const r = await runMaintenanceAlone();
+    expect(typeof r.document_history).toBe("number"); // the run's count: another file's run may have taken this copy first (PETTY-532)
     expect([await old(), await all()]).toEqual([0, 1]); // the day-old copy stays restorable
   });
 });

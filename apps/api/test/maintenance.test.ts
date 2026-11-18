@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildApp } from "../src/app.js";
 import { apiPool, bgPool, lastRequestUse, maintPool } from "../src/db.js";
-import { maintenanceDue, runMaintenance } from "../src/lib/maintenance.js";
+import { maintenanceDue } from "../src/lib/maintenance.js";
+import { runMaintenanceAlone } from "./maintenance-alone.js";
 import { usageSnapshot } from "../src/lib/metrics.js";
 
 const app = buildApp();
@@ -26,7 +27,7 @@ describe("the API lets an idle database sleep", () => {
 
   it("background work does not count as a request using the database; a request does", async () => {
     const before = lastRequestUse();
-    await runMaintenance();
+    await runMaintenanceAlone();
     await bgPool.query("select 1");
     expect(lastRequestUse()).toBe(before);
     expect((await app.inject({ method: "GET", url: "/health" })).statusCode).toBe(200);
@@ -37,14 +38,14 @@ describe("the API lets an idle database sleep", () => {
     const old = randomBytes(32);
     const fresh = randomBytes(32);
     await apiPool.query("insert into clerk_sessions_seen (sid_hash, seen_at) values ($1, now() - interval '31 days'), ($2, now() - interval '29 days')", [old, fresh]);
-    expect((await runMaintenance()).clerk_sessions).toBeGreaterThanOrEqual(1);
+    expect(typeof (await runMaintenanceAlone()).clerk_sessions).toBe("number"); // the run's count: another file's run may have taken this row first (PETTY-532)
     const left = await apiPool.query<{ h: Buffer }>("select sid_hash as h from clerk_sessions_seen where sid_hash = any($1)", [[old, fresh]]);
     expect(left.rows.map((r) => r.h.toString("hex"))).toEqual([fresh.toString("hex")]);
   });
 
   it("housekeeping says when short-lived rows still wait for their end", async () => {
     await apiPool.query("insert into rate_counters (key_hash, n, reset_at) values ($1, 1, now() + interval '10 minutes')", [randomBytes(32)]);
-    expect((await runMaintenance()).pending).toBe(true);
+    expect((await runMaintenanceAlone()).pending).toBe(true);
   });
 
   it("the usage gauges never query a sleeping database: they repeat the last values until a request wakes it", async () => {
