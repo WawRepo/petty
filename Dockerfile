@@ -25,7 +25,7 @@ RUN npm pack "pnpm@${PNPM_VERSION}" --pack-destination / \
  && echo "${PNPM_SHA512}  /pnpm-${PNPM_VERSION}.tgz" | sha512sum -c - \
  && mv "/pnpm-${PNPM_VERSION}.tgz" /pnpm.tgz
 
-FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS source
 RUN --mount=type=bind,from=pnpm,source=/pnpm.tgz,target=/mnt/pnpm.tgz npm install -g /mnt/pnpm.tgz
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
@@ -42,6 +42,8 @@ COPY apps/cli/package.json apps/cli/
 COPY tests/integration/package.json tests/integration/
 RUN pnpm install --frozen-lockfile
 COPY . .
+
+FROM source AS packs
 # AGPL section 13 (PETTY-292): a changed version must offer its own source. A fork builds with
 # --build-arg VITE_SOURCE_URL=<its repository>; the web app and the downloadable files link there.
 ARG VITE_SOURCE_URL=
@@ -49,6 +51,16 @@ ARG VITE_SOURCE_URL=
 RUN pnpm --filter @petty/mcp run pack
 # The command line (PETTY-274), one file, served at /downloads/petty.mjs like the add-on.
 RUN pnpm --filter @petty/cli run pack
+
+# The files Petty serves at /downloads, and nothing else. PETTY-522: release.yml replaces this stage with
+# the files its pack job built, signed and published (`--build-context downloads=<folder>`), so a released
+# image serves the very bytes of its GitHub Release. A build without that context packs its own above.
+FROM --platform=$BUILDPLATFORM scratch AS downloads
+COPY --from=packs /app/apps/web/public/downloads/ /
+
+FROM source AS build
+ARG VITE_SOURCE_URL=
+COPY --from=downloads / apps/web/public/downloads/
 RUN pnpm --filter @petty/web build
 
 FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS deps

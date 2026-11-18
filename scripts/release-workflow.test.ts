@@ -103,6 +103,25 @@ describe("release.yml", () => {
     at(body, 'verified "oci://ghcr.io/wawrepo/petty$ref"');
   });
 
+  // PETTY-522: a released image serves at /downloads the very files that attest signs and publish releases.
+  it("builds the image with the pack job's files, and reads them back from it before anything is signed", () => {
+    const body = job("image");
+    assert.deepEqual(needs("image"), ["prepare", "pack"]);
+    const download = at(body, 'with: { name: downloads, path: "${{ runner.temp }}/downloads" }');
+    const build = at(body, "uses: docker/build-push-action@");
+    assert.ok(download < build, "the files are there before the build");
+    at(body, "build-contexts: downloads=${{ runner.temp }}/downloads\n");
+    const copy = at(body, 'docker cp "$id:/app/apps/web/dist/downloads" "$RUNNER_TEMP/served"');
+    const compare = at(body, 'diff <(cd "$RUNNER_TEMP/downloads" && sha256sum -- *) <(cd "$RUNNER_TEMP/served" && sha256sum -- *)');
+    assert.ok(build < copy && copy < compare, "the check reads the image that was pushed");
+    assert.deepEqual(needs("attest"), ["pack", "image"]);
+    // the stage that the build context replaces, and the web build that serves it
+    const dockerfile = readFileSync(join(import.meta.dirname, "../Dockerfile"), "utf8");
+    assert.match(dockerfile, /^FROM (--platform=\S+ )?scratch AS downloads$/m);
+    assert.match(dockerfile, /^COPY --from=downloads \/ apps\/web\/public\/downloads\/$/m);
+    assert.match(dockerfile, /^ENV .*\bWEB_DIST=\/app\/apps\/web\/dist\b/m);
+  });
+
   it("pushes the image by digest, with no tag", () => {
     const body = job("image");
     assert.match(body, /outputs: type=image,name=ghcr\.io\/wawrepo\/petty,push-by-digest=true,name-canonical=true,push=true\n/);

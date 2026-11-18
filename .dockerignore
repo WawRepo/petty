@@ -3,6 +3,9 @@ node_modules
 **/dist
 **/test-results
 **/playwright-report
+# PETTY-522: what Petty serves at /downloads comes from the Dockerfile's downloads stage only, never a
+# leftover pack in the working tree
+apps/web/public/downloads
 .git
 deploy
 *.md

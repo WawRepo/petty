@@ -19,7 +19,10 @@ name: release
 #   bundle against the ids that prepare printed, so nothing can swap the commit on the way.
 # - pack (read only): installs the dependencies and packs the add-on and the command line.
 # - image (packages: write): builds the image and pushes it by digest, with no tag. The build's own steps
-#   run inside BuildKit, which sees neither the token nor the registry login.
+#   run inside BuildKit, which sees neither the token nor the registry login. PETTY-522: the files the image
+#   serves at /downloads are the pack job's, given to the build as the Dockerfile's `downloads` stage, and
+#   the job reads them back out of the pushed image: the release goes on only if they are the same bytes
+#   that attest signs and publish puts in the GitHub Release.
 # - attest (id-token: write, attestations: write): signs the build attestations for the release's files
 #   and the image (PETTY-418, PETTY-456). It runs no dependency code and can write neither to the
 #   repository nor to the registry.
@@ -110,7 +113,8 @@ jobs:
           retention-days: 7
 
   # The AI add-on as release files too (not only served by each running Petty), with its licence,
-  # third-party notices and checksums. Built from the same release commit as the image.
+  # third-party notices and checksums. Built from the same release commit as the image, which serves these
+  # very files at /downloads (PETTY-522).
   pack:
     needs: prepare
     runs-on: ubuntu-latest
@@ -148,7 +152,7 @@ jobs:
           retention-days: 7
 
   image:
-    needs: prepare
+    needs: [prepare, pack]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -172,6 +176,9 @@ jobs:
             echo "::error::the release commit in the artifact is not the one the prepare job made"; exit 1
           fi
           git checkout -q --detach "$COMMIT"
+      # PETTY-522: what the image serves at /downloads, the same files that attest signs and publish releases
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: downloads, path: "${{ runner.temp }}/downloads" }
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       # Right before the build that pushes. The Dockerfile's steps run inside BuildKit, which never sees it.
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
@@ -192,6 +199,8 @@ jobs:
           BUILDX_METADATA_PROVENANCE: disabled
         with:
           context: .
+          # PETTY-522: replaces the Dockerfile's downloads stage, so the image does not pack the files again
+          build-contexts: downloads=${{ runner.temp }}/downloads
           # PETTY-385: amd64 only, so no QEMU; `make image` still builds arm64 too for an ARM board
           platforms: linux/amd64
           provenance: mode=min
@@ -216,6 +225,21 @@ jobs:
             echo "::error::the image's provenance holds $hits email address(es) that are not noreply ones; nothing else was published. Delete this image version, turn on 'Keep my email addresses private' in GitHub, and start the release again."
             exit 1
           fi
+      # PETTY-522: the pushed image, read back. `docker create` runs nothing from the image; `docker cp` only
+      # copies its files out. The same names with the same sha256, or nothing is signed or published.
+      - name: The image serves the pack job's files at /downloads, byte for byte
+        env:
+          IMAGE: ghcr.io/wawrepo/petty@${{ steps.build.outputs.digest }}
+        run: |
+          docker pull -q "$IMAGE" > /dev/null
+          id=$(docker create "$IMAGE")
+          docker cp "$id:/app/apps/web/dist/downloads" "$RUNNER_TEMP/served"
+          docker rm "$id" > /dev/null
+          if ! diff <(cd "$RUNNER_TEMP/downloads" && sha256sum -- *) <(cd "$RUNNER_TEMP/served" && sha256sum -- *); then
+            echo "::error::the image does not serve the pack job's files at /downloads (the lines above differ); nothing else was published. Delete this image version and start the release again once the Dockerfile's downloads stage is fixed."
+            exit 1
+          fi
+          echo "The image serves the pack job's files at /downloads: $(cd "$RUNNER_TEMP/served" && echo *)"
 
   # PETTY-418, PETTY-456: a signed statement, kept by GitHub with this repository, that this workflow built
   # exactly these files and this image. `gh attestation verify` checks a download against it (docs/cli.md,
