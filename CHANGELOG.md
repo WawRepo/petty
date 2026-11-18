@@ -8,6 +8,15 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- A released image serves at `/downloads` the very files of its GitHub Release (`petty.mjs`,
+  `petty-mcp.mjs`, `petty.mcpb`, `petty-skill.zip`): the release builds them once, signs them, and puts
+  those bytes in the image, then reads them back out of the image and stops before it signs or publishes
+  anything if one differs. Before, the image packed its own copies, which nothing compared with the
+  signed files. So `gh attestation verify` and `SHA256SUMS` now also pass on the copy that a Petty
+  running a release serves, unless someone changed it (docs/cli.md, "Check what you download";
+  PETTY-522).
+
 ## [1.5.57] — 2026-11-18
 
 ### Security

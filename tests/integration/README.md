@@ -8,6 +8,7 @@ point: a change must not break what already works, or what people already stored
 make integration                                      # build the working tree, test it
 make integration BASE=ghcr.io/wawrepo/petty:<tag>     # write data with <tag> first, then upgrade and check it
 PETTY_IMAGE=<ref> sh tests/integration/run.sh         # test an image that is already built or pushed
+PETTY_IT_DOWNLOADS=<folder> ...                       # the image serves exactly these files at /downloads
 KEEP=1 sh tests/integration/run.sh                    # leave the stack up afterwards
 ```
 
@@ -17,7 +18,7 @@ volume at the end. `test.env` holds test-only passwords.
 | File | Covers |
 |---|---|
 | `01-seed` | writes one account, drawer and two entries (with `BASE`, on the older image) |
-| `02-deploy` | health, the one-shot migrate service, no owner password in the app, entries append-only for the API role, security headers, the add-on download, files and the service worker, no caching of API answers |
+| `02-deploy` | health, the one-shot migrate service, no owner password in the app, entries append-only for the API role, security headers, the add-on download, files and the service worker, no caching of API answers; `/downloads` serves the files the image was built with, byte for byte (run.sh builds as the release does, PETTY-522) |
 | `03-household` | login/logout, drawers, entries, an Adjust, finding the second person by email (a POST body, no address in the request log), a join link looked up by a POST body (no token in the log; the former URL forms answer 404), a changing request refused unless the browser marks it same-origin, sharing with them, the owner's list of pending invitations and their end when the drawer changes owner, a stranger kept out, an earlier document version put back by the owner's client (the server's own restore route refuses), a new drawer key and a deleted line (each needs a custody proof; a request without one changes nothing), an access token and the agent (signatures verified), revoke, a token's drawer keys sent in several requests |
 | `04-open-signup` | open sign-up without a join link, and the invite path still works |
 | `05-storage` | the per-person storage quota fills and refuses; a removed photo still counts while it is kept, and deleting the drawer frees it (PETTY-506); a stored field of the wrong size (a nonce, an entry, a wrapped key) is refused and takes no space |

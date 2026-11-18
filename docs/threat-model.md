@@ -1,6 +1,6 @@
 # Threat model
 
-**Current as of 2026-11-17 (after v1.5.52).** This is the maintained description of what Petty protects,
+**Current as of 2026-11-18 (after v1.5.57).** This is the maintained description of what Petty protects,
 from whom, and what it does not. It replaces the "Security" section of [petty-app-spec.md](history/petty-app-spec.md), which is
 kept as history. The settled design choices behind it are in [decisions.md](decisions.md); how the
 keys and access tokens work, with diagrams, is in [README.md](README.md).
@@ -78,7 +78,9 @@ Users should be told these plainly.
   (`petty-mcp.mjs`) and the Claude Desktop add-on (`petty.mcpb`) run on your computer, outside the
   browser, and hold an access token. A changed copy can do there whatever you can, which is more than a
   changed web app can reach. Every instance serves copies of these files under `/downloads/`; nothing
-  checks them, and whoever controls the instance controls them. So the docs, and the app's page
+  checks them for you, and whoever controls the instance controls them. A released image serves the
+  very bytes of its release's files (PETTY-522), so the check below passes on an unchanged copy and
+  fails on a changed one. Still, the docs, and the app's page
   *Use Petty with AI* when the instance runs a release, take the files from the GitHub release of that
   version instead. Each release signs a build attestation for these files, and `gh attestation verify`
   passes only for a file that the release workflow of the repository built from `main`
