@@ -235,7 +235,13 @@ The server hands out public keys, so it could substitute its own. Petty makes th
   vouches for it. An entry under the name of someone you pinned that is signed with any other key is
   reported and left out of the balance. The server never deletes a public key or a delegation, and
   your pins stay when a person leaves a drawer or deletes the account, so old entries still verify
-  after a token is revoked or an account is deleted. Someone you never pinned, such as a person who
+  after a token is revoked or an account is deleted. The web app keeps each author's delegations
+  with its offline copy (PETTY-523), so it checks a tool's entries the same way when it starts with no
+  network; a kept delegation counts only when a key you hold vouches for it, as online. When a token
+  was revoked, and when the server took an entry, are the server's word, online and offline alike. A
+  revocation the app saw stays: a later answer cannot take it back or move it later. Someone who can
+  change the browser's stored data can change those times in the offline copy, as they can for the
+  rest of it, but cannot make a delegation. Someone you never pinned, such as a person who
   left before you joined, cannot be checked this way: the app checks their entries against the key
   the server lists, counts them, and marks them "author not confirmed". A person who holds the
   drawer key and can write the database can therefore still add an entry under a name you never

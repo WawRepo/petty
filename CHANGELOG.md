@@ -17,6 +17,13 @@ number, also when it adds features, and a new minor or major is started by hand 
   running a release serves, unless someone changed it (docs/cli.md, "Check what you download";
   PETTY-522).
 
+### Fixed
+- The web app checks the entries that a tool wrote (the command line or the AI add-on, with an access
+  token) also when it starts with no network. Before, it reported them as entries it could not verify
+  and left them out of the balance until the network was back. It keeps each person's token approvals
+  with the rest of its offline copy. A token revocation the app has seen stays in force, also when the
+  server later stops reporting it (PETTY-523).
+
 ## [1.5.57] — 2026-11-18
 
 ### Security

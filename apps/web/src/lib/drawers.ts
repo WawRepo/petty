@@ -8,17 +8,18 @@
 import { useSyncExternalStore } from "react";
 import { resetHomePlace } from "./homePlace.js";
 import {
-  delegationCovers, fromB64, importEcdsaPublic, openDocument, verifyDelegation, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
+  fromB64, importEcdsaPublic, openDocument, openEntryUnverified, openPhoto, sealDocument, sealEntry, sealPhoto, signEntry, toB64, unwrapDrawerKey, verifyEntry,
   createDrawerKey, hashEntry, PettyCryptoError, DOCUMENT_SCHEMA_VERSION, type EntryOp, type EntryPayloadV1, type RecordIdentity, type Sealed, type SignedEntryV1,
 } from "@petty/crypto";
 import { applyOps, fold, newDocument, nextRev, readDocument, revRolledBack, reverseOf, sumsAreExact, totals, verifyChain, LedgerError, type ChainResult, type DocumentOp, type DrawerDocument, type FoldResult, type LedgerEntry, type Line, type LineBalance, type PinnedHead, type Totals, lineCounted } from "@petty/ledger";
-import { DocumentHistory, PhotoHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap, type UserDelegations } from "@petty/protocol";
+import { DocumentHistory, PhotoHistory, z, type Bootstrap, type DrawerSummary, type EntryRow, type Invitation, type Member, type SealedRow, type DrawerKeyWrap } from "@petty/protocol";
 import { api, ApiError } from "./api.js";
 import { idb } from "./idb.js";
 import { photoUrl } from "./photo.js";
 import { acceptedDocRev, acceptedDocVersion, acceptedKeyFingerprint, acceptedKeyVersion, confirmedFor, drawersNeedUserDoc, getPin, leftDrawerAt, loadPins, noteMembers, pinMembers, pinStatus, pinnedSigningKeys, pinsBlocked, pinsReady, recordDrawerVersions, recordLeft, rotationOwed, startUserDoc, usePins } from "./pins.js";
 import { getAuth } from "./session.js";
 import { withCustodyProof } from "./custody.js";
+import { delegatedKey as tokenKey, forgetDelegations } from "./delegations.js";
 import { isOnline } from "./net.js";
 import { outboxList, outboxPush, type OutboxItem } from "./outbox.js";
 import { canonicalJson, utf8, seal, open as openSealed, fromUtf8, hkdfDerive, signingKeyId, toHex, zero } from "@petty/crypto";
@@ -111,6 +112,7 @@ const deleted = new Map<string, number>();
 export function resetDrawers(): void {
   for (const v of state.drawers.values()) if (v.photo) URL.revokeObjectURL(v.photo);
   resetHomePlace();
+  forgetDelegations();
   created.clear();
   deleted.clear();
   set({ status: "idle", drawers: new Map(), order: [], invitations: [], transfers: [], fromCache: false, outboxOldest: null, outboxCount: 0 });
@@ -241,7 +243,7 @@ async function decryptDocument(key: CryptoKey, d: DrawerSummary, row: SealedRow,
 const nameCache = new Map<string, string>();
 /** Imported signing keys, by author, key id and the key itself (PETTY-413): a key found for one author never serves another's entry. */
 const keyCache = new Map<string, CryptoKey>();
-/** One fetch per author per minute, so a log full of token-signed entries does not fetch once per entry. */
+/** One fetch per author per minute, so a log full of a former member's entries does not fetch once per entry. */
 const FETCH_TTL_MS = 60_000;
 const fetched = new Map<string, { at: number; p: Promise<unknown> }>();
 function fetchOnce<T>(url: string): Promise<T> {
@@ -278,25 +280,9 @@ async function accountSpki(members: readonly Member[], authorId: string, sigKeyI
   return null;
 }
 
-/**
- * A key an access token signed with (PETTY-184, review NR-4). It counts only when the author's
- * account key signed a delegation for it, and only for entries the server received before the
- * delegation expired or was revoked. The server hands out the delegations but cannot forge one.
- */
-async function delegatedKey(members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string): Promise<{ key: CryptoKey; sig_key_id: string; pinned: boolean } | null> {
-  let list: UserDelegations["delegations"];
-  try { list = (await fetchOnce<UserDelegations>(`/users/${authorId}/delegations`)).delegations; } catch { return null; }
-  const hit = list.find((x) => x.delegation.token_sig_key_id === sigKeyId && x.delegation.user_id === authorId);
-  if (!hit) return null;
-  // PETTY-413: the account key that vouches for the token's key is found by the same rule as an entry's own key
-  const account = await accountSpki(members, authorId, hit.delegation.account_sig_key_id);
-  if (!account) return null;
-  try {
-    const d = await verifyDelegation(hit.delegation, { user_id: authorId, sig_key_id: hit.delegation.account_sig_key_id, ecdsa_pub: account.spki });
-    if (!delegationCovers(d, receivedAt, hit.revoked_at)) return null;
-    return { key: await importEcdsaPublic(d.token_ecdsa_pub), sig_key_id: d.token_sig_key_id, pinned: account.pinned };
-  } catch { return null; }
-}
+/** PETTY-523: a token's key, from the delegations listed now or, with no network, kept from the last answer (delegations.ts). */
+const delegatedKey = (members: readonly Member[], authorId: string, sigKeyId: string, receivedAt: string) =>
+  tokenKey(authorId, sigKeyId, receivedAt, (accountSigKeyId) => accountSpki(members, authorId, accountSigKeyId));
 
 /**
  * The key an entry must verify against, the id of that key, whether this person holds the account key behind it for the
