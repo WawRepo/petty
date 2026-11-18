@@ -5,8 +5,8 @@ import { compose } from "../lib.js";
  * PETTY-418: the image starts the API as node itself, with no package manager and no shell in front of
  * it. As the container's first process it must answer a stop on its own: Linux gives that process no
  * default action for a signal, so without a handler a stop waits out the grace period and then kills.
- * Tried on the second instance, which is started again afterwards. The last file, so nothing else is
- * running while an instance is down.
+ * Tried on the second instance, which is started again afterwards. Near the end (only 22-db-restart
+ * comes later), so nothing else is running while an instance is down.
  */
 const state = (service: string) => {
   const out = compose(`ps -a --format json ${service}`).trim();
