@@ -8,6 +8,11 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+### Security
+- The server image no longer has glob 13 and minimatch 10, which have denial-of-service flaws
+  (GHSA-3g3m-2fjr-6pw4, GHSA-g3hv-75wg-m249). Petty never gave them a pattern from a request. The
+  image and the build tools now use glob 14 and minimatch 11 (PETTY-430).
+
 ## [1.5.62] — 2026-11-18
 
 ### Changed
