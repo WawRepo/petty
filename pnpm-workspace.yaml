@@ -16,3 +16,17 @@ allowBuilds:
 # braces, GHSA-vfj7-8cjw-p6xm) for a web app that never imports it. Every peer Petty uses is a declared
 # dependency; `pnpm peers check` lists any that is missing.
 autoInstallPeers: false
+
+# PETTY-430: glob up to 14.0.1 (GHSA-3g3m-2fjr-6pw4) and minimatch below 11.0.1 (GHSA-g3hv-75wg-m249)
+# have DoS fixes only in the next major. These four packages still ask for the old major. Each call
+# they make works the same in glob 14 and minimatch 11 (checked 2026-11-19). Remove an entry when its
+# package asks for the new major itself.
+overrides:
+  # In the image. node-pg-migrate calls glob only for --use-glob, which Petty does not use.
+  node-pg-migrate>glob: ^14.0.2
+  # Web build: globSync(pattern, { cwd, follow, ignore }) lists the offline cache files.
+  workbox-build>glob: ^14.0.2
+  # Lint: minimatch(path, pattern, { dot: true }) for allowDefaultProject.
+  '@typescript-eslint/typescript-estree>minimatch': ^11.0.1
+  # Only the ejs command-line program (through jake) loads filelist; the build never does.
+  filelist>minimatch: ^11.0.1
