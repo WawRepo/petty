@@ -8,6 +8,8 @@ number, also when it adds features, and a new minor or major is started by hand 
 
 ## [Unreleased]
 
+## [1.5.63] — 2026-11-19
+
 ### Security
 - The server image no longer has glob 13 and minimatch 10, which have denial-of-service flaws
   (GHSA-3g3m-2fjr-6pw4, GHSA-g3hv-75wg-m249). Petty never gave them a pattern from a request. The
@@ -1237,7 +1239,8 @@ places, across currencies, shared per drawer. Highlights of what the 1.2.0 image
   content. A lost passphrase and recovery code, on a drawer shared with nobody, is unrecoverable
   by design.
 
-[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.62...HEAD
+[Unreleased]: https://github.com/WawRepo/petty/compare/v1.5.63...HEAD
+[1.5.63]: https://github.com/WawRepo/petty/releases/tag/v1.5.63
 [1.5.62]: https://github.com/WawRepo/petty/releases/tag/v1.5.62
 [1.5.61]: https://github.com/WawRepo/petty/releases/tag/v1.5.61
 [1.5.60]: https://github.com/WawRepo/petty/releases/tag/v1.5.60
