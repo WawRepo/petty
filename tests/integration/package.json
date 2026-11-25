@@ -16,6 +16,6 @@
     "@petty/protocol": "workspace:*",
     "@types/node": "^26.6.6",
     "fflate": "0.8.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
