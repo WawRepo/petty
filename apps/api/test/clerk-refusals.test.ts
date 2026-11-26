@@ -37,8 +37,9 @@ const { Client, userMaterial } = await import("../src/devtools/fixtures.js");
 const app = buildApp();
 const run = crypto.randomUUID().slice(0, 8);
 const owner = new pg.Pool({ connectionString: config.ownerDatabaseUrl, max: 2 });
+// @clerk/backend 3.28+ accepts a session token only with Clerk's `cat` header (PETTY-540).
 const token = (sub: string) =>
-  new SignJWT({ sid: `sess_${sub}`, azp: new URL(config.appUrl).origin }).setProtectedHeader({ alg: "RS256" }).setSubject(sub).setIssuer("https://clerk.petty.test").setIssuedAt().setExpirationTime("5m").sign(pair.privateKey);
+  new SignJWT({ sid: `sess_${sub}`, azp: new URL(config.appUrl).origin }).setProtectedHeader({ alg: "RS256", cat: "cl_B7d4PD111AAA" }).setSubject(sub).setIssuer("https://clerk.petty.test").setIssuedAt().setExpirationTime("5m").sign(pair.privateKey);
 
 beforeAll(async () => { await app.ready(); }, 60_000);
 afterAll(async () => { await app.close(); await apiPool.end(); await maintPool.end(); await owner.end(); });
