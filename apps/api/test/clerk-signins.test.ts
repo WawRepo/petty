@@ -39,8 +39,9 @@ const app = buildApp();
 const run = crypto.randomUUID().slice(0, 8);
 const owner = new pg.Pool({ connectionString: config.ownerDatabaseUrl, max: 2 });
 const now = () => Math.floor(Date.now() / 1000);
+// @clerk/backend 3.28+ accepts a session token only with Clerk's `cat` header (PETTY-540).
 const token = (sub: string, sid: string, over: { key?: CryptoKey; claims?: Record<string, unknown>; iat?: number; exp?: number } = {}) =>
-  new SignJWT({ sid, azp: new URL(config.appUrl).origin, ...over.claims }).setProtectedHeader({ alg: "RS256" }).setSubject(sub)
+  new SignJWT({ sid, azp: new URL(config.appUrl).origin, ...over.claims }).setProtectedHeader({ alg: "RS256", cat: "cl_B7d4PD111AAA" }).setSubject(sub)
     .setIssuer("https://clerk.petty.test").setIssuedAt(over.iat ?? now()).setExpirationTime(over.exp ?? now() + 300).sign(over.key ?? pair.privateKey);
 const me = (bearer: string) => app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${bearer}` } });
 const count = async (event: string) => Number(new RegExp(`^petty_auth_events_total\\{event="${event}"\\} (\\d+)$`, "m").exec(await registry.metrics())?.[1] ?? NaN);
